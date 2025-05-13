@@ -25,7 +25,7 @@ if (!isset($_SESSION['user'])) {
     ?>
 
     <main>
-        <h1>Track Your Calories LOL</h1>
+        <h1>Track Your Calories NO</h1>
         <h1>At Any Time</h1>
         <button class="get-started">Get Started</button>
 
