@@ -2,7 +2,7 @@
         <a href="#" class="logo">BitBalance</a>
         <nav>
             <a href="#">Dasboard</a>
-            <a href="#">Products</a>
+            <a href="products.php">Products</a>
             <a href="#">About</a>
             <a href="#" class="forums">Forums</a>
 
