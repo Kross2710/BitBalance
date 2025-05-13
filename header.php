@@ -1,5 +1,5 @@
     <header>
-        <a href="#" class="logo">BitBalance</a>
+        <a href="index.php" class="logo">BitBalance</a>
         <nav>
             <a href="index.php">Dasboard</a>
             <a href="products.php">Products</a>

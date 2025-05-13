@@ -13,7 +13,7 @@ if (!isset($_SESSION['user'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BitBalance</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
