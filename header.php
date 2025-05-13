@@ -1,7 +1,7 @@
     <header>
         <a href="#" class="logo">BitBalance</a>
         <nav>
-            <a href="#">Dasboard</a>
+            <a href="index.php">Dasboard</a>
             <a href="products.php">Products</a>
             <a href="#">About</a>
             <a href="#" class="forums">Forums</a>
