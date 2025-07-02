@@ -1,0 +1,8 @@
+/* Fade in/out when .pjax-loading toggles */
+#pjax-container {
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+#pjax-container.pjax-loading {
+    opacity: 0;           /* fade out */
+}

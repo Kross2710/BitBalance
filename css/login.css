@@ -1,0 +1,142 @@
+.body, .html {
+    height: 100%;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.form-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.form-section h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 28px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    gap: 15px;
+}
+
+input {
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 4px;
+}
+
+input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+.error-message {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
+}
+.success-message {
+    color: green;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.signup-link {
+    text-align: center;
+    margin-top: 20px;
+}
+.signup-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+.forgotpassword-link {
+    text-align: center;
+    margin-top: 10px;
+}
+.forgotpassword-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+.forgotpassword-link a:hover {
+    text-decoration: underline;
+}
+
+.side-section {
+    flex: 1;
+    background-color: #d3d3d3;
+}
+
+.side-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+    .form-section, .side-section {
+        width: 100%;
+        height: 50vh;
+    }
+    .form-section {
+        padding: 20px;
+    }
+}
+@media (max-width: 480px) {
+    .form-section h2 {
+        font-size: 24px;
+    }
+    form {
+        max-width: 90%;
+    }
+    input, button {
+        font-size: 12px;
+    }
+}
+@media (max-width: 320px) {
+    .form-section h2 {
+        font-size: 20px;
+    }
+    form {
+        max-width: 95%;
+    }
+    input, button {
+        font-size: 10px;
+    }
+}
+

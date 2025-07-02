@@ -1,0 +1,67 @@
+
+
+header {
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow) !important;
+    transition: all 0.3s ease !important;
+}
+
+.logo {
+    color: var(--text-color) !important;
+}
+
+.menu a {
+    color: var(--text-color) !important;
+    transition: color 0.3s ease !important;
+}
+
+.menu a:hover,
+.menu a.active {
+    color: var(--primary-color) !important;
+}
+
+.login-signup {
+    color: var(--text-color) !important;
+}
+
+.login-signup:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.cart-link {
+    color: var(--text-color) !important;
+}
+
+.cart-link:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.profile-pic {
+    border-color: var(--border-color) !important;
+}
+
+.profile-icon {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+.hamburger {
+    color: var(--text-color) !important;
+}
+
+/* Mobile menu */
+@media (max-width: 768px) {
+    nav .menu {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    nav .menu a {
+        color: var(--text-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+}

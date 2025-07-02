@@ -1,0 +1,29 @@
+.content {
+    margin-left: 220px;
+    padding: 20px;
+}
+
+.box {
+    background-color: white;
+    padding: 24px;
+    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.box h2 {
+    margin-top: 0;
+}
+
+.box h3 {
+    margin-top: 0;
+    color: #4a7ee3;
+}
+
+.box .text {
+    margin-top: 10px;
+}
+
+.box .text p {
+    margin: 0;
+}

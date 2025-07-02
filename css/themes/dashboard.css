@@ -1,0 +1,108 @@
+
+main.dashboard {
+    background: var(--bg-color) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.progress-widget {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.progress-card {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+.progress-info h3 {
+    color: var(--text-color) !important;
+}
+
+.progress-value {
+    color: var(--text-color) !important;
+}
+
+.progress-bar {
+    background-color: var(--border-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.progress-labels {
+    color: var(--text-muted) !important;
+}
+
+.status-section {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.status-section h4 {
+    color: var(--text-color) !important;
+}
+
+.status-section p {
+    color: var(--text-color) !important;
+}
+
+.history-section {
+    background: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.history-section h4 {
+    color: var(--text-color) !important;
+}
+
+canvas {
+    background: var(--card-bg) !important;
+    border-radius: 8px !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+}
+
+.btn-primary a {
+    color: white !important;
+    text-decoration: none !important;
+}
+
+[data-theme="dark"] .error-message {
+    background-color: #4a1e24 !important;
+    color: #f1aeb5 !important;
+    border-color: #5c2b30 !important;
+}
+
+[data-theme="dark"] .success-message {
+    background-color: #1e4d2b !important;
+    color: #a3d9a5 !important;
+    border-color: #2d5f34 !important;
+}
+
+.sidebar {
+    background: var(--card-bg) !important;
+    border-right-color: var(--border-color) !important;
+}
+
+.sidebar a {
+    color: var(--text-muted) !important;
+}
+
+.sidebar a.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.sidebar a:hover {
+    background: var(--border-color) !important;
+    color: var(--text-color) !important;
+}

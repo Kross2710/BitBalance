@@ -1,0 +1,178 @@
+/* Purchase Page Styles */
+/* Reset and base */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9fafb;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  
+  main {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
+  }
+  
+  .purchase-title {
+    font-weight: 700;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #222;
+  }
+  
+  /* Container layout */
+  .purchase-container {
+    display: flex;
+    gap: 50px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  /* Form styling */
+  .purchase-form {
+    flex: 1 1 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  
+  .purchase-form h2.section-heading {
+    font-weight: 600;
+    font-size: 1.3rem;
+    border-bottom: 2px solid #1a73e8;
+    padding-bottom: 6px;
+    margin-bottom: 15px;
+    color: #1a73e8; /* Accent color */
+  }
+  
+  /* Inputs */
+  .purchase-form input[type="text"],
+  .purchase-form input[type="email"] {
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 1.8px solid #ddd;
+    border-radius: 6px;
+    transition: border-color 0.3s ease;
+    outline-offset: 2px;
+  }
+  
+  .purchase-form input[type="text"]:focus,
+  .purchase-form input[type="email"]:focus {
+    border-color: #1a73e8;
+    outline: none;
+    box-shadow: 0 0 8px #1a73e8aa;
+  }
+  
+  /* Row for expiry and CVV */
+  .purchase-form .row {
+    display: flex;
+    gap: 15px;
+  }
+  
+  /* Coupon row */
+  .coupon-row {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .coupon-row input[type="text"] {
+    flex-grow: 1;
+  }
+  
+  .apply-coupon-button {
+    background-color: #1a73e8;
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 12px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+  }
+  
+  .apply-coupon-button:hover {
+    background-color: #1a73e8;
+  }
+  
+  /* Coupon message */
+  .coupon-message {
+    color: #d23f3f;
+    font-weight: 600;
+    margin-top: 6px;
+    min-height: 20px;
+  }
+  
+  /* Submit button */
+  .purchase-button {
+    margin-top: 25px;
+    background-color: #222;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .purchase-button:hover {
+    background-color: #444;
+  }
+  
+  /* Summary box */
+  .summary-box {
+    flex: 0 1 320px;
+    background-color: #f7f8fa;
+    border-radius: 8px;
+    padding: 28px 24px;
+    box-shadow: inset 0 0 6px #eee;
+    height: fit-content;
+  }
+  
+  .summary-box h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #222;
+  }
+  
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    color: #444;
+  }
+  
+  .summary-row.summary-total {
+    font-weight: 700;
+    font-size: 1.25rem;
+    border-top: 1.5px solid #ddd;
+    padding-top: 14px;
+    color: #111;
+  }
+  
+  /* Responsive */
+  @media (max-width: 900px) {
+    .purchase-container {
+      flex-direction: column;
+      gap: 30px;
+    }
+  
+    .summary-box {
+      max-width: 100%;
+      width: 100%;
+    }
+  
+    .purchase-form {
+      max-width: 100%;
+    }
+  }
+  

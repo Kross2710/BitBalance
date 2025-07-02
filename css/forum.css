@@ -1,0 +1,227 @@
+.forum-page {
+    padding: 30px;
+    font-family: Arial, sans-serif;
+}
+
+.forum-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.forum-controls input,
+.forum-controls select {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.forum-controls button {
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.start-topic {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.post-preview {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+}
+
+.post-preview h3 a {
+    text-decoration: none;
+    color: #114da3;
+}
+
+.post-preview .meta,
+.post-preview .excerpt {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.new-topic-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 600px;
+}
+
+.new-topic-form input,
+.new-topic-form select,
+.new-topic-form textarea {
+    font-size: 1rem;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.new-topic-form button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+textarea[name="reply"] {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button[name="delete"] {
+    background-color: #dc3545;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+h3 {
+    margin-top: 30px;
+}
+
+.reply-section {
+    background-color: #eef1f4;
+    border-left: 4px solid #007bff;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+.forum-post {
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 12px;
+}
+
+.forum-post h2 {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.post-meta {
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.thread-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+}
+
+.post-box, .reply-box {
+    background-color: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reply-author {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+}
+
+form button {
+    margin-top: 10px;
+    padding: 6px 14px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+form button:hover {
+    background-color: #0056b3;
+}
+
+.forum-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* ensures vertical centering */
+    padding: 40px 20px;
+    font-family: Arial, sans-serif;
+}
+
+
+
+.thread-container {
+    width: 100%;
+    max-width: 600px;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.thread-container h2 {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+
+
+.new-topic-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #fdfdfd;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
