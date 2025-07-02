@@ -5,15 +5,15 @@ if (!defined('PROJECT_ROOT')) {
 }
 
 // Define the base URL for the project (automatically detects the user SID if available)
-if (!defined('BASE_URL')) {
-    if (isset($_SERVER['REQUEST_URI']) && preg_match('#^/(~[^/]+/)?([^/]+)/#', $_SERVER['REQUEST_URI'], $matches)) {
-        $prefix = isset($matches[1]) ? $matches[1] : '';
-        $project = $matches[2];
-        define('BASE_URL', '/' . $prefix . $project . '/');
-    } else {
-        define('BASE_URL', '/');
-    }
-}
+// if (!defined('BASE_URL')) {
+//     if (isset($_SERVER['REQUEST_URI']) && preg_match('#^/(~[^/]+/)?([^/]+)/#', $_SERVER['REQUEST_URI'], $matches)) {
+//         $prefix = isset($matches[1]) ? $matches[1] : '';
+//         $project = $matches[2];
+//         define('BASE_URL', '/' . $prefix . $project . '/');
+//     } else {
+//         define('BASE_URL', '/');
+//     }
+// }
 
 // Start the session if not already started
 if (session_status() == PHP_SESSION_NONE) {

@@ -6,11 +6,11 @@ $password = 'd9BeT2X7NUi9';
 $port = 3306;
 
 // XAMPP localhost settings
-$host = 'localhost';
-$dbname = 'test';
-$username = 'root';
-$password = '';
-$port = 3306;
+// $host = 'localhost';
+// $dbname = 'test';
+// $username = 'root';
+// $password = '';
+// $port = 3306;
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8", $username, $password);
