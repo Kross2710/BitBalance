@@ -1,0 +1,270 @@
+    .history-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* 3. FILTER CARD */
+    .filter-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 25px;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .card-header h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.4rem;
+    }
+
+    .subtitle {
+        margin: 5px 0 20px 0;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 2fr;
+        /* Search rộng hơn, Meal nhỏ, Date rộng */
+        gap: 15px;
+        align-items: center;
+    }
+
+    /* Inputs Styling */
+    .filter-item input,
+    .filter-item select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #e1e4e8;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        background: var(--bg-body);
+        color: var(--text-primary);
+        transition: all 0.2s;
+    }
+
+    .filter-item input:focus,
+    .filter-item select:focus {
+        border-color: var(--primary-color);
+        outline: none;
+        background: var(--card-bg);
+        box-shadow: 0 0 0 3px rgba(74, 126, 227, 0.1);
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        padding-left: 40px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+
+    .date-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .date-input {
+        position: relative;
+        flex: 1;
+    }
+
+    .date-label {
+        position: absolute;
+        top: -8px;
+        left: 10px;
+        background: var(--card-bg);
+        padding: 0 5px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    /* 4. HISTORY TABLE CARD */
+    .history-list-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .modern-table th {
+        text-align: left;
+        padding: 15px;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .modern-table td {
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    .modern-table tr:hover td {
+        background-color: rgba(0, 0, 0, 0.01);
+    }
+
+    /* Date Cell Styling */
+    .date-cell {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .date-cell .day {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .date-cell .month {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
+
+    /* Badges */
+    .cat-badge {
+        font-size: 0.75rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    .cat-breakfast {
+        background: #ffebee;
+        color: #ef5350;
+    }
+
+    .cat-lunch {
+        background: #e3f2fd;
+        color: #42a5f5;
+    }
+
+    .cat-dinner {
+        background: #f3e5f5;
+        color: #ab47bc;
+    }
+
+    .cat-snack {
+        background: #fff3e0;
+        color: #ffa726;
+    }
+
+    .fw-bold {
+        font-weight: 600;
+    }
+
+    .text-primary {
+        color: var(--primary-color);
+    }
+
+    .cal-val {
+        font-weight: 800;
+        font-size: 1rem;
+    }
+
+    /* 5. PAGINATION CUSTOMIZATION (DataTables override) */
+    .pagination-container {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 20px;
+    }
+
+    .dataTables_paginate .paginate_button {
+        padding: 6px 12px;
+        margin-left: 5px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        background: var(--bg-body);
+        border: none;
+    }
+
+    .dataTables_paginate .paginate_button.current {
+        background: var(--primary-color);
+        color: white !important;
+        font-weight: bold;
+    }
+
+    .dataTables_paginate .paginate_button:hover:not(.current) {
+        background: #e9ecef;
+        color: var(--text-primary) !important;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        opacity: 0.5;
+    }
+
+    /* 6. RESPONSIVE DESIGN
+       Note: layout cho .dashboard-content ở 1200px (ẩn right sidebar, giữ
+       margin-left cho left sidebar) đã được handle trong css/dashboard.css. */
+
+    @media (max-width: 900px) {
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        /* Stack filters vertically */
+
+        /* Mobile Card View for Table */
+        .modern-table thead {
+            display: none;
+        }
+
+        .modern-table tr {
+            display: block;
+            margin-bottom: 15px;
+            background: var(--bg-body);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .modern-table td {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border: none;
+            align-items: center;
+        }
+
+        .modern-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    }

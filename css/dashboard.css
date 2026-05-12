@@ -2,14 +2,16 @@
    2. GLOBAL LAYOUT & UTILITIES
    ========================================= */
 
-/* Main Dashboard Container */
+/* Main Dashboard Container.
+   Margins phải >= sidebar width (200px + 20px gutter) cho đến khi sidebars
+   chuyển mobile-mode ở ≤900px, nếu không sidebars fixed sẽ đè lên content. */
 main.dashboard {
     background-color: var(--bg-body);
     color: var(--text-main);
     margin-top: 20px;
-    margin-left: 220px;
-    margin-right: 220px;
-    width: calc(100% - 440px);
+    margin-left: calc(var(--sidebar-width) + 20px);
+    margin-right: calc(var(--sidebar-width) + 20px);
+    width: calc(100% - 2 * (var(--sidebar-width) + 20px));
     min-height: 80vh;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -343,11 +345,17 @@ table.meals-table {
    5. RESPONSIVE DESIGN
    ========================================= */
 
+/* Narrow desktop (901-1200px): ẩn right sidebar để content có chỗ thở.
+   Left sidebar (nav) vẫn giữ. */
 @media (max-width: 1200px) {
-    main.dashboard {
-        width: 90%;
-        margin-left: 5%;
-        margin-right: 5%;
+    .right-sidebar {
+        display: none;
+    }
+
+    main.dashboard,
+    .dashboard-content {
+        margin-right: 20px;
+        width: auto;
     }
 }
 
@@ -2522,5 +2530,173 @@ table.meals-table {
         height: 44px; /* Chuẩn touch target */
         border-radius: 12px;
         font-size: 1.2rem;
+    }
+}
+
+/* =========================================================================
+   MOBILE UX IMPROVEMENTS — append-only, đặt cuối để override layout cũ.
+   Mục tiêu: bớt scroll, ưu tiên hiển thị "Today + Status" + CTA log intake.
+   ========================================================================= */
+
+/* === Tablet & below (≤900px) === */
+@media (max-width: 900px) {
+    main.dashboard {
+        padding: 12px;
+        padding-bottom: 90px; /* chừa chỗ cho FAB không che nội dung cuối */
+        margin-top: 12px;
+    }
+
+    .flex-row {
+        gap: 12px;
+    }
+
+    /* Tighter card padding */
+    .progress-widget,
+    .status-section,
+    .chart-section,
+    .dashboard-card {
+        padding: 16px;
+    }
+
+    /* Today widget: hero, full-bleed cảm giác */
+    .progress-widget {
+        position: relative;
+    }
+    .progress-value span {
+        font-size: 1.75em;
+    }
+
+    /* 7-day chart bớt cao */
+    .chart-container-wrapper {
+        height: 200px;
+    }
+
+    /* Doughnut + meal list compact */
+    .doughnut-container {
+        max-height: 220px;
+    }
+    .meal-list-container {
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    /* Weight chart compact */
+    .weight-chart-wrapper {
+        height: 120px;
+    }
+}
+
+/* === Phone (≤600px) === */
+@media (max-width: 600px) {
+    /* Streak + Weight side-by-side để bớt scroll
+       (chúng thuộc cùng .flex column, ta override sang grid 2 cột) */
+    .flex:has(.streak-card) {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .flex:has(.streak-card) > .streak-card,
+    .flex:has(.streak-card) > .weight-card {
+        margin: 0;
+    }
+    /* Weight card vẫn dài hơn streak vì có chart → cho span full khi cần */
+    .flex:has(.streak-card) > .weight-card {
+        grid-column: span 2;
+    }
+    .flex:has(.streak-card) > .streak-card {
+        grid-column: span 2;
+    }
+    /* (Trên 480px+ thì để 2 cột) */
+}
+
+@media (min-width: 481px) and (max-width: 600px) {
+    .flex:has(.streak-card) > .streak-card {
+        grid-column: span 1;
+    }
+    .flex:has(.streak-card) > .weight-card {
+        grid-column: span 1;
+    }
+    .flex:has(.streak-card) > .wiki-card {
+        grid-column: span 2;
+    }
+}
+
+/* === Small phone (≤480px) === */
+@media (max-width: 480px) {
+    /* Wiki "Coming Soon" ít giá trị, ẩn để giảm scroll */
+    .wiki-card {
+        display: none;
+    }
+
+    /* Card padding rất gọn */
+    .progress-widget,
+    .status-section,
+    .chart-section,
+    .dashboard-card {
+        padding: 14px;
+        border-radius: var(--radius-md);
+    }
+
+    /* Today số calo to & rõ */
+    .progress-value span {
+        font-size: 2em;
+        line-height: 1.1;
+    }
+
+    /* Status section compact */
+    .status-bg-icon {
+        font-size: 3rem;
+        opacity: 0.08;
+    }
+
+    /* Bớt chiều cao chart hơn nữa */
+    .chart-container-wrapper {
+        height: 180px;
+    }
+    .doughnut-container {
+        max-height: 200px;
+    }
+
+    /* Demo banner xếp dọc */
+    .demo-banner {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 12px;
+    }
+    .demo-banner p {
+        font-size: 0.9rem;
+    }
+}
+
+/* === Intake page mobile === */
+@media (max-width: 900px) {
+    .dashboard-content {
+        margin-top: 12px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 12px 90px !important;
+    }
+
+    .intake-container,
+    .history-container,
+    .calculator-container {
+        gap: 12px !important;
+    }
+
+    /* Intake page: form lớn, dễ tap */
+    .intake-form-card,
+    .intake-list-card,
+    .filter-card,
+    .calc-form-card {
+        padding: 18px !important;
+    }
+
+    /* Submit button full-width và đủ to (≥48px touch target) */
+    .btn-submit,
+    .btn-calculate,
+    .btn-action {
+        min-height: 48px;
+        font-size: 1rem;
     }
 }

@@ -14,4 +14,5 @@
 <link rel="stylesheet" href="<?= BASE_URL ?>css/components/header.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>css/components/footer.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>css/components/sidebar.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>css/components/fab.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>css/components/cookie-banner.css">
