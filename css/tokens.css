@@ -181,5 +181,6 @@
     --shadow: var(--shadow-sm);
     --shadow-soft: var(--shadow-lg);
     --brand-gradient: var(--gradient-primary);
+    --primary-gradient: var(--gradient-primary);
     --streak-gradient: var(--gradient-streak);
 }

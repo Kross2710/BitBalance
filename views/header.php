@@ -31,10 +31,10 @@ if ($isLoggedIn) {
                         class="nav-item <?php echo ($activeHeader == 'dashboard') ? 'active' : ''; ?>">Dashboard</a>
                     <a href="<?= BASE_URL ?>products.php"
                         class="nav-item <?php echo ($activeHeader == 'products') ? 'active' : ''; ?>">Products</a>
-                    <a href="<?= BASE_URL ?>about.php"
-                        class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>">About</a>
                     <a href="<?= BASE_URL ?>forum.php"
                         class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>">Forums</a>
+                    <a href="<?= BASE_URL ?>about.php"
+                        class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>">About</a>
                 </div>
 
                 <div class="user-actions">
