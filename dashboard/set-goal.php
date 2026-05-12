@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Set My Calorie Goal</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -69,13 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </html>
 
 <style>
-body {
-    background-color: var(--bg-card, #ffffff);
-    color: var(--text-main, #212529);
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 html {
     background-color: #f8f9fa;
 }

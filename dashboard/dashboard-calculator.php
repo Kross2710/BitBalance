@@ -22,9 +22,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculator | BitBalance</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css">
-    <link rel="stylesheet" href="../css/themes/global.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/dashboard.css">
     
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
@@ -263,21 +262,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 </html>
 
 <style>
-    /* 1. LAYOUT & VARS (chỉ giữ biến cục bộ, KHÔNG override --bg-body để đồng bộ nền giữa các trang dashboard) */
-    :root {
-        --text-primary: #2c3e50;
-        --text-secondary: #6c757d;
-        --primary-color: #4a7ee3;
-        --border-radius: 16px;
-        --shadow-soft: 0 4px 20px rgba(0,0,0,0.03);
-    }
-
-    [data-theme="dark"] {
-        --text-primary: #ffffff;
-        --text-secondary: #adb5bd;
-    }
-
-    body { background: var(--bg-card); color: var(--text-primary); }
+    /* Page-specific layout — colors/typography từ tokens chung */
 
     .dashboard-content {
         margin-top: 20px;

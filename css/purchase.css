@@ -12,7 +12,7 @@ body {
     max-width: 1000px;
     margin: 40px auto;
     padding: 20px;
-    background: #fff;
+    background: var(--color-surface);
     border-radius: 8px;
     box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
   }

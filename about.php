@@ -19,32 +19,18 @@ $activeHeader = 'about';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About BitBalance</title>
 
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/themes/global.css">
-    <link rel="stylesheet" href="css/themes/header.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 
     <style>
-        /* 1. VARIABLES & RESET */
+        /* 1. PAGE-SPECIFIC VARIABLES (dùng tokens chung, chỉ thêm biến riêng) */
         :root {
-            --bg-body: #f8f9fb;
-            --text-primary: #1a1a1a;
-            --text-secondary: #6c757d;
-            --card-bg: #ffffff;
-            --primary-gradient: linear-gradient(135deg, #4a7ee3, #764ba2);
             --accent-green: #38ef7d;
             --accent-orange: #ff9966;
-            --border-radius: 24px;
-            --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.04);
             --border-light: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         [data-theme="dark"] {
-            --bg-body: #111111;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --card-bg: #1e1e1e;
-            --shadow-soft: none;
             --border-light: 1px solid rgba(255, 255, 255, 0.1);
         }
 

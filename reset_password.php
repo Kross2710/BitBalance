@@ -171,41 +171,15 @@ function hashPassword($password) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - BitBalance</title>
-    <link rel="stylesheet" href="css/style.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
     <style>
-        /* Light Theme Variables */
-        :root {
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #212529;
-            --text-muted: #6c757d;
-            --border-color: #e9ecef;
-            --primary-color: #4a7ee3;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        
-        /* Dark Theme Variables */
-        [data-theme="dark"] {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #ffffff;
-            --text-muted: #adb5bd;
-            --border-color: #495057;
-            --primary-color: #4a7ee3;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        
+        /* Page-specific layout (dùng tokens chung từ tokens.css) */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-color);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            color: var(--text-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .reset-container {

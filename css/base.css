@@ -1,0 +1,105 @@
+/* =========================================================================
+   BASE — Reset, root element, typography. Load AFTER tokens.css.
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: var(--font-family-sans);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: var(--line-height-base);
+    min-height: 100vh;
+    transition:
+        background-color var(--transition-base),
+        color var(--transition-base);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--color-text);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+p {
+    color: var(--color-text);
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--color-primary-hover);
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* --- Utility classes --- */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-muted { color: var(--color-text-muted); }
+
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* --- Toast / notification (was .cart-added-animation) --- */
+.cart-added-animation {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--color-success);
+    color: var(--color-text-on-primary);
+    padding: 15px 25px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    z-index: var(--z-toast);
+    opacity: 0;
+    transform: translateY(-30px);
+    transition:
+        opacity var(--transition-slow),
+        transform var(--transition-slow);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cart-added-animation.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cart-added-animation::before {
+    content: '\f00c';
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}

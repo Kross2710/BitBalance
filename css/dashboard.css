@@ -527,7 +527,7 @@ table.meals-table {
 
 /* 3. Hộp thống kê (Cái hộp màu trắng ở giữa) */
 .streak-card .streak-stats {
-    background: #ffffff !important;
+    background: var(--color-surface) !important;
     /* Nền trắng tuyệt đối */
     border-radius: 12px;
     padding: 15px 10px;
@@ -566,7 +566,7 @@ table.meals-table {
 
 /* Đường kẻ giữa 2 số */
 .streak-card .stat-divider {
-    background-color: #eeeeee !important;
+    background-color: var(--color-surface-alt) !important;
     /* Màu xám nhạt */
     width: 2px;
 }
@@ -622,7 +622,7 @@ table.meals-table {
 }
 
 .progress-widget .progress-fill {
-    background-color: #ffffff !important;
+    background-color: var(--color-surface) !important;
     /* Thanh chạy màu trắng */
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
 }
@@ -634,7 +634,7 @@ table.meals-table {
     /* Để định vị icon nền */
     overflow: hidden;
     /* Cắt phần icon nền bị thừa ra ngoài */
-    background: #ffffff;
+    background: var(--color-surface);
     border: none;
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -690,17 +690,17 @@ table.meals-table {
 }
 
 .badge-blue {
-    background: #e3f2fd;
+    background: var(--color-info-bg);
     color: #1976d2;
 }
 
 .badge-gold {
-    background: #fff8e1;
+    background: var(--color-warning-bg);
     color: #fbc02d;
 }
 
 .badge-gray {
-    background: #f5f5f5;
+    background: var(--color-surface-alt);
     color: #616161;
 }
 
@@ -775,12 +775,12 @@ table.meals-table {
 }
 
 .alert-box.error {
-    background: #ffebee;
+    background: var(--color-danger-bg);
     color: #d32f2f;
 }
 
 .alert-box.success {
-    background: #e8f5e9;
+    background: var(--color-success-bg);
     color: #388e3c;
 }
 
@@ -788,7 +788,7 @@ table.meals-table {
 
 .history-card {
     /* Nền trắng, bo góc, bóng đổ êm */
-    background: #ffffff;
+    background: var(--color-surface);
     border: none;
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -807,7 +807,7 @@ table.meals-table {
 
 .history-card h4 {
     margin: 0;
-    color: #2c3e50;
+    color: var(--color-text);
     font-size: 1.1rem;
     font-weight: 700;
     display: flex;
@@ -822,7 +822,7 @@ table.meals-table {
 
 /* Badge hiển thị số trung bình */
 .chart-average-badge {
-    background: #f0f9ff;
+    background: var(--color-info-bg);
     /* Nền xanh siêu nhạt */
     color: #0288d1;
     /* Chữ xanh đậm */
@@ -854,7 +854,7 @@ table.meals-table {
 /* --- MEALS CARD STYLING --- */
 
 .meals-card {
-    background: #ffffff;
+    background: var(--color-surface);
     border: none;
     border-radius: 16px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -868,7 +868,7 @@ table.meals-table {
 /* Header */
 .card-header h4 {
     margin: 0 0 20px 0;
-    color: #2c3e50;
+    color: var(--color-text);
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -899,7 +899,7 @@ table.meals-table {
     display: block;
     font-size: 1.8rem;
     font-weight: 800;
-    color: #2c3e50;
+    color: var(--color-text);
     line-height: 1;
 }
 
@@ -927,7 +927,7 @@ table.meals-table {
 }
 
 .meal-list-container::-webkit-scrollbar-thumb {
-    background: #eee;
+    background: var(--color-border);
     border-radius: 4px;
 }
 
@@ -937,7 +937,7 @@ table.meals-table {
     align-items: center;
     padding: 10px;
     border-radius: 12px;
-    background-color: #f8f9fa;
+    background-color: var(--color-surface-alt);
     /* Màu nền xám siêu nhạt */
     transition: transform 0.2s ease, background-color 0.2s;
 }
@@ -970,7 +970,7 @@ table.meals-table {
 
 .meal-name {
     font-weight: 600;
-    color: #333;
+    color: var(--color-text);
     font-size: 0.95rem;
 }
 
@@ -984,7 +984,7 @@ table.meals-table {
 /* Số Calo bên phải */
 .meal-calories {
     text-align: right;
-    color: #2c3e50;
+    color: var(--color-text);
 }
 
 .meal-calories .cal-val {
@@ -1108,7 +1108,7 @@ table.meals-table {
 /* --- MACRO / NUTRITION TARGETS STYLING --- */
 
 .macro-card {
-    background: #ffffff;
+    background: var(--color-surface);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -1129,7 +1129,7 @@ table.meals-table {
 
 .macro-header h3 {
     margin: 0;
-    color: #2c3e50;
+    color: var(--color-text);
     font-size: 1.1rem;
     font-weight: 700;
 }
@@ -1147,7 +1147,7 @@ table.meals-table {
 /* --- WEIGHT CARD STYLING --- */
 
 .weight-card {
-    background: #ffffff;
+    background: var(--color-surface);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
@@ -1207,19 +1207,19 @@ table.meals-table {
 }
 
 .trend-badge.down {
-    background: #e8f5e9;
+    background: var(--color-success-bg);
     color: #2ecc71;
 }
 
 /* Giảm cân = Xanh (Tốt) */
 .trend-badge.up {
-    background: #ffebee;
+    background: var(--color-danger-bg);
     color: #e74c3c;
 }
 
 /* Tăng cân = Đỏ */
 .trend-badge.flat {
-    background: #f5f5f5;
+    background: var(--color-surface-alt);
     color: #999;
 }
 
@@ -1265,7 +1265,7 @@ table.meals-table {
 }
 
 .btn-delete-icon:hover {
-    background: #ffebee;
+    background: var(--color-danger-bg);
 }
 
 /* Scrollbar cho list history nếu dài quá */
@@ -1286,7 +1286,7 @@ table.meals-table {
 }
 
 .btn-secondary:hover {
-    background: #f8f9fa;
+    background: var(--color-surface-alt);
     color: var(--primary-color);
     transform: none;
     /* Không xoay như nút + */
@@ -1509,7 +1509,7 @@ table.meals-table {
     border: 2px solid #e1e4e8;
     border-radius: 16px;
     /* Bo góc tròn trịa */
-    background-color: #f8f9fa;
+    background-color: var(--color-surface-alt);
     /* Nền xám nhẹ để nổi bật trên nền trắng Modal */
 
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -1520,7 +1520,7 @@ table.meals-table {
 /* Hiệu ứng khi bấm vào nhập (Focus) */
 .input-wrapper-lg input:focus {
     border-color: var(--primary-color);
-    background-color: #ffffff;
+    background-color: var(--color-surface);
     box-shadow: 0 0 0 5px rgba(74, 126, 227, 0.15);
     /* Vòng sáng lan tỏa */
     outline: none;
@@ -1563,7 +1563,7 @@ table.meals-table {
 
 /* --- AI Nutrition Card Styles --- */
 .nutri-card {
-    background: #f8f9fa;
+    background: var(--color-surface-alt);
     border: 1px solid #e1e4e8;
     border-radius: 12px;
     padding: 12px;
@@ -1608,19 +1608,19 @@ table.meals-table {
 }
 
 .macro.p {
-    background: #ffebee;
+    background: var(--color-danger-bg);
     color: #c62828;
 }
 
 /* Protein Red */
 .macro.c {
-    background: #e3f2fd;
+    background: var(--color-info-bg);
     color: #1565c0;
 }
 
 /* Carb Blue */
 .macro.f {
-    background: #fff3e0;
+    background: var(--color-warning-bg);
     color: #ef6c00;
 }
 
@@ -1665,7 +1665,7 @@ table.meals-table {
 
 /* 1. Nút Edit (Desktop Default) */
 .btn-edit {
-    background: #e3f2fd;
+    background: var(--color-info-bg);
     /* Nền xanh siêu nhạt */
     color: #1976d2;
     /* Icon xanh đậm */
@@ -1691,7 +1691,7 @@ table.meals-table {
 
 /* Nút Delete (Tinh chỉnh lại chút cho đồng bộ) */
 .btn-delete {
-    background: #ffebee;
+    background: var(--color-danger-bg);
     color: #ef5350;
     border: none;
     width: 32px;
@@ -1789,7 +1789,7 @@ table.meals-table {
 
 /* 1. Nút Edit (Desktop Default) */
 .btn-edit {
-    background: #e3f2fd;
+    background: var(--color-info-bg);
     /* Nền xanh siêu nhạt */
     color: #1976d2;
     /* Icon xanh đậm */
@@ -1815,7 +1815,7 @@ table.meals-table {
 
 /* Nút Delete (Tinh chỉnh lại chút cho đồng bộ) */
 .btn-delete {
-    background: #ffebee;
+    background: var(--color-danger-bg);
     color: #ef5350;
     border: none;
     width: 32px;
@@ -2234,7 +2234,7 @@ table.meals-table {
 
 /* Nutrition Card Style */
 .nutri-card {
-    background: #f8f9fa;
+    background: var(--color-surface-alt);
     border: 1px solid #e1e4e8;
     border-radius: 12px;
     padding: 12px;
@@ -2427,7 +2427,7 @@ table.meals-table {
 
 /* --- Nút Edit (Xanh dương) --- */
 .btn-edit {
-    background-color: #e3f2fd;
+    background-color: var(--color-info-bg);
     color: #1976d2;
 }
 .btn-edit:hover {
@@ -2437,7 +2437,7 @@ table.meals-table {
 
 /* --- Nút Delete (Đỏ) --- */
 .btn-delete {
-    background-color: #ffebee;
+    background-color: var(--color-danger-bg);
     color: #ef5350;
 }
 .btn-delete:hover {

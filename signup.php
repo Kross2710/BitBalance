@@ -17,8 +17,8 @@ if ($isLoggedIn) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - BitBalance</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/login.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/login.css">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
     <style>
         .form-row {
