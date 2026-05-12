@@ -138,9 +138,9 @@ if (
     <meta charset="UTF-8">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <title>Final Step - BitBalance</title>
-    <link rel="stylesheet" href="css/products.css">
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/purchase.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/products.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/purchase.css">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
     <style>
         .input-error {

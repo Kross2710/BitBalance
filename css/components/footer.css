@@ -1,0 +1,71 @@
+/* =========================================================================
+   FOOTER — Bottom-of-page footer. Extracted from views/footer.php.
+   ========================================================================= */
+
+.dashboard-footer {
+    text-align: center;
+    transition: all var(--transition-base);
+    padding: 20px;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboard-footer p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.dashboard-footer a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    transition: color var(--transition-fast);
+    position: relative;
+}
+
+.dashboard-footer a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--color-primary);
+    transition: width var(--transition-base);
+}
+
+.dashboard-footer a:hover {
+    color: var(--color-primary);
+}
+
+.dashboard-footer a:hover::after {
+    width: 100%;
+}
+
+.link-icon {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    opacity: 0.8;
+}
+
+@media (max-width: 900px) {
+    .dashboard-footer {
+        margin-left: 0;
+        margin-right: 0;
+        padding-bottom: 80px;
+    }
+}

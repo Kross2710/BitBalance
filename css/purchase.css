@@ -2,8 +2,8 @@
 /* Reset and base */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f9fafb;
-    color: #333;
+    background-color: var(--bg-card, #ffffff);
+    color: var(--text-main, #333);
     margin: 0;
     padding: 0;
   }
@@ -12,7 +12,7 @@ body {
     max-width: 1000px;
     margin: 40px auto;
     padding: 20px;
-    background: #fff;
+    background: var(--color-surface);
     border-radius: 8px;
     box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
   }

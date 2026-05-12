@@ -43,8 +43,8 @@ $isLoggedIn = isset($_SESSION['user']);
 <head>
     <meta charset="UTF-8">
     <title>Forum | BitBalance</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/forum.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/forum.css">
     <style>
         
         .forum-container {

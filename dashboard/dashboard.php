@@ -102,11 +102,8 @@ if ($isLoggedIn) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BitBalance Dashboard</title>
-    <link rel="stylesheet" href="../css/themes/global.css">
-    <link rel="stylesheet" href="../css/themes/header.css">
-    <link rel="stylesheet" href="../css/themes/dashboard.css">
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/dashboard.css?v=<?php echo time(); ?>">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/dashboard.css?v=<?php echo time(); ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>

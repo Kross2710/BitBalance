@@ -1,223 +1,28 @@
-/* =========================================
-   1. CSS VARIABLES & THEME CONFIGURATION
-   ========================================= */
-:root {
-    /* Light Theme (Default) */
-    --bg-body: #f4f4f4;
-    --bg-card: #ffffff;
-    --bg-hover: #f1f7ff;
+/* =========================================================================
+   style.css — Backward-compat shim.
+   The contents (reset, tokens, body, forms, etc.) have moved to:
+     - css/tokens.css        (design tokens, dark mode)
+     - css/base.css          (reset, body, typography, utilities)
+     - css/components/forms.css   (inputs, buttons, alerts)
+     - css/components/*.css       (header, footer, sidebar, cookie-banner)
+   New pages should load tokens + base + components directly. This file is
+   kept so legacy <link href="css/style.css"> references still resolve.
+   ========================================================================= */
 
-    --text-main: #333333;
-    --text-secondary: #555555;
-    --text-muted: #999999;
+@import url("tokens.css");
+@import url("base.css");
+@import url("components/forms.css");
 
-    --border-color: #e1e4e8;
-    --border-radius: 10px;
-
-    --primary-color: #4a7ee3;
-    --primary-hover: #3a5bb3;
-
-    --success-color: #388e3c;
-    --success-bg: #e8f5e9;
-    --success-border: #81c784;
-
-    --error-color: #d32f2f;
-    --error-bg: #ffebee;
-    --error-border: #e57373;
-
-    --progress-bg: #e6e6e6;
-    --progress-fill: #eba434;
-
-    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-/* Dark Theme Override */
-[data-theme="dark"] {
-    --bg-body: #1a1a1a;
-    --bg-card: #2d2d2d;
-    --bg-hover: #3d3d3d;
-
-    --text-main: #ffffff;
-    --text-secondary: #cccccc;
-    --text-muted: #888888;
-
-    --border-color: #404040;
-
-    --primary-color: #4a7ee3;
-    --primary-hover: #5b8af0;
-
-    --success-color: #66bb6a;
-    --success-bg: #1e3a20;
-    --success-border: #2e5c31;
-
-    --error-color: #ef5350;
-    --error-bg: #3e2020;
-    --error-border: #5c2b2b;
-
-    --progress-bg: #404040;
-    --shadow-sm: none;
-}
-
-/* =========================================
-   2. GLOBAL RESET & TYPOGRAPHY
-   ========================================= */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--bg-body);
-    color: var(--text-primary);
-    line-height: 1.6;
-    min-height: 100vh;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary);
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 1rem;
-}
-
-a {
-    text-decoration: none;
-    color: var(--primary-color);
-    transition: color 0.2s ease;
-}
-
-a:hover {
-    color: var(--primary-hover);
-}
-
-ul {
-    list-style: none;
-}
-
-/* =========================================
-   3. FORMS & INPUTS (Global Style)
-   ========================================= */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="date"],
-select,
-textarea {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background-color: var(--card-bg);
-    color: var(--text-primary);
-    font-size: 1rem;
-    transition: all 0.2s ease;
-    appearance: none; /* Remove default browser styling */
-}
-
-input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(74, 126, 227, 0.1);
-}
-
-/* Hide number input spinners */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-input[type="number"] {
-    -moz-appearance: textfield;
-}
-
-/* Custom Select Arrow */
-select {
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%236c757d" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px;
-}
-
-/* Button Styles */
-button, .btn {
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: #fff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 50px; /* Pill shape */
-    font-weight: 600;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba(74, 126, 227, 0.2);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(74, 126, 227, 0.3);
-}
-
-/* =========================================
-   5. NOTIFICATIONS & UTILITIES
-   ========================================= */
-.cart-added-animation {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--success-color);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    z-index: 9999;
-    opacity: 0;
-    transform: translateY(-30px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.cart-added-animation.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.cart-added-animation::before {
-    content: '\f00c'; /* FontAwesome Check Icon */
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
-}
-
-/* Utility Classes */
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.mt-20 { margin-top: 20px; }
-.mb-20 { margin-bottom: 20px; }
-
-/* =========================================
-   6. RESPONSIVE DESIGN
-   ========================================= */
+/* --- Legacy responsive helpers that some old pages still rely on --- */
 @media (max-width: 900px) {
     main.index {
         padding: 40px 20px;
     }
-    
+
     .index h1 {
         font-size: 2.5rem;
     }
-    
+
     .content {
         gap: 20px;
     }
@@ -227,11 +32,11 @@ button, .btn {
     .content {
         grid-template-columns: 1fr;
     }
-    
+
     .box {
         padding: 20px;
     }
-    
+
     .get-started {
         width: 100%;
     }

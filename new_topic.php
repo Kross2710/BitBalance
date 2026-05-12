@@ -49,38 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Create New Discussion | BitBalance</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/forum.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/forum.css">
     <style>
+        /* Page-specific extras (dùng tokens chung; chỉ giữ override nếu cần) */
         :root {
-            --bg-color: #ffffff;
-            --card-bg: #ffffff;
-            --text-color: #212529;
-            --text-muted: #6c757d;
-            --border-color: #ddd;
-            --primary-color: #007bff;
-            --primary-hover: #0056b3;
-            --shadow: 0 2px 8px rgba(0,0,0,0.1);
-            --error-color: #dc3545;
+            --input-bg: var(--color-surface);
         }
-
         [data-theme="dark"] {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #ffffff;
-            --text-muted: #adb5bd;
-            --border-color: #495057;
-            --primary-color: #4a7ee3;
-            --primary-hover: #3d6ac7;
-            --shadow: 0 4px 16px rgba(0,0,0,0.4);
-            --error-color: #ff6b6b;
-            --input-bg: #1e1e1e;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: all 0.3s ease;
+            --input-bg: var(--color-surface-alt);
         }
 
         [data-theme="dark"] header {

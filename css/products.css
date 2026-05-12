@@ -2,9 +2,9 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #f4f4f4;
+  background-color: var(--bg-card, #ffffff);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
+  color: var(--text-main, #333);
 }
 
 h1 {
@@ -33,7 +33,7 @@ h1 {
 
 /* Product card */
 .product {
-  background-color: #fff;
+  background-color: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

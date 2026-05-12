@@ -89,7 +89,7 @@ th {
     margin-top: 20px;
     padding: 8px 18px;
     border: 1px solid #234a9c;
-    background: #fff;
+    background: var(--color-surface);
     color: #234a9c;
     border-radius: 4px;
     cursor: pointer;

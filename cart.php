@@ -91,8 +91,8 @@ $grand_total = $subtotal + $shipping + $tax;
 <head>
     <meta charset="UTF-8">
     <title>My Cart - BitBalance</title>
-    <link rel="stylesheet" href="css/cart.css">
-    <link rel="stylesheet" href="css/style.css">
+    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/cart.css">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
@@ -207,16 +207,7 @@ $grand_total = $subtotal + $shipping + $tax;
 </script>
 
 <style>
-    /* Dark Mode Styles for Cart Page */
-    [data-theme="dark"] body {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] main {
-        background-color: #1a1a1a !important;
-        color: #ffffff !important;
-    }
+    /* Dark mode overrides for cart-specific elements (body/main đã được tokens handle) */
 
     [data-theme="dark"] .cart-title {
         color: #ffffff !important;
