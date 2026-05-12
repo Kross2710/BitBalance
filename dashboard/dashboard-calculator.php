@@ -263,25 +263,21 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 </html>
 
 <style>
-    /* 1. LAYOUT & VARS */
+    /* 1. LAYOUT & VARS (chỉ giữ biến cục bộ, KHÔNG override --bg-body để đồng bộ nền giữa các trang dashboard) */
     :root {
-        --bg-body: #f4f6f8;
-        --card-bg: #ffffff;
         --text-primary: #2c3e50;
         --text-secondary: #6c757d;
         --primary-color: #4a7ee3;
         --border-radius: 16px;
         --shadow-soft: 0 4px 20px rgba(0,0,0,0.03);
     }
-    
+
     [data-theme="dark"] {
-        --bg-body: #1a1a1a;
-        --card-bg: #2d2d2d;
         --text-primary: #ffffff;
         --text-secondary: #adb5bd;
     }
 
-    body { background: var(--bg-body); color: var(--text-primary); }
+    body { background: var(--bg-card); color: var(--text-primary); }
 
     .dashboard-content {
         margin-top: 20px;

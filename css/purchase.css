@@ -2,8 +2,8 @@
 /* Reset and base */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f9fafb;
-    color: #333;
+    background-color: var(--bg-card, #ffffff);
+    color: var(--text-main, #333);
     margin: 0;
     padding: 0;
   }

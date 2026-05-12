@@ -70,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <style>
 body {
-    background-color: #f8f9fa;
-    color: #212529;
+    background-color: var(--bg-card, #ffffff);
+    color: var(--text-main, #212529);
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

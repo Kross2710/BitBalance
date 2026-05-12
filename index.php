@@ -30,12 +30,10 @@ if ($isLoggedIn) {
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 
     <style>
-        /* 1. VARIABLES & RESET */
+        /* 1. VARIABLES & RESET (chỉ override các biến KHÔNG có trong style.css/global.css để giữ bg đồng nhất) */
         :root {
-            --bg-body: #f8f9fb;
             --text-primary: #1a1a1a;
             --text-secondary: #6c757d;
-            --card-bg: #ffffff;
             --primary-gradient: linear-gradient(135deg, #4a7ee3, #764ba2);
             --border-radius: 24px;
             --shadow-soft: 0 10px 40px rgba(0,0,0,0.04);
@@ -43,10 +41,8 @@ if ($isLoggedIn) {
         }
 
         [data-theme="dark"] {
-            --bg-body: #111111;
             --text-primary: #ffffff;
             --text-secondary: #a0a0a0;
-            --card-bg: #1e1e1e;
             --shadow-soft: none;
             --border-light: 1px solid rgba(255,255,255,0.1);
         }
