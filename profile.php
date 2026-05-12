@@ -337,9 +337,11 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Settings | BitBalance</title>
     
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <?php
+    $pageCss = ['css/pages/profile.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/profile.css">
 </head>
 
 <body>

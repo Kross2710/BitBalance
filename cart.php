@@ -91,10 +91,11 @@ $grand_total = $subtotal + $shipping + $tax;
 <head>
     <meta charset="UTF-8">
     <title>My Cart - BitBalance</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/cart.css">
+    <?php
+    $pageCss = ['css/cart.css', 'css/pages/cart.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/cart.css">
 </head>
 
 <body>

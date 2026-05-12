@@ -30,13 +30,15 @@ if ($isLoggedIn) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Log | BitBalance</title>
 
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/dashboard.css?v=<?php echo time(); ?>">
+    <?php
+    $pageComponents = ['sidebar', 'fab'];
+    $pageCss = ['css/dashboard.css?v=' . time(), 'css/pages/dashboard-history.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/dashboard-history.css">
 </head>
 
 <body>

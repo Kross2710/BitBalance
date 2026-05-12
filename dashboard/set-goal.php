@@ -43,9 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Set My Calorie Goal</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <?php
+    $pageComponents = ['fab'];
+    $pageCss = ['css/pages/set-goal.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/set-goal.css">
 </head>
 <body>
     <?php include PROJECT_ROOT . 'views/header.php'; ?>

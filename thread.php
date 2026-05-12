@@ -61,9 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['like_comment_id'])) {
 <head>
     <meta charset="UTF-8">
     <title><?= htmlspecialchars($post['title']) ?> | BitBalance</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/forum.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/thread.css">
+    <?php
+    $pageCss = ['css/forum.css', 'css/pages/thread.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 </head>
 <body>
 <?php include 'views/header.php'; ?>

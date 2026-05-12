@@ -22,8 +22,10 @@ $activeHeader = 'products';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BitBalance</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/products.css">
+    <?php
+    $pageCss = ['css/products.css', 'css/pages/products.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -58,7 +60,6 @@ $activeHeader = 'products';
             });
         });
     </script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/products.css">
 </head>
 
 <body>
