@@ -16,10 +16,12 @@ $activeHeader = 'about';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms & Conditions | BitBalance</title>
     
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <?php
+    $pageCss = ['css/pages/terms.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/terms.css">
 </head>
 <body>
     <?php include 'views/header.php'; ?>

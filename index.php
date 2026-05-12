@@ -22,11 +22,13 @@ if ($isLoggedIn) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BitBalance - Master Your Nutrition</title>
     
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
+    <?php
+    $pageCss = ['css/pages/index.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/index.css">
 </head>
 
 <body>

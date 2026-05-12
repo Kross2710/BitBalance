@@ -49,9 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Create New Discussion | BitBalance</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/forum.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/new-topic.css">
+    <?php
+    $pageCss = ['css/forum.css', 'css/pages/new-topic.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 </head>
 <body>
 <?php include 'views/header.php'; ?>

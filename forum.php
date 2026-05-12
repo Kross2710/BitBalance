@@ -43,9 +43,10 @@ $isLoggedIn = isset($_SESSION['user']);
 <head>
     <meta charset="UTF-8">
     <title>Forum | BitBalance</title>
-    <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/forum.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/forum-list.css">
+    <?php
+    $pageCss = ['css/forum.css', 'css/pages/forum-list.css'];
+    include PROJECT_ROOT . 'views/head_css.php';
+    ?>
 </head>
 
 <body>
