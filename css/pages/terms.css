@@ -1,0 +1,206 @@
+        /* Page-specific extras (dùng tokens chung) */
+        :root {
+            --border-light: 1px solid rgba(0,0,0,0.05);
+        }
+        [data-theme="dark"] {
+            --border-light: 1px solid rgba(255,255,255,0.1);
+        }
+
+        body {
+            line-height: 1.7;
+        }
+
+        /* 2. PAGE LAYOUT */
+        .terms-wrapper {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* 3. HEADER CARD */
+        .terms-header-card {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #4a7ee3, #764ba2);
+            border-radius: 24px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(74, 126, 227, 0.3);
+        }
+
+        .terms-header-card h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .terms-header-card p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 4. CONTENT CARD */
+        .terms-content-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 50px;
+            box-shadow: var(--shadow-soft);
+            border: var(--border-light);
+        }
+
+        /* Typography within content */
+        .terms-content-card h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        [data-theme="dark"] .terms-content-card h2 {
+            border-bottom-color: rgba(255,255,255,0.1);
+        }
+
+        .terms-content-card h2 i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .terms-content-card h3 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        .terms-content-card p {
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        .terms-content-card ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+
+        .terms-content-card li {
+            margin-bottom: 8px;
+            position: relative;
+            list-style: none;
+        }
+
+        .terms-content-card li::before {
+            content: "•";
+            color: var(--primary-color);
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        /* Highlight Box */
+        .highlight-box {
+            background: rgba(74, 126, 227, 0.08);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .highlight-box p {
+            margin: 0;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Cookie Section Styling */
+        .cookie-card {
+            background: var(--bg-body);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        [data-theme="dark"] .cookie-card {
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .cookie-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .cookie-card h4 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .cookie-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        .tag-essential { background: #ffebee; color: #ef5350; }
+        .tag-analytics { background: #e3f2fd; color: #42a5f5; }
+        .tag-preference { background: #e8f5e9; color: #66bb6a; }
+
+        /* Testing Controls */
+        .dev-controls {
+            margin-top: 40px;
+            padding: 20px;
+            border: 2px dashed rgba(0,0,0,0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        [data-theme="dark"] .dev-controls {
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .btn-test {
+            background: var(--bg-body);
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-test:hover {
+            background: var(--text-secondary);
+            color: var(--card-bg);
+        }
+
+        /* Footer Info */
+        .last-updated {
+            text-align: center;
+            margin-top: 30px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .terms-content-card { padding: 30px 20px; }
+            .terms-header-card { padding: 40px 20px; border-radius: 16px; }
+            .terms-header-card h1 { font-size: 2rem; }
+        }

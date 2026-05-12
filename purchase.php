@@ -142,20 +142,7 @@ if (
     <link rel="stylesheet" href="<?= BASE_URL ?>css/products.css">
     <link rel="stylesheet" href="<?= BASE_URL ?>css/purchase.css">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <style>
-        .input-error {
-            border: 2px solid red !important;
-            background-color: #ffe6e6;
-        }
-
-        .error-message {
-            color: red;
-            font-size: 0.9em;
-            margin-top: 2px;
-            margin-bottom: 10px;
-            display: block;
-        }
-    </style>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/purchase.css">
 </head>
 
 <body>

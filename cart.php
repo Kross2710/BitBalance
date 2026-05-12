@@ -94,6 +94,7 @@ $grand_total = $subtotal + $shipping + $tax;
     <?php include PROJECT_ROOT . 'views/head_css.php'; ?>
     <link rel="stylesheet" href="<?= BASE_URL ?>css/cart.css">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/cart.css">
 </head>
 
 <body>
@@ -205,101 +206,3 @@ $grand_total = $subtotal + $shipping + $tax;
         });
     });
 </script>
-
-<style>
-    /* Dark mode overrides for cart-specific elements (body/main đã được tokens handle) */
-
-    [data-theme="dark"] .cart-title {
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] .cart-container {
-        background-color: #1a1a1a !important;
-    }
-
-    [data-theme="dark"] .cart-items {
-        background-color: #2d2d2d !important;
-        border-color: #495057 !important;
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] .cart-items p {
-        color: #adb5bd !important;
-    }
-
-    [data-theme="dark"] table {
-        background-color: #2d2d2d !important;
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] th {
-        background-color: #495057 !important;
-        color: #ffffff !important;
-        border-bottom-color: #495057 !important;
-    }
-
-    [data-theme="dark"] td {
-        border-bottom-color: #495057 !important;
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] tr:hover {
-        background-color: #495057 !important;
-    }
-
-    [data-theme="dark"] .cart-img {
-        border-color: #495057 !important;
-    }
-
-    [data-theme="dark"] select {
-        background-color: #2d2d2d !important;
-        color: #ffffff !important;
-        border-color: #495057 !important;
-    }
-
-    [data-theme="dark"] .remove-btn {
-        background-color: #dc3545 !important;
-        color: white !important;
-    }
-
-    [data-theme="dark"] .add-more-btn {
-        background-color: #6c757d !important;
-        color: white !important;
-    }
-
-    [data-theme="dark"] .add-more-btn:hover {
-        background-color: #5a6268 !important;
-    }
-
-    [data-theme="dark"] .cart-summary {
-        background-color: #2d2d2d !important;
-        border-color: #495057 !important;
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] .cart-summary h2 {
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] .summary-row {
-        color: #ffffff !important;
-        border-bottom-color: #495057 !important;
-    }
-
-    [data-theme="dark"] .summary-row span {
-        color: #ffffff !important;
-    }
-
-    [data-theme="dark"] hr {
-        border-top-color: #495057 !important;
-    }
-
-    [data-theme="dark"] .checkout-btn {
-        background-color: #4a7ee3 !important;
-        color: white !important;
-    }
-
-    [data-theme="dark"] .checkout-btn:hover {
-        background-color: #3b6bd6 !important;
-    }
-</style>

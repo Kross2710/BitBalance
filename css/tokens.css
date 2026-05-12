@@ -82,8 +82,15 @@
     --sidebar-gap: 220px;
     --z-header: 1000;
     --z-sidebar: 90;
+    --z-fab: 950;
     --z-modal: 10001;
     --z-toast: 9999;
+
+    /* --- Breakpoints (reference only — CSS can't use var() in media queries) ---
+       sm: 480px   (phone)
+       md: 768px   (small tablet)
+       lg: 900px   (tablet / sidebar collapse)
+       xl: 1200px  (desktop) */
 
     /* --- Header (translucent overlay) --- */
     --header-bg: rgba(255, 255, 255, 0.85);

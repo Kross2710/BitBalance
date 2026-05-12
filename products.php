@@ -58,46 +58,7 @@ $activeHeader = 'products';
             });
         });
     </script>
-    <style>[data-theme="dark"] .product {
-    background-color: #2d2d2d !important;
-    border: 1px solid #404040 !important;
-    color: #ffffff !important;
-}
-
-[data-theme="dark"] .product h2 {
-    color: #ffffff !important;
-}
-
-[data-theme="dark"] .product .price {
-    color: #4CAF50 !important; 
-}
-
-[data-theme="dark"] .product img {
-    background-color: #3d3d3d;
-    border-radius: 8px;
-}
-
-[data-theme="dark"] .add-to-cart {
-    background-color: #4CAF50 !important;
-    color: white !important;
-    border: none !important;
-}
-
-[data-theme="dark"] .add-to-cart:hover {
-    background-color: #45a049 !important;
-}
-
-[data-theme="dark"] .title {
-    color: #ffffff !important;
-}
-
-[data-theme="dark"] .product {
-    background-color: #1e1e1e !important;
-    border: 1px solid #333333 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-}
-        
-    </style>
+    <link rel="stylesheet" href="<?= BASE_URL ?>css/pages/products.css">
 </head>
 
 <body>
