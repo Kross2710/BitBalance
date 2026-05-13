@@ -219,3 +219,61 @@
     .btn-delete-icon:hover {
         background: #ffe5e5;
     }
+
+    /* ================================================
+       MACROS TREND (7-day stacked bar)
+       ================================================ */
+    .macros-trend-wrap {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px dashed rgba(0, 0, 0, 0.08);
+    }
+    [data-theme="dark"] .macros-trend-wrap {
+        border-top-color: rgba(255, 255, 255, 0.1);
+    }
+    .macros-trend-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .macros-trend-header h5 {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .macros-trend-legend {
+        display: flex;
+        gap: 10px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        flex-wrap: wrap;
+    }
+    .macros-trend-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .macros-trend-legend .dot,
+    .summary-list .dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #999;
+    }
+    .macros-trend-legend .dot.p,
+    .summary-list .dot.p { background: #e74c3c; }
+    .macros-trend-legend .dot.c,
+    .summary-list .dot.c { background: #f1c40f; }
+    .macros-trend-legend .dot.f,
+    .summary-list .dot.f { background: #3498db; }
+    .macros-trend-canvas {
+        height: 180px !important;
+    }

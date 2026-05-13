@@ -293,15 +293,19 @@
         border-color: #404040;
     }
 
-    /* 7. RESPONSIVE DESIGN
-       Note: .dashboard-content margins ở 1200px đã handle trong css/dashboard.css. */
-    @media (max-width: 1200px) {
+    /* 7. RESPONSIVE DESIGN */
+    @media (min-width: 901px) and (max-width: 1200px) {
+        /* dashboard.css's @media @1200 sets margin-right:20px but appears BEFORE
+           the base rule at line 1778, so source order loses. Reassert here. */
+        .dashboard-content {
+            margin-right: 20px;
+            width: auto;
+        }
+
         /* Khi không gian hẹp, content-split chuyển 1 cột */
         .content-split {
             grid-template-columns: 1fr;
         }
-
-        /* Form lên trên, bảng xuống dưới */
     }
 
     @media (max-width: 768px) {
@@ -360,5 +364,176 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+    }
+
+    /* ================================================
+       MACROS WIDGET — mirrors Intake Breakdown style
+       (.meals-card + .doughnut-container come from dashboard.css)
+       ================================================ */
+    .macros-widget.meals-card {
+        min-height: 0;
+    }
+    .macros-widget .doughnut-container {
+        margin-bottom: 20px;
+    }
+    .macro-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .macro-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background-color: var(--color-surface-alt, var(--bg-body));
+        transition: transform 0.2s ease, background-color 0.2s;
+    }
+    .macro-item:hover {
+        transform: translateX(4px);
+    }
+    .macro-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    .macro-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
+    .macro-info-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+    }
+    .macro-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+    .macro-numbers {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+    }
+    .macro-numbers strong { font-weight: 700; }
+    .macro-numbers small {
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        margin-left: 2px;
+    }
+    .macro-track {
+        background: rgba(0, 0, 0, 0.07);
+        height: 6px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .macro-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease-out;
+    }
+    .macro-fill-p { background: #e74c3c; }
+    .macro-fill-c { background: #f1c40f; }
+    .macro-fill-f { background: #3498db; }
+
+    .macros-hint-empty {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin: 8px 0 0 0;
+        padding: 8px;
+    }
+
+    [data-theme="dark"] .macro-item {
+        background-color: rgba(255, 255, 255, 0.04);
+    }
+    [data-theme="dark"] .macro-track {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* ================================================
+       MACROS FORM INPUT (3 ô P/C/F)
+       ================================================ */
+    .macros-input-group .macros-input-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    .macros-input-label small {
+        font-weight: 400;
+        opacity: 0.8;
+    }
+    .macros-input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+    }
+    .macro-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .macro-input > label {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 700;
+        font-size: 0.85rem;
+        pointer-events: none;
+        color: #fff;
+        background: #999;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+    .macro-input.p > label { background: #e74c3c; }
+    .macro-input.c > label { background: #f1c40f; color: #5b4400; }
+    .macro-input.f > label { background: #3498db; }
+    .intake-form-card .macro-input input {
+        padding-left: 40px !important;
+    }
+
+    /* ================================================
+       MACRO CHIPS (table cells)
+       ================================================ */
+    .macros-cell {
+        white-space: nowrap;
+    }
+    .macro-chip {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 10px;
+        margin-right: 3px;
+        line-height: 1.4;
+        color: #fff;
+    }
+    .macro-chip.p { background: #e74c3c; }
+    .macro-chip.c { background: #f1c40f; color: #5b4400; }
+    .macro-chip.f { background: #3498db; }
+
+    @media (max-width: 768px) {
+        .macros-cell {
+            white-space: normal;
         }
     }

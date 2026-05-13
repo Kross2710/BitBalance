@@ -85,6 +85,75 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     </div>
                 </section>
 
+                <?php
+                $macros = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+                $mGoals = $macroGoals  ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+                $macroDefs = [
+                    'protein' => ['label' => 'Protein', 'class' => 'p', 'icon' => 'fa-drumstick-bite', 'color' => '#e74c3c'],
+                    'carbs'   => ['label' => 'Carbs',   'class' => 'c', 'icon' => 'fa-bread-slice',    'color' => '#f1c40f'],
+                    'fat'     => ['label' => 'Fat',     'class' => 'f', 'icon' => 'fa-cheese',         'color' => '#3498db'],
+                ];
+                ?>
+                <section class="macros-widget meals-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-pie"></i> Macros Today</h4>
+                    </div>
+
+                    <div class="doughnut-container">
+                        <canvas id="macrosDonut"></canvas>
+                        <div class="doughnut-center-text">
+                            <span class="center-val" id="donutKcalLabel">0</span>
+                            <span class="center-label">grams</span>
+                        </div>
+                    </div>
+
+                    <div class="macro-list-container">
+                        <?php foreach ($macroDefs as $key => $def):
+                            $cur = (float) ($macros[$key] ?? 0);
+                            $goal = (int) ($mGoals[$key] ?? 0);
+                            $pct = $goal > 0 ? min(100, round($cur / $goal * 100)) : 0;
+                            $curDisp = rtrim(rtrim(number_format($cur, 1, '.', ''), '0'), '.');
+                            if ($curDisp === '') $curDisp = '0';
+                        ?>
+                        <div class="macro-item">
+                            <div class="macro-icon-box"
+                                 style="background-color: <?= $def['color'] ?>20; color: <?= $def['color'] ?>;">
+                                <i class="fas <?= $def['icon'] ?>"></i>
+                            </div>
+                            <div class="macro-info">
+                                <div class="macro-info-top">
+                                    <span class="macro-name"><?= $def['label'] ?></span>
+                                    <span class="macro-numbers">
+                                        <strong id="macroVal_<?= $key ?>"><?= $curDisp ?></strong>g
+                                        <small>/ <span id="macroGoal_<?= $key ?>"><?= $goal ?: '–' ?></span>g</small>
+                                    </span>
+                                </div>
+                                <div class="macro-track">
+                                    <div class="macro-fill macro-fill-<?= $def['class'] ?>"
+                                         id="macroFill_<?= $key ?>" style="width: <?= $pct ?>%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+
+                        <?php if (!$userGoal): ?>
+                            <p class="macros-hint-empty">
+                                <i class="fas fa-info-circle"></i>
+                                Set a calorie goal to see daily macro targets.
+                            </p>
+                        <?php endif; ?>
+                    </div>
+                </section>
+
+                <script>
+                    // Initial macro values for donut (grams)
+                    window.__macroState = {
+                        protein: <?= json_encode((float) ($macros['protein'] ?? 0)) ?>,
+                        carbs:   <?= json_encode((float) ($macros['carbs']   ?? 0)) ?>,
+                        fat:     <?= json_encode((float) ($macros['fat']     ?? 0)) ?>,
+                    };
+                </script>
+
                 <div class="content-split">
                     <section class="intake-form-card">
                         <div class="card-header">
@@ -131,6 +200,24 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 </div>
                             </div>
 
+                            <div class="form-group macros-input-group">
+                                <label class="macros-input-label">Macros <small>(grams, optional)</small></label>
+                                <div class="macros-input-row">
+                                    <div class="macro-input p">
+                                        <label for="protein" title="Protein (g)">P</label>
+                                        <input type="number" id="protein" name="protein" min="0" max="999" step="0.1" placeholder="0">
+                                    </div>
+                                    <div class="macro-input c">
+                                        <label for="carbs" title="Carbs (g)">C</label>
+                                        <input type="number" id="carbs" name="carbs" min="0" max="999" step="0.1" placeholder="0">
+                                    </div>
+                                    <div class="macro-input f">
+                                        <label for="fat" title="Fat (g)">F</label>
+                                        <input type="number" id="fat" name="fat" min="0" max="999" step="0.1" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="meal_category">Category</label>
                                 <div class="select-wrapper">
@@ -172,6 +259,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                     <tr>
                                         <th>Food Item</th>
                                         <th>Calories</th>
+                                        <th>Macros (g)</th>
                                         <th>Category</th>
                                         <th>Time</th>
                                         <th style="text-align: right;">Action</th>
@@ -180,19 +268,34 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <tbody id="intakeTableBody">
                                     <?php if (empty($intakeLog)): ?>
                                         <tr id="noIntakeRow">
-                                            <td colspan="5" class="empty-state">
+                                            <td colspan="6" class="empty-state">
                                                 <i class="fas fa-drumstick-bite"></i> No food logged yet today.
                                             </td>
                                         </tr>
                                     <?php endif; ?>
 
-                                    <?php foreach ($intakeLog as $log): ?>
-                                        <tr data-id="<?= $log['intakeLog_id']; ?>">
+                                    <?php foreach ($intakeLog as $log):
+                                        $p = (float) ($log['protein'] ?? 0);
+                                        $c = (float) ($log['carbs']   ?? 0);
+                                        $f = (float) ($log['fat']     ?? 0);
+                                        $pD = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.'); if ($pD === '') $pD = '0';
+                                        $cD = rtrim(rtrim(number_format($c, 1, '.', ''), '0'), '.'); if ($cD === '') $cD = '0';
+                                        $fD = rtrim(rtrim(number_format($f, 1, '.', ''), '0'), '.'); if ($fD === '') $fD = '0';
+                                    ?>
+                                        <tr data-id="<?= $log['intakeLog_id']; ?>"
+                                            data-protein="<?= htmlspecialchars($pD); ?>"
+                                            data-carbs="<?= htmlspecialchars($cD); ?>"
+                                            data-fat="<?= htmlspecialchars($fD); ?>">
                                             <td data-label="Food" class="fw-bold">
                                                 <?= htmlspecialchars($log['food_item']); ?>
                                             </td>
                                             <td data-label="Calories" class="text-primary">
                                                 <?= htmlspecialchars($log['calories']); ?> kcal
+                                            </td>
+                                            <td data-label="Macros" class="macros-cell">
+                                                <span class="macro-chip p">P <?= $pD ?>g</span>
+                                                <span class="macro-chip c">C <?= $cD ?>g</span>
+                                                <span class="macro-chip f">F <?= $fD ?>g</span>
                                             </td>
                                             <td data-label="Category">
                                                 <span class="cat-badge cat-<?= strtolower($log['meal_category']); ?>">
@@ -439,6 +542,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         if (info.food_name === null) {
                             addMessage("I couldn't identify any food. Please try again.", 'bot');
                         } else {
+                            const safeName = String(info.food_name).replace(/'/g, "\\'");
                             const cardHtml = `
                         <div class="nutri-card">
                             <div class="nutri-header">
@@ -451,7 +555,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <span class="macro f">F: ${info.fat}g</span>
                             </div>
                             <p class="nutri-advice">${info.short_advice}</p>
-                            <button class="btn-add-log" onclick="autoLogFood('${info.food_name}', ${info.calories})">
+                            <button class="btn-add-log" onclick="autoLogFood('${safeName}', ${info.calories}, ${info.protein}, ${info.carbs}, ${info.fat})">
                                 <i class="fas fa-plus"></i> Add to Log
                             </button>
                         </div>`;
@@ -480,9 +584,12 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 return div.id;
             }
 
-            function autoLogFood(name, calories) {
+            function autoLogFood(name, calories, protein, carbs, fat) {
                 document.getElementById('food_item').value = name;
                 document.getElementById('calories').value = calories;
+                if (protein !== undefined && protein !== null) document.getElementById('protein').value = protein;
+                if (carbs   !== undefined && carbs   !== null) document.getElementById('carbs').value   = carbs;
+                if (fat     !== undefined && fat     !== null) document.getElementById('fat').value     = fat;
 
                 // Đóng chat để hiện form nếu trên mobile
                 if (window.innerWidth <= 480) {
@@ -515,6 +622,87 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
     <script>
+        // Holds the Chart.js donut instance once initialised.
+        let macrosDonutChart = null;
+
+        function macrosGrams(macros) {
+            const p = parseFloat(macros.protein || 0);
+            const c = parseFloat(macros.carbs   || 0);
+            const f = parseFloat(macros.fat     || 0);
+            return { p, c, f, total: p + c + f };
+        }
+
+        function refreshMacrosDonut(macros) {
+            if (!macrosDonutChart) return;
+            const g = macrosGrams(macros);
+            macrosDonutChart.data.datasets[0].data = [g.p, g.c, g.f];
+            macrosDonutChart.update('none');
+            const label = document.getElementById('donutKcalLabel');
+            if (label) label.textContent = Math.round(g.total);
+        }
+
+        // Update the Macros Today widget when totals change (called by submit/edit/delete).
+        function updateMacrosWidget(macros, goals) {
+            if (!macros) return;
+            ['protein', 'carbs', 'fat'].forEach(key => {
+                const cur  = parseFloat(macros[key] || 0);
+                const goal = goals ? parseInt(goals[key] || 0, 10) : 0;
+                const valEl  = document.getElementById('macroVal_'  + key);
+                const goalEl = document.getElementById('macroGoal_' + key);
+                const fillEl = document.getElementById('macroFill_' + key);
+                if (valEl)  valEl.textContent  = Number.isInteger(cur) ? cur : cur.toFixed(1).replace(/\.?0+$/, '');
+                if (goalEl) goalEl.textContent = goal > 0 ? goal : '–';
+                if (fillEl) {
+                    const pct = goal > 0 ? Math.min(100, Math.round(cur / goal * 100)) : 0;
+                    fillEl.style.width = pct + '%';
+                }
+            });
+            // Sync chart
+            refreshMacrosDonut(macros);
+        }
+
+        // Build the Macros donut once DOM is ready.
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('macrosDonut');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const state = window.__macroState || { protein: 0, carbs: 0, fat: 0 };
+            const g = macrosGrams(state);
+            macrosDonutChart = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein', 'Carbs', 'Fat'],
+                    datasets: [{
+                        data: [g.p, g.c, g.f],
+                        backgroundColor: ['#e74c3c', '#f1c40f', '#3498db'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '72%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const val = ctx.parsed || 0;
+                                    const pct = total > 0 ? Math.round(val / total * 100) : 0;
+                                    const valDisp = Number.isInteger(val) ? val : val.toFixed(1).replace(/\.?0+$/, '');
+                                    return ` ${ctx.label}: ${valDisp}g (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            const label = document.getElementById('donutKcalLabel');
+            if (label) label.textContent = Math.round(g.total);
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             // Animation for progress bar
             setTimeout(() => {
@@ -588,6 +776,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             progressFill.style.width = data.percentage + '%';
                             if (pctLabel) pctLabel.textContent = Math.round(data.percentage) + '%';
 
+                            // Update Macros widget
+                            updateMacrosWidget(data.macros, data.macro_goals);
+
                             form.reset();
                         } else {
                             alert(data.error || 'An error occurred');
@@ -629,6 +820,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             progressFill.style.width = data.percentage + '%';
                             if (pctLabel) pctLabel.textContent = Math.round(data.percentage) + '%';
 
+                            updateMacrosWidget(data.macros, data.macro_goals);
+
                             // Show empty state if needed
                             if (body.children.length <= 1) { // 1 because row is removed after timeout
                                 // Logic to re-add empty row could go here
@@ -659,6 +852,23 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         <div class="form-group">
                             <label for="edit_calories">Calories</label>
                             <input type="number" id="edit_calories" name="calories" required>
+                        </div>
+                        <div class="form-group macros-input-group">
+                            <label>Macros <small>(grams, optional)</small></label>
+                            <div class="macros-input-row">
+                                <div class="macro-input p">
+                                    <label for="edit_protein">P</label>
+                                    <input type="number" id="edit_protein" name="protein" min="0" max="999" step="0.1" placeholder="0">
+                                </div>
+                                <div class="macro-input c">
+                                    <label for="edit_carbs">C</label>
+                                    <input type="number" id="edit_carbs" name="carbs" min="0" max="999" step="0.1" placeholder="0">
+                                </div>
+                                <div class="macro-input f">
+                                    <label for="edit_fat">F</label>
+                                    <input type="number" id="edit_fat" name="fat" min="0" max="999" step="0.1" placeholder="0">
+                                </div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="edit_meal_category">Category</label>
@@ -717,6 +927,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 document.getElementById('edit_food_item').value = foodItem;
                 document.getElementById('edit_calories').value = calories;
                 document.getElementById('edit_meal_category').value = category;
+                document.getElementById('edit_protein').value = row.dataset.protein || '';
+                document.getElementById('edit_carbs').value   = row.dataset.carbs   || '';
+                document.getElementById('edit_fat').value     = row.dataset.fat     || '';
 
                 editModal.style.display = 'block';
             });
@@ -747,9 +960,29 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             const newFood = data.food_item || fd.get('food_item');
                             const newCal = data.calories || fd.get('calories');
                             const newCat = data.meal_category || fd.get('meal_category');
+                            const newP = (data.protein !== undefined ? data.protein : fd.get('protein')) || 0;
+                            const newC = (data.carbs   !== undefined ? data.carbs   : fd.get('carbs'))   || 0;
+                            const newF = (data.fat     !== undefined ? data.fat     : fd.get('fat'))     || 0;
 
                             row.querySelector('td[data-label="Food"]').innerText = newFood;
                             row.querySelector('td[data-label="Calories"]').innerText = newCal + ' kcal';
+
+                            const fmt = v => {
+                                const n = parseFloat(v) || 0;
+                                return Number.isInteger(n) ? n : n.toFixed(1).replace(/\.?0+$/, '');
+                            };
+                            const pDisp = fmt(newP), cDisp = fmt(newC), fDisp = fmt(newF);
+
+                            const macroCell = row.querySelector('td[data-label="Macros"]');
+                            if (macroCell) {
+                                macroCell.innerHTML =
+                                    `<span class="macro-chip p">P ${pDisp}g</span>` +
+                                    `<span class="macro-chip c">C ${cDisp}g</span>` +
+                                    `<span class="macro-chip f">F ${fDisp}g</span>`;
+                            }
+                            row.dataset.protein = pDisp;
+                            row.dataset.carbs   = cDisp;
+                            row.dataset.fat     = fDisp;
 
                             const catCell = row.querySelector('td[data-label="Category"]');
                             const newLabel = newCat.charAt(0).toUpperCase() + newCat.slice(1);
@@ -774,6 +1007,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             const pctLabel = document.querySelector('.pct-label');
                             if (pctLabel) pctLabel.innerText = data.percentage + '%';
                         }
+
+                        // 3. Cập nhật Macros widget
+                        updateMacrosWidget(data.macros, data.macro_goals);
 
                         closeModal();
                     } else {

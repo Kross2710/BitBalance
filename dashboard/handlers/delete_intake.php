@@ -11,6 +11,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     require_once __DIR__ . '/../../include/init.php';
+    require_once __DIR__ . '/functions.php';
     // require_once __DIR__ . '/../../include/db_config.php'; // Bỏ comment nếu init chưa gọi
     require_once __DIR__ . '/../../include/handlers/log_attempt.php';
 
@@ -48,6 +49,10 @@ try {
 
     $percentage = $goal ? min(100, round($totalCalories / $goal * 100)) : 0;
 
+    // Macro totals + goals
+    $macroTotals = getMacroTotalsToday($userId);
+    $macroGoals  = getMacroGoalsFromCalorieGoal($goal);
+
     /* --- Ghi log --- */
     log_attempt($pdo, $userId, 'delete_intake', 'User deleted intake', 'intakeLog', $intakeId);
 
@@ -58,7 +63,9 @@ try {
     echo json_encode([
         'ok' => true,
         'total' => $totalCalories,
-        'percentage' => $percentage
+        'percentage' => $percentage,
+        'macros' => $macroTotals,
+        'macro_goals' => $macroGoals
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

@@ -17,6 +17,10 @@ if ($isLoggedIn) {
     $userGoal = getUserIntakeGoal($userId); // Get user's calorie goal
     $userStreak = getUserLoggingStreak($userId); // Get user's logging streak
 
+    // Macro totals for today and recommended macro goals derived from calorie goal
+    $macroTotals = getMacroTotalsToday($userId);
+    $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal ? (int) $userGoal : null);
+
     $progressPercentage = 0; // Default progress percentage
     if ($userGoal) {
         $progressPercentage = round(($totalCalories / $userGoal) * 100, 2);
@@ -24,13 +28,27 @@ if ($isLoggedIn) {
         $progressPercentage = max($progressPercentage, 0); // Ensure it's not negative
     }
 
-    // Get the past 7 days
+    // Get the past 7 days (calories + macros)
+    $historyProtein = [];
+    $historyCarbs   = [];
+    $historyFat     = [];
     for ($i = 6; $i >= 0; $i--) {
         $date = date('Y-m-d', strtotime("-$i days"));
-        $stmt = $pdo->prepare("SELECT SUM(calories) as total FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?");
+        $stmt = $pdo->prepare("
+            SELECT
+                COALESCE(SUM(calories), 0) AS total,
+                COALESCE(SUM(protein),  0) AS p,
+                COALESCE(SUM(carbs),    0) AS c,
+                COALESCE(SUM(fat),      0) AS f
+            FROM intakeLog
+            WHERE user_id = ? AND DATE(date_intake) = ?
+        ");
         $stmt->execute([$userId, $date]);
-        $total = $stmt->fetchColumn();
-        $historyData[] = $total ? (int) $total : 0; // Default to 0 if no records found
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $historyData[]    = (int)   ($row['total'] ?? 0);
+        $historyProtein[] = (float) ($row['p']     ?? 0);
+        $historyCarbs[]   = (float) ($row['c']     ?? 0);
+        $historyFat[]     = (float) ($row['f']     ?? 0);
         // For label, show 'Mon', 'Tue', etc.
         $historyLabels[] = date('D', strtotime($date));
     }
@@ -53,6 +71,11 @@ if ($isLoggedIn) {
 } else {
     $intakeLog = []; // Empty array if not logged in
     $totalCalories = 0; // Default to 0 if not logged in
+    $macroTotals = ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+    $macroGoals  = ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+    $historyProtein = [0, 0, 0, 0, 0, 0, 0];
+    $historyCarbs   = [0, 0, 0, 0, 0, 0, 0];
+    $historyFat     = [0, 0, 0, 0, 0, 0, 0];
 }
 
 // Calculator.php partial handler

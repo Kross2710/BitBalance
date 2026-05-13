@@ -97,14 +97,25 @@ if ($isLoggedIn) {
                                     <th>Meal Category</th>
                                     <th>Food Item</th>
                                     <th>Calories</th>
+                                    <th>Macros (g)</th>
                                     <th>Time</th>
                                     <th style="text-align: right;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!empty($historyData)): ?>
-                                    <?php foreach ($historyData as $entry): ?>
-                                        <tr data-id="<?= $entry['intakeLog_id'] ?>">
+                                    <?php foreach ($historyData as $entry):
+                                        $p = (float) ($entry['protein'] ?? 0);
+                                        $c = (float) ($entry['carbs']   ?? 0);
+                                        $f = (float) ($entry['fat']     ?? 0);
+                                        $pD = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.'); if ($pD === '') $pD = '0';
+                                        $cD = rtrim(rtrim(number_format($c, 1, '.', ''), '0'), '.'); if ($cD === '') $cD = '0';
+                                        $fD = rtrim(rtrim(number_format($f, 1, '.', ''), '0'), '.'); if ($fD === '') $fD = '0';
+                                    ?>
+                                        <tr data-id="<?= $entry['intakeLog_id'] ?>"
+                                            data-protein="<?= htmlspecialchars($pD) ?>"
+                                            data-carbs="<?= htmlspecialchars($cD) ?>"
+                                            data-fat="<?= htmlspecialchars($fD) ?>">
                                             <td data-label="Date" data-sort="<?= strtotime($entry['date_intake']) ?>">
                                                 <div class="date-cell">
                                                     <span class="day"><?= date('d', strtotime($entry['date_intake'])) ?></span>
@@ -121,6 +132,11 @@ if ($isLoggedIn) {
                                             </td>
                                             <td data-label="Calories" class="cal-cell">
                                                 <span class="cal-val"><?= htmlspecialchars($entry['calories']) ?></span> kcal
+                                            </td>
+                                            <td data-label="Macros" class="macros-cell">
+                                                <span class="macro-chip p">P <?= $pD ?>g</span>
+                                                <span class="macro-chip c">C <?= $cD ?>g</span>
+                                                <span class="macro-chip f">F <?= $fD ?>g</span>
                                             </td>
                                             <td data-label="Time" class="text-muted">
                                                 <?= date('H:i', strtotime($entry['date_intake'])) ?>
@@ -169,7 +185,8 @@ if ($isLoggedIn) {
                 },
                 columnDefs: [
                     { targets: 0, type: 'num' }, // Sort date as number
-                    { targets: 4, orderable: false } // Disable sort for Action column
+                    { targets: 4, orderable: false }, // Macros col not sortable
+                    { targets: 6, orderable: false }  // Action col not sortable
                 ]
             });
 
@@ -255,6 +272,23 @@ if ($isLoggedIn) {
                         <label>Calories</label>
                         <input type="number" id="edit_calories" name="calories" required>
                     </div>
+                    <div class="form-group macros-input-group">
+                        <label>Macros <small>(grams, optional)</small></label>
+                        <div class="macros-input-row">
+                            <div class="macro-input p">
+                                <label for="edit_protein">P</label>
+                                <input type="number" id="edit_protein" name="protein" min="0" max="999" step="0.1" placeholder="0">
+                            </div>
+                            <div class="macro-input c">
+                                <label for="edit_carbs">C</label>
+                                <input type="number" id="edit_carbs" name="carbs" min="0" max="999" step="0.1" placeholder="0">
+                            </div>
+                            <div class="macro-input f">
+                                <label for="edit_fat">F</label>
+                                <input type="number" id="edit_fat" name="fat" min="0" max="999" step="0.1" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Category</label>
                         <select id="edit_meal_category" name="meal_category" required>
@@ -284,7 +318,8 @@ if ($isLoggedIn) {
                 language: { emptyTable: "<div class='empty-state'><p>No records found.</p></div>" },
                 columnDefs: [
                     { targets: 0, type: 'num' },
-                    { targets: 5, orderable: false }
+                    { targets: 4, orderable: false },
+                    { targets: 6, orderable: false }
                 ]
             });
 
@@ -401,6 +436,9 @@ if ($isLoggedIn) {
                 document.getElementById('edit_food_item').value = foodText;
                 document.getElementById('edit_calories').value = calText;
                 document.getElementById('edit_meal_category').value = catTextRaw.toLowerCase();
+                document.getElementById('edit_protein').value = currentRow.attr('data-protein') || '';
+                document.getElementById('edit_carbs').value   = currentRow.attr('data-carbs')   || '';
+                document.getElementById('edit_fat').value     = currentRow.attr('data-fat')     || '';
 
                 editModal.style.display = 'block';
             });
@@ -435,8 +473,22 @@ if ($isLoggedIn) {
                             currentRow.find('td:eq(2)').text(data.food_item);
                             currentRow.find('td:eq(3)').html(`<span class="cal-val">${data.calories}</span> kcal`);
 
+                            const fmt = v => {
+                                const n = parseFloat(v) || 0;
+                                return Number.isInteger(n) ? n : n.toFixed(1).replace(/\.?0+$/, '');
+                            };
+                            const pDisp = fmt(data.protein), cDisp = fmt(data.carbs), fDisp = fmt(data.fat);
+                            currentRow.find('td:eq(4)').html(
+                                `<span class="macro-chip p">P ${pDisp}g</span>` +
+                                `<span class="macro-chip c">C ${cDisp}g</span>` +
+                                `<span class="macro-chip f">F ${fDisp}g</span>`
+                            );
+                            currentRow.attr('data-protein', pDisp);
+                            currentRow.attr('data-carbs',   cDisp);
+                            currentRow.attr('data-fat',     fDisp);
+
                             // Invalidate row data trong DataTable để search vẫn đúng
-                            // table.row(currentRow).invalidate().draw(false); 
+                            // table.row(currentRow).invalidate().draw(false);
 
                             currentRow.css('background-color', 'rgba(46, 204, 113, 0.2)');
                             setTimeout(() => currentRow.css('background-color', ''), 500);
