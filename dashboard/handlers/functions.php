@@ -72,7 +72,7 @@ function getIntakeLogToday(int $userId)
 
     // Fetch intake log for the user, including local time (hour:minute)
     $stmt = $pdo->prepare("
-        SELECT intakeLog_id, food_item, meal_category, calories, date_intake
+        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, date_intake
         FROM intakeLog
         WHERE user_id = ?
         AND DATE(date_intake) = CURDATE()
@@ -80,6 +80,42 @@ function getIntakeLogToday(int $userId)
     ");
     $stmt->execute([$userId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getMacroTotalsToday(int $userId): array
+{
+    global $pdo;
+
+    $stmt = $pdo->prepare("
+        SELECT
+            COALESCE(SUM(protein), 0) AS protein,
+            COALESCE(SUM(carbs),   0) AS carbs,
+            COALESCE(SUM(fat),     0) AS fat
+        FROM intakeLog
+        WHERE user_id = ?
+        AND DATE(date_intake) = CURDATE()
+    ");
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    return [
+        'protein' => (float) ($row['protein'] ?? 0),
+        'carbs'   => (float) ($row['carbs']   ?? 0),
+        'fat'     => (float) ($row['fat']     ?? 0),
+    ];
+}
+
+// Recommended macro split based on calorie goal: 30% protein, 45% carbs, 25% fat.
+// Returns grams for each macro (protein/carbs = 4 kcal/g, fat = 9 kcal/g).
+function getMacroGoalsFromCalorieGoal(?int $calorieGoal): array
+{
+    if (!$calorieGoal || $calorieGoal <= 0) {
+        return ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+    }
+    return [
+        'protein' => (int) round(($calorieGoal * 0.30) / 4),
+        'carbs'   => (int) round(($calorieGoal * 0.45) / 4),
+        'fat'     => (int) round(($calorieGoal * 0.25) / 9),
+    ];
 }
 
 function getUserIntakeGoal($userId)
@@ -113,7 +149,7 @@ function getUserIntakeHistory($userId)
 
     // Fetch intake history for the user
     $stmt = $pdo->prepare("
-        SELECT intakeLog_id, food_item, meal_category, calories, date_intake
+        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, date_intake
         FROM intakeLog
         WHERE user_id = ?
         ORDER BY date_intake DESC

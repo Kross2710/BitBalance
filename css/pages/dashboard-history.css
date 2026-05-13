@@ -228,9 +228,15 @@
         opacity: 0.5;
     }
 
-    /* 6. RESPONSIVE DESIGN
-       Note: layout cho .dashboard-content ở 1200px (ẩn right sidebar, giữ
-       margin-left cho left sidebar) đã được handle trong css/dashboard.css. */
+    /* 6. RESPONSIVE DESIGN */
+    @media (min-width: 901px) and (max-width: 1200px) {
+        /* dashboard.css's @media tries to set margin-right:20px but loses to
+           its later base rule (line 1778). Reassert here from page CSS so it wins. */
+        .dashboard-content {
+            margin-right: 20px;
+            width: auto;
+        }
+    }
 
     @media (max-width: 900px) {
         .filter-grid {
@@ -267,4 +273,59 @@
             color: var(--text-secondary);
             font-size: 0.85rem;
         }
+
+        .macros-cell {
+            white-space: normal;
+        }
     }
+
+    /* ================================================
+       MACRO CHIPS + EDIT MODAL FIELDS (history page)
+       ================================================ */
+    .macros-cell { white-space: nowrap; }
+    .macro-chip {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 10px;
+        margin-right: 3px;
+        line-height: 1.4;
+        color: #fff;
+    }
+    .macro-chip.p { background: #e74c3c; }
+    .macro-chip.c { background: #f1c40f; color: #5b4400; }
+    .macro-chip.f { background: #3498db; }
+
+    .macros-input-group .macros-input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+    }
+    .macros-input-group .macro-input {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .macros-input-group .macro-input > label {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 700;
+        font-size: 0.85rem;
+        pointer-events: none;
+        color: #fff;
+        background: #999;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+    .macros-input-group .macro-input.p > label { background: #e74c3c; }
+    .macros-input-group .macro-input.c > label { background: #f1c40f; color: #5b4400; }
+    .macros-input-group .macro-input.f > label { background: #3498db; }
+    .macros-input-group .macro-input input { padding-left: 40px !important; }

@@ -171,10 +171,16 @@
     .empty-calc-state i { font-size: 3rem; margin-bottom: 15px; opacity: 0.3; }
     .empty-calc-state h4 { margin: 0 0 5px 0; color: var(--text-primary); }
 
-    /* 6. RESPONSIVE
-       Note: layout của .dashboard-content ở 1200px (ẩn right sidebar, giữ
-       margin-left cho left sidebar) đã được handle trong css/dashboard.css.
-       Không override margin-left ở đây — sẽ trùm lên left sidebar. */
+    /* 6. RESPONSIVE */
+    @media (min-width: 901px) and (max-width: 1200px) {
+        /* Right sidebar hidden in this range — let content reclaim that space.
+           Without this block, the base rule at line 3 above forces 240px right
+           margin even though there's no sidebar there, leaving an empty gutter. */
+        .dashboard-content {
+            margin-right: 20px;
+            width: auto;
+        }
+    }
 
     @media (max-width: 900px) {
         .calculator-container { grid-template-columns: 1fr; } /* Stack vertically */

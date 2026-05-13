@@ -27,9 +27,13 @@ if ($isLoggedIn) {
         'longest_logging_streak' => 12
     ];
 
-    // Mock History Chart 
+    // Mock History Chart
     $historyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     $historyData = [1800, 2100, 1950, 2200, 2050, 1500, 1450];
+    // Mock macros breakdown for the same 7 days (grams)
+    $historyProtein = [110, 135, 125, 140, 130, 90,  85];
+    $historyCarbs   = [200, 250, 220, 260, 230, 180, 175];
+    $historyFat     = [55,  62,  58,  65,  60,  48,  46];
 
     // Mock Intake Log
     $intakeLog = [
@@ -198,6 +202,72 @@ if ($isLoggedIn) {
                     <div class="chart-container-wrapper">
                         <canvas id="historyChart"></canvas>
                     </div>
+                    <div class="macros-trend-wrap">
+                        <div class="macros-trend-header">
+                            <h5><i class="fas fa-layer-group"></i> Macros Trend (g)</h5>
+                            <div class="macros-trend-legend">
+                                <span><i class="dot p"></i> Protein</span>
+                                <span><i class="dot c"></i> Carbs</span>
+                                <span><i class="dot f"></i> Fat</span>
+                            </div>
+                        </div>
+                        <div class="chart-container-wrapper macros-trend-canvas">
+                            <canvas id="macrosTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const mtCtx = document.getElementById('macrosTrendChart');
+                            if (!mtCtx || typeof Chart === 'undefined') return;
+                            new Chart(mtCtx.getContext('2d'), {
+                                type: 'bar',
+                                data: {
+                                    labels: <?php echo json_encode($historyLabels); ?>,
+                                    datasets: [
+                                        {
+                                            label: 'Protein (g)',
+                                            data: <?php echo json_encode($historyProtein); ?>,
+                                            backgroundColor: '#e74c3c',
+                                            borderRadius: 4,
+                                            stack: 'macros'
+                                        },
+                                        {
+                                            label: 'Carbs (g)',
+                                            data: <?php echo json_encode($historyCarbs); ?>,
+                                            backgroundColor: '#f1c40f',
+                                            borderRadius: 4,
+                                            stack: 'macros'
+                                        },
+                                        {
+                                            label: 'Fat (g)',
+                                            data: <?php echo json_encode($historyFat); ?>,
+                                            backgroundColor: '#3498db',
+                                            borderRadius: 4,
+                                            stack: 'macros'
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false,
+                                            callbacks: {
+                                                label: (ctx) => ` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y)}g`
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: { stacked: true, grid: { display: false }, border: { display: false } },
+                                        y: { stacked: true, beginAtZero: true, grid: { color: '#f0f0f0', borderDash: [5, 5] }, border: { display: false } }
+                                    }
+                                }
+                            });
+                        });
+                    </script>
                     <script>
                         // Chart JS Logic
                         document.addEventListener('DOMContentLoaded', function () {
