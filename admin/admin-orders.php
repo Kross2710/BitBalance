@@ -165,43 +165,92 @@ $statuses = ['completed', 'pending', 'processing', 'cancelled']; // Define order
                     });
                 </script>
             </div>
+
+            <!-- Order Items Modal -->
+            <div id="viewModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+                <div style="background-color: #fff; margin: 5% auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 700px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 id="modal-title" style="margin:0; color:#333;">Order Details</h3>
+                        <button id="closeViewModal" style="background:#e55039; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&times;</button>
+                    </div>
+                    
+                    <table id="item-table" style="width:100%; border-collapse: collapse; font-size: 0.95rem;">
+                        <thead>
+                            <tr style="background:#f8f9fb;">
+                                <th style="padding:12px 16px; text-align:left; border-bottom:2px solid #eee;">Product</th>
+                                <th style="padding:12px 16px; text-align:center; border-bottom:2px solid #eee; width:80px;">Qty</th>
+                                <th style="padding:12px 16px; text-align:right; border-bottom:2px solid #eee;">Unit Price</th>
+                                <th style="padding:12px 16px; text-align:right; border-bottom:2px solid #eee;">Line Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button id="closeViewModal2" onclick="document.getElementById('viewModal').style.display='none'" 
+                                style="background:#6c757d; color:#fff; border:none; border-radius:6px; padding:10px 20px; cursor:pointer; font-size:0.95rem;">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
     </main>
 </body>
 
 <script>
-    const modal = document.getElementById('viewModal');
-    const openBtns = document.querySelectorAll('.openViewModal');
-    const closeBtn = document.getElementById('closeViewModal');
-    const tbody = document.querySelector('#item-table tbody');
-    const title = document.getElementById('modal-title');
+    // Order modal logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('viewModal');
+        const openBtns = document.querySelectorAll('.openViewModal');
+        const closeBtn = document.getElementById('closeViewModal');
+        const tbody = document.querySelector('#item-table tbody');
+        const titleEl = document.getElementById('modal-title');
 
-    openBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.orderId;
-            fetch(`handlers/view_order.php?order_id=${id}`)
-                .then(r => r.json())
-                .then(rows => {
-                    // build table body
-                    tbody.innerHTML = '';
-                    rows.forEach(r => {
-                        tbody.insertAdjacentHTML('beforeend', `
-                        <tr>
-                          <td>${r.product_name}</td>
-                          <td style="text-align:center">${r.quantity}</td>
-                          <td style="text-align:right">$${parseFloat(r.price_each).toFixed(2)}</td>
-                          <td style="text-align:right">$${parseFloat(r.line_total).toFixed(2)}</td>
-                        </tr>
-                    `);
+        if (!modal || !tbody) return;
+
+        openBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.orderId;
+                fetch(`handlers/view_order.php?order_id=${id}`)
+                    .then(r => r.json())
+                    .then(rows => {
+                        tbody.innerHTML = '';
+                        if (rows && rows.length > 0) {
+                            rows.forEach(r => {
+                                const price = parseFloat(r.price_each || 0).toFixed(2);
+                                const line = parseFloat(r.line_total || 0).toFixed(2);
+                                tbody.insertAdjacentHTML('beforeend', `
+                                    <tr>
+                                      <td style="padding:10px 12px; border-bottom:1px solid #eee;">${r.product_name || ''}</td>
+                                      <td style="padding:10px 12px; text-align:center; border-bottom:1px solid #eee;">${r.quantity || 0}</td>
+                                      <td style="padding:10px 12px; text-align:right; border-bottom:1px solid #eee;">$${price}</td>
+                                      <td style="padding:10px 12px; text-align:right; border-bottom:1px solid #eee;">$${line}</td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="4" style="padding:12px; text-align:center; color:#888;">No items found for this order.</td></tr>';
+                        }
+                        if (titleEl) titleEl.textContent = 'Order #' + id;
+                        modal.style.display = 'block';
+                    })
+                    .catch(() => {
+                        alert('Could not load order items. Please try again.');
                     });
-                    title.textContent = 'Order #' + id;
-                    modal.style.display = 'block';
-                })
-                .catch(() => alert('Could not load order items'));
+            });
         });
-    });
 
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+        if (closeBtn) {
+            closeBtn.onclick = () => modal.style.display = 'none';
+        }
+
+        // Close when clicking outside content
+        modal.onclick = e => {
+            if (e.target === modal) modal.style.display = 'none';
+        };
+    });
 </script>
 
 <style>

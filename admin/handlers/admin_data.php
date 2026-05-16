@@ -291,6 +291,7 @@ function getStreakUpdatedByUser()
         SELECT COUNT(*) AS total_streaks 
         FROM activity_log 
         WHERE action_type = 'streak_update'
+          AND created_at >= NOW() - INTERVAL 7 DAY
     ");
     $stmt->execute();
     return $stmt->fetchColumn();

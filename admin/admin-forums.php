@@ -250,23 +250,7 @@ if (isset($_GET['cerror'])) {
                     <input id="searchInput2" type="text" placeholder="Search likes...">
                 </div>
 
-                <?php if (!empty($cerror_message)): ?>
-                    <div class="error-message"
-                        style="color: #d32f2f; margin-bottom: 15px; padding: 12px; background-color: #ffebee; border: 1px solid #e57373; border-radius: 5px; font-weight: bold;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
-
-                        <?php echo htmlspecialchars($cerror_message); ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (!empty($csuccess_message)): ?>
-                    <div class="success-message"
-                        style="color: #2e7d32; margin-bottom: 15px; padding: 12px; background-color: #e8f5e8; border: 1px solid #4caf50; border-radius: 5px; font-weight: bold;">
-                        <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-
-                        <?php echo htmlspecialchars($csuccess_message); ?>
-                    </div>
-                <?php endif; ?>
+                <!-- No success/error messages for read-only Likes table -->
                 <table id="user-table2" class="user-table">
                     <thead>
                         <tr>
