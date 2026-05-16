@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Feb 27, 2026 at 02:13 AM
+-- Generation Time: May 17, 2026 at 01:30 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -95,6 +95,9 @@ CREATE TABLE `intakeLog` (
   `food_item` varchar(100) NOT NULL,
   `meal_category` enum('breakfast','lunch','dinner','snack') NOT NULL DEFAULT 'breakfast',
   `calories` int(11) NOT NULL,
+  `protein` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `carbs` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `fat` decimal(6,2) NOT NULL DEFAULT 0.00,
   `date_intake` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
