@@ -15,7 +15,8 @@ if ($isLoggedIn) {
     $intakeLog = getIntakeLogToday($userId); // Get today's intake log
 
     $userGoal = getUserIntakeGoal($userId); // Get user's calorie goal
-    $userStreak = getUserLoggingStreak($userId); // Get user's logging streak
+    // Fallback khi user chưa có dòng trong userStatus (fetch trả về false)
+    $userStreak = getUserLoggingStreak($userId) ?: ['logging_streak' => 0, 'longest_logging_streak' => 0];
 
     // Macro totals for today and recommended macro goals derived from calorie goal
     $macroTotals = getMacroTotalsToday($userId);

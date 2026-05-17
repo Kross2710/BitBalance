@@ -294,17 +294,20 @@
     }
 
     /* 7. RESPONSIVE DESIGN */
+    /* content-split là 2 cột chỉ trên desktop rộng (>1200px);
+       từ 1200px trở xuống (gồm cả mobile) xếp Log Food / History thành 1 cột */
+    @media (max-width: 1200px) {
+        .content-split {
+            grid-template-columns: 1fr;
+        }
+    }
+
     @media (min-width: 901px) and (max-width: 1200px) {
         /* dashboard.css's @media @1200 sets margin-right:20px but appears BEFORE
            the base rule at line 1778, so source order loses. Reassert here. */
         .dashboard-content {
             margin-right: 20px;
             width: auto;
-        }
-
-        /* Khi không gian hẹp, content-split chuyển 1 cột */
-        .content-split {
-            grid-template-columns: 1fr;
         }
     }
 

@@ -14,5 +14,9 @@
     <a href="dashboard-calculator.php" class="nav-link <?php echo ($activePage == 'calculator') ? 'active' : ''; ?>">
         <i class="fas fa-calculator"></i> Calculator
     </a>
+
+    <a href="dashboard-wiki.php" class="nav-link <?php echo ($activePage == 'wiki') ? 'active' : ''; ?>">
+        <i class="fas fa-book-medical"></i> Wiki
+    </a>
 </div>
 

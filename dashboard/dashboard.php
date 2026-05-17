@@ -85,6 +85,42 @@ if (isset($_GET['success'])) {
 $averageCalories = calculateCalorieAverage($historyData);
 $averageCalories = $averageCalories ?: 'N/A';
 
+// --- Streak card display data ---
+$streakDays = (int) ($userStreak['logging_streak'] ?? 0);
+
+$streakMilestones = [7, 14, 30, 60, 100, 180, 365];
+$prevMilestone = 0;
+$nextMilestone = null;
+foreach ($streakMilestones as $m) {
+    if ($m > $streakDays) {
+        $nextMilestone = $m;
+        break;
+    }
+    $prevMilestone = $m;
+}
+if ($nextMilestone === null) {
+    $streakProgress = 100;
+    $milestoneText = 'Every milestone cleared — legendary!';
+} else {
+    $streakProgress = (int) round((($streakDays - $prevMilestone) / ($nextMilestone - $prevMilestone)) * 100);
+    $daysLeft = $nextMilestone - $streakDays;
+    $milestoneText = $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's') . " to {$nextMilestone}-day milestone";
+}
+
+if ($streakDays >= 30) {
+    $streakFlameColor = '#fbbf24';
+    $streakMessage = "You're on fire! 30+ day legend.";
+} elseif ($streakDays >= 14) {
+    $streakFlameColor = '#fb923c';
+    $streakMessage = 'Incredible consistency. Keep going!';
+} elseif ($streakDays >= 1) {
+    $streakFlameColor = '#ffffff';
+    $streakMessage = "You're building serious consistency. Keep it going!";
+} else {
+    $streakFlameColor = '#ffffff';
+    $streakMessage = 'Log a meal today to start your streak!';
+}
+
 if ($isLoggedIn) {
     // FETCH FULL WEIGHT HISTORY (Cho Modal)
     $weightHistoryList = [];
@@ -368,24 +404,34 @@ if ($isLoggedIn) {
             </div>
 
             <div class="flex">
-                <section class="dashboard-card streak-card">
+                <section class="dashboard-card streak-card" id="streakCard">
                     <div class="streak-header">
-                        <h3>Streak <span class="fire-icon">🔥</span></h3>
-                    </div>
-                    <div class="streak-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Current</span>
-                            <span
-                                class="stat-value streak-count"><?= htmlspecialchars($userStreak['logging_streak']) ?></span>
+                        <div class="streak-flame-wrapper">
+                            <i class="fas fa-fire streak-flame" id="streakFlame"
+                                style="color: <?= $streakFlameColor ?>;"></i>
                         </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <span class="stat-label">Longest</span>
-                            <span
-                                class="stat-value longest-streak-count"><?= htmlspecialchars($userStreak['longest_logging_streak']) ?></span>
+                        <div class="streak-info">
+                            <h3>Streak</h3>
+                            <div class="streak-main">
+                                <span class="streak-number" id="streakNumber"><?= $streakDays ?></span>
+                                <span class="streak-label"><?= $streakDays === 1 ? 'day' : 'days' ?></span>
+                            </div>
                         </div>
                     </div>
-                    <p class="streak-message">Logging your meals to maintain your streak!</p>
+
+                    <div class="streak-body">
+                        <p class="streak-message" id="streakMessage"><?= htmlspecialchars($streakMessage) ?></p>
+
+                        <div class="streak-progress">
+                            <div class="streak-progress-bar">
+                                <div class="streak-progress-fill" id="streakProgressFill"
+                                    style="width: <?= $streakProgress ?>%;"></div>
+                            </div>
+                            <div class="streak-progress-text">
+                                <span><?= htmlspecialchars($milestoneText) ?></span>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="dashboard-card weight-card">
@@ -473,10 +519,10 @@ if ($isLoggedIn) {
                     <div class="wiki-bg-icon"><i class="fas fa-lightbulb"></i></div>
                     <div class="wiki-content">
                         <div class="wiki-header-row">
-                            <h3>Nutrition Wiki</h3><span class="badge-soon">Coming Soon</span>
+                            <h3>Nutrition Wiki</h3>
                         </div>
-                        <p class="wiki-desc">Unlock exclusive tips and healthy recipes.</p>
-                        <button class="btn-wiki disabled"><i class="fas fa-lock"></i> Explore</button>
+                        <p class="wiki-desc">Bite-sized guides on macros, micros, and healthy habits.</p>
+                        <a href="dashboard-wiki.php" class="btn-wiki"><i class="fas fa-arrow-right"></i> Explore</a>
                     </div>
                 </section>
             </div>
@@ -663,6 +709,59 @@ if ($isLoggedIn) {
             });
         </script>
     <?php endif; ?>
+
+    <!-- LOGGING SUCCESS TOAST -->
+    <div id="loggingToast" class="logging-toast" role="status" aria-live="polite">
+        <div class="toast-content">
+            <div class="toast-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="toast-text">
+                <span id="toastMessage">Logged successfully!</span>
+                <span id="toastSubtext" class="toast-subtext"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logging success toast — slides up, auto-hides after 3.5s
+        function showLoggingToast(message, subtext = '') {
+            const toast = document.getElementById('loggingToast');
+            const msgEl = document.getElementById('toastMessage');
+            const subEl = document.getElementById('toastSubtext');
+            if (!toast || !msgEl) return;
+
+            msgEl.textContent = message;
+            if (subEl) subEl.textContent = subtext;
+
+            toast.classList.add('show');
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        // Streak flame celebration — quick scale + glow pulse
+        function celebrateStreak() {
+            const flame = document.getElementById('streakFlame');
+            const card = document.getElementById('streakCard');
+            if (!flame || !card) return;
+
+            flame.style.transform = 'scale(1.3)';
+            flame.style.filter = 'drop-shadow(0 0 12px #ff9600)';
+            card.style.transition = 'transform 0.2s ease';
+            card.style.transform = 'scale(1.02)';
+
+            setTimeout(() => {
+                flame.style.transform = '';
+                flame.style.filter = '';
+                card.style.transform = '';
+            }, 600);
+        }
+
+        <?php if (!empty($success_message)): ?>
+            document.addEventListener('DOMContentLoaded', () => {
+                showLoggingToast(<?= json_encode($success_message, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
+                celebrateStreak();
+            });
+        <?php endif; ?>
+    </script>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 </body>
