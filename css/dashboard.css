@@ -255,94 +255,8 @@ table.meals-table {
     border-bottom: none;
 }
 
-/* --- Streak Widget --- */
-.streak-header {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-.streak-stats {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    background-color: var(--bg-hover);
-    /* Subtle background for stats */
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.stat-label {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    margin-bottom: 5px;
-}
-
-.stat-value {
-    font-size: 1.4em;
-    font-weight: bold;
-}
-
-.streak-count {
-    color: var(--success-color);
-}
-
-.longest-streak-count {
-    color: var(--error-color);
-}
-
-.stat-divider {
-    width: 1px;
-    height: 30px;
-    background-color: var(--border-color);
-}
-
-.streak-message {
-    text-align: center;
-    font-size: 0.95em;
-    color: var(--text-secondary);
-    margin: 0;
-}
-
 /* =========================================
-   4. ANIMATIONS
-   ========================================= */
-.fire-icon {
-    display: inline-block;
-    font-size: 1.6rem;
-    margin-left: 8px;
-    transform-origin: center bottom;
-    animation: flicker 1s infinite ease-in-out alternate;
-    text-shadow: 0 0 6px rgba(255, 102, 0, 0.8),
-        0 0 12px rgba(255, 140, 0, 0.6);
-}
-
-@keyframes flicker {
-
-    0%,
-    100% {
-        transform: scale(1) rotate(-2deg);
-        opacity: 0.9;
-    }
-
-    50% {
-        transform: scale(1.15) rotate(2deg);
-        opacity: 1;
-    }
-}
-
-.fire-icon.paused {
-    animation-play-state: paused;
-}
-
-/* =========================================
-   5. RESPONSIVE DESIGN
+   4. RESPONSIVE DESIGN
    ========================================= */
 
 /* Narrow desktop (901-1200px): ẩn right sidebar để content có chỗ thở.
@@ -505,87 +419,159 @@ table.meals-table {
     font-style: italic;
 }
 
-/* --- STREAK CARD SPECIAL STYLING --- */
-
-/* 1. Nền Gradient cho toàn bộ thẻ (Giữ nguyên cái bạn đang có) */
+/* === DUOLINGO-STYLE STREAK CARD === */
 .streak-card {
-    background: linear-gradient(135deg, #ff9966, #ff5e62);
-    border: none;
-    /* Bỏ viền xám mặc định */
-    box-shadow: 0 10px 20px rgba(255, 94, 98, 0.3);
-    /* Bóng đổ màu cam nhẹ */
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .streak-card {
+    background: linear-gradient(145deg, #1e2937, #334155);
+}
+
+.streak-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.streak-flame-wrapper {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--duo-orange);
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(255, 150, 0, 0.3);
+}
+
+.streak-flame {
+    font-size: 32px;
     color: white;
-    /* Mặc định chữ màu trắng cho tiêu đề và footer */
+    transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-/* 2. Tiêu đề "Streak" và icon Lửa */
-.streak-card h3 {
-    color: #ffffff !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    /* Bóng chữ nhẹ cho dễ đọc */
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-}
-
-.fire-icon {
-    filter: drop-shadow(0 0 8px rgba(255, 235, 59, 0.8));
-    /* Làm lửa phát sáng */
-    font-size: 1.8rem;
-}
-
-/* 3. Hộp thống kê (Cái hộp màu trắng ở giữa) */
-.streak-card .streak-stats {
-    background: var(--color-surface) !important;
-    /* Nền trắng tuyệt đối */
-    border-radius: 12px;
-    padding: 15px 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    /* Bóng đổ để hộp nổi lên */
-    margin-bottom: 20px;
-}
-
-/* 4. Nhãn "Current" và "Longest" (QUAN TRỌNG: Đổi sang màu xám để hiện rõ trên nền trắng) */
-.streak-card .stat-label {
-    color: #888888 !important;
-    /* Màu xám trung tính */
-    font-size: 0.85rem;
-    text-transform: uppercase;
+.streak-info h3 {
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: 5px;
+    color: var(--color-text-secondary);
+    margin: 0 0 4px 0;
 }
 
-/* 5. Con số (1 và 4) */
-.streak-card .stat-value {
-    font-size: 2rem;
-    font-weight: 800;
-    line-height: 1.2;
+.streak-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
 }
 
-/* Màu số Current Streak (Xanh lá đậm cho dễ đọc) */
-.streak-card .streak-count {
-    color: #2ecc71 !important;
+.streak-number {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-text);
 }
 
-/* Màu số Longest Streak (Đỏ cam đậm hoặc Vàng) */
-.streak-card .longest-streak-count {
-    color: #e74c3c !important;
-}
-
-/* Đường kẻ giữa 2 số */
-.streak-card .stat-divider {
-    background-color: var(--color-surface-alt) !important;
-    /* Màu xám nhạt */
-    width: 2px;
-}
-
-/* 6. Dòng thông báo bên dưới cùng */
-.streak-card .streak-message {
-    color: rgba(255, 255, 255, 0.95) !important;
-    /* Trắng nhưng dịu mắt chút */
+.streak-label {
+    font-size: 18px;
     font-weight: 500;
-    font-size: 0.95rem;
-    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+.streak-message {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+}
+
+.streak-progress {
+    margin-top: 8px;
+}
+
+.streak-progress-bar {
+    height: 6px;
+    background: var(--color-border);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.streak-progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--duo-green), #4ade80);
+    border-radius: 9999px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.streak-progress-text {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 6px;
+    text-align: right;
+}
+
+/* === LOGGING SUCCESS TOAST === */
+.logging-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 14px 20px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: var(--z-toast);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 90%;
+    width: 360px;
+}
+
+.logging-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.toast-icon {
+    color: var(--duo-green);
+    font-size: 22px;
+}
+
+.toast-text {
+    flex: 1;
+}
+
+.toast-text span {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.toast-subtext {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+
+.toast-subtext:empty {
+    display: none;
 }
 
 .progress-widget {
@@ -1083,14 +1069,13 @@ table.meals-table {
 /* 4. Nút bấm (Disabled Style) */
 .btn-wiki {
     background: rgba(0, 0, 0, 0.2);
-    /* Nền tối mờ */
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 10px 20px;
     border-radius: 50px;
     font-weight: 600;
-    cursor: not-allowed;
-    /* Con trỏ báo hiệu không bấm được */
+    cursor: pointer;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
