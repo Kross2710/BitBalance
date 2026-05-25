@@ -58,7 +58,7 @@ if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
 }
 
 // Gửi Request
-$apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . GEMINI_API_KEY;
+$apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" . GEMINI_API_KEY;
 
 $body = [
     'contents' => [

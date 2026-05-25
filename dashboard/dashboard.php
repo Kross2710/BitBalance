@@ -31,9 +31,9 @@ if ($isLoggedIn) {
     $historyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     $historyData = [1800, 2100, 1950, 2200, 2050, 1500, 1450];
     // Mock macros breakdown for the same 7 days (grams)
-    $historyProtein = [110, 135, 125, 140, 130, 90,  85];
-    $historyCarbs   = [200, 250, 220, 260, 230, 180, 175];
-    $historyFat     = [55,  62,  58,  65,  60,  48,  46];
+    $historyProtein = [110, 135, 125, 140, 130, 90, 85];
+    $historyCarbs = [200, 250, 220, 260, 230, 180, 175];
+    $historyFat = [55, 62, 58, 65, 60, 48, 46];
 
     // Mock Intake Log
     $intakeLog = [
@@ -404,35 +404,125 @@ if ($isLoggedIn) {
             </div>
 
             <div class="flex">
+                <!-- STREAK CARD -->
                 <section class="dashboard-card streak-card" id="streakCard">
                     <div class="streak-header">
                         <div class="streak-flame-wrapper">
-                            <i class="fas fa-fire streak-flame" id="streakFlame"
-                                style="color: <?= $streakFlameColor ?>;"></i>
+                            <i class="fas fa-fire streak-flame" id="streakFlame"></i>
                         </div>
                         <div class="streak-info">
                             <h3>Streak</h3>
                             <div class="streak-main">
-                                <span class="streak-number" id="streakNumber"><?= $streakDays ?></span>
-                                <span class="streak-label"><?= $streakDays === 1 ? 'day' : 'days' ?></span>
+                                <span class="streak-number" id="streakNumber">12</span>
+                                <span class="streak-label">days</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="streak-body">
-                        <p class="streak-message" id="streakMessage"><?= htmlspecialchars($streakMessage) ?></p>
+                        <p class="streak-message" id="streakMessage">
+                            You're building serious consistency. Keep it going!
+                        </p>
 
+                        <!-- Optional: Progress to next milestone -->
                         <div class="streak-progress">
                             <div class="streak-progress-bar">
-                                <div class="streak-progress-fill" id="streakProgressFill"
-                                    style="width: <?= $streakProgress ?>%;"></div>
+                                <div class="streak-progress-fill" id="streakProgressFill" style="width: 40%;"></div>
                             </div>
                             <div class="streak-progress-text">
-                                <span><?= htmlspecialchars($milestoneText) ?></span>
+                                <span>4 days to 16-day milestone</span>
                             </div>
                         </div>
                     </div>
                 </section>
+
+                <!-- LOGGING SUCCESS TOAST -->
+                <div id="loggingToast" class="logging-toast">
+                    <div class="toast-content">
+                        <div class="toast-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="toast-text">
+                            <span id="toastMessage">Logged successfully!</span>
+                            <span id="toastSubtext" class="toast-subtext"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function showLoggingToast(message, isStreak = false, subtext = '') {
+                        const toast = document.getElementById('loggingToast');
+                        const msgEl = document.getElementById('toastMessage');
+                        const subEl = document.getElementById('toastSubtext');
+
+                        if (!toast || !msgEl) return;
+
+                        msgEl.textContent = message;
+                        subEl.textContent = subtext || (isStreak ? "You're on fire 🔥" : "");
+
+                        toast.classList.add('show');
+
+                        // Auto hide after 3.5 seconds
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                        }, 3500);
+                    }
+
+                    // Example usage after successful log:
+                    // showLoggingToast("Meal logged!", true);
+                </script>
+
+                <script>
+                    // Streak Card Interactions
+                    function updateStreakDisplay(currentStreak) {
+                        const numberEl = document.getElementById('streakNumber');
+                        const flameEl = document.getElementById('streakFlame');
+                        const messageEl = document.getElementById('streakMessage');
+
+                        if (!numberEl || !flameEl) return;
+
+                        numberEl.textContent = currentStreak;
+
+                        // Milestone logic
+                        if (currentStreak >= 30) {
+                            flameEl.style.color = '#fbbf24'; // Gold
+                            messageEl.textContent = "You're on fire! 30+ day legend.";
+                        } else if (currentStreak >= 14) {
+                            flameEl.style.color = '#fb923c';
+                            messageEl.textContent = "Incredible consistency. Keep going!";
+                        } else {
+                            flameEl.style.color = 'white';
+                            messageEl.textContent = "You're building serious consistency. Keep it going!";
+                        }
+                    }
+
+                    // Trigger when user successfully logs a meal and maintains streak
+                    function celebrateStreakMaintenance() {
+                        const flame = document.getElementById('streakFlame');
+                        const card = document.getElementById('streakCard');
+
+                        if (!flame || !card) return;
+
+                        // Glow + scale animation
+                        flame.style.transform = 'scale(1.3)';
+                        flame.style.filter = 'drop-shadow(0 0 12px #ff9600)';
+
+                        card.style.transition = 'transform 0.2s ease';
+                        card.style.transform = 'scale(1.02)';
+
+                        setTimeout(() => {
+                            flame.style.transform = 'scale(1)';
+                            flame.style.filter = 'none';
+                            card.style.transform = 'scale(1)';
+                        }, 600);
+
+                        // Optional: Show toast
+                        showLoggingToast("Streak maintained! 🔥 +1 day", true);
+                    }
+
+                    // Call this on page load with real data
+                    // updateStreakDisplay(12);
+                </script>
 
                 <section class="dashboard-card weight-card">
                     <div class="card-header-row">
@@ -529,7 +619,9 @@ if ($isLoggedIn) {
         </div>
     </main>
 
-    <?php if ($isLoggedIn): include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; endif; ?>
+    <?php if ($isLoggedIn):
+        include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php';
+    endif; ?>
 
     <?php if ($isLoggedIn): ?>
         <div id="goalModal" class="modal-overlay">

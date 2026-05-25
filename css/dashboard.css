@@ -2386,8 +2386,10 @@ table.meals-table {
 .modern-table td:last-child {
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* Căn phải */
-    gap: 8px; /* Khoảng cách giữa 2 nút */
+    justify-content: flex-end;
+    /* Căn phải */
+    gap: 8px;
+    /* Khoảng cách giữa 2 nút */
     white-space: nowrap;
 }
 
@@ -2395,7 +2397,8 @@ table.meals-table {
 .btn-icon {
     width: 38px;
     height: 38px;
-    border-radius: 10px; /* Bo góc mềm mại hơn */
+    border-radius: 10px;
+    /* Bo góc mềm mại hơn */
     border: none;
     cursor: pointer;
     display: inline-flex;
@@ -2410,7 +2413,7 @@ table.meals-table {
 /* Hiệu ứng Hover chung: Nổi lên & Bóng đổ */
 .btn-icon:hover {
     transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Hiệu ứng Click */
@@ -2423,6 +2426,7 @@ table.meals-table {
     background-color: var(--color-info-bg);
     color: #1976d2;
 }
+
 .btn-edit:hover {
     background-color: #1976d2;
     color: #ffffff;
@@ -2433,17 +2437,32 @@ table.meals-table {
     background-color: var(--color-danger-bg);
     color: #ef5350;
 }
+
 .btn-delete:hover {
     background-color: #ef5350;
     color: #ffffff;
 }
 
 /* Dark Mode Support */
-[data-theme="dark"] .btn-edit { background: #1a3b5c; color: #64b5f6; }
-[data-theme="dark"] .btn-edit:hover { background: #4a7ee3; color: #fff; }
+[data-theme="dark"] .btn-edit {
+    background: #1a3b5c;
+    color: #64b5f6;
+}
 
-[data-theme="dark"] .btn-delete { background: #4a1e24; color: #f1aeb5; }
-[data-theme="dark"] .btn-delete:hover { background: #dc3545; color: #fff; }
+[data-theme="dark"] .btn-edit:hover {
+    background: #4a7ee3;
+    color: #fff;
+}
+
+[data-theme="dark"] .btn-delete {
+    background: #4a1e24;
+    color: #f1aeb5;
+}
+
+[data-theme="dark"] .btn-delete:hover {
+    background: #dc3545;
+    color: #fff;
+}
 
 
 /* =========================================
@@ -2455,18 +2474,18 @@ table.meals-table {
     width: 100%;
     margin-top: 12px;
     padding: 10px 15px;
-    
+
     /* Style đường viền nét đứt hoặc solid nhẹ nhàng */
     border: 1px dashed var(--primary-color);
     background-color: rgba(74, 126, 227, 0.05);
     color: var(--primary-color);
-    
+
     border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    
+
     /* Căn giữa icon và chữ */
     display: flex;
     align-items: center;
@@ -2478,17 +2497,19 @@ table.meals-table {
 .btn-add-log:hover {
     background-color: var(--primary-color);
     color: #ffffff;
-    border-style: solid; /* Đổi thành viền liền khi hover */
+    border-style: solid;
+    /* Đổi thành viền liền khi hover */
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(74, 126, 227, 0.3);
 }
 
 /* Dark Mode Chat Button */
 [data-theme="dark"] .btn-add-log {
-    background-color: rgba(255,255,255,0.05);
+    background-color: rgba(255, 255, 255, 0.05);
     border-color: #64b5f6;
     color: #64b5f6;
 }
+
 [data-theme="dark"] .btn-add-log:hover {
     background-color: #64b5f6;
     color: #121212;
@@ -2498,21 +2519,25 @@ table.meals-table {
    3. MOBILE RESPONSIVE FIX
    ========================================= */
 @media (max-width: 768px) {
+
     /* Trên mobile, ô chứa nút sẽ dãn ra */
     .modern-table tr td:last-child {
         display: flex;
         width: 100%;
-        justify-content: space-between; /* Đẩy 2 nút ra 2 đầu hoặc để flex-end tùy ý */
+        justify-content: space-between;
+        /* Đẩy 2 nút ra 2 đầu hoặc để flex-end tùy ý */
         gap: 15px;
         padding-top: 15px;
         margin-top: 10px;
         border-top: 1px dashed #eee;
     }
-    
+
     /* Nút to ra để dễ bấm ngón tay */
     .btn-icon {
-        flex: 1; /* Dãn đều 2 nút */
-        height: 44px; /* Chuẩn touch target */
+        flex: 1;
+        /* Dãn đều 2 nút */
+        height: 44px;
+        /* Chuẩn touch target */
         border-radius: 12px;
         font-size: 1.2rem;
     }
@@ -2527,7 +2552,8 @@ table.meals-table {
 @media (max-width: 900px) {
     main.dashboard {
         padding: 12px;
-        padding-bottom: 90px; /* chừa chỗ cho FAB không che nội dung cuối */
+        padding-bottom: 90px;
+        /* chừa chỗ cho FAB không che nội dung cuối */
         margin-top: 12px;
     }
 
@@ -2547,6 +2573,7 @@ table.meals-table {
     .progress-widget {
         position: relative;
     }
+
     .progress-value span {
         font-size: 1.75em;
     }
@@ -2560,6 +2587,7 @@ table.meals-table {
     .doughnut-container {
         max-height: 220px;
     }
+
     .meal-list-container {
         max-height: 280px;
         overflow-y: auto;
@@ -2573,6 +2601,7 @@ table.meals-table {
 
 /* === Phone (≤600px) === */
 @media (max-width: 600px) {
+
     /* Streak + Weight side-by-side để bớt scroll
        (chúng thuộc cùng .flex column, ta override sang grid 2 cột) */
     .flex:has(.streak-card) {
@@ -2580,34 +2609,41 @@ table.meals-table {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
     }
-    .flex:has(.streak-card) > .streak-card,
-    .flex:has(.streak-card) > .weight-card {
+
+    .flex:has(.streak-card)>.streak-card,
+    .flex:has(.streak-card)>.weight-card {
         margin: 0;
     }
+
     /* Weight card vẫn dài hơn streak vì có chart → cho span full khi cần */
-    .flex:has(.streak-card) > .weight-card {
+    .flex:has(.streak-card)>.weight-card {
         grid-column: span 2;
     }
-    .flex:has(.streak-card) > .streak-card {
+
+    .flex:has(.streak-card)>.streak-card {
         grid-column: span 2;
     }
+
     /* (Trên 480px+ thì để 2 cột) */
 }
 
 @media (min-width: 481px) and (max-width: 600px) {
-    .flex:has(.streak-card) > .streak-card {
+    .flex:has(.streak-card)>.streak-card {
         grid-column: span 1;
     }
-    .flex:has(.streak-card) > .weight-card {
+
+    .flex:has(.streak-card)>.weight-card {
         grid-column: span 1;
     }
-    .flex:has(.streak-card) > .wiki-card {
+
+    .flex:has(.streak-card)>.wiki-card {
         grid-column: span 2;
     }
 }
 
 /* === Small phone (≤480px) === */
 @media (max-width: 480px) {
+
     /* Wiki "Coming Soon" ít giá trị, ẩn để giảm scroll */
     .wiki-card {
         display: none;
@@ -2638,6 +2674,7 @@ table.meals-table {
     .chart-container-wrapper {
         height: 180px;
     }
+
     .doughnut-container {
         max-height: 200px;
     }
@@ -2649,6 +2686,7 @@ table.meals-table {
         text-align: center;
         padding: 12px;
     }
+
     .demo-banner p {
         font-size: 0.9rem;
     }
@@ -2683,5 +2721,159 @@ table.meals-table {
     .btn-action {
         min-height: 48px;
         font-size: 1rem;
+    }
+
+    /* === DUOLINGO-STYLE STREAK CARD === */
+    .streak-card {
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    [data-theme="dark"] .streak-card {
+        background: linear-gradient(145deg, #1e2937, #334155);
+        border-color: #475569;
+    }
+
+    .streak-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .streak-flame-wrapper {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--duo-orange);
+        border-radius: 9999px;
+        box-shadow: 0 4px 12px rgba(255, 150, 0, 0.3);
+    }
+
+    .streak-flame {
+        font-size: 32px;
+        color: white;
+        transition: transform 0.3s ease, filter 0.3s ease;
+    }
+
+    .streak-info h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin: 0 0 4px 0;
+    }
+
+    .streak-main {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+    }
+
+    .streak-number {
+        font-size: 42px;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--color-text);
+    }
+
+    .streak-label {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+    }
+
+    .streak-message {
+        font-size: 15px;
+        color: var(--color-text-secondary);
+        margin: 0 0 16px 0;
+        line-height: 1.5;
+    }
+
+    .streak-progress {
+        margin-top: 8px;
+    }
+
+    .streak-progress-bar {
+        height: 6px;
+        background: var(--color-border);
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+
+    .streak-progress-fill {
+        height: 100%;
+        background: linear-gradient(to right, var(--duo-green), #4ade80);
+        border-radius: 9999px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .streak-progress-text {
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 6px;
+        text-align: right;
+    }
+
+    .logging-toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 14px 20px;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 9999;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 90%;
+        width: 360px;
+    }
+
+    [data-theme="dark"] .logging-toast {
+        background: #1e2937;
+        border-color: #475569;
+    }
+
+    .logging-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .toast-icon {
+        color: var(--duo-green);
+        font-size: 22px;
+    }
+
+    .toast-text {
+        flex: 1;
+    }
+
+    .toast-text span {
+        display: block;
+        font-weight: 600;
+        color: var(--color-text);
+    }
+
+    .toast-subtext {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        margin-top: 2px;
     }
 }
