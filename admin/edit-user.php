@@ -5,6 +5,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../include/init.php';
 require_once __DIR__ . '/../include/db_config.php';
+require_once __DIR__ . '/../include/csrf.php';
 require_once __DIR__ . '/handlers/edit_user.php';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
@@ -121,6 +122,7 @@ $status = $user["status"];
             <?php endif; ?>
 
             <form action="edit-user.php" method="POST">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="user_id" value="<?php echo (int)$user_id ?? ''; ?>">
 
                 <div class="form-row">

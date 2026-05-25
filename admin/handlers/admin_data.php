@@ -288,8 +288,8 @@ function getStreakUpdatedByUser()
     global $pdo;
 
     $stmt = $pdo->prepare("
-        SELECT COUNT(*) AS total_streaks 
-        FROM activity_log 
+        SELECT COUNT(*) AS total_streaks
+        FROM activity_log
         WHERE action_type = 'streak_update'
           AND created_at >= NOW() - INTERVAL 7 DAY
     ");
@@ -303,13 +303,122 @@ $streakLabels = [];
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $stmt = $pdo->prepare("
-        SELECT COUNT(*) as total 
-        FROM activity_log 
+        SELECT COUNT(*) as total
+        FROM activity_log
         WHERE action_type = 'streak_update' AND DATE(created_at) = ?
     ");
     $stmt->execute([$date]);
     $total = $stmt->fetchColumn();
     $streakData[] = (int) $total;
     $streakLabels[] = date('D', strtotime($date));
+}
+
+function getTotalRevenue()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(SUM(grand_total), 0) AS revenue
+        FROM `order`
+        WHERE order_status IN ('paid', 'shipped', 'completed')
+    ");
+    $stmt->execute();
+    return (float) $stmt->fetchColumn();
+}
+
+function getAverageOrderValue()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT COALESCE(AVG(grand_total), 0) AS aov
+        FROM `order`
+        WHERE order_status IN ('paid', 'shipped', 'completed')
+    ");
+    $stmt->execute();
+    return (float) $stmt->fetchColumn();
+}
+
+function getTodayNewUsers()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM user
+        WHERE role = 'regular' AND DATE(timeCreated) = CURDATE()
+    ");
+    $stmt->execute();
+    return (int) $stmt->fetchColumn();
+}
+
+function getUserStatusBreakdown()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT s.status, COUNT(*) AS total
+        FROM userStatus s
+        JOIN user u ON u.user_id = s.user_id
+        WHERE u.role = 'regular'
+        GROUP BY s.status
+    ");
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    return [
+        'active'   => (int) ($rows['active']   ?? 0),
+        'banned'   => (int) ($rows['banned']   ?? 0),
+        'archived' => (int) ($rows['archived'] ?? 0),
+    ];
+}
+
+function getOrderStatusBreakdown()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT order_status, COUNT(*) AS total
+        FROM `order`
+        GROUP BY order_status
+    ");
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    $statuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled'];
+    $out = [];
+    foreach ($statuses as $s) {
+        $out[$s] = (int) ($rows[$s] ?? 0);
+    }
+    return $out;
+}
+
+function getTopProducts($limit = 5)
+{
+    global $pdo;
+    $limit = max(1, min(50, (int) $limit));
+    $stmt = $pdo->prepare("
+        SELECT oi.product_id,
+               COALESCE(p.product_name, oi.product_name) AS product_name,
+               SUM(oi.quantity)   AS units_sold,
+               SUM(oi.line_total) AS revenue
+        FROM order_item oi
+        JOIN `order` o ON o.order_id = oi.order_id
+        LEFT JOIN product p ON p.product_id = oi.product_id
+        WHERE o.order_status IN ('paid', 'shipped', 'completed')
+        GROUP BY oi.product_id, product_name
+        ORDER BY units_sold DESC
+        LIMIT $limit
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getRecentActivity($limit = 10)
+{
+    global $pdo;
+    $limit = max(1, min(100, (int) $limit));
+    $stmt = $pdo->prepare("
+        SELECT u.user_name, u.role, a.action_type, a.description,
+               a.target_table, a.target_id, a.created_at
+        FROM activity_log a
+        JOIN user u ON u.user_id = a.user_id
+        ORDER BY a.created_at DESC
+        LIMIT $limit
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
