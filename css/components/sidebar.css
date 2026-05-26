@@ -106,13 +106,45 @@
 }
 
 @media (max-width: 480px) {
-    .sidebar .nav-link {
-        font-size: 0.9rem;
-        padding: 12px 0;
+    /* Dùng grid 5 cột bằng nhau để mọi tab có cùng width, kể cả khi content
+       dài/ngắn khác nhau. minmax(0,1fr) ép min-width=0, ngăn cột nở theo
+       min-content (1fr thuần = minmax(auto,1fr) sẽ bị "Overview" làm phình). */
+    .sidebar {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
+    .sidebar .nav-link {
+        font-size: 0.85rem;
+        padding: 12px 2px;
+        gap: 6px;
+        min-width: 0;
+        /* Bỏ flex:1 cũ, grid lo width; nội dung vẫn center bằng justify-content */
+    }
+
+    /* Icon hiển thị lại (trước đây đang ẩn) để tăng nhận diện nhanh */
     .sidebar .nav-link i {
-        display: none;
+        display: inline-block;
+        font-size: 0.95rem;
+    }
+
+    /* Rút gọn label dài: "Food Intake" → "Intake", "Calculator" → "Calc".
+       Trích từ thuộc tính data-short trên phần PHP. */
+    .sidebar .nav-link[data-short] {
+        font-size: 0;
+        /* Ẩn text node "Food Intake" / "Calculator" gốc */
+        white-space: nowrap;
+    }
+
+    .sidebar .nav-link[data-short] i {
+        font-size: 0.95rem;
+        /* Khôi phục kích thước icon */
+    }
+
+    .sidebar .nav-link[data-short]::after {
+        content: attr(data-short);
+        font-size: 0.85rem;
+        margin-left: 6px;
     }
 }
 

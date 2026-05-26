@@ -1,5 +1,28 @@
 <?php
 require_once __DIR__ . '/../../include/handlers/log_attempt.php';
+
+/**
+ * Convert a DB DATETIME string (stored as Vietnam local time, see
+ * include/db_config.php SET time_zone = '+07:00') into an ISO 8601 string
+ * with explicit +07:00 offset, e.g. "2025-05-26T14:30:00+07:00".
+ *
+ * The client-side helper formatLocal() (see dashboard/views/local-time-script.php)
+ * then converts this ISO string to the visitor's local timezone via the browser's
+ * Intl APIs — so users in Tokyo see Tokyo time, users in NYC see NYC time, etc.
+ *
+ * Returns '' for null/empty input.
+ */
+function toIsoVN($dbDatetime): string
+{
+    if (empty($dbDatetime)) return '';
+    try {
+        $dt = new DateTime($dbDatetime, new DateTimeZone('Asia/Ho_Chi_Minh'));
+        return $dt->format('c'); // ISO 8601 with offset
+    } catch (Exception $e) {
+        return '';
+    }
+}
+
 function updateLoggingStreak(PDO $pdo, int $userId): void
 {
     // Fetch current status row (lock it FOR UPDATE to prevent race conditions)

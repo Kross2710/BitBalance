@@ -1777,114 +1777,6 @@ table.meals-table {
 }
 
 /* =========================================
-   GLOBAL ACTION BUTTONS (Edit/Delete)
-   ========================================= */
-
-/* 1. Nút Edit (Desktop Default) */
-.btn-edit {
-    background: var(--color-info-bg);
-    /* Nền xanh siêu nhạt */
-    color: #1976d2;
-    /* Icon xanh đậm */
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-right: 5px;
-    /* Cách nút xóa một chút */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-edit:hover {
-    background: #1976d2;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2);
-}
-
-/* Nút Delete (Tinh chỉnh lại chút cho đồng bộ) */
-.btn-delete {
-    background: var(--color-danger-bg);
-    color: #ef5350;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-delete:hover {
-    background: #ef5350;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(239, 83, 80, 0.2);
-}
-
-/* --- DARK MODE --- */
-[data-theme="dark"] .btn-edit {
-    background: #1a3b5c;
-    /* Xanh tối */
-    color: #64b5f6;
-    /* Icon sáng */
-}
-
-[data-theme="dark"] .btn-edit:hover {
-    background: #4a7ee3;
-    color: white;
-}
-
-[data-theme="dark"] .btn-delete {
-    background: #4a1e24;
-    /* Đỏ tối */
-    color: #f1aeb5;
-}
-
-[data-theme="dark"] .btn-delete:hover {
-    background: #dc3545;
-    color: white;
-}
-
-/* --- MOBILE RESPONSIVE (Quan trọng) --- */
-@media (max-width: 768px) {
-
-    /* Target vào ô chứa nút Action trong bảng */
-    .modern-table tr td:last-child {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        /* Chia đôi chiều rộng */
-        gap: 10px;
-        /* Khoảng cách giữa 2 nút */
-        padding-top: 15px;
-        margin-top: 10px;
-        border-top: 1px dashed rgba(0, 0, 0, 0.1);
-        /* Đường kẻ ngăn cách với nội dung trên */
-    }
-
-    /* Reset width và height để nút to ra dễ bấm */
-    .btn-edit,
-    .btn-delete {
-        width: 100%;
-        /* Full chiều rộng cột lưới */
-        height: 40px;
-        /* Cao hơn để ngón tay dễ bấm */
-        font-size: 1.1rem;
-        margin: 0;
-    }
-
-    /* Thêm icon + chữ nếu muốn rõ ràng hơn trên mobile (Optional) */
-    /* Nếu bạn muốn hiện chữ "Edit" bên cạnh icon trên mobile thì dùng ::after */
-}
-
-
-/* =========================================
    GLOBAL MODAL STYLES (Edit/Goal/Weight)
    ========================================= */
 
@@ -2421,50 +2313,6 @@ table.meals-table {
     transform: scale(0.95);
 }
 
-/* --- Nút Edit (Xanh dương) --- */
-.btn-edit {
-    background-color: var(--color-info-bg);
-    color: #1976d2;
-}
-
-.btn-edit:hover {
-    background-color: #1976d2;
-    color: #ffffff;
-}
-
-/* --- Nút Delete (Đỏ) --- */
-.btn-delete {
-    background-color: var(--color-danger-bg);
-    color: #ef5350;
-}
-
-.btn-delete:hover {
-    background-color: #ef5350;
-    color: #ffffff;
-}
-
-/* Dark Mode Support */
-[data-theme="dark"] .btn-edit {
-    background: #1a3b5c;
-    color: #64b5f6;
-}
-
-[data-theme="dark"] .btn-edit:hover {
-    background: #4a7ee3;
-    color: #fff;
-}
-
-[data-theme="dark"] .btn-delete {
-    background: #4a1e24;
-    color: #f1aeb5;
-}
-
-[data-theme="dark"] .btn-delete:hover {
-    background: #dc3545;
-    color: #fff;
-}
-
-
 /* =========================================
    2. CHATBOT ACTION BUTTON (+ Add to Log)
    ========================================= */
@@ -2625,6 +2473,56 @@ table.meals-table {
     }
 
     /* (Trên 480px+ thì để 2 cột) */
+
+    /* === COMPACT TODAY HERO (dashboard page only) ===
+       Ép thẻ "Today" theo chiều ngang: tiêu đề + calories + goal trên 1 hàng,
+       progress bar mảnh ở hàng dưới. Giảm ~50% chiều cao so với layout dọc.
+       SCOPE: chỉ áp dụng cho dashboard.php (<main class="dashboard">) — KHÔNG
+       leak sang intake/history/calculator page (dùng <main class="dashboard-content">
+       cũng có .progress-widget nhưng HTML structure khác hẳn). */
+    main.dashboard .progress-widget {
+        padding: 14px 16px !important;
+    }
+
+    main.dashboard .progress-widget .progress-card-content {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "title value goal"
+            "bar bar bar";
+        align-items: center;
+        column-gap: 12px;
+        row-gap: 8px;
+    }
+
+    main.dashboard .progress-widget h3 {
+        grid-area: title;
+        font-size: 1rem !important;
+        margin: 0 !important;
+    }
+
+    main.dashboard .progress-widget .progress-value {
+        grid-area: value;
+        margin: 0;
+        text-align: right;
+    }
+
+    main.dashboard .progress-widget .progress-value span {
+        font-size: 1.35em;
+    }
+
+    main.dashboard .progress-widget .progress-bar {
+        grid-area: bar;
+        height: 12px;
+        margin: 0;
+    }
+
+    main.dashboard .progress-widget .progress-labels {
+        grid-area: goal;
+        font-size: 12px;
+        gap: 4px;
+        justify-content: flex-end;
+    }
 }
 
 @media (min-width: 481px) and (max-width: 600px) {
@@ -2721,159 +2619,5 @@ table.meals-table {
     .btn-action {
         min-height: 48px;
         font-size: 1rem;
-    }
-
-    /* === DUOLINGO-STYLE STREAK CARD === */
-    .streak-card {
-        background: linear-gradient(145deg, #ffffff, #f8fafc);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 20px;
-        box-shadow: var(--shadow-sm);
-    }
-
-    [data-theme="dark"] .streak-card {
-        background: linear-gradient(145deg, #1e2937, #334155);
-        border-color: #475569;
-    }
-
-    .streak-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .streak-flame-wrapper {
-        width: 64px;
-        height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--duo-orange);
-        border-radius: 9999px;
-        box-shadow: 0 4px 12px rgba(255, 150, 0, 0.3);
-    }
-
-    .streak-flame {
-        font-size: 32px;
-        color: white;
-        transition: transform 0.3s ease, filter 0.3s ease;
-    }
-
-    .streak-info h3 {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--color-text-secondary);
-        margin: 0 0 4px 0;
-    }
-
-    .streak-main {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-    }
-
-    .streak-number {
-        font-size: 42px;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--color-text);
-    }
-
-    .streak-label {
-        font-size: 18px;
-        font-weight: 500;
-        color: var(--color-text-secondary);
-    }
-
-    .streak-message {
-        font-size: 15px;
-        color: var(--color-text-secondary);
-        margin: 0 0 16px 0;
-        line-height: 1.5;
-    }
-
-    .streak-progress {
-        margin-top: 8px;
-    }
-
-    .streak-progress-bar {
-        height: 6px;
-        background: var(--color-border);
-        border-radius: 9999px;
-        overflow: hidden;
-    }
-
-    .streak-progress-fill {
-        height: 100%;
-        background: linear-gradient(to right, var(--duo-green), #4ade80);
-        border-radius: 9999px;
-        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .streak-progress-text {
-        font-size: 12px;
-        color: var(--color-text-muted);
-        margin-top: 6px;
-        text-align: right;
-    }
-
-    .logging-toast {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: white;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 14px 20px;
-        box-shadow: var(--shadow-lg);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        z-index: 9999;
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        max-width: 90%;
-        width: 360px;
-    }
-
-    [data-theme="dark"] .logging-toast {
-        background: #1e2937;
-        border-color: #475569;
-    }
-
-    .logging-toast.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-
-    .toast-content {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-    }
-
-    .toast-icon {
-        color: var(--duo-green);
-        font-size: 22px;
-    }
-
-    .toast-text {
-        flex: 1;
-    }
-
-    .toast-text span {
-        display: block;
-        font-weight: 600;
-        color: var(--color-text);
-    }
-
-    .toast-subtext {
-        font-size: 13px;
-        color: var(--color-text-secondary);
-        margin-top: 2px;
     }
 }

@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <span class="cat-badge ' . $catClass . '">' . htmlspecialchars($catLabel) . '</span>
         </td>
 
-        <td data-label="Time" class="text-muted" data-utc="' . gmdate('Y-m-d\TH:i:s\Z') . '">Just now</td>
+        <td data-label="Time" class="text-muted" data-iso="' . gmdate('Y-m-d\TH:i:s\Z') . '" data-tz-format="time">Just now</td>
 
         <td style="text-align: right;">
             <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
