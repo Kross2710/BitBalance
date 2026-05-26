@@ -118,8 +118,10 @@ if ($isLoggedIn) {
                                             data-fat="<?= htmlspecialchars($fD) ?>">
                                             <td data-label="Date" data-sort="<?= strtotime($entry['date_intake']) ?>">
                                                 <div class="date-cell">
-                                                    <span class="day"><?= date('d', strtotime($entry['date_intake'])) ?></span>
-                                                    <span class="month"><?= date('M Y', strtotime($entry['date_intake'])) ?></span>
+                                                    <span class="day" data-iso="<?= toIsoVN($entry['date_intake']) ?>"
+                                                        data-tz-format="date-day"><?= date('d', strtotime($entry['date_intake'])) ?></span>
+                                                    <span class="month" data-iso="<?= toIsoVN($entry['date_intake']) ?>"
+                                                        data-tz-format="date-monthyear"><?= date('M Y', strtotime($entry['date_intake'])) ?></span>
                                                 </div>
                                             </td>
                                             <td data-label="Category">
@@ -138,7 +140,9 @@ if ($isLoggedIn) {
                                                 <span class="macro-chip c">C <?= $cD ?>g</span>
                                                 <span class="macro-chip f">F <?= $fD ?>g</span>
                                             </td>
-                                            <td data-label="Time" class="text-muted">
+                                            <td data-label="Time" class="text-muted"
+                                                data-iso="<?= toIsoVN($entry['date_intake']) ?>"
+                                                data-tz-format="time">
                                                 <?= date('H:i', strtotime($entry['date_intake'])) ?>
                                             </td>
                                             <td style="text-align: right;">
@@ -508,6 +512,7 @@ if ($isLoggedIn) {
             }
         });
     </script>
+    <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
 </body>
 
 </html>

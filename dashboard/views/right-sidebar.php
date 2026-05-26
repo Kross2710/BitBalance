@@ -1,7 +1,13 @@
 <div class="right-sidebar">
     <div class="sidebar-section user-welcome">
         <div class="date-badge">
-            <i class="far fa-calendar-alt"></i> <?php echo date('j F, Y'); ?>
+            <i class="far fa-calendar-alt"></i>
+            <?php
+            // Emit server's current moment as ISO with VN offset; client converts
+            // to visitor's local date so "today" reflects the user's calendar day.
+            $nowIso = (new DateTime('now', new DateTimeZone('Asia/Ho_Chi_Minh')))->format('c');
+            ?>
+            <span data-iso="<?= $nowIso ?>" data-tz-format="date-long"><?= date('j F, Y') ?></span>
         </div>
         <h2>Hello, <br><span class="user-name"><?php echo htmlspecialchars($displayUser); ?></span></h2>
     </div>

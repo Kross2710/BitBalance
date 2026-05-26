@@ -19,10 +19,26 @@
     box-shadow: 0 6px 20px rgba(74, 126, 227, 0.45);
     z-index: var(--z-fab);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    /* Chuẩn hoá line-height: icon (1.4rem) và label (0.95rem) khác font-size
+       nên line-box khác nhau → text bị lệch dọc. line-height:1 ép cả hai
+       về cùng baseline để align-items:center hoạt động chính xác. */
+    line-height: 1;
+}
+
+/* Cả icon + label dùng line-height:1 để collapse line-box về đúng glyph size.
+   Khi font-size icon (1.1rem) và label (0.95rem) gần nhau + line-height đồng nhất,
+   align-items:center của .fab tự khớp baseline. */
+.fab i,
+.fab .fab-label {
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 .fab i {
-    font-size: 1.4rem;
+    /* Giảm từ 1.4rem → 1.1rem để icon gần size label (0.95rem), tránh chênh
+       lệch line-box quá lớn gây cảm giác lệch dù đã center. */
+    font-size: 1.1rem;
 }
 
 .fab:hover,

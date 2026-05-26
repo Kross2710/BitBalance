@@ -165,10 +165,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <div class="alert error"><i class="fas fa-exclamation-triangle"></i>
                                     <?php echo $error_message; ?></div>
                             <?php endif; ?>
-                            <?php if (!empty($success_message)): ?>
-                                <div class="alert success"><i class="fas fa-check-circle"></i> <?php echo $success_message; ?>
-                                </div>
-                            <?php endif; ?>
+                            <?php /* Success now handled by logging-toast partial (slide-up toast). */ ?>
                         </div>
 
                         <form id="intakeForm" action="handlers/process_intake.php" method="POST">
@@ -303,7 +300,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                                 </span>
                                             </td>
                                             <td data-label="Time" class="text-muted"
-                                                data-utc="<?= htmlspecialchars($log['date_intake']); ?>">
+                                                data-iso="<?= toIsoVN($log['date_intake']); ?>"
+                                                data-tz-format="time">
                                                 <?= date('H:i', strtotime($log['date_intake'])); ?>
                                             </td>
                                             <td style="text-align: right;">
@@ -759,17 +757,12 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             if (noRow) noRow.remove();
 
                             // Insert new row styling
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = data.new_row; // Assuming backend returns <tr>...</tr>
-                            // We need to re-apply the classes/structure if the backend returns old HTML
-                            // But for now, let's assume standard structure, styling is handled by CSS
                             body.insertAdjacentHTML('afterbegin', data.new_row);
 
-                            // Update Time to Local
+                            // Convert [data-iso] time cell of the newly inserted row to local TZ
+                            // ("Just now" placeholder → "14:30" in visitor's local time)
                             const newRow = body.firstElementChild;
-                            const dateCell = newRow.querySelector('td[data-label="Logged At"]'); // Old backend label
-                            // Handle backend returning old data-label
-                            // Better logic: find cell by index or class if backend is rigid
+                            if (window.applyLocalTime) window.applyLocalTime(newRow);
 
                             // Update Totals
                             totalDisplay.textContent = data.total;
@@ -778,6 +771,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
                             // Update Macros widget
                             updateMacrosWidget(data.macros, data.macro_goals);
+
+                            // Toast notification (matches Adjust Goal UX)
+                            const foodName = fd.get('food_item');
+                            const cal = fd.get('calories');
+                            showLoggingToast('Food logged!', foodName + ' • ' + cal + ' kcal');
 
                             form.reset();
                         } else {
@@ -813,6 +811,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         const data = await res.json();
 
                         if (data.ok) {
+                            // Grab food name from row BEFORE removal for the toast subtext
+                            const deletedFood = row.querySelector('td[data-label="Food"]')?.innerText.trim() || '';
+
                             row.style.opacity = '0';
                             setTimeout(() => row.remove(), 300);
 
@@ -821,6 +822,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             if (pctLabel) pctLabel.textContent = Math.round(data.percentage) + '%';
 
                             updateMacrosWidget(data.macros, data.macro_goals);
+
+                            // Toast notification
+                            showLoggingToast('Entry deleted', deletedFood);
 
                             // Show empty state if needed
                             if (body.children.length <= 1) { // 1 because row is removed after timeout
@@ -1011,6 +1015,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         // 3. Cập nhật Macros widget
                         updateMacrosWidget(data.macros, data.macro_goals);
 
+                        // Toast notification
+                        const editedFood = data.food_item || fd.get('food_item');
+                        const editedCal = data.calories || fd.get('calories');
+                        showLoggingToast('Entry updated', editedFood + ' • ' + editedCal + ' kcal');
+
                         closeModal();
                     } else {
                         alert(data.error || 'Update failed');
@@ -1021,6 +1030,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 }
             });
         </script>
+
+        <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
     <?php endif; ?>
 </body>
 

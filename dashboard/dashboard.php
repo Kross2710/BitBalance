@@ -408,12 +408,13 @@ if ($isLoggedIn) {
                 <section class="dashboard-card streak-card" id="streakCard">
                     <div class="streak-header">
                         <div class="streak-flame-wrapper">
-                            <i class="fas fa-fire streak-flame" id="streakFlame"></i>
+                            <i class="fas fa-fire streak-flame" id="streakFlame"
+                                style="color: <?= htmlspecialchars($streakFlameColor) ?>;"></i>
                         </div>
                         <div class="streak-info">
                             <h3>Streak</h3>
                             <div class="streak-main">
-                                <span class="streak-number" id="streakNumber">12</span>
+                                <span class="streak-number" id="streakNumber"><?= (int) $streakDays ?></span>
                                 <span class="streak-label">days</span>
                             </div>
                         </div>
@@ -421,56 +422,21 @@ if ($isLoggedIn) {
 
                     <div class="streak-body">
                         <p class="streak-message" id="streakMessage">
-                            You're building serious consistency. Keep it going!
+                            <?= htmlspecialchars($streakMessage) ?>
                         </p>
 
-                        <!-- Optional: Progress to next milestone -->
+                        <!-- Progress to next milestone -->
                         <div class="streak-progress">
                             <div class="streak-progress-bar">
-                                <div class="streak-progress-fill" id="streakProgressFill" style="width: 40%;"></div>
+                                <div class="streak-progress-fill" id="streakProgressFill"
+                                    style="width: <?= (int) $streakProgress ?>%;"></div>
                             </div>
                             <div class="streak-progress-text">
-                                <span>4 days to 16-day milestone</span>
+                                <span><?= htmlspecialchars($milestoneText) ?></span>
                             </div>
                         </div>
                     </div>
                 </section>
-
-                <!-- LOGGING SUCCESS TOAST -->
-                <div id="loggingToast" class="logging-toast">
-                    <div class="toast-content">
-                        <div class="toast-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="toast-text">
-                            <span id="toastMessage">Logged successfully!</span>
-                            <span id="toastSubtext" class="toast-subtext"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                    function showLoggingToast(message, isStreak = false, subtext = '') {
-                        const toast = document.getElementById('loggingToast');
-                        const msgEl = document.getElementById('toastMessage');
-                        const subEl = document.getElementById('toastSubtext');
-
-                        if (!toast || !msgEl) return;
-
-                        msgEl.textContent = message;
-                        subEl.textContent = subtext || (isStreak ? "You're on fire 🔥" : "");
-
-                        toast.classList.add('show');
-
-                        // Auto hide after 3.5 seconds
-                        setTimeout(() => {
-                            toast.classList.remove('show');
-                        }, 3500);
-                    }
-
-                    // Example usage after successful log:
-                    // showLoggingToast("Meal logged!", true);
-                </script>
 
                 <script>
                     // Streak Card Interactions
@@ -517,7 +483,7 @@ if ($isLoggedIn) {
                         }, 600);
 
                         // Optional: Show toast
-                        showLoggingToast("Streak maintained! 🔥 +1 day", true);
+                        showLoggingToast("Streak maintained! 🔥 +1 day", "You're on fire 🔥");
                     }
 
                     // Call this on page load with real data
@@ -802,34 +768,9 @@ if ($isLoggedIn) {
         </script>
     <?php endif; ?>
 
-    <!-- LOGGING SUCCESS TOAST -->
-    <div id="loggingToast" class="logging-toast" role="status" aria-live="polite">
-        <div class="toast-content">
-            <div class="toast-icon"><i class="fas fa-check-circle"></i></div>
-            <div class="toast-text">
-                <span id="toastMessage">Logged successfully!</span>
-                <span id="toastSubtext" class="toast-subtext"></span>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Logging success toast — slides up, auto-hides after 3.5s
-        function showLoggingToast(message, subtext = '') {
-            const toast = document.getElementById('loggingToast');
-            const msgEl = document.getElementById('toastMessage');
-            const subEl = document.getElementById('toastSubtext');
-            if (!toast || !msgEl) return;
-
-            msgEl.textContent = message;
-            if (subEl) subEl.textContent = subtext;
-
-            toast.classList.add('show');
-            clearTimeout(toast._hideTimer);
-            toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 3500);
-        }
-
-        // Streak flame celebration — quick scale + glow pulse
+        // Streak flame celebration — quick scale + glow pulse.
+        // Defined BEFORE logging-toast partial so its auto-fire can detect it.
         function celebrateStreak() {
             const flame = document.getElementById('streakFlame');
             const card = document.getElementById('streakCard');
@@ -846,14 +787,10 @@ if ($isLoggedIn) {
                 card.style.transform = '';
             }, 600);
         }
-
-        <?php if (!empty($success_message)): ?>
-            document.addEventListener('DOMContentLoaded', () => {
-                showLoggingToast(<?= json_encode($success_message, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>);
-                celebrateStreak();
-            });
-        <?php endif; ?>
     </script>
+
+    <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
+    <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 </body>
