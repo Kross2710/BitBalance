@@ -29,10 +29,16 @@ if ($isLoggedIn) {
                 <div class="nav-links">
                     <a href="<?= BASE_URL ?>dashboard/dashboard.php"
                         class="nav-item <?php echo ($activeHeader == 'dashboard') ? 'active' : ''; ?>">Dashboard</a>
-                    <a href="<?= BASE_URL ?>products.php"
+                    <?php if ($isLoggedIn): ?>
+                        <a href="<?= BASE_URL ?>ai-coach.php"
+                            class="nav-item <?php echo ($activeHeader == 'ai-coach') ? 'active' : ''; ?>">
+                            <i class="fas fa-sparkles"></i> AI Coach
+                        </a>
+                    <?php endif; ?>
+                    <!-- <a href="<?= BASE_URL ?>products.php"
                         class="nav-item <?php echo ($activeHeader == 'products') ? 'active' : ''; ?>">Products</a>
                     <a href="<?= BASE_URL ?>forum.php"
-                        class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>">Forums</a>
+                        class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>">Forums</a> -->
                     <a href="<?= BASE_URL ?>about.php"
                         class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>">About</a>
                 </div>
