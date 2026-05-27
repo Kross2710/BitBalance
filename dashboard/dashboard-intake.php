@@ -40,12 +40,13 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <title>Food Log | BitBalance</title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css?v=' . time(), 'css/pages/dashboard-intake.css'];
+    $pageCss = ['css/dashboard.css?v=' . time(), 'css/components/intake-list.css', 'css/pages/dashboard-intake.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 
 <body>
@@ -168,13 +169,25 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             <?php /* Success now handled by logging-toast partial (slide-up toast). */ ?>
                         </div>
 
+                        <div class="quick-actions-row">
+                            <button type="button" class="quick-action-chip" id="openScannerChip">
+                                <i class="fas fa-barcode"></i> Scan Barcode
+                            </button>
+                            <button type="button" class="quick-action-chip" onclick="toggleChat()">
+                                <i class="fas fa-robot"></i> AI Photo
+                            </button>
+                        </div>
+
                         <form id="intakeForm" action="handlers/process_intake.php" method="POST">
                             <div class="form-group">
                                 <label for="food_item">Food Name</label>
-                                <div class="input-icon-wrapper">
+                                <div class="input-icon-wrapper food-name-wrapper">
                                     <i class="fas fa-utensils input-icon"></i>
                                     <input type="text" id="food_item" name="food_item" placeholder="e.g., Pho Bo, Apple..."
                                         required>
+                                    <button type="button" class="btn-inline-scan" id="openScannerInline" title="Scan barcode">
+                                        <i class="fas fa-barcode"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -271,48 +284,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                         </tr>
                                     <?php endif; ?>
 
-                                    <?php foreach ($intakeLog as $log):
-                                        $p = (float) ($log['protein'] ?? 0);
-                                        $c = (float) ($log['carbs']   ?? 0);
-                                        $f = (float) ($log['fat']     ?? 0);
-                                        $pD = rtrim(rtrim(number_format($p, 1, '.', ''), '0'), '.'); if ($pD === '') $pD = '0';
-                                        $cD = rtrim(rtrim(number_format($c, 1, '.', ''), '0'), '.'); if ($cD === '') $cD = '0';
-                                        $fD = rtrim(rtrim(number_format($f, 1, '.', ''), '0'), '.'); if ($fD === '') $fD = '0';
-                                    ?>
-                                        <tr data-id="<?= $log['intakeLog_id']; ?>"
-                                            data-protein="<?= htmlspecialchars($pD); ?>"
-                                            data-carbs="<?= htmlspecialchars($cD); ?>"
-                                            data-fat="<?= htmlspecialchars($fD); ?>">
-                                            <td data-label="Food" class="fw-bold">
-                                                <?= htmlspecialchars($log['food_item']); ?>
-                                            </td>
-                                            <td data-label="Calories" class="text-primary">
-                                                <?= htmlspecialchars($log['calories']); ?> kcal
-                                            </td>
-                                            <td data-label="Macros" class="macros-cell">
-                                                <span class="macro-chip p">P <?= $pD ?>g</span>
-                                                <span class="macro-chip c">C <?= $cD ?>g</span>
-                                                <span class="macro-chip f">F <?= $fD ?>g</span>
-                                            </td>
-                                            <td data-label="Category">
-                                                <span class="cat-badge cat-<?= strtolower($log['meal_category']); ?>">
-                                                    <?= htmlspecialchars(ucfirst($log['meal_category'])); ?>
-                                                </span>
-                                            </td>
-                                            <td data-label="Time" class="text-muted"
-                                                data-iso="<?= toIsoVN($log['date_intake']); ?>"
-                                                data-tz-format="time">
-                                                <?= date('H:i', strtotime($log['date_intake'])); ?>
-                                            </td>
-                                            <td style="text-align: right;">
-                                                <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                                <button type="button" class="btn-edit" title="Edit Entry">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                    <?php foreach ($intakeLog as $log): ?>
+                                        <?php $entry = $log; $showDate = false; include PROJECT_ROOT . 'dashboard/views/_intake-row.php'; ?>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -321,6 +294,288 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 </div>
             </div>
         </main>
+
+        <!-- =============== Barcode Scanner Modal =============== -->
+        <div class="scanner-modal" id="scannerModal" role="dialog" aria-modal="true">
+            <div class="scanner-modal-content">
+                <div class="scanner-modal-header">
+                    <h3><i class="fas fa-barcode"></i> Scan Product Barcode</h3>
+                    <button type="button" class="scanner-close" id="scannerCloseBtn" aria-label="Close">&times;</button>
+                </div>
+
+                <div id="scannerReader"></div>
+
+                <div class="scanner-controls">
+                    <button type="button" class="scanner-btn-start" id="scannerStartBtn">
+                        <i class="fas fa-camera"></i> Start Camera
+                    </button>
+                    <button type="button" class="scanner-btn-stop" id="scannerStopBtn" style="display:none;">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                </div>
+
+                <div class="scanner-manual">
+                    <label for="scannerManualInput">Or enter barcode manually</label>
+                    <div class="scanner-manual-row">
+                        <input type="text" id="scannerManualInput" inputmode="numeric" placeholder="e.g., 0884394009401">
+                        <button type="button" id="scannerManualBtn">Lookup</button>
+                    </div>
+                </div>
+
+                <div id="scannerResult"></div>
+            </div>
+        </div>
+
+        <script>
+        (function() {
+            const modal       = document.getElementById('scannerModal');
+            const closeBtn    = document.getElementById('scannerCloseBtn');
+            const startBtn    = document.getElementById('scannerStartBtn');
+            const stopBtn     = document.getElementById('scannerStopBtn');
+            const manualInput = document.getElementById('scannerManualInput');
+            const manualBtn   = document.getElementById('scannerManualBtn');
+            const resultEl    = document.getElementById('scannerResult');
+            const chipBtn     = document.getElementById('openScannerChip');
+            const inlineBtn   = document.getElementById('openScannerInline');
+
+            let html5QrCode   = null;
+            let scanning      = false;
+            let lastCode      = null;
+            let lastCodeTime  = 0;
+            let currentProduct = null; // last successful lookup
+
+            function openModal() {
+                modal.classList.add('active');
+                resultEl.innerHTML = '';
+                manualInput.value = '';
+            }
+
+            async function closeModal() {
+                modal.classList.remove('active');
+                await stopScanner();
+            }
+
+            chipBtn?.addEventListener('click', openModal);
+            inlineBtn?.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // ============ Camera ============
+            startBtn.addEventListener('click', async () => {
+                if (scanning || typeof Html5Qrcode === 'undefined') {
+                    if (typeof Html5Qrcode === 'undefined') {
+                        alert('Scanner library failed to load. Check your internet connection.');
+                    }
+                    return;
+                }
+                try {
+                    html5QrCode = new Html5Qrcode("scannerReader");
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 260, height: 140 } },
+                        onScanSuccess,
+                        () => {}
+                    );
+                    scanning = true;
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'block';
+                } catch (err) {
+                    alert("Could not access camera: " + (err.message || err) +
+                          "\n\nMake sure you allowed camera access and are on HTTPS or localhost.");
+                }
+            });
+
+            stopBtn.addEventListener('click', stopScanner);
+
+            async function stopScanner() {
+                if (!scanning || !html5QrCode) return;
+                try { await html5QrCode.stop(); html5QrCode.clear(); } catch (e) {}
+                scanning = false;
+                startBtn.style.display = 'block';
+                stopBtn.style.display = 'none';
+            }
+
+            function onScanSuccess(decodedText) {
+                const now = Date.now();
+                if (decodedText === lastCode && (now - lastCodeTime) < 3000) return;
+                lastCode = decodedText;
+                lastCodeTime = now;
+                if (navigator.vibrate) navigator.vibrate(80);
+                lookupBarcode(decodedText);
+            }
+
+            // ============ Manual lookup ============
+            manualBtn.addEventListener('click', () => {
+                const code = manualInput.value.trim();
+                if (code) lookupBarcode(code);
+            });
+            manualInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); manualBtn.click(); }
+            });
+
+            // ============ API call ============
+            async function lookupBarcode(code) {
+                resultEl.innerHTML = '<div class="scanner-result loading">' +
+                    '<div class="scanner-result-name">⏳ Looking up ' + escapeHtml(code) + '...</div>' +
+                    '</div>';
+                const fd = new FormData();
+                fd.append('barcode', code);
+                try {
+                    const res = await fetch('handlers/lookup_barcode.php', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'fetch' },
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (!data.ok) {
+                        resultEl.innerHTML = '<div class="scanner-result not-found">' +
+                            '<div class="scanner-result-name">⚠ Error</div>' +
+                            '<div class="scanner-result-brand">' + escapeHtml(data.error || 'Unknown error') + '</div>' +
+                            '</div>';
+                        return;
+                    }
+                    if (!data.found) {
+                        renderNotFound(code);
+                        return;
+                    }
+                    currentProduct = data;
+                    renderFound(data);
+                } catch (err) {
+                    resultEl.innerHTML = '<div class="scanner-result not-found">' +
+                        '<div class="scanner-result-name">⚠ Network error</div>' +
+                        '<div class="scanner-result-brand">' + escapeHtml(err.message || '') + '</div>' +
+                        '</div>';
+                }
+            }
+
+            // ============ Render ============
+            function renderFound(p) {
+                const hasServing = p.kcal_per_serving != null;
+                const kcalBase   = hasServing ? p.kcal_per_serving : p.kcal_per_100g;
+                const baseLabel  = hasServing ? (p.serving_size || '1 serving') : 'per 100g/ml';
+                const cachedTag  = p.cache_hit ? '<span style="font-size:.65rem;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;margin-left:6px;">cached</span>' : '';
+
+                resultEl.innerHTML = `
+                  <div class="scanner-result">
+                    ${p.image_url ? `<img class="scanner-result-img" src="${escapeHtml(p.image_url)}" alt="">` : ''}
+                    <div class="scanner-result-name">${escapeHtml(p.product_name || '(no name)')} ${cachedTag}</div>
+                    <div class="scanner-result-brand">
+                      ${escapeHtml(p.brand || '')} ${p.serving_size ? '· ' + escapeHtml(p.serving_size) : ''}
+                    </div>
+                    <div class="scanner-nutri">
+                      <div class="scanner-nutri-item">
+                        <div class="scanner-nutri-label">Kcal</div>
+                        <div class="scanner-nutri-value">${kcalBase != null ? Math.round(kcalBase) : '—'}</div>
+                      </div>
+                      <div class="scanner-nutri-item">
+                        <div class="scanner-nutri-label">Protein</div>
+                        <div class="scanner-nutri-value">${fmt(p.protein)}<small>g</small></div>
+                      </div>
+                      <div class="scanner-nutri-item">
+                        <div class="scanner-nutri-label">Carbs</div>
+                        <div class="scanner-nutri-value">${fmt(p.carbs)}<small>g</small></div>
+                      </div>
+                      <div class="scanner-nutri-item">
+                        <div class="scanner-nutri-label">Fat</div>
+                        <div class="scanner-nutri-value">${fmt(p.fat)}<small>g</small></div>
+                      </div>
+                    </div>
+
+                    <div class="scanner-portion">
+                      <label for="portionMult">Servings:</label>
+                      <input type="number" id="portionMult" value="1" min="0.1" step="0.1">
+                      <span class="portion-kcal" id="portionKcalDisplay">${kcalBase != null ? Math.round(kcalBase) : 0} kcal</span>
+                    </div>
+
+                    <div class="scanner-actions">
+                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn">Cancel</button>
+                      <button type="button" class="scanner-btn-confirm" id="scannerConfirmBtn">
+                        <i class="fas fa-plus"></i> Fill Form
+                      </button>
+                    </div>
+                  </div>
+                `;
+
+                // Wire portion calculator
+                const portionInput = document.getElementById('portionMult');
+                const portionKcal  = document.getElementById('portionKcalDisplay');
+                portionInput.addEventListener('input', () => {
+                    const m = parseFloat(portionInput.value) || 0;
+                    if (kcalBase != null) portionKcal.textContent = Math.round(kcalBase * m) + ' kcal';
+                });
+
+                document.getElementById('scannerCancelBtn').addEventListener('click', closeModal);
+                document.getElementById('scannerConfirmBtn').addEventListener('click', () => {
+                    const m = parseFloat(portionInput.value) || 1;
+                    fillForm(p, m, kcalBase, hasServing);
+                });
+            }
+
+            function renderNotFound(code) {
+                resultEl.innerHTML = `
+                  <div class="scanner-result not-found">
+                    <div class="scanner-result-name">Product not in database</div>
+                    <div class="scanner-result-brand">Barcode <code>${escapeHtml(code)}</code> wasn't found.</div>
+                    <p class="scanner-not-found-hint">
+                      Enter the product manually in the form below — we'll log this attempt to improve coverage.
+                    </p>
+                    <div class="scanner-actions">
+                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn">Close</button>
+                    </div>
+                  </div>
+                `;
+                document.getElementById('scannerCancelBtn').addEventListener('click', closeModal);
+            }
+
+            // ============ Fill the existing intake form ============
+            function fillForm(p, multiplier, kcalBase, hasServing) {
+                const namePieces = [p.product_name];
+                if (p.brand) namePieces.unshift(p.brand);
+                const displayName = namePieces.filter(Boolean).join(' ');
+
+                const food = document.getElementById('food_item');
+                const cal  = document.getElementById('calories');
+                const prot = document.getElementById('protein');
+                const carb = document.getElementById('carbs');
+                const fat  = document.getElementById('fat');
+
+                if (food) food.value = displayName;
+                if (cal && kcalBase != null) cal.value = Math.round(kcalBase * multiplier);
+                if (hasServing) {
+                    if (prot && p.protein != null) prot.value = round1(p.protein * multiplier);
+                    if (carb && p.carbs   != null) carb.value = round1(p.carbs   * multiplier);
+                    if (fat  && p.fat     != null) fat.value  = round1(p.fat     * multiplier);
+                }
+
+                closeModal();
+
+                // Scroll + highlight (reuses existing pattern from autoLogFood)
+                setTimeout(() => {
+                    document.querySelector('.intake-form-card')?.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
+                const formCard = document.querySelector('.intake-form-card');
+                if (formCard) {
+                    formCard.style.transition = "box-shadow 0.5s";
+                    formCard.style.boxShadow  = "0 0 20px rgba(74, 126, 227, 0.5)";
+                    setTimeout(() => { formCard.style.boxShadow = ""; }, 1500);
+                }
+            }
+
+            // ============ utils ============
+            function fmt(v) {
+                if (v == null) return '—';
+                return Number.isInteger(v) ? v : (Math.round(v * 10) / 10);
+            }
+            function round1(v) { return Math.round(v * 10) / 10; }
+            function escapeHtml(s) {
+                return String(s ?? '').replace(/[&<>"']/g, c => ({
+                    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+                }[c]));
+            }
+        })();
+        </script>
 
         <div id="ai-widget-container">
             <div id="ai-chat-window" class="chat-window">
@@ -842,193 +1097,71 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     </script>
 
     <?php if ($isLoggedIn): ?>
-        <div id="editIntakeModal" class="modal">
-            <div class="modal-content">
-                <span class="close-modal" id="closeEditModal">&times;</span>
-                <h3>Edit Intake Entry</h3>
-                <form id="editIntakeForm">
-                    <input type="hidden" id="edit_intake_id" name="intake_id">
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="edit_food_item">Food Name</label>
-                            <input type="text" id="edit_food_item" name="food_item" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit_calories">Calories</label>
-                            <input type="number" id="edit_calories" name="calories" required>
-                        </div>
-                        <div class="form-group macros-input-group">
-                            <label>Macros <small>(grams, optional)</small></label>
-                            <div class="macros-input-row">
-                                <div class="macro-input p">
-                                    <label for="edit_protein">P</label>
-                                    <input type="number" id="edit_protein" name="protein" min="0" max="999" step="0.1" placeholder="0">
-                                </div>
-                                <div class="macro-input c">
-                                    <label for="edit_carbs">C</label>
-                                    <input type="number" id="edit_carbs" name="carbs" min="0" max="999" step="0.1" placeholder="0">
-                                </div>
-                                <div class="macro-input f">
-                                    <label for="edit_fat">F</label>
-                                    <input type="number" id="edit_fat" name="fat" min="0" max="999" step="0.1" placeholder="0">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit_meal_category">Category</label>
-                            <select id="edit_meal_category" name="meal_category" required>
-                                <option value="">Select Category</option>
-                                <option value="breakfast">Breakfast</option>
-                                <option value="lunch">Lunch</option>
-                                <option value="dinner">Dinner</option>
-                                <option value="snack">Snack</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn-cancel" id="cancelEditBtn">Cancel</button>
-                        <button type="submit" class="btn-submit">Save Changes</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <?php $modalTitle = 'Edit Intake Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
         <script>
-            // --- EDIT MODAL LOGIC ---
-            const editModal = document.getElementById('editIntakeModal');
-            const closeEditBtn = document.getElementById('closeEditModal');
-            const cancelEditBtn = document.getElementById('cancelEditBtn');
-            const editForm = document.getElementById('editIntakeForm');
+            // Intake page edit wiring — IntakeRow handles row reading + form filling
+            // + row patching; this page also updates the progress bar, macros widget,
+            // and shows a toast (history page skips those).
+            (function () {
+                IntakeRow.bindCloseHandlers();
 
-            // Open Modal
-            document.body.addEventListener('click', e => {
-                // Dùng Event Delegation để bắt sự kiện cho cả những nút mới thêm bằng AJAX
-                const btn = e.target.closest('.btn-edit');
-                if (!btn) return;
+                // Open: event delegation on body so AJAX-inserted rows work too
+                document.body.addEventListener('click', e => {
+                    const btn = e.target.closest('.btn-edit');
+                    if (!btn) return;
+                    const row = btn.closest('tr');
+                    if (!row) return;
+                    IntakeRow.fillEditForm(row);
+                    IntakeRow.openModal();
+                });
 
-                const row = btn.closest('tr');
-                const id = row.dataset.id;
-
-                // Lấy dữ liệu từ dòng hiện tại
-                const foodItem = row.querySelector('td[data-label="Food"]').innerText.trim();
-                // Xử lý text calories (vd: "500 kcal" -> lấy 500)
-                const calText = row.querySelector('td[data-label="Calories"]').innerText.trim();
-                const calories = parseInt(calText.replace(/\D/g, ''));
-
-                const catBadge = row.querySelector('td[data-label="Category"] .cat-badge');
-                // Lấy class category để biết value (vd: cat-breakfast -> breakfast)
-                let category = 'breakfast'; // default
-                if (catBadge) {
-                    // Tìm class bắt đầu bằng cat-
-                    catBadge.classList.forEach(cls => {
-                        if (cls.startsWith('cat-') && cls !== 'cat-badge') {
-                            category = cls.replace('cat-', '');
+                // Submit
+                const editForm = document.getElementById('editIntakeForm');
+                editForm.addEventListener('submit', async e => {
+                    e.preventDefault();
+                    const fd = new FormData(editForm);
+                    try {
+                        const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+                        if (!data.ok) {
+                            alert(data.error || 'Update failed');
+                            return;
                         }
-                    });
-                }
 
-                // Fill form
-                document.getElementById('edit_intake_id').value = id;
-                document.getElementById('edit_food_item').value = foodItem;
-                document.getElementById('edit_calories').value = calories;
-                document.getElementById('edit_meal_category').value = category;
-                document.getElementById('edit_protein').value = row.dataset.protein || '';
-                document.getElementById('edit_carbs').value   = row.dataset.carbs   || '';
-                document.getElementById('edit_fat').value     = row.dataset.fat     || '';
-
-                editModal.style.display = 'block';
-            });
-
-            // Close Modal Logic
-            const closeModal = () => { editModal.style.display = 'none'; };
-            closeEditBtn.onclick = closeModal;
-            cancelEditBtn.onclick = closeModal;
-            window.onclick = (event) => { if (event.target == editModal) closeModal(); };
-
-            // Handle Submit Edit Form
-            editForm.addEventListener('submit', async e => {
-                e.preventDefault();
-                const fd = new FormData(editForm);
-
-                try {
-                    const res = await fetch('handlers/edit_intake.php', {
-                        method: 'POST',
-                        body: fd
-                    });
-                    const data = await res.json();
-
-                    if (data.ok) {
-                        // 1. Cập nhật dòng trong bảng (Table Row)
+                        // 1. Patch the row
                         const row = document.querySelector(`tr[data-id="${data.intake_id || fd.get('intake_id')}"]`);
-                        if (row) {
-                            // Nếu server trả về data mới thì dùng, không thì dùng từ form
-                            const newFood = data.food_item || fd.get('food_item');
-                            const newCal = data.calories || fd.get('calories');
-                            const newCat = data.meal_category || fd.get('meal_category');
-                            const newP = (data.protein !== undefined ? data.protein : fd.get('protein')) || 0;
-                            const newC = (data.carbs   !== undefined ? data.carbs   : fd.get('carbs'))   || 0;
-                            const newF = (data.fat     !== undefined ? data.fat     : fd.get('fat'))     || 0;
+                        if (row) IntakeRow.updateRow(row, data);
 
-                            row.querySelector('td[data-label="Food"]').innerText = newFood;
-                            row.querySelector('td[data-label="Calories"]').innerText = newCal + ' kcal';
-
-                            const fmt = v => {
-                                const n = parseFloat(v) || 0;
-                                return Number.isInteger(n) ? n : n.toFixed(1).replace(/\.?0+$/, '');
-                            };
-                            const pDisp = fmt(newP), cDisp = fmt(newC), fDisp = fmt(newF);
-
-                            const macroCell = row.querySelector('td[data-label="Macros"]');
-                            if (macroCell) {
-                                macroCell.innerHTML =
-                                    `<span class="macro-chip p">P ${pDisp}g</span>` +
-                                    `<span class="macro-chip c">C ${cDisp}g</span>` +
-                                    `<span class="macro-chip f">F ${fDisp}g</span>`;
-                            }
-                            row.dataset.protein = pDisp;
-                            row.dataset.carbs   = cDisp;
-                            row.dataset.fat     = fDisp;
-
-                            const catCell = row.querySelector('td[data-label="Category"]');
-                            const newLabel = newCat.charAt(0).toUpperCase() + newCat.slice(1);
-                            catCell.innerHTML = `<span class="cat-badge cat-${newCat}">${newLabel}</span>`;
-
-                            // Flash effect
-                            row.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
-                            setTimeout(() => row.style.backgroundColor = '', 500);
-                        }
-
-                        // 2. CẬP NHẬT PROGRESS BAR & TOTAL (Logic mới thêm)
+                        // 2. Update progress bar + total (intake-specific)
                         if (data.total_calories !== undefined) {
-                            // Cập nhật số tổng to đùng
                             const totalDisplay = document.getElementById('totalDisplay');
                             if (totalDisplay) totalDisplay.innerText = data.total_calories;
-
-                            // Cập nhật thanh chạy
                             const progressFill = document.getElementById('progressFill');
                             if (progressFill) progressFill.style.width = data.percentage + '%';
-
-                            // Cập nhật số % nhỏ bên dưới (nếu có)
                             const pctLabel = document.querySelector('.pct-label');
                             if (pctLabel) pctLabel.innerText = data.percentage + '%';
                         }
 
-                        // 3. Cập nhật Macros widget
-                        updateMacrosWidget(data.macros, data.macro_goals);
+                        // 3. Update Macros widget
+                        if (typeof updateMacrosWidget === 'function') {
+                            updateMacrosWidget(data.macros, data.macro_goals);
+                        }
 
-                        // Toast notification
+                        // 4. Toast
                         const editedFood = data.food_item || fd.get('food_item');
-                        const editedCal = data.calories || fd.get('calories');
-                        showLoggingToast('Entry updated', editedFood + ' • ' + editedCal + ' kcal');
+                        const editedCal  = data.calories  || fd.get('calories');
+                        if (typeof showLoggingToast === 'function') {
+                            showLoggingToast('Entry updated', editedFood + ' • ' + editedCal + ' kcal');
+                        }
 
-                        closeModal();
-                    } else {
-                        alert(data.error || 'Update failed');
+                        IntakeRow.closeModal();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error connecting to server');
                     }
-                } catch (err) {
-                    console.error(err);
-                    alert('Error connecting to server');
-                }
-            });
+                });
+            })();
         </script>
 
         <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>

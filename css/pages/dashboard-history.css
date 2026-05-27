@@ -100,93 +100,9 @@
         box-shadow: var(--shadow-soft);
     }
 
-    .modern-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .modern-table th {
-        text-align: left;
-        padding: 15px;
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        border-bottom: 2px solid #f0f0f0;
-    }
-
-    .modern-table td {
-        padding: 15px;
-        border-bottom: 1px solid #f0f0f0;
-        vertical-align: middle;
-        color: var(--text-primary);
-    }
-
-    .modern-table tr:hover td {
-        background-color: rgba(0, 0, 0, 0.01);
-    }
-
-    /* Date Cell Styling */
-    .date-cell {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.2;
-    }
-
-    .date-cell .day {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-    .date-cell .month {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-    }
-
-    /* Badges */
-    .cat-badge {
-        font-size: 0.75rem;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-weight: 700;
-        text-transform: uppercase;
-        display: inline-block;
-    }
-
-    .cat-breakfast {
-        background: #ffebee;
-        color: #ef5350;
-    }
-
-    .cat-lunch {
-        background: #e3f2fd;
-        color: #42a5f5;
-    }
-
-    .cat-dinner {
-        background: #f3e5f5;
-        color: #ab47bc;
-    }
-
-    .cat-snack {
-        background: #fff3e0;
-        color: #ffa726;
-    }
-
-    .fw-bold {
-        font-weight: 600;
-    }
-
-    .text-primary {
-        color: var(--primary-color);
-    }
-
-    .cal-val {
-        font-weight: 800;
-        font-size: 1rem;
-    }
+    /* .modern-table base, .cat-badge variants, typography helpers
+       (.fw-bold, .text-primary, .cal-val), and .date-cell all moved to
+       css/components/intake-list.css (shared with dashboard-intake.php). */
 
     /* 5. PAGINATION CUSTOMIZATION (DataTables override) */
     .pagination-container {
@@ -216,17 +132,8 @@
         color: var(--text-primary) !important;
     }
 
-    .empty-state {
-        text-align: center;
-        padding: 40px;
-        color: var(--text-secondary);
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 10px;
-        opacity: 0.5;
-    }
+    /* .empty-state, .macro-chip, .macros-input-group, and the mobile card
+       layout (table → cards) moved to css/components/intake-list.css. */
 
     /* 6. RESPONSIVE DESIGN */
     @media (min-width: 901px) and (max-width: 1200px) {
@@ -238,94 +145,11 @@
         }
     }
 
+    /* Stack filter inputs vertically on narrow screens (≤900px).
+       The table-to-card transformation now kicks in at the shared 768px
+       breakpoint (see css/components/intake-list.css). */
     @media (max-width: 900px) {
         .filter-grid {
             grid-template-columns: 1fr;
         }
-
-        /* Stack filters vertically */
-
-        /* Mobile Card View for Table */
-        .modern-table thead {
-            display: none;
-        }
-
-        .modern-table tr {
-            display: block;
-            margin-bottom: 15px;
-            background: var(--bg-body);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .modern-table td {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border: none;
-            align-items: center;
-        }
-
-        .modern-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .macros-cell {
-            white-space: normal;
-        }
     }
-
-    /* ================================================
-       MACRO CHIPS + EDIT MODAL FIELDS (history page)
-       ================================================ */
-    .macros-cell { white-space: nowrap; }
-    .macro-chip {
-        display: inline-block;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 3px 7px;
-        border-radius: 10px;
-        margin-right: 3px;
-        line-height: 1.4;
-        color: #fff;
-    }
-    .macro-chip.p { background: #e74c3c; }
-    .macro-chip.c { background: #f1c40f; color: #5b4400; }
-    .macro-chip.f { background: #3498db; }
-
-    .macros-input-group .macros-input-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 8px;
-    }
-    .macros-input-group .macro-input {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-    .macros-input-group .macro-input > label {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-weight: 700;
-        font-size: 0.85rem;
-        pointer-events: none;
-        color: #fff;
-        background: #999;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-    }
-    .macros-input-group .macro-input.p > label { background: #e74c3c; }
-    .macros-input-group .macro-input.c > label { background: #f1c40f; color: #5b4400; }
-    .macros-input-group .macro-input.f > label { background: #3498db; }
-    .macros-input-group .macro-input input { padding-left: 40px !important; }

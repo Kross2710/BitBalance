@@ -1,0 +1,352 @@
+/* ============================================================
+   Intake list — shared styles
+   ============================================================
+   Used by both dashboard-intake.php (Today's History) and
+   dashboard-history.php (full history with filters).
+
+   Contains:
+   - .modern-table base + typography helpers (fw-bold, text-primary, cal-val)
+   - .cat-badge (4 meal-type variants)
+   - .macro-chip (P / C / F)
+   - .date-cell (history "Date" column)
+   - .btn-edit / .btn-delete (row action buttons)
+   - .empty-state
+   - .macros-input-group + .macro-input (modal form: circle P/C/F badge with proper input padding)
+   - Mobile card layout (≤768px) — replaces the table with a grid card per row.
+     Use .modern-table--with-date when the row includes a Date column.
+   ============================================================ */
+
+/* ---------- Table base ---------- */
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table th {
+    text-align: left;
+    padding: 15px 12px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.modern-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.modern-table tr:last-child td {
+    border-bottom: none;
+}
+
+.modern-table tr:hover td {
+    background-color: rgba(0, 0, 0, 0.01);
+}
+
+[data-theme="dark"] .modern-table th,
+[data-theme="dark"] .modern-table td {
+    border-color: #404040;
+}
+
+/* ---------- Typography helpers ---------- */
+.fw-bold        { font-weight: 600; }
+.text-primary   { color: var(--primary-color); font-weight: 700; }
+.text-muted     { color: var(--text-secondary); font-size: 0.85rem; }
+.cal-val        { font-weight: 800; font-size: 1rem; }
+
+/* ---------- Date cell (history page Date column) ---------- */
+.date-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.date-cell .day {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.date-cell .month {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* ---------- Category badges ---------- */
+.cat-badge {
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+.cat-breakfast { background: #ffebee; color: #ef5350; }
+.cat-lunch     { background: #e3f2fd; color: #42a5f5; }
+.cat-dinner    { background: #f3e5f5; color: #ab47bc; }
+.cat-snack     { background: #fff3e0; color: #ffa726; }
+
+/* ---------- Macro chips (P/C/F pills in the row) ---------- */
+.macros-cell {
+    white-space: nowrap;
+}
+.macro-chip {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 10px;
+    margin-right: 3px;
+    line-height: 1.4;
+    color: #fff;
+}
+.macro-chip.p { background: #e74c3c; }
+.macro-chip.c { background: #f1c40f; color: #5b4400; }
+.macro-chip.f { background: #3498db; }
+
+/* ---------- Row action buttons ---------- */
+.btn-edit,
+.btn-delete {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-edit:hover {
+    background: #1976d2;
+    color: #fff;
+}
+.btn-delete {
+    background: #ffebee;
+    color: #ef5350;
+}
+.btn-delete:hover {
+    background: #ef5350;
+    color: #fff;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px;
+    font-style: italic;
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+    display: block;
+}
+
+/* ============================================================
+   Edit Intake Modal — macro inputs (P/C/F circle + proper padding)
+   Scoped to .macros-input-group so it works inside both the main
+   intake form and the modal (modal lives outside the form card).
+   ============================================================ */
+.macros-input-group .macros-input-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.macros-input-label small {
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.macros-input-group .macros-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+.macros-input-group .macro-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.macros-input-group .macro-input > label {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 700;
+    font-size: 0.85rem;
+    pointer-events: none;
+    color: #fff;
+    background: #999;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+.macros-input-group .macro-input.p > label { background: #e74c3c; }
+.macros-input-group .macro-input.c > label { background: #f1c40f; color: #5b4400; }
+.macros-input-group .macro-input.f > label { background: #3498db; }
+.macros-input-group .macro-input input {
+    padding-left: 40px !important;
+}
+
+/* ============================================================
+   MOBILE (≤768px) — convert each row into a card with grid hierarchy
+     row 1: food name            | calories
+     row 2: category emoji+label | clock+time
+     row 3: macro chips (full width)
+     row 4: action buttons split (dashed separator on top)
+
+   When the table includes a Date column, add `.modern-table--with-date`
+   to the table — the Date row is prepended above row 1.
+   ============================================================ */
+@media (max-width: 768px) {
+    .modern-table thead { display: none; }
+
+    .modern-table tr:not(#noIntakeRow) {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "food    kcal"
+            "cat     time"
+            "macros  macros"
+            "action  action";
+        gap: 6px 12px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        background: var(--bg-body);
+        border-radius: 14px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        align-items: center;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    /* Variant with Date column (history page) */
+    .modern-table--with-date tr:not(#noIntakeRow) {
+        grid-template-areas:
+            "date    date"
+            "food    kcal"
+            "cat     time"
+            "macros  macros"
+            "action  action";
+    }
+
+    .modern-table tr:not(#noIntakeRow):hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .modern-table td {
+        display: block;
+        padding: 0;
+        border: none;
+    }
+
+    /* Kill the auto-injected "Food/Calories/..." label prefix */
+    .modern-table td::before { content: none; }
+
+    .modern-table td[data-label="Date"] {
+        grid-area: date;
+        padding-bottom: 6px;
+        margin-bottom: 4px;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+    }
+    .modern-table td[data-label="Date"] .date-cell {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 6px;
+    }
+    .modern-table td[data-label="Date"] .day {
+        font-size: 0.95rem;
+    }
+    .modern-table td[data-label="Date"] .month {
+        font-size: 0.75rem;
+    }
+
+    .modern-table td[data-label="Food"] {
+        grid-area: food;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--text-primary);
+        word-break: break-word;
+    }
+
+    .modern-table td[data-label="Calories"] {
+        grid-area: kcal;
+        text-align: right;
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        white-space: nowrap;
+        align-self: start;
+    }
+
+    .modern-table td[data-label="Category"] { grid-area: cat; }
+
+    /* Emoji prefix on the badge (replaces a separate "Category" label) */
+    .modern-table td[data-label="Category"] .cat-badge {
+        font-size: 0.75rem;
+        padding: 3px 10px 3px 8px;
+        text-transform: capitalize;
+    }
+    .modern-table td[data-label="Category"] .cat-badge.cat-breakfast::before { content: "🌅 "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-lunch::before     { content: "☀️ "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-dinner::before    { content: "🌙 "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-snack::before     { content: "🍪 "; }
+
+    .modern-table td[data-label="Time"] {
+        grid-area: time;
+        text-align: right;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    .modern-table td[data-label="Time"]::before {
+        content: "🕐 ";
+        font-size: 0.8rem;
+        margin-right: 2px;
+    }
+
+    .modern-table td[data-label="Macros"] {
+        grid-area: macros;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .modern-table tr td:last-child {
+        grid-area: action;
+        display: flex !important;
+        gap: 10px;
+        padding-top: 12px;
+        margin-top: 4px;
+        border-top: 1px dashed rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-edit,
+    .btn-delete {
+        width: auto;
+        min-width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+        margin: 0;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    /* Empty state stays centered, no grid */
+    .modern-table tr#noIntakeRow {
+        display: block;
+    }
+}

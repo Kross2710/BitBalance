@@ -116,43 +116,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $idStmt->execute([$user_id]);
                     $newId = (int) $idStmt->fetchColumn();
 
-                    $catClass = 'cat-' . strtolower($meal_category); // Tạo class màu (ví dụ: cat-breakfast)
-                    $catLabel = ucfirst($meal_category); // Viết hoa chữ cái đầu (ví dụ: Breakfast)
-
-                    $pFmt = rtrim(rtrim(number_format($protein, 1, '.', ''), '0'), '.');
-                    $cFmt = rtrim(rtrim(number_format($carbs,   1, '.', ''), '0'), '.');
-                    $fFmt = rtrim(rtrim(number_format($fat,     1, '.', ''), '0'), '.');
-                    if ($pFmt === '') $pFmt = '0';
-                    if ($cFmt === '') $cFmt = '0';
-                    if ($fFmt === '') $fFmt = '0';
-
-                    $newRow = '
-    <tr data-id="' . $newId . '" data-protein="' . htmlspecialchars($pFmt) . '" data-carbs="' . htmlspecialchars($cFmt) . '" data-fat="' . htmlspecialchars($fFmt) . '">
-        <td data-label="Food" class="fw-bold">' . htmlspecialchars($food_item) . '</td>
-
-        <td data-label="Calories" class="text-primary">' . htmlspecialchars($calories) . ' kcal</td>
-
-        <td data-label="Macros" class="macros-cell">
-            <span class="macro-chip p">P ' . $pFmt . 'g</span>
-            <span class="macro-chip c">C ' . $cFmt . 'g</span>
-            <span class="macro-chip f">F ' . $fFmt . 'g</span>
-        </td>
-
-        <td data-label="Category">
-            <span class="cat-badge ' . $catClass . '">' . htmlspecialchars($catLabel) . '</span>
-        </td>
-
-        <td data-label="Time" class="text-muted" data-iso="' . gmdate('Y-m-d\TH:i:s\Z') . '" data-tz-format="time">Just now</td>
-
-        <td style="text-align: right;">
-            <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-            <button type="button" class="btn-edit" title="Edit Entry">
-                <i class="fas fa-edit"></i>
-            </button>
-        </td>
-    </tr>';
+                    // Render the new row via the shared partial so its markup stays
+                    // identical to rows produced by dashboard-intake.php / dashboard-history.php.
+                    $entry = [
+                        'intakeLog_id'  => $newId,
+                        'food_item'     => $food_item,
+                        'calories'      => $calories,
+                        'protein'       => $protein,
+                        'carbs'         => $carbs,
+                        'fat'           => $fat,
+                        'meal_category' => $meal_category,
+                        'date_intake'   => gmdate('Y-m-d\TH:i:s\Z'),
+                    ];
+                    $showDate  = false;
+                    $timeLabel = 'Just now';
+                    ob_start();
+                    include PROJECT_ROOT . 'dashboard/views/_intake-row.php';
+                    $newRow = ob_get_clean();
 
                     // query new daily total + percentage
                     $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(calories),0) FROM intakeLog WHERE user_id = ? AND DATE(date_intake)=CURDATE()");
