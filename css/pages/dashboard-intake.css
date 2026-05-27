@@ -197,101 +197,9 @@
         overflow-x: auto;
     }
 
-    .modern-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    .modern-table th {
-        text-align: left;
-        padding: 12px;
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        border-bottom: 2px solid #f0f0f0;
-    }
-
-    .modern-table td {
-        padding: 15px 12px;
-        border-bottom: 1px solid #f0f0f0;
-        font-size: 0.95rem;
-        vertical-align: middle;
-    }
-
-    .modern-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .fw-bold {
-        font-weight: 600;
-    }
-
-    .text-primary {
-        color: var(--primary-color);
-        font-weight: 700;
-    }
-
-    .text-muted {
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-    }
-
-    .cat-badge {
-        font-size: 0.75rem;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .cat-breakfast {
-        background: #ffebee;
-        color: #ef5350;
-    }
-
-    .cat-lunch {
-        background: #e3f2fd;
-        color: #42a5f5;
-    }
-
-    .cat-dinner {
-        background: #f3e5f5;
-        color: #ab47bc;
-    }
-
-    .cat-snack {
-        background: #fff3e0;
-        color: #ffa726;
-    }
-
-    .btn-delete {
-        background: #ffebee;
-        color: #ef5350;
-        border: none;
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-delete:hover {
-        background: #ef5350;
-        color: white;
-    }
-
-    .empty-state {
-        text-align: center;
-        color: var(--text-secondary);
-        padding: 30px;
-        font-style: italic;
-    }
-
-    [data-theme="dark"] .modern-table th,
-    [data-theme="dark"] .modern-table td {
-        border-color: #404040;
-    }
+    /* .modern-table, .cat-badge, .fw-bold, .text-primary, .text-muted,
+       .btn-edit, .btn-delete, .empty-state and the dark-mode borders all moved to
+       css/components/intake-list.css (shared with dashboard-history.php). */
 
     /* 7. RESPONSIVE DESIGN */
     /* content-split là 2 cột chỉ trên desktop rộng (>1200px);
@@ -311,64 +219,7 @@
         }
     }
 
-    @media (max-width: 768px) {
-        .modern-table thead {
-            display: none;
-        }
-
-        .modern-table tr {
-            display: block;
-            margin-bottom: 15px;
-            background: var(--bg-body);
-            border-radius: 12px;
-            padding: 15px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .modern-table td {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border: none;
-        }
-
-        .modern-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .btn-delete {
-            width: 100%;
-            margin-top: 10px;
-            background: #fff0f0;
-        }
-
-        /* Ô cuối cùng (chứa nút Action) */
-        .modern-table tr td:last-child {
-            display: flex !important; /* Dùng Flexbox thay vì Grid để dễ kiểm soát */
-            flex-direction: row;      /* Xếp ngang */
-            justify-content: flex-end; /* Căn phải (hoặc space-between nếu muốn dãn ra) */
-            gap: 10px;                /* Khoảng cách giữa 2 nút */
-            padding-top: 12px;
-            margin-top: 10px;
-            border-top: 1px dashed rgba(0,0,0,0.1); /* Đường kẻ ngăn cách */
-            width: 100%;
-        }
-
-        /* Style chung cho 2 nút trên mobile */
-        .btn-edit, .btn-delete {
-            width: auto;       /* Để nút tự co giãn theo icon */
-            min-width: 40px;   /* Đảm bảo không quá bé */
-            height: 40px;      /* Cao hơn để dễ bấm */
-            font-size: 1.1rem;
-            margin: 0;         /* Reset margin cũ */
-            flex: 1;           /* Chia đều không gian (mỗi nút 50%) */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-    }
+    /* Mobile card layout for the table moved to css/components/intake-list.css. */
 
     /* ================================================
        MACROS WIDGET — mirrors Intake Breakdown style
@@ -380,35 +231,38 @@
     .macros-widget .doughnut-container {
         margin-bottom: 20px;
     }
+    /* Macros Today: 3 vertical mini-cards in a single row (P | C | F). */
     .macro-list-container {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
     }
     .macro-item {
         display: flex;
-        align-items: center;
-        padding: 10px 12px;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        padding: 12px 8px;
         border-radius: 12px;
         background-color: var(--color-surface-alt, var(--bg-body));
         transition: transform 0.2s ease, background-color 0.2s;
+        min-width: 0;
     }
     .macro-item:hover {
-        transform: translateX(4px);
+        transform: translateY(-2px);
     }
     .macro-icon-box {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
-        margin-right: 12px;
+        font-size: 1rem;
+        margin: 0 auto 8px;
         flex-shrink: 0;
     }
     .macro-info {
-        flex-grow: 1;
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -416,29 +270,29 @@
     }
     .macro-info-top {
         display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 8px;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
     }
     .macro-name {
         font-weight: 600;
         color: var(--text-primary);
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
     .macro-numbers {
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         color: var(--text-primary);
         white-space: nowrap;
     }
     .macro-numbers strong { font-weight: 700; }
     .macro-numbers small {
         color: var(--text-secondary);
-        font-size: 0.78rem;
-        margin-left: 2px;
+        font-size: 0.72rem;
+        margin-left: 1px;
     }
     .macro-track {
         background: rgba(0, 0, 0, 0.07);
-        height: 6px;
+        height: 5px;
         border-radius: 4px;
         overflow: hidden;
     }
@@ -452,6 +306,7 @@
     .macro-fill-f { background: #3498db; }
 
     .macros-hint-empty {
+        grid-column: 1 / -1;     /* span all 3 columns when goal is unset */
         text-align: center;
         color: var(--text-secondary);
         font-size: 0.85rem;
@@ -466,77 +321,308 @@
         background: rgba(255, 255, 255, 0.1);
     }
 
-    /* ================================================
-       MACROS FORM INPUT (3 ô P/C/F)
-       ================================================ */
-    .macros-input-group .macros-input-label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
+    /* All macro / macro-chip / macros-input-group / macros-input-label rules
+       moved to css/components/intake-list.css. */
+
+    @media (max-width: 768px) {
+        /* Allow chips to wrap inside the macros cell at narrow widths */
+        .macros-cell { white-space: normal; }
     }
-    .macros-input-label small {
-        font-weight: 400;
-        opacity: 0.8;
-    }
-    .macros-input-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 8px;
-    }
-    .macro-input {
-        position: relative;
+
+    /* =========================================================
+       BARCODE SCANNER
+       ========================================================= */
+
+    /* Chip row above the form */
+    .quick-actions-row {
         display: flex;
-        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
     }
-    .macro-input > label {
+    .quick-action-chip {
+        flex: 1;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 12px;
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        color: #4a7ee3;
+        border: 1px solid #d6e0ff;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .quick-action-chip:hover {
+        background: linear-gradient(135deg, #e0e7ff, #c7d6ff);
+        transform: translateY(-1px);
+    }
+    .quick-action-chip i { font-size: 1rem; }
+
+    /* Inline camera icon button inside Food Name input */
+    .food-name-wrapper {
+        position: relative;
+    }
+    .btn-inline-scan {
         position: absolute;
-        left: 10px;
+        right: 6px;
         top: 50%;
         transform: translateY(-50%);
-        font-weight: 700;
-        font-size: 0.85rem;
-        pointer-events: none;
-        color: #fff;
-        background: #999;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: transparent;
+        color: #4a7ee3;
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 1rem;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: background 0.15s;
+    }
+    .btn-inline-scan:hover { background: rgba(74, 126, 227, 0.1); }
+    /* Reserve room on the right when icon present */
+    .food-name-wrapper input { padding-right: 44px !important; }
+
+    /* Scanner modal */
+    .scanner-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 9999;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .scanner-modal.active { display: flex; }
+    .scanner-modal-content {
+        background: var(--card-bg, #fff);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 480px;
+        padding: 20px;
+        margin: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .scanner-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+    .scanner-modal-header h3 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: var(--text-primary);
+    }
+    .scanner-modal-header h3 i { color: #4a7ee3; margin-right: 6px; }
+    .scanner-close {
+        background: transparent;
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+        line-height: 1;
+        padding: 4px 8px;
+    }
+
+    #scannerReader {
+        width: 100%;
+        min-height: 240px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #000;
+    }
+    #scannerReader:empty::before {
+        content: "Camera will appear here when you tap Start";
+        display: block;
+        text-align: center;
+        color: #9ca3af;
+        padding: 70px 16px;
+        background: #f9fafb;
+        border: 2px dashed #e5e7eb;
+        border-radius: 10px;
+    }
+
+    .scanner-controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .scanner-controls button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .scanner-btn-start { background: #4a7ee3; color: #fff; }
+    .scanner-btn-stop  { background: #ef4444; color: #fff; }
+    .scanner-btn-start:disabled,
+    .scanner-btn-stop:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .scanner-manual {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid #e5e7eb;
+    }
+    .scanner-manual label {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .scanner-manual-row {
+        display: flex;
+        gap: 6px;
+    }
+    .scanner-manual-row input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+    .scanner-manual-row button {
+        padding: 0 16px;
+        background: #4a7ee3;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Result preview card inside the modal */
+    .scanner-result {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 10px;
+        background: #f9fafb;
+        border-left: 4px solid #4a7ee3;
+    }
+    .scanner-result.not-found { border-left-color: #ef4444; }
+    .scanner-result.loading   { border-left-color: #9ca3af; }
+    .scanner-result-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+    .scanner-result-brand {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+    }
+    .scanner-result-img {
+        max-width: 80px;
+        max-height: 80px;
+        border-radius: 8px;
+        float: right;
+        margin-left: 10px;
+    }
+    .scanner-nutri {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin: 10px 0;
+        clear: both;
+    }
+    .scanner-nutri-item {
+        background: #fff;
+        padding: 8px 6px;
+        border-radius: 8px;
+        text-align: center;
+    }
+    .scanner-nutri-label {
+        font-size: 0.65rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    .scanner-nutri-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .scanner-nutri-value small { font-weight: 400; color: var(--text-secondary); font-size: 0.7rem; }
+
+    .scanner-portion {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 10px 0;
+        padding: 8px;
+        background: #fff;
+        border-radius: 8px;
+    }
+    .scanner-portion label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-weight: 600;
         margin: 0;
     }
-    .macro-input.p > label { background: #e74c3c; }
-    .macro-input.c > label { background: #f1c40f; color: #5b4400; }
-    .macro-input.f > label { background: #3498db; }
-    .intake-form-card .macro-input input {
-        padding-left: 40px !important;
+    .scanner-portion input {
+        width: 70px;
+        padding: 6px 8px;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+    .scanner-portion .portion-kcal {
+        margin-left: auto;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #4a7ee3;
     }
 
-    /* ================================================
-       MACRO CHIPS (table cells)
-       ================================================ */
-    .macros-cell {
-        white-space: nowrap;
+    .scanner-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
     }
-    .macro-chip {
-        display: inline-block;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 3px 7px;
-        border-radius: 10px;
-        margin-right: 3px;
-        line-height: 1.4;
+    .scanner-actions button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    .scanner-btn-confirm {
+        background: #11998e;
         color: #fff;
     }
-    .macro-chip.p { background: #e74c3c; }
-    .macro-chip.c { background: #f1c40f; color: #5b4400; }
-    .macro-chip.f { background: #3498db; }
+    .scanner-btn-cancel {
+        background: #e5e7eb;
+        color: #374151;
+    }
 
-    @media (max-width: 768px) {
-        .macros-cell {
-            white-space: normal;
+    .scanner-not-found-hint {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 6px;
+    }
+
+    @media (max-width: 480px) {
+        .scanner-modal { padding: 0; align-items: stretch; }
+        .scanner-modal-content {
+            border-radius: 0;
+            max-width: 100%;
+            min-height: 100vh;
         }
+        .scanner-nutri { grid-template-columns: repeat(2, 1fr); }
+        .quick-action-chip { font-size: 0.8rem; padding: 9px 8px; }
     }
