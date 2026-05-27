@@ -22,6 +22,30 @@ require_once __DIR__ . '/../include/handlers/ai_context.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+// ---- UTF-8 safe string helpers (mbstring extension is NOT available on RMIT host) ----
+if (!function_exists('aic_strlen')) {
+    function aic_strlen(string $s): int {
+        if (function_exists('mb_strlen')) return mb_strlen($s, 'UTF-8');
+        // Count UTF-8 codepoints via regex
+        $n = preg_match_all('/./us', $s);
+        return $n === false ? strlen($s) : $n;
+    }
+}
+if (!function_exists('aic_substr')) {
+    function aic_substr(string $s, int $start, ?int $len = null): string {
+        if (function_exists('mb_substr')) return mb_substr($s, $start, $len, 'UTF-8');
+        if (function_exists('iconv_substr')) {
+            return $len === null
+                ? (string)iconv_substr($s, $start, PHP_INT_MAX, 'UTF-8')
+                : (string)iconv_substr($s, $start, $len, 'UTF-8');
+        }
+        // Last-resort regex split
+        if (!preg_match_all('/./us', $s, $m)) return substr($s, $start, $len ?? PHP_INT_MAX);
+        $chars = $m[0];
+        return implode('', array_slice($chars, $start, $len));
+    }
+}
+
 // ---- Auth guard ----
 if (!$isLoggedIn) {
     http_response_code(401);
@@ -122,8 +146,8 @@ function rename_conversation(PDO $pdo, int $user_id): void
         echo json_encode(['ok' => false, 'error' => 'Missing id or title']);
         return;
     }
-    if (mb_strlen($title) > 120) {
-        $title = mb_substr($title, 0, 120);
+    if (aic_strlen($title) > 120) {
+        $title = aic_substr($title, 0, 120);
     }
     if (!fetch_owned_conversation($pdo, $user_id, $id)) {
         echo json_encode(['ok' => false, 'error' => 'Not found']);
@@ -269,7 +293,7 @@ function send_message(PDO $pdo, int $user_id): void
             ->execute([$conversation_id]);
     }
     if ($isNewConversation) {
-        $autoTitle = mb_substr(($message !== '' ? $message : 'Image chat'), 0, 60);
+        $autoTitle = aic_substr(($message !== '' ? $message : 'Image chat'), 0, 60);
         $pdo->prepare("UPDATE ai_conversation SET title = ? WHERE conversation_id = ?")
             ->execute([$autoTitle, $conversation_id]);
     }
@@ -573,7 +597,7 @@ function extract_food_log_block(string $text): array
                 $cat  = strtolower(trim((string)($it['meal_category'] ?? 'snack')));
                 if ($name === '' || $cal <= 0 || $cal > 5000) continue;
                 if (!in_array($cat, $validCats, true)) $cat = 'snack';
-                if (mb_strlen($name) > 60) $name = mb_substr($name, 0, 60);
+                if (aic_strlen($name) > 60) $name = aic_substr($name, 0, 60);
 
                 $items[] = [
                     'food_name'     => $name,
