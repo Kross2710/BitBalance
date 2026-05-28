@@ -66,6 +66,12 @@
     .dashboard-footer {
         margin-left: 0;
         margin-right: 0;
+    }
+    /* Only reserve room for the FAB on pages that actually load it.
+       Without this scope every page on mobile carried 80px of dead
+       space below the footer, even login/landing/AI-coach where no
+       FAB is rendered. */
+    body:has(.fab) .dashboard-footer {
         padding-bottom: 80px;
     }
 }

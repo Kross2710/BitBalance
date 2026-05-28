@@ -9,6 +9,7 @@ if ($isLoggedIn) {
 
 $activePage = 'calculator';
 $activeHeader = 'dashboard';
+$bodyClass = 'page-calculator';
 $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
 $error_message = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : '';
@@ -31,7 +32,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
 
@@ -204,7 +205,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             </div>
         </main>
     <?php else: ?>
-        <main class="dashboard-content" style="text-align:center; margin-top:100px;">
+        <main class="dashboard-content dashboard-empty-state">
             <h2>Please log in to access the Calculator.</h2>
             <a href="<?= BASE_URL ?>login.php" class="btn-calculate" style="display:inline-block; width:auto; margin-top:20px;">Sign In</a>
         </main>

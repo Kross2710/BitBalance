@@ -5,13 +5,31 @@
 .ai-coach-body {
     background: var(--color-bg);
     overflow: hidden;
+    /* Pin body to the *visible* viewport (visualViewport, not layout viewport).
+       --aic-vh and --aic-vp-top are kept in sync with window.visualViewport
+       by JS — this is the only reliable way to react to the iOS keyboard
+       (dvh/svh only respond to browser chrome, NOT the on-screen keyboard).
+       Result: body always covers exactly what the user can see, so the
+       composer at the bottom of body sits right above the keyboard. */
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--aic-vp-top, 0px);
+    height: var(--aic-vh, 100dvh);
+}
+html:has(.ai-coach-body) {
+    overflow: hidden;
+    height: 100%;
 }
 
-/* Full-viewport shell minus header height */
+/* Shell = body minus header height. Uses the same visual-viewport var so it
+   shrinks in lockstep with the keyboard opening / closing. */
 .aic-shell {
     display: flex;
-    height: calc(100vh - 70px);   /* header is ~70px */
+    height: calc(100vh - 70px);                       /* fallback */
+    height: calc(var(--aic-vh, 100dvh) - 70px);
     max-height: calc(100vh - 70px);
+    max-height: calc(var(--aic-vh, 100dvh) - 70px);
     overflow: hidden;
     position: relative;
 }
@@ -548,7 +566,8 @@
     background: transparent;
     resize: none;
     font: inherit;
-    font-size: 15px;
+    /* >=16px prevents iOS Safari from auto-zooming on focus */
+    font-size: 16px;
     color: var(--color-text);
     padding: 8px 4px;
     max-height: 200px;

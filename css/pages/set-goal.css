@@ -203,7 +203,8 @@ input[type="number"] {
 [data-theme="dark"] body {
     background-color: #1a1a1a !important;
     color: #ffffff !important;
-    min-height: 100vh !important;
+    /* min-height handled by base.css (100vh desktop / auto mobile) —
+       dark mode doesn't need to redeclare it. */
 }
 
 [data-theme="dark"] * {

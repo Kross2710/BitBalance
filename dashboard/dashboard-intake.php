@@ -9,6 +9,7 @@ if ($isLoggedIn) {
 
 $activePage = 'intake';
 $activeHeader = 'dashboard';
+$bodyClass = 'page-intake';
 $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
 // Logic trạng thái Goal
@@ -39,8 +40,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>Food Log | BitBalance</title>
     <?php
-    $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css?v=' . time(), 'css/components/intake-list.css', 'css/pages/dashboard-intake.css'];
+    // Intake IS the logging UI itself, so no quick-log FAB on this page.
+    $pageComponents = ['sidebar'];
+    $pageCss = ['css/dashboard.css', 'css/components/intake-list.css', 'css/pages/dashboard-intake.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
 
@@ -49,7 +51,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php
     include PROJECT_ROOT . 'views/header.php';
     include PROJECT_ROOT . 'dashboard/views/sidebar.php';
@@ -865,7 +867,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             }
         </script>
     <?php else: ?>
-        <main class="dashboard-content" style="text-align:center; margin-top:100px;">
+        <main class="dashboard-content dashboard-empty-state">
             <h2>Please log in to access your Food Log.</h2>
             <a href="<?= BASE_URL ?>login.php" class="btn-submit"
                 style="display:inline-block; width:auto; margin-top:20px;">Sign In</a>

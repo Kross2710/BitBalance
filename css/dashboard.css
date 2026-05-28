@@ -4,8 +4,15 @@
 
 /* Main Dashboard Container.
    Margins phải >= sidebar width (200px + 20px gutter) cho đến khi sidebars
-   chuyển mobile-mode ở ≤900px, nếu không sidebars fixed sẽ đè lên content. */
-main.dashboard {
+   chuyển mobile-mode ở ≤900px, nếu không sidebars fixed sẽ đè lên content.
+
+   `main.dashboard` is the home/overview page; `main.dashboard-content` is the
+   feature pages (intake, history, calculator, wiki). They share the same
+   layout shell — keep them in one rule so the base layout has a single
+   source of truth. Variant-only props (e.g. padding on dashboard-content)
+   live in a follow-up rule below. */
+main.dashboard,
+main.dashboard-content {
     background-color: var(--bg-body);
     color: var(--text-main);
     margin-top: 20px;
@@ -14,6 +21,10 @@ main.dashboard {
     width: calc(100% - 2 * (var(--sidebar-width) + 20px));
     min-height: 80vh;
     transition: background-color 0.3s ease, color 0.3s ease;
+}
+/* Variant-only: feature pages add horizontal content padding. */
+main.dashboard-content {
+    padding: 0 20px;
 }
 
 .flex-row {
@@ -274,6 +285,9 @@ table.meals-table {
 }
 
 @media (max-width: 900px) {
+    /* Home/overview gets 10px padding; feature pages (dashboard-content)
+       get their own padding rule further down (line ~2594) because they
+       need 12px sides + bottom clearance for the FAB. */
     main.dashboard {
         width: 100vw;
         margin: 0;
@@ -1759,14 +1773,10 @@ table.meals-table {
     /* Nếu bạn muốn hiện chữ "Edit" bên cạnh icon trên mobile thì dùng ::after */
 }
 
-/* intake css file */
-.dashboard-content {
-    margin-top: 20px;
-    margin-left: 240px;
-    margin-right: 240px;
-    padding: 0 20px;
-    min-height: calc(100vh - 200px);
-}
+/* Base .dashboard-content layout consolidated with main.dashboard at the top
+   of this file — don't redeclare here (was using hardcoded 240px instead of
+   var(--sidebar-width) + 20px, plus a divergent min-height of
+   calc(100vh - 200px) vs the consolidated 80vh). */
 
 .intake-container {
     display: flex;
@@ -1774,6 +1784,19 @@ table.meals-table {
     gap: 20px;
     max-width: 1000px;
     margin: 0 auto;
+}
+
+/* Shared empty-state main for logged-out / no-data screens.
+   Replaces the duplicated inline `style="text-align:center; margin-top:100px;"`
+   that lived in intake / history / calculator pages. */
+main.dashboard-content.dashboard-empty-state {
+    text-align: center;
+    margin-top: 100px;
+}
+@media (max-width: 900px) {
+    main.dashboard-content.dashboard-empty-state {
+        margin-top: 40px;
+    }
 }
 
 /* =========================================
@@ -2590,19 +2613,33 @@ table.meals-table {
     }
 }
 
-/* === Intake page mobile === */
+/* === Feature pages (intake/history/calculator/wiki) mobile === */
 @media (max-width: 900px) {
-    .dashboard-content {
+    /* Selector is `main.dashboard-content` (0,1,1) instead of `.dashboard-content`
+       (0,1,0) so it ties the desktop base rule on specificity — and because this
+       block comes LATER in cascade order, it wins. No !important needed.
+       Previously this fought via !important against `main.dashboard-content` from
+       the consolidated base layout. */
+    main.dashboard-content {
         margin-top: 12px;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding: 0 12px 90px !important;
+        margin-left: 0;
+        margin-right: 0;
+        /* Override the desktop `width: calc(100% - 2 * sidebar-width)` —
+           on mobile the sidebar collapses so we use the full viewport. */
+        width: 100%;
+        /* Default mobile padding (no FAB present) */
+        padding: 0 12px 20px;
+    }
+    /* Pages that actually render the FAB need clearance so the FAB
+       doesn't overlap the last content row. */
+    body:has(.fab) main.dashboard-content {
+        padding: 0 12px 90px;
     }
 
     .intake-container,
     .history-container,
     .calculator-container {
-        gap: 12px !important;
+        gap: 12px;
     }
 
     /* Intake page: form lớn, dễ tap */

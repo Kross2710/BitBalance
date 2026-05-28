@@ -13,6 +13,7 @@ if ($isLoggedIn) {
 
 $activePage = 'history';
 $activeHeader = 'dashboard';
+$bodyClass = 'page-history';
 $mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
 $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
@@ -32,7 +33,7 @@ if ($isLoggedIn) {
 
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css?v=' . time(), 'css/components/intake-list.css', 'css/pages/dashboard-history.css'];
+    $pageCss = ['css/dashboard.css', 'css/components/intake-list.css', 'css/pages/dashboard-history.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
 
@@ -41,7 +42,7 @@ if ($isLoggedIn) {
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
 
@@ -121,7 +122,7 @@ if ($isLoggedIn) {
             </div>
         </main>
     <?php else: ?>
-        <main class="dashboard-content" style="text-align:center; margin-top:100px;">
+        <main class="dashboard-content dashboard-empty-state">
             <h2>Please log in to access your History.</h2>
             <a href="<?= BASE_URL ?>login.php" class="btn-primary">Sign In</a>
         </main>

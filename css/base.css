@@ -26,6 +26,27 @@ body {
         color var(--transition-base);
 }
 
+/* -----------------------------------------------------------------------
+   Mobile layout tightening.
+   Several pages set `main { min-height: 80vh }` (dashboard, admin,
+   calculator, new-topic, thread, set-goal…) plus the body itself uses
+   `min-height: 100vh`. On a phone where the content is short, this
+   combination forces a big block of empty space ABOVE the footer (inside
+   main) and another below the footer (between content end and body end).
+   On mobile we don't want viewport-height padding — let the body and main
+   collapse to natural content height. `!important` is needed because
+   page-specific stylesheets load AFTER base.css and use class selectors
+   with higher specificity.
+   ----------------------------------------------------------------------- */
+@media (max-width: 900px) {
+    body {
+        min-height: auto;
+    }
+    body > main {
+        min-height: 0 !important;
+    }
+}
+
 h1, h2, h3, h4, h5, h6 {
     color: var(--color-text);
     font-weight: 700;

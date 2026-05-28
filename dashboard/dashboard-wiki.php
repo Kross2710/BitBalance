@@ -12,6 +12,7 @@ if ($isLoggedIn) {
 
 $activePage = 'wiki';
 $activeHeader = 'dashboard';
+$bodyClass = 'page-wiki';
 $displayUser = $isLoggedIn ? $user['user_name'] : 'Guest';
 
 // --- Static wiki content ---
@@ -140,7 +141,7 @@ $wikiArticles = [
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
 

@@ -16,6 +16,7 @@ if (!isset($_SESSION['user'])) {
 $userId = $_SESSION['user']['user_id'];
 $error_message = '';
 $success_message = '';
+$bodyClass = 'page-set-goal';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $goal = filter_input(INPUT_POST, 'calorie_goal', FILTER_VALIDATE_INT, [
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
 
     <div class="container" style="max-width: 400px; margin: 40px auto;">

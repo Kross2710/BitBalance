@@ -59,6 +59,7 @@ if ($isLoggedIn) {
 }
 $activePage = 'overview';
 $activeHeader = 'dashboard';
+$bodyClass = 'page-dashboard';
 
 $status = 'Unset';
 $statusClass = 'unset';
@@ -144,14 +145,14 @@ if ($isLoggedIn) {
     <title>BitBalance Dashboard</title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css?v=' . time(), 'css/pages/dashboard-home.css'];
+    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-home.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>

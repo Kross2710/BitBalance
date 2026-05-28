@@ -1,12 +1,6 @@
-    /* Page-specific layout — colors/typography từ tokens chung */
-
-    .dashboard-content {
-        margin-top: 20px;
-        margin-left: 240px;
-        margin-right: 240px;
-        padding: 0 20px;
-        min-height: 80vh;
-    }
+    /* Page-specific layout — colors/typography từ tokens chung.
+       NOTE: .dashboard-content base layout lives in css/dashboard.css
+       (single source of truth). Don't redeclare it here. */
 
     .calculator-container {
         display: grid;

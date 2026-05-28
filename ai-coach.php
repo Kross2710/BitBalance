@@ -127,6 +127,10 @@ $csrfToken    = csrf_token();
 
         let currentConvId = null;
         let isSending = false;
+        // Holds the *processed* (re-encoded SDR JPEG) file ready to upload.
+        // We don't trust $imageIn.files[0] at submit time because that's the
+        // raw user pick (possibly HDR / huge / HEIC-converted).
+        let pendingImageFile = null;
 
         // ---------- Sidebar toggle ----------
         const MOBILE_BP = 768;
@@ -146,6 +150,41 @@ $csrfToken    = csrf_token();
         // Re-evaluate on resize (avoid stuck "open" overlay when rotating to desktop)
         window.addEventListener('resize', () => {
             if (!isMobile()) $shell.classList.remove('sidebar-collapsed');
+        });
+
+        // ---------- iOS keyboard-aware layout ----------
+        // Why: on iOS Safari, `dvh`/`svh` units do NOT shrink when the
+        // on-screen keyboard opens — only `window.visualViewport.height`
+        // does. So we mirror visualViewport into CSS custom properties
+        // (--aic-vh / --aic-vp-top) that the layout consumes. Body + shell
+        // then shrink in real time with the keyboard, keeping the composer
+        // glued to the top of the keyboard instead of vanishing behind it.
+        //
+        // Also doubles as the scroll-reset guard: re-pinning body to the
+        // visualViewport on every change means iOS can't leave the header
+        // floating below the top of the screen.
+        const docEl = document.documentElement;
+        function syncViewport() {
+            const vv = window.visualViewport;
+            const vh = vv ? vv.height : window.innerHeight;
+            const vt = vv ? vv.offsetTop : 0;
+            docEl.style.setProperty('--aic-vh', vh + 'px');
+            docEl.style.setProperty('--aic-vp-top', vt + 'px');
+            // Belt-and-braces: undo any stray scroll iOS may have introduced.
+            if (window.scrollY !== 0 || window.scrollX !== 0) {
+                window.scrollTo(0, 0);
+            }
+        }
+        syncViewport();
+        window.addEventListener('resize', syncViewport);
+        window.addEventListener('orientationchange', syncViewport);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncViewport);
+            window.visualViewport.addEventListener('scroll', syncViewport);
+        }
+        // After keyboard dismisses, iOS may briefly leave scroll offset.
+        $input.addEventListener('blur', () => {
+            setTimeout(syncViewport, 50);
         });
 
         // ---------- Helpers ----------
@@ -427,23 +466,87 @@ $csrfToken    = csrf_token();
             }
         });
 
-        $imageIn.addEventListener('change', () => {
-            const f = $imageIn.files[0];
-            if (!f) return;
-            if (f.size > 5 * 1024 * 1024) {
-                alert('Image must be under 5MB');
-                $imageIn.value = '';
-                return;
+        // Re-encode user-picked image into a plain SDR sRGB JPEG via canvas.
+        // Why: iPhones produce HDR photos (gain map metadata) which look
+        // over-saturated on some displays and bloat file size. Drawing
+        // through a 2D canvas drops the gain map and any embedded color
+        // profile, leaving a clean sRGB JPEG. We also down-scale to a
+        // reasonable max edge to keep uploads small + fast.
+        const MAX_EDGE = 1600;
+        const JPEG_QUALITY = 0.85;
+        const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+        async function processImage(file) {
+            if (!file || !file.type.startsWith('image/')) return file;
+            const blobUrl = URL.createObjectURL(file);
+            try {
+                const img = await new Promise((resolve, reject) => {
+                    const i = new Image();
+                    i.onload  = () => resolve(i);
+                    i.onerror = () => reject(new Error('Could not decode image'));
+                    i.src = blobUrl;
+                });
+                let w = img.naturalWidth, h = img.naturalHeight;
+                if (!w || !h) throw new Error('Empty image');
+                if (w > MAX_EDGE || h > MAX_EDGE) {
+                    const r = Math.min(MAX_EDGE / w, MAX_EDGE / h);
+                    w = Math.round(w * r);
+                    h = Math.round(h * r);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width  = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob(
+                        (b) => b ? resolve(b) : reject(new Error('Encode failed')),
+                        'image/jpeg',
+                        JPEG_QUALITY
+                    );
+                });
+                return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+            } finally {
+                URL.revokeObjectURL(blobUrl);
             }
-            const url = URL.createObjectURL(f);
-            $previewImg.src = url;
-            $preview.hidden = false;
-        });
-        $imageRm.addEventListener('click', () => {
+        }
+
+        function clearPreview() {
             $imageIn.value = '';
+            pendingImageFile = null;
             $preview.hidden = true;
-            $previewImg.src = '';
+            if ($previewImg.src && $previewImg.src.startsWith('blob:')) {
+                URL.revokeObjectURL($previewImg.src);
+            }
+            $previewImg.removeAttribute('src');
+        }
+
+        $imageIn.addEventListener('change', async () => {
+            const raw = $imageIn.files[0];
+            if (!raw) { clearPreview(); return; }
+
+            $sendBtn.disabled = true;
+            try {
+                const processed = await processImage(raw);
+                if (processed.size > MAX_UPLOAD_BYTES) {
+                    alert('Image is still over 5MB after processing — please try a smaller photo.');
+                    clearPreview();
+                    return;
+                }
+                pendingImageFile = processed;
+                if ($previewImg.src && $previewImg.src.startsWith('blob:')) {
+                    URL.revokeObjectURL($previewImg.src);
+                }
+                $previewImg.src = URL.createObjectURL(processed);
+                $preview.hidden = false;
+            } catch (err) {
+                alert('Could not read image: ' + err.message);
+                clearPreview();
+            } finally {
+                $sendBtn.disabled = false;
+            }
         });
+        $imageRm.addEventListener('click', clearPreview);
 
         document.addEventListener('click', (e) => {
             const s = e.target.closest('.aic-suggest');
@@ -457,18 +560,29 @@ $csrfToken    = csrf_token();
             e.preventDefault();
             if (isSending) return;
             const text = $input.value.trim();
-            const hasImage = !!$imageIn.files[0];
+            const hasImage = !!pendingImageFile;
             if (!text && !hasImage) return;
 
             isSending = true;
             $sendBtn.disabled = true;
+
+            // Build the request payload up-front — once captured, we can
+            // safely wipe the composer before awaiting the network call.
+            const fd = new FormData();
+            fd.append('conversation_id', currentConvId || '');
+            fd.append('message', text);
+            if (pendingImageFile) {
+                fd.append('image', pendingImageFile, pendingImageFile.name || 'photo.jpg');
+            }
+            fd.append('client_now', new Date().toISOString());
+            fd.append('client_tz_offset', String(new Date().getTimezoneOffset())); // minutes
 
             // Clear welcome if first message
             const welcome = $messages.querySelector('.aic-welcome');
             if (welcome) welcome.remove();
 
             // Optimistic user message
-            const localImageUrl = hasImage ? URL.createObjectURL($imageIn.files[0]) : null;
+            const localImageUrl = hasImage ? URL.createObjectURL(pendingImageFile) : null;
             appendMessage({
                 role: 'user',
                 content: text,
@@ -485,14 +599,14 @@ $csrfToken    = csrf_token();
                 }
             }
 
-            showTyping();
+            // Wipe composer NOW — payload is already in `fd`. This avoids the
+            // bug where the attached preview lingered beside the sent bubble
+            // for the whole duration of the AI request.
+            $input.value = '';
+            $input.style.height = 'auto';
+            clearPreview();
 
-            const fd = new FormData($form);
-            // Ensure conversation_id field matches state
-            fd.set('conversation_id', currentConvId || '');
-            // Send client local time so AI can infer meal category from time of day
-            fd.set('client_now', new Date().toISOString());
-            fd.set('client_tz_offset', String(new Date().getTimezoneOffset())); // minutes
+            showTyping();
 
             try {
                 const r = await apiPost('send_message', fd);
@@ -513,14 +627,11 @@ $csrfToken    = csrf_token();
                 hideTyping();
                 appendMessage({ role: 'assistant', content: '⚠️ Network error: ' + err.message });
             } finally {
-                $input.value = '';
-                $input.style.height = 'auto';
-                $imageIn.value = '';
-                $preview.hidden = true;
-                $previewImg.src = '';
                 isSending = false;
                 $sendBtn.disabled = false;
-                $input.focus();
+                // Don't auto-focus on mobile — that pops the keyboard back up
+                // immediately after send, which is jarring while reading the reply.
+                if (!isMobile()) $input.focus();
             }
         });
 
