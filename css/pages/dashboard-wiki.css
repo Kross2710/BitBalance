@@ -2,14 +2,24 @@
    NUTRITION WIKI PAGE
    ============================================ */
 
-/* No right sidebar on this page — reclaim the reserved margin */
-.dashboard-content.wiki-page {
-    margin-right: 20px;
+/* No right sidebar on this page — reclaim the reserved desktop margin. */
+@media (min-width: 901px) {
+    body.page-wiki main.dashboard-content.wiki-page {
+        margin-left: calc(var(--sidebar-width) + 32px);
+        margin-right: 32px;
+        width: auto;
+        padding: 0;
+    }
+
+    body.page-wiki .wiki-container {
+        width: min(100%, 1180px);
+    }
 }
 
 .wiki-container {
-    max-width: 1080px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 20px;

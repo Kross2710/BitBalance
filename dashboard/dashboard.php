@@ -34,6 +34,8 @@ if ($isLoggedIn) {
     $historyProtein = [110, 135, 125, 140, 130, 90, 85];
     $historyCarbs = [200, 250, 220, 260, 230, 180, 175];
     $historyFat = [55, 62, 58, 65, 60, 48, 46];
+    $macroTotals = ['protein' => 85, 'carbs' => 175, 'fat' => 46];
+    $macroGoals = getMacroGoalsFromCalorieGoal($userGoal);
 
     // Mock Intake Log
     $intakeLog = [
@@ -122,6 +124,61 @@ if ($streakDays >= 30) {
     $streakMessage = 'Log a meal today to start your streak!';
 }
 
+// --- Today's Focus card data ---
+$macroTotals = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+$macroGoals = $macroGoals ?? getMacroGoalsFromCalorieGoal(!empty($userGoal) ? (int) $userGoal : null);
+$hasCalorieGoal = !empty($userGoal);
+$calorieDiff = $hasCalorieGoal ? ((int) $userGoal - (int) $totalCalories) : null;
+
+if (!$hasCalorieGoal) {
+    $focusTitle = 'Set your daily goal';
+    $focusCopy = 'Add a target so BitBalance can guide today\'s intake.';
+    $focusTone = 'neutral';
+} elseif ($calorieDiff > 0) {
+    $focusTitle = number_format($calorieDiff) . ' kcal left';
+    $focusCopy = 'You still have room to plan the rest of today.';
+    $focusTone = 'good';
+} elseif ($calorieDiff === 0) {
+    $focusTitle = 'Goal matched';
+    $focusCopy = 'You are exactly on today\'s calorie target.';
+    $focusTone = 'good';
+} else {
+    $focusTitle = number_format(abs($calorieDiff)) . ' kcal over';
+    $focusCopy = 'Keep the next choices lighter and protein-forward.';
+    $focusTone = 'alert';
+}
+
+$macroFocusDefs = [
+    'protein' => ['label' => 'Protein', 'icon' => 'fa-drumstick-bite'],
+    'carbs' => ['label' => 'Carbs', 'icon' => 'fa-bread-slice'],
+    'fat' => ['label' => 'Fat', 'icon' => 'fa-cheese'],
+];
+$macroFocusKey = null;
+$macroFocusGap = 0;
+$macroFocusRatio = -1;
+foreach ($macroFocusDefs as $key => $def) {
+    $goal = (float) ($macroGoals[$key] ?? 0);
+    $current = (float) ($macroTotals[$key] ?? 0);
+    $gap = max(0, $goal - $current);
+    $ratio = $goal > 0 ? $gap / $goal : 0;
+    if ($gap > 0 && $ratio > $macroFocusRatio) {
+        $macroFocusKey = $key;
+        $macroFocusGap = $gap;
+        $macroFocusRatio = $ratio;
+    }
+}
+
+if ($macroFocusKey) {
+    $macroFocusIcon = $macroFocusDefs[$macroFocusKey]['icon'];
+    $macroFocusText = $macroFocusDefs[$macroFocusKey]['label'] . ' +' . number_format((int) round($macroFocusGap)) . 'g';
+} elseif ($hasCalorieGoal) {
+    $macroFocusIcon = 'fa-circle-check';
+    $macroFocusText = 'On track';
+} else {
+    $macroFocusIcon = 'fa-bullseye';
+    $macroFocusText = 'Needs goal';
+}
+
 if ($isLoggedIn) {
     // FETCH FULL WEIGHT HISTORY (Cho Modal)
     $weightHistoryList = [];
@@ -131,6 +188,25 @@ if ($isLoggedIn) {
         $stmt->execute([$user['user_id']]);
         $weightHistoryList = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
+    }
+}
+
+// Calculate BMI dynamically
+$actualWeight = $currentWeight > 0 ? (float)$currentWeight : (!empty($userWeight) ? (float)$userWeight : 0);
+$actualHeight = !empty($userHeight) ? (float)$userHeight : 0;
+$bmi = 0;
+$bmiClass = '';
+if ($actualWeight > 0 && $actualHeight > 0) {
+    $heightInMeters = $actualHeight / 100;
+    $bmi = round($actualWeight / ($heightInMeters * $heightInMeters), 1);
+    if ($bmi < 18.5) {
+        $bmiClass = 'Underweight';
+    } elseif ($bmi < 25.0) {
+        $bmiClass = 'Normal';
+    } elseif ($bmi < 30.0) {
+        $bmiClass = 'Overweight';
+    } else {
+        $bmiClass = 'Obese';
     }
 }
 ?>
@@ -167,6 +243,35 @@ if ($isLoggedIn) {
             </div>
         <?php endif; ?>
 
+        <div class="welcome-banner">
+            <div class="welcome-text">
+                <h2>Welcome back, <?= htmlspecialchars($user['first_name'] ?? 'Champion') ?>! 👋</h2>
+                <p><?php
+                    if (!$hasCalorieGoal) {
+                        echo "Set a daily calorie goal to customize your dashboard and guide your intake! 🎯";
+                    } elseif ($totalCalories > 0) {
+                        if ($progressPercentage >= 100) {
+                            echo "You have achieved your calorie goal for today! Spectacular job! 🌟";
+                        } else {
+                            echo "You have met <strong>" . (int)$progressPercentage . "%</strong> of your daily calorie goal today. Let's fuel your body! 🚀";
+                        }
+                    } else {
+                        echo "Start tracking your meals today to stay on target and build a healthy habit! 🎯";
+                    }
+                ?></p>
+            </div>
+            <div class="welcome-stats">
+                <div class="welcome-stat-chip">
+                    <i class="fas fa-bullseye" style="color: #60a5fa;"></i>
+                    <span><?= (int) $progressPercentage ?>% Goal Met</span>
+                </div>
+                <div class="welcome-stat-chip">
+                    <i class="fas fa-trophy" style="color: #FFD700;"></i>
+                    <span>Level Active</span>
+                </div>
+            </div>
+        </div>
+
         <div class="flex-row">
             <div class="flex">
                 <section class="progress-widget">
@@ -177,7 +282,7 @@ if ($isLoggedIn) {
                                 <span class="<?= $statusClass ?>"><?php echo $totalCalories; ?> calories</span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                                <div class="progress-fill <?= htmlspecialchars($statusClass) ?>" id="progressFill" style="width: 0%;"></div>
                             </div>
                             <div class="progress-labels">
                                 <span>Goal</span>
@@ -192,40 +297,6 @@ if ($isLoggedIn) {
                             }, 300);
                         });
                     </script>
-                </section>
-
-                <section class="status-section <?php echo strtolower($status); ?>">
-                    <div class="status-bg-icon">
-                        <?php if ($status === 'Ongoing'): echo '<i class="fas fa-running"></i>';
-                        elseif ($status === 'Overlimit'):
-                            echo '<i class="fas fa-trophy"></i>';
-                        else:
-                            echo '<i class="fas fa-clipboard-list"></i>';
-                        endif; ?>
-                    </div>
-
-                    <div class="status-content">
-                        <h4>
-                            <?php if ($status === 'Ongoing'): ?>
-                                <span class="status-badge badge-blue"><i class="fas fa-sync-alt spin"></i> Ongoing</span>
-                            <?php elseif ($status === 'Overlimit'): ?>
-                                <span class="status-badge badge-gold"><i class="fas fa-star"></i> Goal Reached</span>
-                            <?php else: ?>
-                                <span class="status-badge badge-gray"><i class="fas fa-exclamation-circle"></i> Unset</span>
-                            <?php endif; ?>
-                        </h4>
-
-                        <p class="status-message">
-                            <?php if ($status === 'Ongoing'): ?> Keep pushing! You're on the right track.
-                            <?php elseif ($status === 'Overlimit'): ?> Spectacular! You've crushed your goal today.
-                            <?php else: ?> Start your journey by setting a daily goal. <?php endif; ?>
-                        </p>
-
-                        <button class="btn-action"
-                            onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
-                            Adjust Goal
-                        </button>
-                    </div>
                 </section>
 
                 <section class="chart-section history-card">
@@ -256,50 +327,92 @@ if ($isLoggedIn) {
                         document.addEventListener('DOMContentLoaded', function () {
                             const mtCtx = document.getElementById('macrosTrendChart');
                             if (!mtCtx || typeof Chart === 'undefined') return;
+
+                            const rootStyles = getComputedStyle(document.documentElement);
+                            const macroColors = {
+                                protein: (rootStyles.getPropertyValue('--color-primary') || '#58CC02').trim(),
+                                carbs: (rootStyles.getPropertyValue('--color-secondary') || '#1CB0F6').trim(),
+                                fat: (rootStyles.getPropertyValue('--color-accent') || '#FF9600').trim()
+                            };
+                            const textColor = (rootStyles.getPropertyValue('--color-text-secondary') || '#64748b').trim();
+                            const gridColor = (rootStyles.getPropertyValue('--color-border-subtle') || '#f1f5f9').trim();
+
                             new Chart(mtCtx.getContext('2d'), {
                                 type: 'bar',
                                 data: {
                                     labels: <?php echo json_encode($historyLabels); ?>,
                                     datasets: [
                                         {
-                                            label: 'Protein (g)',
+                                            label: 'Protein',
                                             data: <?php echo json_encode($historyProtein); ?>,
-                                            backgroundColor: '#e74c3c',
-                                            borderRadius: 4,
-                                            stack: 'macros'
+                                            backgroundColor: macroColors.protein,
+                                            borderRadius: 8,
+                                            maxBarThickness: 12,
+                                            categoryPercentage: 0.58,
+                                            barPercentage: 0.82
                                         },
                                         {
-                                            label: 'Carbs (g)',
+                                            label: 'Carbs',
                                             data: <?php echo json_encode($historyCarbs); ?>,
-                                            backgroundColor: '#f1c40f',
-                                            borderRadius: 4,
-                                            stack: 'macros'
+                                            backgroundColor: macroColors.carbs,
+                                            borderRadius: 8,
+                                            maxBarThickness: 12,
+                                            categoryPercentage: 0.58,
+                                            barPercentage: 0.82
                                         },
                                         {
-                                            label: 'Fat (g)',
+                                            label: 'Fat',
                                             data: <?php echo json_encode($historyFat); ?>,
-                                            backgroundColor: '#3498db',
-                                            borderRadius: 4,
-                                            stack: 'macros'
+                                            backgroundColor: macroColors.fat,
+                                            borderRadius: 8,
+                                            maxBarThickness: 12,
+                                            categoryPercentage: 0.58,
+                                            barPercentage: 0.82
                                         }
                                     ]
                                 },
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
+                                    layout: { padding: { top: 6, right: 6, bottom: 0, left: 0 } },
+                                    interaction: { mode: 'index', intersect: false },
                                     plugins: {
                                         legend: { display: false },
                                         tooltip: {
                                             mode: 'index',
                                             intersect: false,
+                                            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                                            titleColor: '#ffffff',
+                                            bodyColor: '#e2e8f0',
+                                            borderColor: 'rgba(255, 255, 255, 0.12)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            displayColors: true,
                                             callbacks: {
                                                 label: (ctx) => ` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y)}g`
                                             }
                                         }
                                     },
                                     scales: {
-                                        x: { stacked: true, grid: { display: false }, border: { display: false } },
-                                        y: { stacked: true, beginAtZero: true, grid: { color: '#f0f0f0', borderDash: [5, 5] }, border: { display: false } }
+                                        x: {
+                                            grid: { display: false },
+                                            border: { display: false },
+                                            ticks: {
+                                                color: textColor,
+                                                font: { size: 11, weight: '600' }
+                                            }
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: gridColor },
+                                            border: { display: false },
+                                            ticks: {
+                                                color: textColor,
+                                                maxTicksLimit: 4,
+                                                padding: 8,
+                                                callback: (value) => `${value}g`
+                                            }
+                                        }
                                     }
                                 }
                             });
@@ -384,7 +497,7 @@ if ($isLoggedIn) {
                             $cat = strtolower($meal['meal_category']);
                             $config = $mealConfig[$cat] ?? ['icon' => 'fa-circle', 'color' => '#999', 'label' => $cat];
                             ?>
-                            <div class="meal-item">
+                            <div class="meal-item" style="--meal-accent-color: <?php echo $config['color']; ?>; --meal-hover-bg: <?php echo $config['color']; ?>08;">
                                 <div class="meal-icon-box"
                                     style="background-color: <?php echo $config['color']; ?>20; color: <?php echo $config['color']; ?>;">
                                     <i class="fas <?php echo $config['icon']; ?>"></i>
@@ -572,14 +685,54 @@ if ($isLoggedIn) {
                     </script>
                 </section>
 
-                <section class="dashboard-card wiki-card">
-                    <div class="wiki-bg-icon"><i class="fas fa-lightbulb"></i></div>
-                    <div class="wiki-content">
-                        <div class="wiki-header-row">
-                            <h3>Nutrition Wiki</h3>
+                <section class="dashboard-card focus-card">
+                    <div class="focus-card-header">
+                        <span class="focus-kicker"><i class="fas fa-compass"></i> Today's Focus</span>
+                        <span class="focus-status <?= htmlspecialchars($focusTone) ?>">
+                            <?= htmlspecialchars($status === 'Overlimit' ? 'Adjust' : ($hasCalorieGoal ? 'Active' : 'Setup')) ?>
+                        </span>
+                    </div>
+
+                    <div class="focus-main">
+                        <strong><?= htmlspecialchars($focusTitle) ?></strong>
+                        <p><?= htmlspecialchars($focusCopy) ?></p>
+                    </div>
+
+                    <div class="focus-insights">
+                        <div class="focus-insight macro-focus <?= htmlspecialchars($macroFocusKey ?? 'neutral') ?>">
+                            <i class="fas <?= htmlspecialchars($macroFocusIcon) ?>"></i>
+                            <div>
+                                <span>Macro focus</span>
+                                <strong><?= htmlspecialchars($macroFocusText) ?></strong>
+                            </div>
                         </div>
-                        <p class="wiki-desc">Bite-sized guides on macros, micros, and healthy habits.</p>
-                        <a href="dashboard-wiki.php" class="btn-wiki"><i class="fas fa-arrow-right"></i> Explore</a>
+                        <div class="focus-insight bmi-focus">
+                            <i class="fas fa-heart-pulse"></i>
+                            <div>
+                                <span>BMI Status</span>
+                                <strong><?= $bmi > 0 ? htmlspecialchars($bmi) . ' (' . htmlspecialchars($bmiClass) . ')' : 'Needs info' ?></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="focus-actions">
+                        <?php if ($hasCalorieGoal): ?>
+                            <a href="dashboard-plan.php" class="focus-btn primary">
+                                <i class="fas fa-route"></i> View Plan
+                            </a>
+                            <button type="button" class="focus-btn ghost"
+                                onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
+                                <i class="fas fa-bullseye"></i> Adjust Goal
+                            </button>
+                        <?php else: ?>
+                            <button type="button" class="focus-btn primary"
+                                onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
+                                <i class="fas fa-bullseye"></i> Set Goal
+                            </button>
+                            <a href="dashboard-plan.php" class="focus-btn ghost">
+                                <i class="fas fa-route"></i> View Plan
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </section>
             </div>

@@ -17,6 +17,17 @@ if (!defined('BASE_URL')) {
 
 // Start the session if not already started
 if (session_status() == PHP_SESSION_NONE) {
+    // Hardened session cookie parameters for enhanced security (XSS, CSRF, Secure transport)
+    $secure = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] == 1)) 
+              || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
 }
 

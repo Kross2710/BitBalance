@@ -354,13 +354,21 @@ try {
     <div class="profile-wrapper">
 
         <aside class="profile-sidebar">
-            <div class="avatar-container">
-                <?php if (!empty($profile['profile_image']) && file_exists($profile['profile_image'])): ?>
-                    <img src="<?= BASE_URL ?><?= htmlspecialchars($profile['profile_image']) ?>" class="profile-avatar">
-                <?php else: ?>
-                    <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
-                <?php endif; ?>
-            </div>
+            <form id="avatarUploadForm" method="POST" enctype="multipart/form-data">
+                <div class="avatar-container" onclick="document.getElementById('avatarFileInput').click()" title="Click to change profile picture">
+                    <?php if (!empty($profile['profile_image']) && file_exists($profile['profile_image'])): ?>
+                        <img src="<?= BASE_URL ?><?= htmlspecialchars($profile['profile_image']) ?>" class="profile-avatar" alt="Avatar">
+                    <?php else: ?>
+                        <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
+                    <?php endif; ?>
+                    <div class="avatar-overlay">
+                        <i class="fas fa-camera"></i>
+                        <span>Change Photo</span>
+                    </div>
+                </div>
+                <input type="file" name="profile_image" id="avatarFileInput" accept="image/*" style="display: none;" onchange="document.getElementById('avatarSubmitBtn').click()">
+                <button type="submit" name="upload_image" id="avatarSubmitBtn" style="display: none;"></button>
+            </form>
 
             <h2 class="profile-name"><?= htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']) ?></h2>
             <p class="profile-email"><?= htmlspecialchars($profile['email']) ?></p>
@@ -488,28 +496,14 @@ try {
                     </div>
                     <input type="hidden" name="theme" id="selectedTheme"
                         value="<?= htmlspecialchars($profile['theme_preference']) ?>">
-                    <button type="submit" name="change_theme" class="btn-save" style="margin-top: 20px;">Apply
-                        Theme</button>
+                    <button type="submit" name="change_theme" class="btn-save btn-save--theme">Apply Theme</button>
                 </form>
             </section>
 
-            <section class="settings-card">
-                <div class="card-header">
-                    <div class="header-icon icon-orange"><i class="fas fa-camera"></i></div>
-                    <div>
-                        <h2>Profile Picture</h2>
-                        <p>Personalize your account with a photo.</p>
-                    </div>
-                </div>
-                <form method="POST" enctype="multipart/form-data"
-                    style="display: flex; gap: 10px; align-items: center;">
-                    <input type="file" name="profile_image" accept="image/*" required style="flex: 1;">
-                    <button type="submit" name="upload_image" class="btn-save">Upload</button>
-                </form>
-            </section>
+
 
             <section id="security" class="settings-card danger-zone">
-                <div class="card-header" style="border-bottom-color: rgba(220,53,69,0.2);">
+                <div class="card-header card-header--danger">
                     <div class="header-icon icon-red"><i class="fas fa-shield-alt"></i></div>
                     <div>
                         <h2>Security Zone</h2>
@@ -517,8 +511,8 @@ try {
                     </div>
                 </div>
 
-                <form method="POST" style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Change Password</h4>
+                <form method="POST" class="security-form">
+                    <h4 class="security-form__title">Change Password</h4>
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>Current Password</label>
@@ -536,14 +530,14 @@ try {
                     <button type="submit" name="change_password" class="btn-save">Update Password</button>
                 </form>
 
-                <div style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 20px;">
-                    <h4 style="color: #dc3545; margin-bottom: 10px;">Archive Account</h4>
-                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 15px;">
+                <div class="archive-section">
+                    <h4 class="archive-section__title">Archive Account</h4>
+                    <p class="archive-section__desc">
                         This will archive your account. Type <strong>ARCHIVE</strong> to confirm.
                     </p>
-                    <form method="POST" onsubmit="return confirm('Are you sure?');" style="display: flex; gap: 10px;">
+                    <form method="POST" onsubmit="return confirm('Are you sure?');" class="archive-section__form">
                         <input type="text" name="confirm_archive" placeholder="Type ARCHIVE" required
-                            style="max-width: 200px;">
+                            class="archive-section__input">
                         <button type="submit" name="archive_account" class="btn-danger">Archive Account</button>
                     </form>
                 </div>

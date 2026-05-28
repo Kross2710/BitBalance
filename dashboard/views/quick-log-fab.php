@@ -9,9 +9,9 @@
  */
 ?>
 <a href="<?= BASE_URL ?>dashboard/dashboard-intake.php"
-   class="fab fab--extended"
+   class="quick-log-fab quick-log-fab--extended"
    aria-label="Log food intake"
    title="Log food intake">
     <i class="fas fa-plus"></i>
-    <span class="fab-label">Log</span>
+    <span class="quick-log-fab__label">Log</span>
 </a>

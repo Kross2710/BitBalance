@@ -1,5 +1,5 @@
 /* =========================================================================
-   AI Coach — ChatGPT-style chat interface
+   AI Coach — ChatGPT-style chat interface (Duolingo 3D Tactile Theme)
    ========================================================================= */
 
 .ai-coach-body {
@@ -39,7 +39,7 @@ html:has(.ai-coach-body) {
     display: none;
     position: absolute;
     inset: 0;
-    background: rgba(15, 23, 42, 0.4);
+    background: var(--color-overlay);
     z-index: 9;
 }
 
@@ -48,7 +48,7 @@ html:has(.ai-coach-body) {
     width: 280px;
     flex-shrink: 0;
     background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
+    border-right: 2px solid var(--color-border);
     display: flex;
     flex-direction: column;
     transition: transform 0.25s ease, margin-left 0.25s ease;
@@ -62,14 +62,15 @@ html:has(.ai-coach-body) {
 
 .aic-sidebar-header {
     padding: 16px;
-    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom: 2px solid var(--color-border-subtle);
 }
 
+/* 3D Chunky New Chat Button */
 .aic-new-chat-btn {
     width: 100%;
-    padding: 10px 14px;
+    padding: 12px 14px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--gradient-primary);
     color: var(--color-text-on-primary);
     font-weight: 700;
@@ -79,11 +80,16 @@ html:has(.ai-coach-body) {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: transform 0.1s, box-shadow 0.2s;
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+    transition: all 0.1s ease;
 }
 .aic-new-chat-btn:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-primary-hover);
+}
+.aic-new-chat-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
 }
 
 .aic-conv-list {
@@ -102,22 +108,25 @@ html:has(.ai-coach-body) {
 .aic-conv-item {
     padding: 10px 12px;
     margin-bottom: 4px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
     color: var(--color-text);
     font-size: 14px;
-    transition: background 0.15s;
+    border: 2px solid transparent;
+    transition: all var(--transition-fast);
 }
 .aic-conv-item:hover {
     background: var(--color-surface-alt);
+    border-color: var(--color-border);
 }
 .aic-conv-item.active {
     background: var(--color-primary-soft);
     color: var(--color-primary-hover);
     font-weight: 600;
+    border-color: var(--color-primary);
 }
 
 .aic-conv-title {
@@ -147,7 +156,7 @@ html:has(.ai-coach-body) {
 
 .aic-sidebar-footer {
     padding: 12px 16px;
-    border-top: 1px solid var(--color-border-subtle);
+    border-top: 2px solid var(--color-border-subtle);
     font-size: 12px;
     color: var(--color-text-muted);
     text-align: center;
@@ -166,7 +175,7 @@ html:has(.ai-coach-body) {
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
-    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom: 2px solid var(--color-border-subtle);
     background: var(--color-surface);
     min-height: 48px;
 }
@@ -174,8 +183,8 @@ html:has(.ai-coach-body) {
 .aic-sidebar-toggle {
     width: 36px;
     height: 36px;
-    border-radius: 8px;
-    border: none;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
@@ -183,11 +192,12 @@ html:has(.ai-coach-body) {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, color 0.15s;
+    transition: all var(--transition-fast);
 }
 .aic-sidebar-toggle:hover {
     background: var(--color-surface-alt);
     color: var(--color-primary);
+    border-color: var(--color-border);
 }
 
 .aic-main-title {
@@ -214,13 +224,13 @@ html:has(.ai-coach-body) {
     height: 72px;
     border-radius: 50%;
     background: var(--gradient-primary);
-    color: white;
+    color: var(--color-text-on-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 28px;
     margin-bottom: 20px;
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 6px 0 var(--color-primary-hover), var(--shadow-md);
 }
 .aic-welcome h1 {
     font-size: 32px;
@@ -233,6 +243,8 @@ html:has(.ai-coach-body) {
     margin: 0 auto 32px;
     max-width: 480px;
 }
+
+/* 3D Tactile Suggestion Cards */
 .aic-suggestions {
     display: grid;
     grid-template-columns: 1fr;
@@ -243,18 +255,24 @@ html:has(.ai-coach-body) {
 .aic-suggest {
     padding: 14px 18px;
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
     font-size: 14px;
     text-align: left;
     color: var(--color-text);
     cursor: pointer;
-    transition: all 0.15s;
+    box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-xs);
+    transition: all var(--transition-base);
 }
 .aic-suggest:hover {
     border-color: var(--color-primary);
     background: var(--color-primary-soft);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
+}
+.aic-suggest:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--color-border-subtle);
 }
 
 /* Message bubbles */
@@ -275,13 +293,15 @@ html:has(.ai-coach-body) {
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: white;
+    color: var(--color-text-on-primary);
 }
 .aic-msg-user .aic-msg-avatar {
     background: var(--color-secondary);
+    box-shadow: 0 3px 0 rgba(28, 176, 246, 0.35);
 }
 .aic-msg-ai .aic-msg-avatar {
     background: var(--gradient-primary);
+    box-shadow: 0 3px 0 var(--color-primary-hover);
 }
 
 .aic-msg-body {
@@ -291,7 +311,7 @@ html:has(.ai-coach-body) {
 
 .aic-msg-text {
     padding: 12px 16px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     font-size: 15px;
     line-height: 1.55;
     color: var(--color-text);
@@ -300,17 +320,18 @@ html:has(.ai-coach-body) {
 }
 .aic-msg-user .aic-msg-text {
     background: var(--color-primary-soft);
+    border: 2px solid transparent;
 }
 .aic-msg-ai .aic-msg-text {
     background: var(--color-surface);
-    border: 1px solid var(--color-border-subtle);
+    border: 2px solid var(--color-border-subtle);
 }
 .aic-msg-text a {
     color: var(--color-secondary);
     text-decoration: underline;
 }
 
-/* --------- Food log suggestion cards --------- */
+/* --------- Food log suggestion cards (3D Tactile) --------- */
 .aic-food-cards {
     margin-top: 10px;
     display: flex;
@@ -322,16 +343,17 @@ html:has(.ai-coach-body) {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-xs);
-    transition: border-color 0.15s, box-shadow 0.15s;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-xs);
+    transition: all var(--transition-base);
 }
 .aic-food-card:hover {
     border-color: var(--color-primary);
-    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
 }
 
 .aic-food-card-main {
@@ -356,7 +378,7 @@ html:has(.ai-coach-body) {
     color: var(--color-primary-hover);
     font-weight: 700;
     padding: 2px 8px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
 }
 
 .aic-food-name {
@@ -377,32 +399,39 @@ html:has(.ai-coach-body) {
 .aic-macro {
     font-size: 11px;
     padding: 2px 7px;
-    border-radius: 6px;
-    font-weight: 600;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
 }
-.aic-macro.p { background: #fee2e2; color: #b91c1c; }
-.aic-macro.c { background: #fef3c7; color: #92400e; }
-.aic-macro.f { background: #dbeafe; color: #1e40af; }
+/* Macro pill colors — tokenized with dark mode support */
+.aic-macro.p { background: var(--color-danger-bg); color: var(--color-danger); }
+.aic-macro.c { background: var(--color-warning-bg); color: var(--color-warning); }
+.aic-macro.f { background: var(--color-info-bg); color: var(--color-info); }
 
+/* 3D Chunky Log Button */
 .aic-food-log-btn {
     flex-shrink: 0;
     padding: 8px 14px;
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--gradient-primary);
-    color: white;
+    color: var(--color-text-on-primary);
     font-weight: 700;
     font-size: 13px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
     white-space: nowrap;
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+    transition: all 0.1s ease;
 }
 .aic-food-log-btn:hover:not(:disabled) {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-primary-hover);
+}
+.aic-food-log-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
 }
 .aic-food-log-btn:disabled {
     cursor: not-allowed;
@@ -410,6 +439,7 @@ html:has(.ai-coach-body) {
 }
 .aic-food-log-btn.logged {
     background: var(--color-text-secondary);
+    box-shadow: 0 4px 0 var(--color-text-muted);
     opacity: 1;
 }
 
@@ -456,8 +486,8 @@ html:has(.ai-coach-body) {
 .aic-msg-image img {
     max-width: 320px;
     max-height: 320px;
-    border-radius: 12px;
-    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
     display: block;
 }
 
@@ -481,19 +511,22 @@ html:has(.ai-coach-body) {
     30%           { opacity: 1;   transform: translateY(-4px); }
 }
 
+/* 3D Danger Error Block */
 .aic-error {
     max-width: 720px;
     margin: 20px auto;
     padding: 14px 18px;
     background: var(--color-danger-bg);
     color: var(--color-danger);
-    border: 1px solid var(--color-danger-border);
-    border-radius: 10px;
+    border: 2px solid var(--color-danger-border);
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--color-danger-border);
 }
 
 /* --------- Composer --------- */
 .aic-composer {
-    border-top: 1px solid var(--color-border);
+    border-top: 2px solid var(--color-border);
     background: var(--color-surface);
     padding: 16px 16px 12px;
 }
@@ -511,8 +544,8 @@ html:has(.ai-coach-body) {
 }
 .aic-image-preview img {
     max-height: 100px;
-    border-radius: 8px;
-    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--color-border);
 }
 .aic-img-remove {
     position: absolute;
@@ -523,12 +556,16 @@ html:has(.ai-coach-body) {
     border-radius: 50%;
     border: none;
     background: var(--color-danger);
-    color: white;
+    color: var(--color-text-on-primary);
     cursor: pointer;
     font-size: 11px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: transform 0.1s ease;
+}
+.aic-img-remove:hover {
+    transform: scale(1.15);
 }
 
 .aic-composer-row {
@@ -538,9 +575,14 @@ html:has(.ai-coach-body) {
     gap: 10px;
     align-items: flex-end;
     background: var(--color-surface-alt);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
     padding: 8px 8px 8px 14px;
+    transition: border-color var(--transition-base);
+}
+.aic-composer-row:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
 }
 
 .aic-attach-btn {
@@ -552,7 +594,7 @@ html:has(.ai-coach-body) {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, color 0.15s;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 .aic-attach-btn:hover {
     background: var(--color-surface-hover);
@@ -574,24 +616,30 @@ html:has(.ai-coach-body) {
     line-height: 1.5;
 }
 
+/* 3D Chunky Send Button */
 .aic-send-btn {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     border: none;
     background: var(--gradient-primary);
-    color: white;
+    color: var(--color-text-on-primary);
     cursor: pointer;
     font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: transform 0.1s, box-shadow 0.2s, opacity 0.2s;
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+    transition: all 0.1s ease;
 }
 .aic-send-btn:hover:not(:disabled) {
-    box-shadow: var(--shadow-md);
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-primary-hover);
+}
+.aic-send-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
 }
 .aic-send-btn:disabled {
     opacity: 0.5;

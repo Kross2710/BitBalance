@@ -64,26 +64,26 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             <div class="intake-container">
 
                 <section class="progress-widget">
-                    <div class="progress-card-content">
-                        <div class="progress-header">
-                            <h3>Today's Intake</h3>
-                            <span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span>
-                        </div>
+                    <div class="progress-card">
+                        <div class="progress-card-content">
+                            <div class="progress-header">
+                                <h3>Today's Intake</h3>
+                                <span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span>
+                            </div>
 
-                        <div class="progress-value">
-                            <span id="totalDisplay"><?php echo $totalCalories; ?></span>
-                            <small>calories</small>
-                        </div>
+                            <div class="progress-value">
+                                <span class="<?php echo $statusClass; ?>" id="totalDisplay"><?php echo $totalCalories; ?></span>
+                                <small>calories</small>
+                            </div>
 
-                        <div class="progress-track">
-                            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
-                        </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill <?php echo htmlspecialchars($statusClass); ?>" id="progressFill" style="width: 0%;"></div>
+                            </div>
 
-                        <div class="progress-footer">
-                            <span class="goal-label">Goal:
-                                <strong><?php echo $userGoal ? $userGoal : 'Unset'; ?></strong></span>
-                            <span
-                                class="pct-label"><?php echo $userGoal ? round(($totalCalories / $userGoal) * 100) . '%' : '0%'; ?></span>
+                            <div class="progress-labels">
+                                <span>Goal: <strong><?php echo $userGoal ? number_format($userGoal) : 'Unset'; ?></strong></span>
+                                <span class="pct-label"><?php echo $userGoal ? round(($totalCalories / $userGoal) * 100) . '%' : '0%'; ?></span>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -92,12 +92,12 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 $macros = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
                 $mGoals = $macroGoals  ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
                 $macroDefs = [
-                    'protein' => ['label' => 'Protein', 'class' => 'p', 'icon' => 'fa-drumstick-bite', 'color' => '#e74c3c'],
-                    'carbs'   => ['label' => 'Carbs',   'class' => 'c', 'icon' => 'fa-bread-slice',    'color' => '#f1c40f'],
-                    'fat'     => ['label' => 'Fat',     'class' => 'f', 'icon' => 'fa-cheese',         'color' => '#3498db'],
+                    'protein' => ['label' => 'Protein', 'class' => 'p', 'icon' => 'fa-drumstick-bite'],
+                    'carbs'   => ['label' => 'Carbs',   'class' => 'c', 'icon' => 'fa-bread-slice'],
+                    'fat'     => ['label' => 'Fat',     'class' => 'f', 'icon' => 'fa-cheese'],
                 ];
                 ?>
-                <section class="macros-widget meals-card">
+                <section class="chart-section macros-widget meals-card">
                     <div class="card-header">
                         <h4><i class="fas fa-chart-pie"></i> Macros Today</h4>
                     </div>
@@ -118,9 +118,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             $curDisp = rtrim(rtrim(number_format($cur, 1, '.', ''), '0'), '.');
                             if ($curDisp === '') $curDisp = '0';
                         ?>
-                        <div class="macro-item">
-                            <div class="macro-icon-box"
-                                 style="background-color: <?= $def['color'] ?>20; color: <?= $def['color'] ?>;">
+                        <div class="macro-item <?= $def['class'] ?>">
+                            <div class="macro-icon-box">
                                 <i class="fas <?= $def['icon'] ?>"></i>
                             </div>
                             <div class="macro-info">
@@ -158,7 +157,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 </script>
 
                 <div class="content-split">
-                    <section class="intake-form-card">
+                    <section class="dashboard-card intake-form-card">
                         <div class="card-header">
                             <h3><i class="fas fa-plus-circle"></i> Log Food</h3>
                         </div>
@@ -260,7 +259,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         </form>
                     </section>
 
-                    <section class="intake-list-card">
+                    <section class="dashboard-card intake-list-card">
                         <div class="card-header">
                             <h3><i class="fas fa-list-ul"></i> Today's History</h3>
                         </div>
@@ -922,15 +921,21 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             if (!canvas || typeof Chart === 'undefined') return;
             const state = window.__macroState || { protein: 0, carbs: 0, fat: 0 };
             const g = macrosGrams(state);
+            const rootStyles = getComputedStyle(document.documentElement);
+            const macroColors = {
+                protein: (rootStyles.getPropertyValue('--color-primary') || '#58CC02').trim(),
+                carbs: (rootStyles.getPropertyValue('--color-secondary') || '#1CB0F6').trim(),
+                fat: (rootStyles.getPropertyValue('--color-accent') || '#FF9600').trim()
+            };
             macrosDonutChart = new Chart(canvas.getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: ['Protein', 'Carbs', 'Fat'],
                     datasets: [{
                         data: [g.p, g.c, g.f],
-                        backgroundColor: ['#e74c3c', '#f1c40f', '#3498db'],
+                        backgroundColor: [macroColors.protein, macroColors.carbs, macroColors.fat],
                         borderWidth: 2,
-                        borderColor: '#ffffff',
+                        borderColor: (rootStyles.getPropertyValue('--color-surface') || '#ffffff').trim(),
                         hoverOffset: 6
                     }]
                 },

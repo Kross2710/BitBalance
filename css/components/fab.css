@@ -3,7 +3,7 @@
    Mobile-first: only visible <= 900px (desktop already shows sidebars).
    ========================================================================= */
 
-.fab {
+.quick-log-fab {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -27,33 +27,33 @@
 
 /* Cả icon + label dùng line-height:1 để collapse line-box về đúng glyph size.
    Khi font-size icon (1.1rem) và label (0.95rem) gần nhau + line-height đồng nhất,
-   align-items:center của .fab tự khớp baseline. */
-.fab i,
-.fab .fab-label {
+   align-items:center của .quick-log-fab tự khớp baseline. */
+.quick-log-fab i,
+.quick-log-fab .quick-log-fab__label {
     line-height: 1;
     display: inline-flex;
     align-items: center;
 }
 
-.fab i {
+.quick-log-fab i {
     /* Giảm từ 1.4rem → 1.1rem để icon gần size label (0.95rem), tránh chênh
        lệch line-box quá lớn gây cảm giác lệch dù đã center. */
     font-size: 1.1rem;
 }
 
-.fab:hover,
-.fab:focus {
+.quick-log-fab:hover,
+.quick-log-fab:focus {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 10px 28px rgba(74, 126, 227, 0.55);
     color: var(--color-text-on-primary);
 }
 
-.fab:active {
+.quick-log-fab:active {
     transform: scale(0.97);
 }
 
 /* Extended FAB (icon + label) — used when there's room */
-.fab--extended {
+.quick-log-fab--extended {
     width: auto;
     padding: 0 22px 0 18px;
     gap: 10px;
@@ -62,25 +62,25 @@
     font-size: 0.95rem;
 }
 
-.fab--extended .fab-label {
+.quick-log-fab--extended .quick-log-fab__label {
     white-space: nowrap;
 }
 
 /* Show on mobile / tablet only */
 @media (max-width: 900px) {
-    .fab {
+    .quick-log-fab {
         display: inline-flex;
     }
 }
 
 /* Tighten on very small screens */
 @media (max-width: 480px) {
-    .fab--extended {
+    .quick-log-fab--extended {
         padding: 0 18px 0 14px;
         font-size: 0.9rem;
     }
 
-    .fab {
+    .quick-log-fab {
         bottom: 16px;
         right: 16px;
     }

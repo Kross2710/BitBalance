@@ -123,9 +123,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Show cookie settings modal
-    manageCookiesBtn.addEventListener('click', function() {
-        showModal();
-    });
+    if (manageCookiesBtn) {
+        manageCookiesBtn.addEventListener('click', function() {
+            showModal();
+        });
+    }
+
+    // Connect footer settings link
+    const footerCookieSettings = document.getElementById('footer-cookie-settings');
+    if (footerCookieSettings) {
+        footerCookieSettings.addEventListener('click', function(e) {
+            e.preventDefault();
+            showModal();
+        });
+    }
     
     // Close modal
     closeModalBtn.addEventListener('click', function() {
@@ -239,11 +250,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Cookie utility functions
+    // Cookie utility functions with Secure & SameSite settings
     function setCookie(name, value, days) {
         const expires = new Date();
         expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/;SameSite=Strict';
+        let cookieString = name + '=' + encodeURIComponent(value) + ';expires=' + expires.toUTCString() + ';path=/;SameSite=Strict';
+        if (location.protocol === 'https:') {
+            cookieString += ';Secure';
+        }
+        document.cookie = cookieString;
     }
     
     function getCookie(name) {

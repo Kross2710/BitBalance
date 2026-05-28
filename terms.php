@@ -100,74 +100,40 @@ $activeHeader = 'about';
 
     <?php include 'views/footer.php'; ?>
 
-    <div id="cookie-banner" class="cookie-banner" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; color: white; padding: 20px; z-index: 9999; box-shadow: 0 -5px 20px rgba(0,0,0,0.2);">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-            <div style="flex: 1; min-width: 280px;">
-                <h4 style="margin: 0 0 5px 0; font-size: 1rem;">We value your privacy 🍪</h4>
-                <p style="margin: 0; font-size: 0.9rem; color: #ecf0f1;">This website uses cookies to enhance your experience. <a href="#" style="color: #3498db; text-decoration: underline;">Read Policy</a></p>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button id="accept-essential" style="background: transparent; border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Essential Only</button>
-                <button id="accept-all" style="background: #27ae60; border: none; color: white; padding: 8px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;">Accept All</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Cookie Banner Logic
-            const banner = document.getElementById('cookie-banner');
             const statusEl = document.getElementById('cookie-test-status');
 
-            function showBanner() {
-                banner.style.display = 'block';
-                banner.style.opacity = '0';
-                setTimeout(() => { 
-                    banner.style.transition = 'opacity 0.3s'; 
-                    banner.style.opacity = '1'; 
-                }, 10);
+            // Hook up Developer Controls to the official cookie banner
+            const showBannerBtn = document.getElementById('test-show-banner');
+            const clearCookiesBtn = document.getElementById('test-clear-cookies');
+
+            if (showBannerBtn) {
+                showBannerBtn.addEventListener('click', () => {
+                    const banner = document.getElementById('cookie-banner');
+                    if (banner) {
+                        banner.style.display = 'block';
+                        banner.style.opacity = '0';
+                        setTimeout(() => {
+                            banner.style.transition = 'opacity 0.5s ease';
+                            banner.style.opacity = '1';
+                        }, 10);
+                        statusEl.textContent = 'Official Cookie Banner displayed.';
+                    } else {
+                        statusEl.textContent = 'Error: Official Cookie Banner element not found on page.';
+                    }
+                });
             }
 
-            function hideBanner() {
-                banner.style.opacity = '0';
-                setTimeout(() => { banner.style.display = 'none'; }, 300);
+            if (clearCookiesBtn) {
+                clearCookiesBtn.addEventListener('click', () => {
+                    // Clear all official cookie system variables
+                    document.cookie = 'cookie_consent=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                    document.cookie = 'cookie_preferences=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                    document.cookie = 'cookie_consent_date=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                    statusEl.textContent = 'BitBalance cookies cleared. Refresh the page to see banner naturally.';
+                });
             }
-
-            function setCookie(name, val) {
-                document.cookie = name + "=" + val + "; path=/; max-age=" + (60*60*24*365);
-            }
-
-            function getCookie(name) {
-                const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-                return v ? v[2] : null;
-            }
-
-            // Init Check
-            if (!getCookie('cookie_consent')) {
-                setTimeout(showBanner, 1500);
-            }
-
-            // Button Actions
-            document.getElementById('accept-all').addEventListener('click', () => {
-                setCookie('cookie_consent', 'full');
-                hideBanner();
-            });
-
-            document.getElementById('accept-essential').addEventListener('click', () => {
-                setCookie('cookie_consent', 'essential');
-                hideBanner();
-            });
-
-            // Dev Controls
-            document.getElementById('test-show-banner').addEventListener('click', () => {
-                showBanner();
-                statusEl.textContent = 'Banner displayed.';
-            });
-
-            document.getElementById('test-clear-cookies').addEventListener('click', () => {
-                document.cookie = 'cookie_consent=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                statusEl.textContent = 'Cookies cleared. Refresh to see banner naturally.';
-            });
         });
     </script>
 </body>

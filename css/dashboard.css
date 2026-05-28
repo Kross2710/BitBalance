@@ -56,18 +56,29 @@ main.dashboard-content {
     /* Pushes content inside the card apart if needed */
 }
 
-/* Common Card Style */
+/* Common Card Style (Premium Duolingo-inspired 3D Tactile Layout) */
 .dashboard-card,
 .progress-widget,
 .status-section,
 .chart-section {
-    background: var(--bg-card);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     margin: 0;
+    transition: all var(--transition-base);
+    box-sizing: border-box;
+    position: relative;
+}
+
+.dashboard-card:hover,
+.progress-widget:hover,
+.status-section:hover,
+.chart-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
 }
 
 /* Headings */
@@ -149,26 +160,7 @@ h4 {
 
 /* --- Buttons --- */
 .btn-primary {
-    background-color: var(--primary-color);
-    color: #ffffff;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    display: inline-block;
     margin-top: 10px;
-    text-decoration: none;
-    transition: background-color 0.2s ease;
-}
-
-.btn-primary a {
-    color: #ffffff;
-    text-decoration: none;
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-hover);
 }
 
 /* --- Alerts --- */
@@ -433,17 +425,26 @@ table.meals-table {
     font-style: italic;
 }
 
-/* === DUOLINGO-STYLE STREAK CARD === */
 .streak-card {
-    background: linear-gradient(145deg, #ffffff, #f8fafc);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
+    background: linear-gradient(145deg, #fffcf5, #fff3e0) !important;
+    border-color: #ffe0b2 !important;
+    box-shadow: 0 8px 0 rgba(255, 150, 0, 0.15), var(--shadow-sm) !important;
+}
+
+.streak-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 rgba(255, 150, 0, 0.15), var(--shadow-md) !important;
 }
 
 [data-theme="dark"] .streak-card {
-    background: linear-gradient(145deg, #1e2937, #334155);
+    background: linear-gradient(145deg, #2c1a04, #3d2301) !important;
+    border-color: #5d3801 !important;
+    box-shadow: 0 8px 0 rgba(255, 94, 0, 0.08), var(--shadow-sm) !important;
+}
+
+[data-theme="dark"] .streak-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 rgba(255, 94, 0, 0.08), var(--shadow-md) !important;
 }
 
 .streak-header {
@@ -453,6 +454,11 @@ table.meals-table {
     margin-bottom: 16px;
 }
 
+@keyframes flame-pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(255, 150, 0, 0.4)); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 4px 12px rgba(255, 150, 0, 0.65)); }
+}
+
 .streak-flame-wrapper {
     width: 64px;
     height: 64px;
@@ -460,22 +466,26 @@ table.meals-table {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--duo-orange);
+    background: linear-gradient(135deg, #FF9600 0%, #FF5E00 100%) !important;
+    border: 2px solid #E67E00 !important;
     border-radius: 9999px;
-    box-shadow: 0 4px 12px rgba(255, 150, 0, 0.3);
+    box-shadow: 0 4px 0 #B35100, 0 6px 12px rgba(255, 94, 0, 0.25) !important;
+    animation: flame-pulse 2s infinite ease-in-out;
 }
 
 .streak-flame {
     font-size: 32px;
     color: white;
-    transition: transform 0.3s ease, filter 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .streak-info h3 {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text-secondary);
     margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .streak-main {
@@ -486,14 +496,14 @@ table.meals-table {
 
 .streak-number {
     font-size: 42px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1;
     color: var(--color-text);
 }
 
 .streak-label {
     font-size: 18px;
-    font-weight: 500;
+    font-weight: 700;
     color: var(--color-text-secondary);
 }
 
@@ -509,22 +519,28 @@ table.meals-table {
 }
 
 .streak-progress-bar {
-    height: 6px;
-    background: var(--color-border);
-    border-radius: 9999px;
+    height: 22px !important;
+    background: var(--color-surface-alt) !important;
+    border: 2px solid var(--color-border) !important;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.08) !important;
+    border-radius: var(--radius-full);
     overflow: hidden;
+    position: relative;
+    padding: 0 !important;
 }
 
 .streak-progress-fill {
     height: 100%;
-    background: linear-gradient(to right, var(--duo-green), #4ade80);
-    border-radius: 9999px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, #FF9600, #FF5E00) !important;
+    border-radius: var(--radius-full);
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18) !important;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .streak-progress-text {
     font-size: 12px;
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
+    font-weight: 700;
     margin-top: 6px;
     text-align: right;
 }
@@ -589,68 +605,95 @@ table.meals-table {
 }
 
 .progress-widget {
-    /* Thêm !important để chắc chắn màu Gradient đè được màu trắng cũ */
-    background: linear-gradient(135deg, #11998e, #38ef7d) !important;
-    border: none !important;
-    box-shadow: 0 10px 20px rgba(56, 239, 125, 0.3) !important;
+    background: var(--color-surface) !important;
+    border: 2px solid var(--color-border) !important;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm) !important;
+    transition: all var(--transition-base);
 }
 
-/* QUAN TRỌNG: Làm trong suốt thẻ con để nhìn thấy nền Gradient bên dưới */
+.progress-widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md) !important;
+}
+
+/* QUAN TRỌNG: Làm trong suốt thẻ con để nhìn thấy nền bên dưới */
 .progress-widget .progress-card {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
-    /* Xóa padding thừa nếu có */
 }
 
 /* Các phần text bên trong */
 .progress-widget h3 {
-    color: white !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: var(--color-text) !important;
+    text-shadow: none !important;
     margin-bottom: 5px;
-    /* Căn chỉnh lại khoảng cách */
 }
 
 .progress-widget .progress-value span {
-    color: white !important;
     font-weight: 800;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: none !important;
+}
+
+.progress-widget .progress-value span.ongoing {
+    color: var(--color-primary) !important; /* Vibrant green */
+}
+
+.progress-widget .progress-value span.overlimit {
+    color: var(--color-danger) !important; /* Warning red */
+}
+
+.progress-widget .progress-value span.unset {
+    color: var(--color-text-secondary) !important;
 }
 
 .progress-widget .progress-labels span {
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-weight: 600;
+    color: var(--color-text-secondary) !important;
+    font-weight: 700;
 }
 
 /* Thanh Progress Bar */
 .progress-widget .progress-bar {
-    background-color: rgba(255, 255, 255, 0.3) !important;
-    /* Nền mờ */
+    background-color: var(--color-surface-alt) !important;
+    border: 2px solid var(--color-border) !important;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.08) !important;
+    border-radius: var(--radius-full);
+    height: 26px !important; /* Chunky 3D height */
+    position: relative;
+    overflow: hidden;
+    margin: 12px 0;
+    padding: 0 !important;
 }
 
 .progress-widget .progress-fill {
-    background-color: var(--color-surface) !important;
-    /* Thanh chạy màu trắng */
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-full);
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) !important; /* smooth bounce! */
+    height: 100% !important;
+}
+
+.progress-fill.ongoing {
+    background: linear-gradient(90deg, #58CC02, #2ecc71) !important;
+}
+
+.progress-fill.overlimit {
+    background: linear-gradient(90deg, #ef4444, #ff7675) !important;
+}
+
+.progress-fill.unset {
+    background: linear-gradient(90deg, #94a3b8, #cbd5e1) !important;
 }
 
 /* --- STATUS SECTION STYLING --- */
 
 .status-section {
     position: relative;
-    /* Để định vị icon nền */
     overflow: hidden;
-    /* Cắt phần icon nền bị thừa ra ngoài */
-    background: var(--color-surface);
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-height: 180px;
-    /* Đảm bảo độ cao đồng đều */
 }
 
 /* 1. Icon nền (Watermark) - Tạo độ sâu */
@@ -795,12 +838,6 @@ table.meals-table {
 /* --- HISTORY CHART CARD STYLING --- */
 
 .history-card {
-    /* Nền trắng, bo góc, bóng đổ êm */
-    background: var(--color-surface);
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    padding: 20px;
     display: flex;
     flex-direction: column;
 }
@@ -862,15 +899,9 @@ table.meals-table {
 /* --- MEALS CARD STYLING --- */
 
 .meals-card {
-    background: var(--color-surface);
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    padding: 20px;
     display: flex;
     flex-direction: column;
     min-height: 400px;
-    /* Đảm bảo chiều cao cân đối với các cột khác */
 }
 
 /* Header */
@@ -905,67 +936,76 @@ table.meals-table {
 
 .center-val {
     display: block;
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 800;
     color: var(--color-text);
-    line-height: 1;
+    line-height: 1.1;
 }
 
 .center-label {
     font-size: 0.85rem;
-    color: #999;
+    font-weight: 700;
+    color: var(--color-text-secondary);
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Danh sách món ăn (Thay thế Table) */
+/* Danh sách món ăn (Thay thế Table - Recessed 3D Panel) */
 .meal-list-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-height: 300px;
-    /* Nếu danh sách dài thì cho cuộn */
+    gap: 16px;
+    max-height: 320px;
     overflow-y: auto;
-    padding-right: 5px;
-    /* Để thanh cuộn không đè nội dung */
+    padding: 16px !important;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
 }
 
 /* Scrollbar đẹp cho danh sách */
 .meal-list-container::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
 }
 
 .meal-list-container::-webkit-scrollbar-thumb {
     background: var(--color-border);
-    border-radius: 4px;
+    border-radius: var(--radius-full);
 }
 
-/* Từng dòng món ăn (Card nhỏ) */
+/* Từng dòng món ăn (Card nhỏ cao cấp 3D) */
 .meal-item {
     display: flex;
     align-items: center;
-    padding: 10px;
-    border-radius: 12px;
-    background-color: var(--color-surface-alt);
-    /* Màu nền xám siêu nhạt */
-    transition: transform 0.2s ease, background-color 0.2s;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-left: 6px solid var(--meal-accent-color, var(--color-border));
+    box-shadow: 0 4px 0 var(--color-border); /* Solid border color for premium 3D physical slot look */
+    transition: all var(--transition-base);
+    box-sizing: border-box;
 }
 
 .meal-item:hover {
-    background-color: #f1f3f5;
-    transform: translateX(5px);
-    /* Hiệu ứng trượt nhẹ khi hover */
+    background-color: var(--meal-hover-bg, var(--color-surface-hover));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border), var(--shadow-sm); /* Solid border color */
+    border-color: var(--meal-accent-color, var(--color-primary));
 }
 
 /* Icon box vuông bo tròn */
 .meal-icon-box {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
-    margin-right: 12px;
+    font-size: 1.25rem;
+    margin-right: 14px;
     flex-shrink: 0;
 }
 
@@ -977,16 +1017,17 @@ table.meals-table {
 }
 
 .meal-name {
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text);
     font-size: 0.95rem;
 }
 
 .meal-type {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
-    margin-top: 2px;
+    margin-top: 3px;
+    letter-spacing: 0.5px;
 }
 
 /* Số Calo bên phải */
@@ -1012,104 +1053,173 @@ table.meals-table {
     margin-top: 20px;
 }
 
-/* --- WIKI CARD STYLING --- */
-.wiki-card {
-    /* Gradient Tím/Indigo sang trọng */
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    border: none;
-    box-shadow: 0 10px 20px rgba(118, 75, 162, 0.3);
-    color: white;
-    position: relative;
-    overflow: hidden;
+/* --- TODAY'S FOCUS CARD --- */
+.focus-card {
+    background:
+        radial-gradient(circle at top right, rgba(28, 176, 246, 0.12), transparent 42%),
+        var(--color-surface);
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    min-height: 160px;
-    /* Đảm bảo chiều cao vừa phải */
+    gap: 16px;
+    min-height: 220px;
 }
 
-/* 1. Icon nền trang trí (Watermark) */
-.wiki-bg-icon {
-    position: absolute;
-    right: -10px;
-    top: -20px;
-    font-size: 7rem;
-    color: white;
-    opacity: 0.1;
-    /* Rất mờ để hòa vào nền */
-    transform: rotate(25deg);
-    pointer-events: none;
+.flex>.focus-card:last-child {
+    flex-grow: 0;
+    justify-content: normal;
 }
 
-/* 2. Header & Badge */
-.wiki-header-row {
+.focus-card-header,
+.focus-actions {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-.wiki-card h3 {
-    color: white !important;
-    font-size: 1.3rem;
-    margin: 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.focus-actions {
+    margin-top: auto;
 }
 
-.badge-soon {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    backdrop-filter: blur(5px);
-    /* Hiệu ứng kính mờ */
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* 3. Mô tả */
-.wiki-desc {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 0.95rem;
-    line-height: 1.5;
-    margin-bottom: 20px;
-    padding-right: 20px;
-    /* Tránh đè lên icon nền */
-}
-
-/* 4. Nút bấm (Disabled Style) */
-.btn-wiki {
-    background: rgba(0, 0, 0, 0.2);
-    color: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 10px 20px;
-    border-radius: 50px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
+.focus-kicker {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    width: fit-content;
-    transition: all 0.3s ease;
+    color: var(--color-primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
-.btn-wiki:hover {
-    background: rgba(0, 0, 0, 0.3);
+.focus-status {
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: var(--color-surface-alt);
+    color: var(--text-secondary);
 }
 
-.btn-wiki i {
-    font-size: 0.9rem;
+.focus-status.good {
+    background: var(--color-success-bg);
+    color: var(--color-success);
 }
 
-/* Tinh chỉnh cho Dark Mode (Giữ nguyên độ sáng vì gradient đã tối sẵn) */
-[data-theme="dark"] .wiki-card {
-    box-shadow: none;
-    /* Có thể làm tối gradient đi một chút nếu muốn */
-    background: linear-gradient(135deg, #5b6bd6, #633e8a);
+.focus-status.alert {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.focus-main strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 1.7rem;
+    line-height: 1.1;
+    margin-bottom: 6px;
+}
+
+.focus-main p {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.focus-insights {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.focus-insight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 11px 10px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 10px;
+    background: var(--color-surface-alt);
+}
+
+.focus-insight i {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+}
+
+.focus-insight span {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.focus-insight strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.98rem;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.macro-focus.protein i {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.macro-focus.carbs i {
+    color: #b7791f;
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.macro-focus.fat i {
+    color: #1c7ed6;
+    background: rgba(28, 176, 246, 0.14);
+}
+
+.bmi-focus i {
+    color: #ec4899; /* Health vibrant pink */
+    background: rgba(236, 72, 153, 0.14);
+}
+
+.focus-btn {
+    flex: 1;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.focus-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.focus-btn.primary {
+    color: var(--color-text-on-primary);
+    background: var(--color-primary);
+}
+
+.focus-btn.ghost {
+    color: var(--color-primary);
+    border-color: var(--color-border-subtle);
+    background: var(--color-surface);
 }
 
 /* --- MACRO / NUTRITION TARGETS STYLING --- */
@@ -1154,10 +1264,6 @@ table.meals-table {
 /* --- WEIGHT CARD STYLING --- */
 
 .weight-card {
-    background: var(--color-surface);
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -1230,32 +1336,62 @@ table.meals-table {
     color: #999;
 }
 
-/* Nút Add nhỏ */
+/* Nút Add nhỏ (3D Tactile Icon Button) */
 .btn-icon-small {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: #f3e5f5;
-    /* Nền tím nhạt */
-    color: #9b59b6;
-    /* Icon tím */
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 2px solid #8e44ad !important;
+    background: #f3e5f5 !important;
+    color: #9b59b6 !important;
     cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
+    transition: all 0.15s ease;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 3px 0 #7d3c98 !important;
+    box-sizing: border-box;
+    position: relative;
 }
 
 .btn-icon-small:hover {
-    background: #9b59b6;
-    color: white;
-    transform: rotate(90deg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 #7d3c98 !important;
+}
+
+.btn-icon-small:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 #7d3c98 !important;
+}
+
+/* Nút History nhỏ (btn-secondary) */
+.btn-icon-small.btn-secondary {
+    border: 2px solid #bdc3c7 !important;
+    background: var(--color-surface) !important;
+    color: #7f8c8d !important;
+    box-shadow: 0 3px 0 #95a5a6 !important;
+}
+
+.btn-icon-small.btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 #95a5a6 !important;
+}
+
+.btn-icon-small.btn-secondary:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 #95a5a6 !important;
 }
 
 .weight-chart-wrapper {
-    height: 120px;
+    height: 140px !important;
     width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
 }
 
 /* Nút xóa nhỏ gọn trong bảng */
@@ -1283,24 +1419,6 @@ table.meals-table {
 .history-list-wrapper::-webkit-scrollbar-thumb {
     background: #ddd;
     border-radius: 3px;
-}
-
-/* Nút Secondary cho header widget (nút List) */
-.btn-secondary {
-    background: transparent;
-    border: 1px solid #e1e4e8;
-    color: var(--text-secondary);
-}
-
-.btn-secondary:hover {
-    background: var(--color-surface-alt);
-    color: var(--primary-color);
-    transform: none;
-    /* Không xoay như nút + */
-}
-
-[data-theme="dark"] .btn-secondary {
-    border-color: #444;
 }
 
 /* --- MODAL STYLING --- */
@@ -1405,36 +1523,6 @@ table.meals-table {
     border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.btn-cancel {
-    background: transparent;
-    border: 1px solid #ddd;
-    color: var(--text-secondary);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-.btn-cancel:hover {
-    background: #f1f1f1;
-}
-
-.btn-save {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background 0.2s;
-}
-
-.btn-save:hover {
-    filter: brightness(1.1);
-}
-
 /* --- DARK MODE MODAL FIXES --- */
 [data-theme="dark"] .modal-box {
     background: #2d2d2d;
@@ -1448,15 +1536,6 @@ table.meals-table {
 
 [data-theme="dark"] .modal-footer {
     background: #343a40;
-}
-
-[data-theme="dark"] .btn-cancel {
-    border-color: #555;
-    color: #ccc;
-}
-
-[data-theme="dark"] .btn-cancel:hover {
-    background: #404040;
 }
 
 /* --- LARGE INPUT STYLING (Cho Modal Goal) --- */
@@ -1807,54 +1886,68 @@ main.dashboard-content.dashboard-empty-state {
 .modal-overlay {
     display: none;
     position: fixed;
-    z-index: 2000;
+    z-index: 9999;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     align-items: center;
-    /* Căn giữa dọc (cho flex) */
     justify-content: center;
-    /* Căn giữa ngang (cho flex) */
-    transition: opacity 0.3s ease;
 }
 
-/* Hỗ trợ cả class .modal-content và .modal-box để tương thích code cũ */
+.modal.active,
+.modal-overlay.active,
+.modal[style*="display: block"],
+.modal[style*="display:block"] {
+    display: flex !important;
+}
+
 .modal-content,
 .modal-box {
-    background-color: var(--card-bg);
-    margin: 10% auto;
-    /* Fallback nếu không dùng flex */
-    padding: 25px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
     width: 90%;
     max-width: 450px;
+    padding: 24px;
     position: relative;
-    animation: slideDown 0.3s ease;
+    box-sizing: border-box;
+    transform: translateY(20px) scale(0.98);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.active .modal-content,
+.modal-overlay.active .modal-box {
+    transform: translateY(0) scale(1);
 }
 
 @keyframes slideDown {
     from {
-        transform: translateY(-20px);
+        transform: translateY(20px) scale(0.98);
         opacity: 0;
     }
-
     to {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
     }
 }
 
-/* Modal Header & Body */
 .modal-content h3,
 .modal-box h3 {
-    margin-top: 0;
-    color: var(--text-primary);
-    font-size: 1.4rem;
-    margin-bottom: 20px;
+    margin: 0 0 16px 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-text);
+    border-bottom: 2px solid var(--color-border-subtle);
+    padding-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .modal-body .form-group {
@@ -1863,74 +1956,124 @@ main.dashboard-content.dashboard-empty-state {
 
 .modal-body label {
     display: block;
-    margin-bottom: 5px;
-    color: var(--text-secondary);
-    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--color-text-secondary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .modal-body input,
 .modal-body select {
     width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #e1e4e8;
-    background: var(--bg-body);
-    color: var(--text-primary);
+    padding: 12px 14px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    transition: all var(--transition-base);
+    box-sizing: border-box;
 }
 
-/* Modal Footer & Buttons */
+.modal-body input:focus,
+.modal-body select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
+    outline: none;
+    background: var(--color-surface);
+}
+
 .modal-footer {
-    text-align: right;
-    margin-top: 25px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 2px solid var(--color-border-subtle);
+}
+
+.modal-footer button,
+.modal-footer .btn-submit,
+.modal-footer .btn-cancel,
+.modal-footer .btn-save {
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    box-sizing: border-box;
+}
+
+.modal-footer .btn-submit,
+.modal-footer .btn-save,
+.modal-footer button[type="submit"] {
+    background-color: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-bottom: 4px solid var(--color-primary-hover);
+    box-shadow: 0 4px 0 rgba(76, 175, 80, 0.15);
+}
+
+.modal-footer .btn-submit:hover,
+.modal-footer .btn-save:hover,
+.modal-footer button[type="submit"]:hover {
+    filter: brightness(1.05);
+    transform: translateY(-2px);
+    border-bottom-width: 6px;
+    box-shadow: 0 6px 0 rgba(76, 175, 80, 0.2);
+}
+
+.modal-footer .btn-submit:active,
+.modal-footer .btn-save:active,
+.modal-footer button[type="submit"]:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+    box-shadow: none;
+}
+
+.modal-footer .btn-cancel,
+.modal-footer button.btn-cancel {
+    background-color: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+    border: 2px solid var(--color-border);
+    border-bottom-width: 4px;
+}
+
+.modal-footer .btn-cancel:hover,
+.modal-footer button.btn-cancel:hover {
+    background-color: var(--color-surface-hover);
+    transform: translateY(-2px);
+    border-bottom-width: 5px;
+}
+
+.modal-footer .btn-cancel:active,
+.modal-footer button.btn-cancel:active {
+    transform: translateY(1px);
+    border-bottom-width: 2px;
 }
 
 .close-modal {
-    color: var(--text-secondary);
-    float: right;
-    font-size: 1.8rem;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    color: var(--color-text-secondary);
+    font-size: 1.6rem;
     font-weight: bold;
     cursor: pointer;
-    line-height: 20px;
-    transition: color 0.2s;
+    line-height: 1;
+    transition: color 0.2s, transform 0.2s;
+    z-index: 10;
 }
 
 .close-modal:hover {
-    color: #e74c3c;
+    color: var(--color-danger);
+    transform: rotate(90deg);
 }
-
-.btn-cancel {
-    background: transparent;
-    border: 1px solid #ddd;
-    color: var(--text-secondary);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.btn-cancel:hover {
-    background: #f1f1f1;
-}
-
-/* Dark Mode Modal */
-[data-theme="dark"] .modal-content,
-[data-theme="dark"] .modal-box {
-    background: #2d2d2d;
-    border: 1px solid #404040;
-}
-
-[data-theme="dark"] .btn-cancel {
-    border-color: #555;
-    color: #ccc;
-}
-
-[data-theme="dark"] .btn-cancel:hover {
-    background: #333;
-}
-
 
 /* =========================================
    AI CHATBOT WIDGET (Global)
@@ -2495,6 +2638,10 @@ main.dashboard-content.dashboard-empty-state {
         grid-column: span 2;
     }
 
+    .flex:has(.streak-card)>.focus-card {
+        grid-column: span 2;
+    }
+
     /* (Trên 480px+ thì để 2 cột) */
 
     /* === COMPACT TODAY HERO (dashboard page only) ===
@@ -2557,18 +2704,13 @@ main.dashboard-content.dashboard-empty-state {
         grid-column: span 1;
     }
 
-    .flex:has(.streak-card)>.wiki-card {
+    .flex:has(.streak-card)>.focus-card {
         grid-column: span 2;
     }
 }
 
 /* === Small phone (≤480px) === */
 @media (max-width: 480px) {
-
-    /* Wiki "Coming Soon" ít giá trị, ẩn để giảm scroll */
-    .wiki-card {
-        display: none;
-    }
 
     /* Card padding rất gọn */
     .progress-widget,
@@ -2632,7 +2774,7 @@ main.dashboard-content.dashboard-empty-state {
     }
     /* Pages that actually render the FAB need clearance so the FAB
        doesn't overlap the last content row. */
-    body:has(.fab) main.dashboard-content {
+    body:has(.quick-log-fab) main.dashboard-content {
         padding: 0 12px 90px;
     }
 

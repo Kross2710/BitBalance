@@ -2,12 +2,37 @@
        NOTE: .dashboard-content base layout lives in css/dashboard.css
        (single source of truth). Don't redeclare it here. */
 
+    /* DESKTOP PAGE SHELL */
+    @media (min-width: 901px) {
+        body.page-calculator main.dashboard-content {
+            margin-left: calc(var(--sidebar-width) + 32px);
+            margin-right: 32px;
+            width: auto;
+            padding: 0;
+        }
+
+        body.page-calculator .calculator-container {
+            width: min(100%, 1180px);
+        }
+    }
+
+    @media (min-width: 1201px) {
+        body.page-calculator main.dashboard-content {
+            margin-right: calc(var(--sidebar-width) + 32px);
+        }
+
+        body.page-calculator .calculator-container {
+            width: 100%;
+        }
+    }
+
     .calculator-container {
         display: grid;
         grid-template-columns: 1fr 1.5fr; /* Cột kết quả rộng hơn cột form */
         gap: 25px;
-        max-width: 1100px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: none;
+        margin: 0;
         align-items: start;
     }
 
@@ -17,6 +42,7 @@
         border-radius: var(--border-radius);
         padding: 25px;
         box-shadow: var(--shadow-soft);
+        min-width: 0;
     }
 
     .card-header h3 { margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
@@ -80,6 +106,7 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
+        min-width: 0;
     }
 
     .metrics-row {
@@ -166,13 +193,9 @@
     .empty-calc-state h4 { margin: 0 0 5px 0; color: var(--text-primary); }
 
     /* 6. RESPONSIVE */
-    @media (min-width: 901px) and (max-width: 1200px) {
-        /* Right sidebar hidden in this range — let content reclaim that space.
-           Without this block, the base rule at line 3 above forces 240px right
-           margin even though there's no sidebar there, leaving an empty gutter. */
-        .dashboard-content {
-            margin-right: 20px;
-            width: auto;
+    @media (min-width: 901px) and (max-width: 1100px) {
+        .calculator-container {
+            grid-template-columns: 1fr;
         }
     }
 

@@ -70,41 +70,135 @@ label {
 }
 
 /* =========================
-   BUTTONS
+   BUTTONS (Duolingo-inspired 3D tactile button system)
    ========================= */
-button,
-.btn {
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.btn-primary {
-    background-color: var(--color-primary);
-    color: var(--color-text-on-primary);
-    border: none;
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-save,
+.btn-danger,
+.btn-cancel,
+.btn-action,
+.btn-add-log,
+.btn-login,
+input[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 12px 24px;
-    border-radius: var(--radius-pill);
-    font-weight: 600;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    font-family: var(--font-family-sans);
     transition: all var(--transition-fast);
-    box-shadow: 0 4px 10px rgba(74, 126, 227, 0.2);
+    border: none;
+    outline: none;
+    text-decoration: none;
+    box-sizing: border-box;
+    white-space: nowrap;
 }
 
-.btn-primary:hover {
-    background-color: var(--color-primary-hover);
-    color: var(--color-text-on-primary);
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-save:active,
+.btn-danger:active,
+.btn-cancel:active,
+.btn-action:active,
+.btn-add-log:active,
+.btn-login:active,
+input[type="submit"]:active {
+    transform: translateY(4px) !important;
+    box-shadow: none !important;
+}
+
+/* Primary Button & Green Actions */
+.btn-primary,
+.btn-save,
+.btn-action,
+.btn-add-log,
+input[type="submit"] {
+    background: var(--gradient-primary);
+    color: #ffffff;
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+}
+
+.btn-primary:hover,
+.btn-save:hover,
+.btn-action:hover,
+.btn-add-log:hover,
+input[type="submit"]:hover {
+    filter: brightness(1.05);
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(74, 126, 227, 0.3);
+    box-shadow: 0 6px 0 var(--color-primary-hover);
+    color: #ffffff;
 }
 
-.btn-primary:disabled {
-    background-color: var(--color-text-muted);
+/* Secondary Button (Blue outline) */
+.btn-secondary,
+.btn-login {
+    background: var(--color-surface);
+    color: var(--color-secondary);
+    border: 2px solid var(--color-secondary);
+    box-shadow: 0 4px 0 rgba(28, 176, 246, 0.3);
+}
+
+.btn-secondary:hover,
+.btn-login:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(28, 176, 246, 0.3);
+}
+
+/* Cancel / Neutral Button (Grey) */
+.btn-cancel {
+    background: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+    border: 2px solid var(--color-border);
+    box-shadow: 0 4px 0 var(--color-border);
+}
+
+.btn-cancel:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border);
+}
+
+/* Danger Button (Red) */
+.btn-danger {
+    background: var(--color-danger);
+    color: #ffffff;
+    box-shadow: 0 4px 0 var(--color-danger-border);
+}
+
+.btn-danger:hover {
+    filter: brightness(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-danger-border);
+    color: #ffffff;
+}
+
+/* Disabled state */
+.btn:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+input[type="submit"]:disabled {
+    background: var(--color-text-muted) !important;
+    color: rgba(255, 255, 255, 0.6) !important;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    transform: none !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 .btn-primary a {
-    color: var(--color-text-on-primary);
+    color: #ffffff;
     text-decoration: none;
 }
 

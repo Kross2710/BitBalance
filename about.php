@@ -102,7 +102,7 @@ $activeHeader = 'about';
         </div>
 
         <section class="bento-card card-user-regular">
-            <div class="card-icon" style="background: #e8f5e9; color: #38ef7d;"><i class="fas fa-user"></i></div>
+            <div class="card-icon"><i class="fas fa-user"></i></div>
             <h3>Regular Users</h3>
             <p>Students, professionals, or anyone looking to improve their diet.</p>
             <ul class="needs-list">
@@ -114,7 +114,7 @@ $activeHeader = 'about';
         </section>
 
         <section class="bento-card card-user-admin">
-            <div class="card-icon" style="background: #f3e5f5; color: #764ba2;"><i class="fas fa-user-shield"></i></div>
+            <div class="card-icon"><i class="fas fa-user-shield"></i></div>
             <h3>Administrators</h3>
             <p>Managers ensuring a smooth and safe user experience.</p>
             <ul class="needs-list">
