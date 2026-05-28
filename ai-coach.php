@@ -90,7 +90,7 @@ $csrfToken    = csrf_token();
                         class="aic-input"
                         id="aicInput"
                         name="message"
-                        placeholder="Ask your AI Coach... (Shift+Enter for new line)"
+                        placeholder="Ask your AI Coach..."
                         rows="1"></textarea>
                     <button type="submit" class="aic-send-btn" id="aicSendBtn" title="Send">
                         <i class="fas fa-paper-plane"></i>
@@ -556,6 +556,73 @@ $csrfToken    = csrf_token();
             }
         });
 
+        // Create an empty assistant bubble to be filled token-by-token.
+        function createStreamingBubble() {
+            const node = appendMessage({ role: 'assistant', content: '' });
+            const textEl = document.createElement('div');
+            textEl.className = 'aic-msg-text';
+            // bubbleHtml() omits .aic-msg-text when content is empty; insert one.
+            node.querySelector('.aic-msg-body').appendChild(textEl);
+
+            let raw = '';
+            return {
+                node,
+                appendText(delta) {
+                    raw += delta;
+                    textEl.innerHTML = renderMessageContent(raw);
+                    $messages.scrollTop = $messages.scrollHeight;
+                },
+            };
+        }
+
+        // Stream from a POST endpoint via fetch + ReadableStream. Parses SSE
+        // events incrementally and dispatches them to handlers[eventName].
+        // Throws on non-OK response or stream read errors.
+        async function streamSse(url, formData, handlers) {
+            formData.append('csrf_token', CSRF);
+            const res = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: { 'Accept': 'text/event-stream' },
+            });
+            if (!res.ok || !res.body) {
+                let msg = 'HTTP ' + res.status;
+                try {
+                    const j = await res.json();
+                    if (j && j.error) msg = j.error;
+                } catch (_) {}
+                throw new Error(msg);
+            }
+            const reader  = res.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                let sepIdx;
+                while ((sepIdx = buffer.indexOf('\n\n')) >= 0) {
+                    const rawEvent = buffer.slice(0, sepIdx).replace(/\r/g, '');
+                    buffer = buffer.slice(sepIdx + 2);
+                    let eventName = 'message';
+                    let dataStr = '';
+                    for (const line of rawEvent.split('\n')) {
+                        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+                        else if (line.startsWith('data:')) dataStr += line.slice(5).replace(/^ /, '');
+                    }
+                    if (!dataStr) continue;
+                    let data;
+                    try { data = JSON.parse(dataStr); }
+                    catch (_) { continue; }
+                    const fn = handlers[eventName];
+                    if (fn) fn(data);
+                }
+            }
+        }
+
         $form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (isSending) return;
@@ -608,31 +675,58 @@ $csrfToken    = csrf_token();
 
             showTyping();
 
+            let bubble = null;
+            let streamError = null;
+            let doneInfo = null;
+
             try {
-                const r = await apiPost('send_message', fd);
-                hideTyping();
-                if (!r.ok) {
-                    appendMessage({ role: 'assistant', content: '⚠️ ' + (r.error || 'Unknown error') });
-                } else {
-                    currentConvId = r.conversation_id;
-                    $convId.value = currentConvId;
-                    const bubble = appendMessage(r.assistant_message);
-                    attachSuggestions(bubble, r.food_log_suggestions);
-                    if (r.usage_today != null) {
-                        $usage.textContent = `${r.usage_today} / ${r.daily_limit} today`;
-                    }
-                    loadConversations();
-                }
+                await streamSse(`${API}?action=stream_message`, fd, {
+                    meta: (data) => {
+                        currentConvId = data.conversation_id;
+                        $convId.value = currentConvId;
+                    },
+                    chunk: (data) => {
+                        if (!bubble) {
+                            hideTyping();
+                            bubble = createStreamingBubble();
+                        }
+                        if (data && typeof data.text === 'string') {
+                            bubble.appendText(data.text);
+                        }
+                    },
+                    done: (data) => { doneInfo = data; },
+                    error: (data) => { streamError = (data && data.error) || 'Unknown error'; },
+                });
             } catch (err) {
-                hideTyping();
-                appendMessage({ role: 'assistant', content: '⚠️ Network error: ' + err.message });
+                streamError = streamError || ('Network error: ' + err.message);
             } finally {
-                isSending = false;
-                $sendBtn.disabled = false;
-                // Don't auto-focus on mobile — that pops the keyboard back up
-                // immediately after send, which is jarring while reading the reply.
-                if (!isMobile()) $input.focus();
+                hideTyping();
             }
+
+            if (streamError) {
+                if (bubble) {
+                    bubble.appendText('\n\n⚠️ ' + streamError);
+                } else {
+                    appendMessage({ role: 'assistant', content: '⚠️ ' + streamError });
+                }
+            } else if (doneInfo) {
+                if (bubble) {
+                    attachSuggestions(bubble.node, doneInfo.food_log_suggestions);
+                }
+                if (doneInfo.usage_today != null) {
+                    $usage.textContent = `${doneInfo.usage_today} / ${doneInfo.daily_limit} today`;
+                }
+                loadConversations();
+            } else if (!bubble) {
+                // Stream closed with no chunks and no done event — treat as error.
+                appendMessage({ role: 'assistant', content: '⚠️ AI returned empty response' });
+            }
+
+            isSending = false;
+            $sendBtn.disabled = false;
+            // Don't auto-focus on mobile — that pops the keyboard back up
+            // immediately after send, which is jarring while reading the reply.
+            if (!isMobile()) $input.focus();
         });
 
         // ---------- Init ----------

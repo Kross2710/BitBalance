@@ -56,7 +56,7 @@ $user_id = (int)$_SESSION['user']['user_id'];
 $action  = $_GET['action'] ?? '';
 
 // ---- CSRF guard for state-changing actions ----
-$writeActions = ['create_conversation', 'send_message', 'rename_conversation', 'delete_conversation'];
+$writeActions = ['create_conversation', 'send_message', 'stream_message', 'rename_conversation', 'delete_conversation'];
 if (in_array($action, $writeActions, true)) {
     $token = $_POST['csrf_token'] ?? '';
     if (!csrf_verify($token)) {
@@ -72,6 +72,7 @@ try {
         case 'get_conversation':     get_conversation($pdo, $user_id);   break;
         case 'create_conversation':  create_conversation($pdo, $user_id); break;
         case 'send_message':         send_message($pdo, $user_id);       break;
+        case 'stream_message':       stream_message($pdo, $user_id);     break;
         case 'rename_conversation':  rename_conversation($pdo, $user_id); break;
         case 'delete_conversation':  delete_conversation($pdo, $user_id); break;
         default:
@@ -186,58 +187,237 @@ function delete_conversation(PDO $pdo, int $user_id): void
 
 function send_message(PDO $pdo, int $user_id): void
 {
+    $prep = prepare_message_request($pdo, $user_id);
+    if (!$prep['ok']) {
+        if (!empty($prep['status'])) http_response_code($prep['status']);
+        echo json_encode([
+            'ok' => false,
+            'error' => $prep['error'],
+            'usage_today' => $prep['usage_today'] ?? null,
+            'daily_limit' => $prep['daily_limit'] ?? null,
+            'conversation_id' => $prep['conversation_id'] ?? null,
+        ]);
+        return;
+    }
+
+    // ---- Call Gemini (non-streaming) ----
+    $userContext = build_user_context($pdo, $user_id);
+    $clientTimeInfo = build_client_time_info($_POST['client_now'] ?? null, $_POST['client_tz_offset'] ?? null);
+    $result = call_gemini(
+        $prep['history'], $userContext, $clientTimeInfo,
+        $prep['image_fs_path'], $prep['image_mime']
+    );
+
+    if (!$result['ok']) {
+        echo json_encode([
+            'ok' => false,
+            'error' => $result['error'],
+            'conversation_id' => $prep['conversation_id'],
+        ]);
+        return;
+    }
+
+    [$assistantText, $foodLogSuggestions] = extract_food_log_block($result['text']);
+    $assistant_message_id = finalize_assistant_message(
+        $pdo, $prep['conversation_id'], $prep['is_new_conversation'],
+        $prep['message'], $assistantText, $user_id, $prep['today']
+    );
+
+    echo json_encode([
+        'ok' => true,
+        'conversation_id' => $prep['conversation_id'],
+        'user_message' => [
+            'message_id' => $prep['user_message_id'],
+            'role'       => 'user',
+            'content'    => $prep['message'],
+            'image_path' => $prep['image_url_path'],
+        ],
+        'assistant_message' => [
+            'message_id' => $assistant_message_id,
+            'role'       => 'assistant',
+            'content'    => $assistantText,
+        ],
+        'food_log_suggestions' => $foodLogSuggestions,
+        'usage_today' => $prep['used'] + 1,
+        'daily_limit' => AI_COACH_DAILY_LIMIT,
+    ]);
+}
+
+/**
+ * Streaming variant of send_message. Responds with Server-Sent Events:
+ *   event: meta   {conversation_id, user_message_id, image_path}
+ *   event: chunk  {text}                          (zero or more)
+ *   event: done   {assistant_message_id, food_log_suggestions, usage_today, daily_limit}
+ *   event: error  {error}                         (terminal)
+ *
+ * Why SSE: lets us re-use the standard HTTP/POST/multipart pipeline (image
+ * uploads still work) while pushing token deltas as they arrive from Gemini.
+ * The FOOD_LOG block is stripped server-side with a hold-back buffer so the
+ * raw [[FOOD_LOG]] marker never reaches the browser mid-stream.
+ */
+function stream_message(PDO $pdo, int $user_id): void
+{
+    // Switch response from JSON (set globally up top) to SSE before any echo.
+    @ini_set('zlib.output_compression', '0');
+    @ini_set('output_buffering', 'off');
+    @ini_set('implicit_flush', '1');
+    while (ob_get_level() > 0) @ob_end_flush();
+    @ob_implicit_flush(1);
+
+    header('Content-Type: text/event-stream; charset=utf-8');
+    header('Cache-Control: no-cache, no-transform');
+    header('X-Accel-Buffering: no'); // nginx hint; harmless on Apache
+    header('Connection: keep-alive');
+
+    $prep = prepare_message_request($pdo, $user_id);
+    if (!$prep['ok']) {
+        sse_send('error', ['error' => $prep['error']]);
+        return;
+    }
+
+    // Release session lock so the user can keep navigating during the stream.
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    sse_send('meta', [
+        'conversation_id' => $prep['conversation_id'],
+        'user_message_id' => $prep['user_message_id'],
+        'image_path'      => $prep['image_url_path'],
+    ]);
+
+    $userContext    = build_user_context($pdo, $user_id);
+    $clientTimeInfo = build_client_time_info($_POST['client_now'] ?? null, $_POST['client_tz_offset'] ?? null);
+
+    // Accumulator + hold-back state — closed over by the write callback.
+    $accumulator = '';
+    $emittedLen  = 0;
+    $dropping    = false;
+    $marker      = '[[FOOD_LOG]]';
+    $markerLen   = strlen($marker);
+
+    $onDelta = function (string $delta) use (&$accumulator, &$emittedLen, &$dropping, $marker, $markerLen) {
+        if ($delta === '' || $dropping) {
+            $accumulator .= $delta;
+            return;
+        }
+        $accumulator .= $delta;
+        $pos = strpos($accumulator, $marker, $emittedLen);
+        if ($pos !== false) {
+            $toEmit = substr($accumulator, $emittedLen, $pos - $emittedLen);
+            if ($toEmit !== '') sse_send('chunk', ['text' => $toEmit]);
+            $emittedLen = $pos;
+            $dropping = true;
+            return;
+        }
+        // Hold back trailing chars in case the marker is split across deltas.
+        $safeEnd = strlen($accumulator) - $markerLen;
+        if ($safeEnd > $emittedLen) {
+            $toEmit = substr($accumulator, $emittedLen, $safeEnd - $emittedLen);
+            sse_send('chunk', ['text' => $toEmit]);
+            $emittedLen = $safeEnd;
+        }
+    };
+
+    $streamResult = call_gemini_stream(
+        $prep['history'], $userContext, $clientTimeInfo,
+        $prep['image_fs_path'], $prep['image_mime'], $onDelta
+    );
+
+    if (!$streamResult['ok']) {
+        sse_send('error', ['error' => $streamResult['error']]);
+        return;
+    }
+
+    // Flush remaining held-back chars (if no FOOD_LOG block was seen).
+    if (!$dropping && $emittedLen < strlen($accumulator)) {
+        $tail = substr($accumulator, $emittedLen);
+        if ($tail !== '') sse_send('chunk', ['text' => $tail]);
+        $emittedLen = strlen($accumulator);
+    }
+
+    [$assistantText, $foodLogSuggestions] = extract_food_log_block($accumulator);
+    if ($assistantText === '') {
+        sse_send('error', ['error' => 'AI returned empty response']);
+        return;
+    }
+
+    $assistant_message_id = finalize_assistant_message(
+        $pdo, $prep['conversation_id'], $prep['is_new_conversation'],
+        $prep['message'], $assistantText, $user_id, $prep['today']
+    );
+
+    sse_send('done', [
+        'assistant_message_id' => $assistant_message_id,
+        'food_log_suggestions' => $foodLogSuggestions,
+        'usage_today'          => $prep['used'] + 1,
+        'daily_limit'          => AI_COACH_DAILY_LIMIT,
+    ]);
+}
+
+/**
+ * Shared prep for send_message + stream_message:
+ *   - validate input
+ *   - enforce daily rate limit
+ *   - create/load conversation
+ *   - save uploaded image
+ *   - save user message
+ *   - build history for the model
+ *
+ * Returns ['ok' => true, ...payload] on success, or
+ *         ['ok' => false, 'error' => string, 'status' => ?int, ...].
+ */
+function prepare_message_request(PDO $pdo, int $user_id): array
+{
     $conversation_id = (int)($_POST['conversation_id'] ?? 0);
     $message         = trim((string)($_POST['message'] ?? ''));
     $imageFile       = $_FILES['image'] ?? null;
 
     if ($message === '' && empty($imageFile['name'])) {
-        echo json_encode(['ok' => false, 'error' => 'Message is empty']);
-        return;
+        return ['ok' => false, 'error' => 'Message is empty'];
     }
 
-    // ---- Rate limit ----
     $today = date('Y-m-d');
     $stmt = $pdo->prepare("SELECT message_count FROM ai_usage_daily WHERE user_id = ? AND usage_date = ?");
     $stmt->execute([$user_id, $today]);
     $used = (int)($stmt->fetchColumn() ?: 0);
     if ($used >= AI_COACH_DAILY_LIMIT) {
-        http_response_code(429);
-        echo json_encode([
+        return [
             'ok' => false,
+            'status' => 429,
             'error' => 'Daily AI Coach limit reached (' . AI_COACH_DAILY_LIMIT . ' messages). Please try again tomorrow.',
             'usage_today' => $used,
             'daily_limit' => AI_COACH_DAILY_LIMIT,
-        ]);
-        return;
+        ];
     }
 
-    // ---- Create conversation if needed ----
     if ($conversation_id <= 0) {
         $stmt = $pdo->prepare("INSERT INTO ai_conversation (user_id, title) VALUES (?, 'New chat')");
         $stmt->execute([$user_id]);
         $conversation_id = (int)$pdo->lastInsertId();
         $isNewConversation = true;
     } else {
-        $conv = fetch_owned_conversation($pdo, $user_id, $conversation_id);
-        if (!$conv) {
-            echo json_encode(['ok' => false, 'error' => 'Conversation not found']);
-            return;
+        if (!fetch_owned_conversation($pdo, $user_id, $conversation_id)) {
+            return ['ok' => false, 'error' => 'Conversation not found'];
         }
         $isNewConversation = false;
     }
 
-    // ---- Handle image upload (if any) ----
     $image_url_path = null;
     $image_fs_path  = null;
+    $image_mime     = null;
     if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
         [$image_url_path, $image_fs_path] = save_uploaded_image($imageFile, $user_id);
         if (!$image_url_path) {
-            echo json_encode(['ok' => false, 'error' => 'Image upload failed (only JPG/PNG/WEBP up to 5MB allowed)']);
-            return;
+            return [
+                'ok' => false,
+                'error' => 'Image upload failed (only JPG/PNG/WEBP up to 5MB allowed)',
+                'conversation_id' => $conversation_id,
+            ];
         }
+        $image_mime = $imageFile['type'] ?? null;
     }
 
-    // ---- Save user message ----
     $stmt = $pdo->prepare("
         INSERT INTO ai_message (conversation_id, role, content, image_path)
         VALUES (?, 'user', ?, ?)
@@ -245,7 +425,6 @@ function send_message(PDO $pdo, int $user_id): void
     $stmt->execute([$conversation_id, $message, $image_url_path]);
     $user_message_id = (int)$pdo->lastInsertId();
 
-    // ---- Build history (last N turns) ----
     $stmt = $pdo->prepare("
         SELECT role, content, image_path
         FROM ai_message
@@ -259,27 +438,29 @@ function send_message(PDO $pdo, int $user_id): void
     $stmt->execute();
     $history = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    // ---- Call Gemini ----
-    $userContext = build_user_context($pdo, $user_id);
-    $clientTimeInfo = build_client_time_info($_POST['client_now'] ?? null, $_POST['client_tz_offset'] ?? null);
-    $result = call_gemini($history, $userContext, $clientTimeInfo, $image_fs_path, $imageFile['type'] ?? null);
+    return [
+        'ok' => true,
+        'conversation_id'     => $conversation_id,
+        'is_new_conversation' => $isNewConversation,
+        'user_message_id'     => $user_message_id,
+        'image_url_path'      => $image_url_path,
+        'image_fs_path'       => $image_fs_path,
+        'image_mime'          => $image_mime,
+        'history'             => $history,
+        'message'             => $message,
+        'today'               => $today,
+        'used'                => $used,
+    ];
+}
 
-    if (!$result['ok']) {
-        // Roll back: keep user msg but report error
-        echo json_encode([
-            'ok' => false,
-            'error' => $result['error'],
-            'conversation_id' => $conversation_id,
-        ]);
-        return;
-    }
-
-    $assistantTextRaw = $result['text'];
-
-    // Strip & extract FOOD_LOG block from assistant text
-    [$assistantText, $foodLogSuggestions] = extract_food_log_block($assistantTextRaw);
-
-    // ---- Save assistant message (sanitized text only) ----
+/**
+ * Save the assistant message, bump conversation timestamps + auto-title,
+ * bump the daily usage counter. Returns the new assistant message id.
+ */
+function finalize_assistant_message(
+    PDO $pdo, int $conversation_id, bool $isNewConversation,
+    string $userMessage, string $assistantText, int $user_id, string $today
+): int {
     $stmt = $pdo->prepare("
         INSERT INTO ai_message (conversation_id, role, content)
         VALUES (?, 'assistant', ?)
@@ -287,43 +468,29 @@ function send_message(PDO $pdo, int $user_id): void
     $stmt->execute([$conversation_id, $assistantText]);
     $assistant_message_id = (int)$pdo->lastInsertId();
 
-    // ---- Bump conversation updated_at + auto-title if new ----
-    if ($isNewConversation || true) {
-        $pdo->prepare("UPDATE ai_conversation SET updated_at = CURRENT_TIMESTAMP WHERE conversation_id = ?")
-            ->execute([$conversation_id]);
-    }
+    $pdo->prepare("UPDATE ai_conversation SET updated_at = CURRENT_TIMESTAMP WHERE conversation_id = ?")
+        ->execute([$conversation_id]);
+
     if ($isNewConversation) {
-        $autoTitle = aic_substr(($message !== '' ? $message : 'Image chat'), 0, 60);
+        $autoTitle = aic_substr(($userMessage !== '' ? $userMessage : 'Image chat'), 0, 60);
         $pdo->prepare("UPDATE ai_conversation SET title = ? WHERE conversation_id = ?")
             ->execute([$autoTitle, $conversation_id]);
     }
 
-    // ---- Bump usage counter ----
     $pdo->prepare("
         INSERT INTO ai_usage_daily (user_id, usage_date, message_count)
         VALUES (?, ?, 1)
         ON DUPLICATE KEY UPDATE message_count = message_count + 1
     ")->execute([$user_id, $today]);
 
-    // ---- Respond ----
-    echo json_encode([
-        'ok' => true,
-        'conversation_id' => $conversation_id,
-        'user_message' => [
-            'message_id' => $user_message_id,
-            'role'       => 'user',
-            'content'    => $message,
-            'image_path' => $image_url_path,
-        ],
-        'assistant_message' => [
-            'message_id' => $assistant_message_id,
-            'role'       => 'assistant',
-            'content'    => $assistantText,
-        ],
-        'food_log_suggestions' => $foodLogSuggestions,
-        'usage_today' => $used + 1,
-        'daily_limit' => AI_COACH_DAILY_LIMIT,
-    ]);
+    return $assistant_message_id;
+}
+
+function sse_send(string $event, array $data): void
+{
+    echo "event: {$event}\n";
+    echo 'data: ' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n\n";
+    @flush();
 }
 
 // =========================================================
@@ -386,12 +553,6 @@ function save_uploaded_image(array $file, int $user_id): array
 }
 
 /**
- * Build Gemini request body, call API, return ['ok' => bool, 'text' => string, 'error' => string].
- *
- * Each history entry: ['role' => 'user'|'assistant', 'content' => string, 'image_path' => ?string]
- * Gemini wants role = 'user' or 'model'.
- */
-/**
  * Convert browser-supplied ISO time + tz offset into a human-readable string
  * for the AI prompt. Falls back to server time if missing/invalid.
  *
@@ -438,69 +599,14 @@ function build_client_time_info(?string $isoNow, $tzOffsetMin): string
     return "{$day} {$date}, {$hm} local time ({$part}) [UTC{$tz}]";
 }
 
-function call_gemini(array $history, string $userContext, string $clientTimeInfo, ?string $latestImageFs, ?string $latestImageMime): array
+/**
+ * Build the JSON request body for Gemini (system instruction + contents +
+ * generation config). Shared by call_gemini() and call_gemini_stream().
+ */
+function build_gemini_body(array $history, string $userContext, string $clientTimeInfo, ?string $latestImageFs, ?string $latestImageMime): array
 {
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-        return ['ok' => false, 'error' => 'Gemini API key not configured'];
-    }
+    $systemInstruction = gemini_system_instruction($userContext, $clientTimeInfo);
 
-    $systemInstruction =
-        "You are an AI nutrition and fitness coach for a user of BitBalance (a calorie-tracking web app). " .
-        "Give specific, evidence-based, actionable advice in a warm, encouraging tone. " .
-        "ALWAYS reference the user's actual data below when relevant — calorie goal, today's intake, trends, weight. " .
-        "Be concise (under 200 words unless the user asks for detail).\n\n" .
-        "LANGUAGE RULE (CRITICAL): Detect the language of the user's MOST RECENT message and reply in that exact language. " .
-        "If the latest user message is in English, reply ONLY in English. " .
-        "If it is in Vietnamese, reply ONLY in Vietnamese. " .
-        "Do NOT infer language from the user's name or previous messages — always mirror the latest message.\n\n" .
-        "FORMATTING: You may use **bold**, bullet lists (lines starting with '* '), and short paragraphs. " .
-        "Do not use headings or tables.\n\n" .
-        "CURRENT TIME (the user's local time, treat as authoritative):\n" . $clientTimeInfo . "\n\n" .
-        "=== CAPABILITIES (READ CAREFULLY) ===\n" .
-        "You CANNOT directly log, save, or add entries to the user's intake log. " .
-        "Your ONLY way to help them log food is to emit a FOOD_LOG suggestion block (see below) — " .
-        "which renders as a card with an 'Add to Log' button that the USER must tap to actually save it.\n" .
-        "NEVER say things like 'I've logged it', 'I added it for you', 'Done, saved!', 'Logged successfully', " .
-        "or any phrase that implies the entry is already saved. It is NOT saved until the user taps the button.\n" .
-        "Instead, when emitting a card, say something brief like:\n" .
-        "  * English: 'Here's a quick log card — tap Add to Log to save it.' / 'Tap below to log it.'\n" .
-        "  * Vietnamese: 'Đây là thẻ ghi nhanh — bấm Add to Log để lưu nhé.' / 'Bấm nút bên dưới để lưu.'\n" .
-        "===\n\n" .
-        "FOOD LOG SUGGESTIONS (very important):\n" .
-        "Whenever you discuss specific food items with concrete nutrition values — whether the user reports eating them, " .
-        "asks you to analyze a meal/photo, or you suggest a meal — append a structured block at the END of your reply. " .
-        "Use this EXACT format (no markdown code fence):\n" .
-        "[[FOOD_LOG]]\n" .
-        "{\"items\":[{\"food_name\":\"Grilled chicken breast\",\"meal_category\":\"lunch\",\"calories\":230,\"protein\":43,\"carbs\":0,\"fat\":5}]}\n" .
-        "[[/FOOD_LOG]]\n" .
-        "Rules for the block:\n" .
-        "- meal_category MUST be one of: breakfast, lunch, dinner, snack.\n" .
-        "- calories MUST be a positive integer (1-5000).\n" .
-        "- protein/carbs/fat are grams as numbers (0 if unknown).\n" .
-        "- food_name is concise (under 60 chars), in the same language as the user.\n" .
-        "- Include multiple items if the user mentions multiple foods.\n" .
-        "- ONLY include the block when nutrition values are concrete; SKIP it for general questions, advice, or vague topics.\n" .
-        "- The block is hidden from the user — do NOT reference it in your prose.\n\n" .
-        "RESPONSE LENGTH when emitting a card:\n" .
-        "- Keep prose SHORT (1-3 sentences). The card itself shows the nutrition; do not repeat numbers in prose.\n" .
-        "- If the user asked a quick question like 'log X for me' or 'just had X', a single sentence + the card is best.\n" .
-        "- Save longer advice for when the user explicitly asks for analysis or recommendations.\n\n" .
-        "MEAL CATEGORY INFERENCE (apply in this priority order):\n" .
-        "1. If the user explicitly says 'for breakfast/lunch/dinner/as a snack' or names a meal → use that.\n" .
-        "2. Otherwise infer from the CURRENT LOCAL TIME shown above:\n" .
-        "   * 05:00-10:30  → breakfast\n" .
-        "   * 10:30-14:30  → lunch\n" .
-        "   * 17:00-21:30  → dinner\n" .
-        "   * 14:30-17:00 or 21:30-05:00 → snack\n" .
-        "3. If the user explicitly says 'log it' / 'log X for me' / 'just log it', DO NOT ask clarifying questions — " .
-        "just pick the best meal_category from rule 1-2 and emit the card.\n" .
-        "4. Otherwise, if the situation is genuinely ambiguous (e.g., user describes a full meal at 3am, " .
-        "or food that doesn't match the time slot — like a heavy steak at 9am, AND the user hasn't said 'log it'), " .
-        "ask a SHORT clarifying question and OMIT the FOOD_LOG block this turn. After the user answers, include the block.\n\n" .
-        "If asked something outside nutrition/fitness, gently redirect.\n\n" .
-        "=== USER DATA SNAPSHOT ===\n" . $userContext . "\n=== END USER DATA ===";
-
-    // Build "contents" — Gemini uses role 'user' and 'model'
     $contents = [];
     $lastIndex = count($history) - 1;
     foreach ($history as $i => $msg) {
@@ -509,7 +615,6 @@ function call_gemini(array $history, string $userContext, string $clientTimeInfo
         if (trim((string)$msg['content']) !== '') {
             $parts[] = ['text' => $msg['content']];
         }
-        // For the LATEST user message, if it has an image, attach the actual file bytes
         if ($i === $lastIndex && $role === 'user' && $latestImageFs && is_file($latestImageFs)) {
             $parts[] = [
                 'inline_data' => [
@@ -524,7 +629,7 @@ function call_gemini(array $history, string $userContext, string $clientTimeInfo
         $contents[] = ['role' => $role, 'parts' => $parts];
     }
 
-    $body = [
+    return [
         'system_instruction' => ['parts' => [['text' => $systemInstruction]]],
         'contents'           => $contents,
         'generationConfig'   => [
@@ -532,8 +637,16 @@ function call_gemini(array $history, string $userContext, string $clientTimeInfo
             'maxOutputTokens' => 1024,
         ],
     ];
+}
 
-    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . AI_COACH_MODEL . ':generateContent?key=' . GEMINI_API_KEY;
+function call_gemini(array $history, string $userContext, string $clientTimeInfo, ?string $latestImageFs, ?string $latestImageMime): array
+{
+    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
+        return ['ok' => false, 'error' => 'Gemini API key not configured'];
+    }
+
+    $body = build_gemini_body($history, $userContext, $clientTimeInfo, $latestImageFs, $latestImageMime);
+    $url  = 'https://generativelanguage.googleapis.com/v1beta/models/' . AI_COACH_MODEL . ':generateContent?key=' . GEMINI_API_KEY;
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -562,11 +675,204 @@ function call_gemini(array $history, string $userContext, string $clientTimeInfo
 
     $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
     if ($text === '') {
-        // Could be blocked by safety filter
         $finishReason = $data['candidates'][0]['finishReason'] ?? 'unknown';
         return ['ok' => false, 'error' => 'AI returned empty response (finishReason: ' . $finishReason . ')'];
     }
     return ['ok' => true, 'text' => $text];
+}
+
+/**
+ * Streaming variant — hits Gemini's :streamGenerateContent?alt=sse endpoint
+ * and calls $onDelta(string $textDelta) for each text fragment as it arrives.
+ *
+ * Returns ['ok' => true] on completion, or ['ok' => false, 'error' => ...].
+ * The caller is responsible for accumulating the full text from the deltas.
+ */
+function call_gemini_stream(
+    array $history, string $userContext, string $clientTimeInfo,
+    ?string $latestImageFs, ?string $latestImageMime, callable $onDelta
+): array {
+    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
+        return ['ok' => false, 'error' => 'Gemini API key not configured'];
+    }
+
+    $body = build_gemini_body($history, $userContext, $clientTimeInfo, $latestImageFs, $latestImageMime);
+    $url  = 'https://generativelanguage.googleapis.com/v1beta/models/'
+          . AI_COACH_MODEL . ':streamGenerateContent?alt=sse&key=' . GEMINI_API_KEY;
+
+    // SSE chunk parser state. Gemini delivers events as "data: {json}\n\n"
+    // (or "\r\n\r\n" depending on the upstream). Network reads may split
+    // mid-event, so we buffer until we see a blank-line separator.
+    $sseBuf      = '';
+    $upstreamErr = null;
+    $rawTotal    = '';   // raw upstream bytes — kept for diagnostics on 0-delta runs
+    $deltaCount  = 0;
+
+    $writeCb = function ($ch, string $data) use (&$sseBuf, &$upstreamErr, &$rawTotal, &$deltaCount, $onDelta) {
+        $len = strlen($data);
+        if (connection_aborted()) return 0;
+        $rawTotal .= $data;
+
+        // Normalize line endings so we only have to split on "\n\n".
+        $sseBuf .= str_replace("\r\n", "\n", $data);
+
+        while (($nlnl = strpos($sseBuf, "\n\n")) !== false) {
+            $event  = substr($sseBuf, 0, $nlnl);
+            $sseBuf = substr($sseBuf, $nlnl + 2);
+
+            // Collect data: lines (an event can have multiple, concatenated).
+            $dataStr = '';
+            foreach (explode("\n", $event) as $line) {
+                if (strncmp($line, 'data:', 5) === 0) {
+                    $piece = substr($line, 5);
+                    if (strlen($piece) > 0 && $piece[0] === ' ') $piece = substr($piece, 1);
+                    $dataStr .= $piece;
+                }
+            }
+            if ($dataStr === '' || $dataStr === '[DONE]') continue;
+
+            $parsed = json_decode($dataStr, true);
+            if (!is_array($parsed)) continue;
+
+            // Gemini SSE shape mirrors non-stream: candidates[0].content.parts[*].text
+            $parts = $parsed['candidates'][0]['content']['parts'] ?? [];
+            foreach ($parts as $p) {
+                if (isset($p['text']) && $p['text'] !== '') {
+                    $deltaCount++;
+                    $onDelta((string)$p['text']);
+                }
+            }
+            if (isset($parsed['error']['message'])) {
+                $upstreamErr = (string)$parsed['error']['message'];
+            }
+        }
+        return $len;
+    };
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Accept: text/event-stream'],
+        CURLOPT_POSTFIELDS     => json_encode($body),
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT        => 120,
+        CURLOPT_WRITEFUNCTION  => $writeCb,
+    ]);
+    $ok = curl_exec($ch);
+    if ($ok === false && !connection_aborted()) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        return ['ok' => false, 'error' => 'Connection error: ' . $err];
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($upstreamErr !== null) {
+        return ['ok' => false, 'error' => 'Gemini error: ' . $upstreamErr];
+    }
+    if ($code !== 200) {
+        // Surface upstream body so we can see what went wrong (auth, model
+        // name, quota, etc.). Trim hard so the SSE error stays readable.
+        $preview = trim(substr($rawTotal, 0, 500));
+        return ['ok' => false, 'error' => "Gemini HTTP {$code}: {$preview}"];
+    }
+    if ($deltaCount === 0) {
+        // Fallback: some upstream variants return a single JSON array of
+        // chunks instead of SSE. Try to parse it that way before giving up.
+        $arr = json_decode($rawTotal, true);
+        if (is_array($arr)) {
+            foreach ($arr as $chunk) {
+                $parts = $chunk['candidates'][0]['content']['parts'] ?? [];
+                foreach ($parts as $p) {
+                    if (isset($p['text']) && $p['text'] !== '') {
+                        $deltaCount++;
+                        $onDelta((string)$p['text']);
+                    }
+                }
+            }
+        }
+        if ($deltaCount === 0) {
+            $preview = trim(substr($rawTotal, 0, 400));
+            if ($preview === '') $preview = '(empty body)';
+            return ['ok' => false, 'error' => "No deltas parsed from upstream. Raw: {$preview}"];
+        }
+    }
+    return ['ok' => true];
+}
+
+/**
+ * Build the long system prompt sent to Gemini. Extracted so the streaming
+ * and non-streaming call paths share an identical instruction string.
+ */
+function gemini_system_instruction(string $userContext, string $clientTimeInfo): string
+{
+    return
+        "You are an AI nutrition and fitness coach for a user of BitBalance (a calorie-tracking web app). " .
+        "Give specific, evidence-based, actionable advice in a warm, encouraging tone. " .
+        "ALWAYS reference the user's actual data below when relevant — calorie goal, today's intake, trends, weight. " .
+        "Be concise (under 200 words unless the user asks for detail).\n\n" .
+        "LANGUAGE RULE (CRITICAL): Detect the language of the user's MOST RECENT message and reply in that exact language. " .
+        "If the latest user message is in English, reply ONLY in English. " .
+        "If it is in Vietnamese, reply ONLY in Vietnamese. " .
+        "Do NOT infer language from the user's name or previous messages — always mirror the latest message.\n\n" .
+        "FORMATTING: You may use **bold**, bullet lists (lines starting with '* '), and short paragraphs. " .
+        "Do not use headings or tables.\n\n" .
+        "CURRENT TIME (the user's local time, treat as authoritative):\n" . $clientTimeInfo . "\n\n" .
+        "=== CAPABILITIES (READ CAREFULLY) ===\n" .
+        "You CANNOT directly log, save, or add entries to the user's intake log. " .
+        "Your ONLY way to help them log food is to emit a FOOD_LOG suggestion block (see below) — " .
+        "which renders as a card with an 'Add to Log' button that the USER must tap to actually save it.\n" .
+        "NEVER say things like 'I've logged it', 'I added it for you', 'Done, saved!', 'Logged successfully', " .
+        "or any phrase that implies the entry is already saved. It is NOT saved until the user taps the button.\n" .
+        "===\n\n" .
+        "FOOD LOG SUGGESTIONS — WHEN TO EMIT THE CARD (very important):\n" .
+        "There are TWO modes for any food-related reply, and you MUST pick the right one:\n\n" .
+        "MODE A — LOG MODE (emit the FOOD_LOG block):\n" .
+        "Only when the user has clearly ALREADY EATEN something, or explicitly tells you to log/save it. Examples:\n" .
+        "  * 'I just had a chicken sandwich' / 'I ate 2 eggs for breakfast'\n" .
+        "  * 'Log a banana for me' / 'Add 200g of rice to lunch' / 'Just log it'\n" .
+        "  * A food photo where the user clearly ate or is eating it\n" .
+        "In LOG MODE: keep prose SHORT (1-3 sentences), and add a brief pointer to the card such as:\n" .
+        "  * English: 'Tap Add to Log to save it.'\n" .
+        "  * Vietnamese: 'Bấm Add to Log để lưu nhé.'\n\n" .
+        "MODE B — SUGGEST / ADVISE MODE (DO NOT emit the FOOD_LOG block):\n" .
+        "When the user is asking what to eat, asking for ideas, comparing options, or asking advice. Examples:\n" .
+        "  * 'What should I eat?' / 'Suggest a high-protein dinner' / 'Any snack ideas?'\n" .
+        "  * 'Is X healthy?' / 'How many calories should I have left today?'\n" .
+        "  * Photo of a menu / grocery shelf / something the user has NOT eaten yet\n" .
+        "In SUGGEST MODE you have NOT been told they're eating it — emitting a log card would be wrong.\n" .
+        "Recommend the food normally, mention macros in prose if useful, and end with an OFFER such as:\n" .
+        "  * English: 'If you decide to have it, just say \"log it\" and I'll prep the card.'\n" .
+        "  * Vietnamese: 'Nếu bạn ăn món này, nhắn \"log nhé\" mình lên thẻ ghi liền.'\n" .
+        "Do NOT say 'tap below to log it' in SUGGEST MODE — there is no card to tap.\n\n" .
+        "If the user replies to your suggestion with confirmation like 'ok I'll have that' / 'sounds good, log it' / " .
+        "'going to eat it now' → switch to LOG MODE and emit the card on the NEXT turn.\n\n" .
+        "FORMAT of the FOOD_LOG block (LOG MODE only, no markdown code fence, at the very END of the reply):\n" .
+        "[[FOOD_LOG]]\n" .
+        "{\"items\":[{\"food_name\":\"Grilled chicken breast\",\"meal_category\":\"lunch\",\"calories\":230,\"protein\":43,\"carbs\":0,\"fat\":5}]}\n" .
+        "[[/FOOD_LOG]]\n" .
+        "Rules for the block:\n" .
+        "- meal_category MUST be one of: breakfast, lunch, dinner, snack.\n" .
+        "- calories MUST be a positive integer (1-5000).\n" .
+        "- protein/carbs/fat are grams as numbers (0 if unknown).\n" .
+        "- food_name is concise (under 60 chars), in the same language as the user.\n" .
+        "- Include multiple items if the user mentions multiple foods.\n" .
+        "- The block is hidden from the user — do NOT reference it in your prose.\n\n" .
+        "MEAL CATEGORY INFERENCE (LOG MODE only — apply in this priority order):\n" .
+        "1. If the user explicitly says 'for breakfast/lunch/dinner/as a snack' or names a meal → use that.\n" .
+        "2. Otherwise infer from the CURRENT LOCAL TIME shown above:\n" .
+        "   * 05:00-10:30  → breakfast\n" .
+        "   * 10:30-14:30  → lunch\n" .
+        "   * 17:00-21:30  → dinner\n" .
+        "   * 14:30-17:00 or 21:30-05:00 → snack\n" .
+        "3. If the user explicitly says 'log it' / 'log X for me' / 'just log it', DO NOT ask clarifying questions — " .
+        "just pick the best meal_category from rule 1-2 and emit the card.\n" .
+        "4. Otherwise, if the situation is genuinely ambiguous (e.g., user describes a full meal at 3am, " .
+        "or food that doesn't match the time slot — like a heavy steak at 9am, AND the user hasn't said 'log it'), " .
+        "ask a SHORT clarifying question and OMIT the FOOD_LOG block this turn. After the user answers, include the block.\n\n" .
+        "If asked something outside nutrition/fitness, gently redirect.\n\n" .
+        "=== USER DATA SNAPSHOT ===\n" . $userContext . "\n=== END USER DATA ===";
 }
 
 /**
