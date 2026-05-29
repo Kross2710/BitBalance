@@ -1,158 +1,295 @@
-.body, .html {
-    height: 100%;
-}
+/* =========================================================================
+   AUTH PAGES — Login + Sign Up. Duolingo-inspired 3D tactile, token-driven.
+   Shared shell; signup-only extras live in css/pages/signup.css.
+   Dark-mode safe. Scoped selectors only (never styles global <button>).
+   ========================================================================= */
 
+/* The auth card: split panel (form | branded image) centered on the page. */
 .container {
     display: flex;
-    height: 100vh;
+    max-width: 980px;
+    margin: 48px auto;
+    min-height: 580px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+    overflow: hidden;
 }
 
+/* ---------- Form side ---------- */
 .form-section {
-    flex: 1;
+    flex: 1 1 50%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    padding: 40px;
+    padding: 48px 44px;
+    box-sizing: border-box;
 }
 
 .form-section h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 28px;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+    text-align: left;
+}
+
+.form-section .auth-subtitle {
+    color: var(--color-text-secondary);
+    font-size: 0.98rem;
+    font-weight: 500;
+    margin: 0 0 28px;
 }
 
 form {
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 400px;
-    gap: 15px;
+    gap: 16px;
 }
 
-input {
-    font-size: 16px; /* Đổi thành 16px */
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 4px;
+/* Inputs — extend forms.css base with 2px tactile border + soft fill. */
+.form-section input[type="text"],
+.form-section input[type="email"],
+.form-section input[type="password"],
+.form-section input[type="number"] {
+    width: 100%;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-alt);
+    color: var(--color-text);
+    padding: 13px 16px;
+    font-size: 16px; /* keep 16px → prevents iOS zoom on focus */
+    font-weight: 500;
+    transition: all var(--transition-base);
+    box-sizing: border-box;
 }
 
-input:focus {
-    border-color: #007bff;
+.form-section input:focus {
     outline: none;
+    border-color: var(--color-primary);
+    background-color: var(--color-surface);
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
 }
 
-button {
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
+/* ---------- Primary submit (chunky 3D) ---------- */
+.login-button {
+    margin-top: 6px;
+    padding: 14px 24px;
+    background-color: var(--color-primary);
+    color: #ffffff;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
+    font-size: 1.05rem;
+    font-weight: 800;
     cursor: pointer;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-.error-message {
-    color: red;
-    text-align: center;
-    margin-top: 10px;
-}
-.success-message {
-    color: green;
-    text-align: center;
-    margin-top: 10px;
-}
-
-.signup-link {
-    text-align: center;
-    margin-top: 20px;
-}
-.signup-link a {
-    color: #007bff;
+    box-shadow: 0 5px 0 var(--color-primary-hover);
+    transition: all 0.12s ease;
+    /* Centering + no underline so the same class works for <a> links too. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     text-decoration: none;
 }
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 var(--color-primary-hover);
+}
+
+.login-button:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
+}
+
+.login-button:disabled {
+    background-color: var(--color-border);
+    color: var(--color-text-muted);
+    box-shadow: 0 5px 0 var(--color-border-subtle);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---------- Alerts ---------- */
+.auth-alert {
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.45;
+}
+
+.auth-alert i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.auth-alert--error {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger);
+    border-color: var(--color-danger-border);
+    box-shadow: 0 4px 0 var(--color-danger-border);
+}
+
+.auth-alert--success {
+    background-color: var(--color-success-bg);
+    color: var(--color-success);
+    border-color: var(--color-success-border);
+    box-shadow: 0 4px 0 var(--color-success-border);
+}
+
+.auth-locked-recovery {
+    font-weight: 500;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-danger-border);
+}
+
+.auth-locked-recovery a {
+    color: var(--color-danger);
+    font-weight: 800;
+    text-decoration: underline;
+}
+
+/* ---------- Links under the form ---------- */
+.forgot-link {
+    text-align: center;
+    margin-top: 4px;
+    font-size: 0.92rem;
+}
+
+.forgot-link a,
+.signup-link a {
+    color: var(--color-primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.forgot-link a:hover,
 .signup-link a:hover {
     text-decoration: underline;
 }
 
-.forgotpassword-link {
+.signup-link {
     text-align: center;
-    margin-top: 10px;
-}
-.forgotpassword-link a {
-    color: #007bff;
-    text-decoration: none;
-}
-.forgotpassword-link a:hover {
-    text-decoration: underline;
+    margin-top: 14px;
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
 }
 
+.signup-link p {
+    margin: 0;
+}
+
+/* ---------- Branded image side ---------- */
 .side-section {
-    flex: 1;
-    background-color: #d3d3d3;
+    flex: 1 1 50%;
+    position: relative;
+    background-color: var(--color-surface-alt);
 }
 
 .side-section img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
+/* Subtle brand tint over the whole image (keeps the green/blue identity). */
+.side-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg,
+            rgba(88, 204, 2, 0.30) 0%,
+            rgba(28, 176, 246, 0.28) 100%);
+    z-index: 1;
+}
+
+/* Dark scrim rising from the bottom — guarantees white tagline stays readable
+   no matter what's in the photo behind it. */
+.side-section::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.80) 0%,
+            rgba(0, 0, 0, 0.35) 30%,
+            rgba(0, 0, 0, 0) 58%);
+    z-index: 2;
+}
+
+.side-tagline {
+    position: absolute;
+    left: 32px;
+    right: 32px;
+    bottom: 36px;
+    z-index: 3;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+.side-tagline h3 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0 0 8px;
+    line-height: 1.2;
+    color: #ffffff;
+}
+
+.side-tagline p {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+/* ============================ RESPONSIVE ============================ */
+@media (max-width: 860px) {
     .container {
         flex-direction: column;
+        margin: 24px 16px;
+        min-height: 0;
     }
-    .form-section, .side-section {
-        width: 100%;
-        height: 50vh;
+
+    /* Image becomes a slim banner on top */
+    .side-section {
+        flex: none;
+        height: 180px;
+        order: -1;
     }
+
     .form-section {
-        padding: 20px;
-    }
-}
-@media (max-width: 480px) {
-    .form-section h2 {
-        font-size: 24px;
-    }
-    form {
-        max-width: 90%;
-    }
-    
-    /* Code cũ của bạn: input, button { font-size: 12px; } */
-    /* Sửa lại: Tách input ra để giữ 16px */
-    
-    input {
-        font-size: 16px; /* Bắt buộc 16px để không bị zoom */
-    }
-    
-    button {
-        font-size: 14px; /* Button có thể nhỏ hơn tùy ý vì không nhập liệu */
-    }
-}
-@media (max-width: 320px) {
-    .form-section h2 {
-        font-size: 20px;
-    }
-    form {
-        max-width: 95%;
-    }
-    
-    /* Code cũ của bạn: input, button { font-size: 10px; } */
-    /* Sửa lại: */
-    
-    input {
-        font-size: 16px; /* Vẫn phải giữ 16px */
-    }
-    
-    button {
-        font-size: 12px;
+        padding: 36px 28px;
     }
 }
 
+@media (max-width: 480px) {
+    .side-section {
+        height: 140px;
+    }
+
+    .side-tagline {
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+    }
+
+    .side-tagline h3 {
+        font-size: 1.3rem;
+    }
+
+    .form-section {
+        padding: 28px 20px;
+    }
+
+    .form-section h2 {
+        font-size: 1.6rem;
+    }
+}

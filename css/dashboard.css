@@ -81,6 +81,83 @@ main.dashboard-content {
     box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
 }
 
+/* Shared guest-demo banner used by overview and food intake. */
+.demo-banner {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--color-primary-soft);
+    color: var(--color-text);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 0 var(--color-primary-hover), var(--shadow-sm);
+    font-size: 0.92rem;
+    box-sizing: border-box;
+}
+
+main.dashboard > .demo-banner {
+    margin-bottom: 24px;
+}
+
+.demo-banner i {
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.demo-banner span {
+    flex: 1;
+    min-width: 0;
+}
+
+.demo-banner-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 3px 0 var(--color-primary-hover);
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+    box-sizing: border-box;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, filter var(--transition-base);
+}
+
+.demo-banner-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+    filter: brightness(1.03);
+}
+
+.demo-banner-cta:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
+}
+
+.row-action-lock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+    .demo-banner {
+        flex-wrap: wrap;
+    }
+
+    .demo-banner-cta {
+        width: 100%;
+    }
+}
+
 /* Headings */
 h3,
 h4 {
@@ -1821,37 +1898,6 @@ table.meals-table {
     color: white;
 }
 
-/* --- MOBILE RESPONSIVE (Quan trọng) --- */
-@media (max-width: 768px) {
-
-    /* Target vào ô chứa nút Action trong bảng */
-    .modern-table tr td:last-child {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        /* Chia đôi chiều rộng */
-        gap: 10px;
-        /* Khoảng cách giữa 2 nút */
-        padding-top: 15px;
-        margin-top: 10px;
-        border-top: 1px dashed rgba(0, 0, 0, 0.1);
-        /* Đường kẻ ngăn cách với nội dung trên */
-    }
-
-    /* Reset width và height để nút to ra dễ bấm */
-    .btn-edit,
-    .btn-delete {
-        width: 100%;
-        /* Full chiều rộng cột lưới */
-        height: 40px;
-        /* Cao hơn để ngón tay dễ bấm */
-        font-size: 1.1rem;
-        margin: 0;
-    }
-
-    /* Thêm icon + chữ nếu muốn rõ ràng hơn trên mobile (Optional) */
-    /* Nếu bạn muốn hiện chữ "Edit" bên cạnh icon trên mobile thì dùng ::after */
-}
-
 /* Base .dashboard-content layout consolidated with main.dashboard at the top
    of this file — don't redeclare here (was using hardcoded 240px instead of
    var(--sidebar-width) + 20px, plus a divergent min-height of
@@ -2440,17 +2486,6 @@ main.dashboard-content.dashboard-empty-state {
    1. ACTION BUTTONS (TABLE - EDIT/DELETE)
    ========================================= */
 
-/* Căn chỉnh ô chứa nút để chúng nằm ngang */
-.modern-table td:last-child {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    /* Căn phải */
-    gap: 8px;
-    /* Khoảng cách giữa 2 nút */
-    white-space: nowrap;
-}
-
 /* Style chung cho nút hành động hình vuông */
 .btn-icon {
     width: 38px;
@@ -2527,34 +2562,6 @@ main.dashboard-content.dashboard-empty-state {
 [data-theme="dark"] .btn-add-log:hover {
     background-color: #64b5f6;
     color: #121212;
-}
-
-/* =========================================
-   3. MOBILE RESPONSIVE FIX
-   ========================================= */
-@media (max-width: 768px) {
-
-    /* Trên mobile, ô chứa nút sẽ dãn ra */
-    .modern-table tr td:last-child {
-        display: flex;
-        width: 100%;
-        justify-content: space-between;
-        /* Đẩy 2 nút ra 2 đầu hoặc để flex-end tùy ý */
-        gap: 15px;
-        padding-top: 15px;
-        margin-top: 10px;
-        border-top: 1px dashed #eee;
-    }
-
-    /* Nút to ra để dễ bấm ngón tay */
-    .btn-icon {
-        flex: 1;
-        /* Dãn đều 2 nút */
-        height: 44px;
-        /* Chuẩn touch target */
-        border-radius: 12px;
-        font-size: 1.2rem;
-    }
 }
 
 /* =========================================================================
@@ -2750,8 +2757,12 @@ main.dashboard-content.dashboard-empty-state {
         padding: 12px;
     }
 
-    .demo-banner p {
+    .demo-banner span {
         font-size: 0.9rem;
+    }
+
+    .demo-banner-cta {
+        width: 100%;
     }
 }
 

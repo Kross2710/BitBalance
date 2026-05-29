@@ -1,169 +1,463 @@
-        /* 1. PAGE-SPECIFIC VARIABLES (dùng tokens chung, chỉ thêm biến riêng) */
-        :root {
-            --border-light: 1px solid rgba(0,0,0,0.05);
-        }
+/* =========================================================================
+   LANDING PAGE — Duolingo-inspired 3D tactile, conversion-focused.
+   Token-driven, dark-mode safe. No hardcoded hex (brand accents via tokens).
+   ========================================================================= */
 
-        [data-theme="dark"] {
-            --border-light: 1px solid rgba(255,255,255,0.1);
-        }
+/* ============================ HERO ============================ */
+.hero-section {
+    text-align: center;
+    padding: 72px 20px 48px;
+    max-width: 860px;
+    margin: 0 auto;
+}
 
-        /* 2. HERO SECTION */
-        .hero-section {
-            text-align: center;
-            padding: 100px 20px 60px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border: 2px solid var(--color-border);
+    padding: 8px 16px;
+    border-radius: 999px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
 
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            line-height: 1.2;
-            letter-spacing: -1px;
-        }
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin: 0 0 20px;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    color: var(--color-text);
+}
 
-        .gradient-text {
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+.gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
 
-        .hero-subtitle {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            margin-bottom: 40px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+    margin: 0 auto 36px;
+    max-width: 620px;
+    line-height: 1.6;
+    font-weight: 500;
+}
 
-        .btn-start {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--primary-gradient);
-            color: white;
-            padding: 16px 40px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            text-decoration: none;
-            box-shadow: 0 10px 25px rgba(74, 126, 227, 0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 32px;
+}
 
-        .btn-start:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(74, 126, 227, 0.5);
-        }
+/* Chunky 3D primary button */
+.btn-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--color-primary);
+    color: #ffffff;
+    padding: 16px 36px;
+    border-radius: var(--radius-md);
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: 0 6px 0 var(--color-primary-hover);
+    transition: all 0.12s ease;
+}
+.btn-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 var(--color-primary-hover);
+}
+.btn-start:active {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 var(--color-primary-hover);
+}
+.btn-start--lg {
+    padding: 20px 48px;
+    font-size: 1.2rem;
+}
 
-        /* 3. LANDING GRID (BENTO) */
-        .landing-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 80px;
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 24px;
-            grid-auto-rows: minmax(200px, auto);
-        }
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-secondary);
+    font-weight: 700;
+    text-decoration: none;
+    padding: 14px 8px;
+    transition: color var(--transition-base);
+}
+.btn-secondary:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+}
 
-        /* Card Styles */
-        .grid-card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            box-shadow: var(--shadow-soft);
-            border: var(--border-light);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
+.hero-proof {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+.proof-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    box-shadow: 0 3px 0 var(--color-border-subtle);
+}
+.proof-chip .fa-camera { color: var(--color-secondary); }
+.proof-chip .fa-fire { color: var(--color-accent); }
+.proof-chip .fa-user-friends { color: var(--color-primary); }
 
-        .grid-card h2, .grid-card h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: var(--text-primary);
-        }
+/* ============================ CONTAINER ============================ */
+.landing-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+}
 
-        .grid-card p {
-            color: var(--text-secondary);
-            font-size: 1rem;
-            margin-bottom: 20px;
-        }
+.section-title {
+    text-align: center;
+    margin: 56px 0 24px;
+}
+.section-title h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+.section-sub {
+    font-size: 1.05rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    margin: 10px auto 0;
+    max-width: 560px;
+    line-height: 1.5;
+}
 
-        /* A. Welcome Card */
-        .card-welcome {
-            grid-column: span 7;
-            background: linear-gradient(135deg, #e3f2fd, #ffffff);
-        }
-        [data-theme="dark"] .card-welcome { background: linear-gradient(135deg, #1f2937, #111827); }
+/* ===================== SHOWCASE (3 headline features) ===================== */
+.showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
 
-        .card-welcome .icon {
-            font-size: 3rem;
-            color: #4a7ee3;
-            margin-bottom: 20px;
-        }
+.showcase-card {
+    position: relative;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    transition: all var(--transition-base);
+    overflow: hidden;
+}
+.showcase-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 0 var(--color-border-subtle), var(--shadow-md);
+}
+.showcase-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+}
+.showcase-ai::before     { background: var(--color-secondary); }
+.showcase-game::before   { background: var(--color-primary); }
+.showcase-social::before { background: var(--color-accent); }
 
-        /* B. Forum Card */
-        .card-forum {
-            grid-column: span 5;
-            text-align: center;
-            align-items: center;
-            background: #fff8e1; /* Light Yellow */
-        }
-        [data-theme="dark"] .card-forum { background: #2c2a20; }
+.showcase-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+}
+.showcase-tag--ai     { background: rgba(28, 176, 246, 0.14); color: var(--color-secondary); }
+.showcase-tag--game   { background: var(--color-primary-soft); color: var(--color-primary); }
+.showcase-tag--social { background: rgba(255, 150, 0, 0.14);   color: var(--color-accent); }
 
-        .card-forum .icon {
-            font-size: 3rem;
-            color: #ffb300;
-            margin-bottom: 15px;
-        }
+.showcase-card h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    line-height: 1.25;
+}
+.showcase-card p {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
 
-        /* C. Chart Card */
-        .card-chart {
-            grid-column: span 8;
-            height: 350px;
-            justify-content: flex-start;
-        }
+/* --- Mini-demo shell --- */
+.showcase-demo {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
 
-        .chart-wrapper {
-            position: relative;
-            height: 100%;
-            width: 100%;
-        }
+/* AI demo */
+.demo-photo {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background: var(--color-secondary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+}
+.demo-arrow { color: var(--color-text-muted); font-size: 1rem; flex-shrink: 0; }
+.demo-result { display: flex; flex-direction: column; gap: 4px; }
+.demo-food { font-weight: 800; color: var(--color-text); font-size: 0.95rem; }
+.demo-cal { font-weight: 700; color: var(--color-secondary); font-size: 0.85rem; }
 
-        /* D. Video Card */
-        .card-video {
-            grid-column: span 4;
-            padding: 0; /* Remove padding for video */
-            background: #000;
-        }
+/* Gamification demo */
+.showcase-game .showcase-demo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+.demo-level {
+    align-self: center;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 6px 16px;
+    border-radius: 999px;
+    box-shadow: inset 0 -3px 0 var(--color-primary-hover);
+}
+.demo-xp-row { display: flex; align-items: center; gap: 10px; }
+.demo-xp-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.demo-xp-fill {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    border-radius: 999px;
+    transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.showcase-game:hover .demo-xp-fill { width: 78%; }
+.demo-xp-num { font-weight: 800; font-size: 0.8rem; color: var(--color-primary); white-space: nowrap; }
+.demo-streak { align-self: center; font-weight: 800; font-size: 0.85rem; color: var(--color-accent); }
+.demo-streak .fa-fire {
+    margin-right: 4px;
+    animation: index-flicker 1.8s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+@keyframes index-flicker {
+    0%, 100% { transform: scale(1)    rotate(-2deg); opacity: 1;    }
+    50%      { transform: scale(1.15) rotate(2deg);  opacity: 0.85; }
+}
 
-        .card-video iframe {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+/* Social demo */
+.demo-social { flex-direction: column; align-items: stretch; gap: 8px; }
+.demo-rank {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+}
+.demo-medal { font-size: 1rem; }
+.demo-ava {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.demo-rank-xp { margin-left: auto; font-weight: 800; font-size: 0.85rem; color: var(--color-text); }
+.demo-rank-xp::after { content: ' XP'; font-size: 0.7rem; color: var(--color-text-muted); font-weight: 600; }
 
-        /* Link styled as button in text */
-        .text-link {
-            color: #4a7ee3;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .text-link:hover { text-decoration: underline; }
+/* ===================== SECONDARY MINI GRID ===================== */
+.mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+.mini-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
+    transition: all var(--transition-base);
+}
+.mini-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+}
+.mini-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+    border: 2px solid var(--color-border);
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+.mini-icon--green  { background: var(--color-primary-soft);    color: var(--color-primary); }
+.mini-icon--blue   { background: rgba(28, 176, 246, 0.12);     color: var(--color-secondary); }
+.mini-icon--orange { background: rgba(255, 150, 0, 0.12);      color: var(--color-accent); }
+.mini-card h4 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0 0 8px;
+}
+.mini-card p {
+    font-size: 0.92rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
 
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
-            .hero-title { font-size: 2.5rem; }
-            .card-welcome, .card-forum, .card-chart, .card-video {
-                grid-column: span 12; /* Full width on mobile */
-            }
-            .card-chart { height: auto; min-height: 300px; }
-            .card-video { min-height: 250px; }
-        }
+/* ============================ FINAL CTA ============================ */
+.final-cta {
+    text-align: center;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 56px 24px;
+    margin-top: 56px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+}
+.final-cta h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0 0 12px;
+}
+.final-cta p {
+    color: var(--color-text-secondary);
+    font-size: 1.05rem;
+    margin: 0 0 28px;
+}
+
+/* ============================ RESPONSIVE ============================ */
+@media (max-width: 991px) {
+    .hero-title { font-size: 2.8rem; }
+    .showcase-grid { grid-template-columns: 1fr; }
+    .mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .hero-section { padding: 48px 16px 36px; }
+    .hero-title { font-size: 2.2rem; }
+    .hero-subtitle { font-size: 1.05rem; }
+    .hero-actions { flex-direction: column; }
+    .btn-start { width: 100%; justify-content: center; }
+    .landing-container { padding: 0 16px 48px; }
+    .section-title h2 { font-size: 1.7rem; }
+    .mini-grid { grid-template-columns: 1fr; }
+    .final-cta { padding: 40px 20px; }
+}
+
+/* ============================ ENTRANCE / SCROLL REVEAL ============================ */
+
+/* Shared keyframe: fade + slide up. Used by both hero (on load) and
+   scroll-reveal (on intersection). Uses animation (not transition) so it never
+   clobbers the cards' own `transition: all` hover lift. */
+@keyframes reveal-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Only hide reveal targets when JS is present (set via inline head script).
+   No JS → everything stays visible (SEO + accessibility safe). */
+.js .reveal { opacity: 0; }
+
+/* When the observer marks it visible, play the reveal once. `backwards` fill
+   applies the hidden `from` state during animation-delay (so staggered cards
+   don't flash), but does NOT persist transform afterwards → hover lift works. */
+.reveal.is-visible {
+    opacity: 1;
+    animation: reveal-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Cascade within a row */
+.showcase-grid .reveal:nth-child(2).is-visible { animation-delay: 0.12s; }
+.showcase-grid .reveal:nth-child(3).is-visible { animation-delay: 0.24s; }
+.mini-grid .reveal:nth-child(3n + 2).is-visible { animation-delay: 0.08s; }
+.mini-grid .reveal:nth-child(3n).is-visible     { animation-delay: 0.16s; }
+
+/* Hero entrance on load — staggered fade-up. `both` keeps the final state
+   since these elements toggle no class. Hover targets live deeper (buttons),
+   so persisting transform on the wrappers is harmless. */
+.js .hero-section > * {
+    opacity: 0;
+    animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.hero-section > *:nth-child(1) { animation-delay: 0.05s; }
+.hero-section > *:nth-child(2) { animation-delay: 0.15s; }
+.hero-section > *:nth-child(3) { animation-delay: 0.25s; }
+.hero-section > *:nth-child(4) { animation-delay: 0.35s; }
+.hero-section > *:nth-child(5) { animation-delay: 0.45s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .demo-streak .fa-fire { animation: none; }
+    .showcase-game:hover .demo-xp-fill { transition: none; }
+
+    /* Disable all entrance motion; ensure nothing stays hidden. */
+    .js .reveal,
+    .reveal.is-visible,
+    .js .hero-section > * {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+}

@@ -29,25 +29,20 @@ if ($isLoggedIn) {
 
     <div class="container">
         <div class="form-section">
-            <h2>Sign Up To BitBalance</h2>
+            <h2>Create your account</h2>
+            <p class="auth-subtitle">Start your first streak in under a minute.</p>
 
             <?php if (!empty($error_message)): ?>
-
-                <div class="error-message"
-                    style="color: #d32f2f; margin-bottom: 15px; padding: 12px; background-color: #ffebee; border: 1px solid #e57373; border-radius: 5px; font-weight: bold;">
-                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
-
-                    <?php echo htmlspecialchars($error_message); ?>
+                <div class="auth-alert auth-alert--error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div><?php echo htmlspecialchars($error_message); ?></div>
                 </div>
             <?php endif; ?>
 
             <?php if (!empty($success_message)): ?>
-
-                <div class="success-message"
-                    style="color: #2e7d32; margin-bottom: 15px; padding: 12px; background-color: #e8f5e8; border: 1px solid #4caf50; border-radius: 5px; font-weight: bold;">
-                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-
-                    <?php echo htmlspecialchars($success_message); ?>
+                <div class="auth-alert auth-alert--success">
+                    <i class="fas fa-check-circle"></i>
+                    <div><?php echo htmlspecialchars($success_message); ?></div>
                 </div>
             <?php endif; ?>
 
@@ -77,7 +72,7 @@ if ($isLoggedIn) {
                 <!-- CAPTCHA Section -->
                 <div class="captcha-section">
                     <div class="captcha-question">
-                        <i class="fas fa-robot" style="margin-right: 8px;"></i>
+                        <i class="fas fa-robot"></i>
                         Solve this math problem: <?php echo htmlspecialchars($captcha_question); ?>
                     </div>
                     <input type="number" name="captcha_answer" class="captcha-input" placeholder="Answer" required>
@@ -91,9 +86,8 @@ if ($isLoggedIn) {
                     <input type="checkbox" name="accept_terms" id="accept_terms" required>
                     <label for="accept_terms">
                         I agree to the
-                        <a href="terms.php" target="_blank">Terms and Conditions</a>
-                        <i class="fas fa-external-link-alt"
-                            style="font-size: 10px; margin-left: 3px; opacity: 0.7;"></i>
+                        <a href="terms.php" target="_blank">Terms and Conditions
+                            <i class="fas fa-external-link-alt"></i></a>
                     </label>
                 </div>
 
@@ -105,7 +99,11 @@ if ($isLoggedIn) {
             </form>
         </div>
         <div class="side-section">
-            <img src="images/food.jpg" alt="Food Image">
+            <img src="images/food.jpg" alt="Healthy food">
+            <div class="side-tagline">
+                <h3>Join the crew.</h3>
+                <p>Log meals, earn XP, and climb the leaderboard with friends.</p>
+            </div>
         </div>
     </div>
 
@@ -116,20 +114,10 @@ if ($isLoggedIn) {
             const signupBtn = document.getElementById('signup-btn');
 
             if (termsCheckbox && signupBtn) {
+                // Button appearance is driven entirely by the :disabled CSS state.
                 termsCheckbox.addEventListener('change', function () {
                     signupBtn.disabled = !this.checked;
-                    if (this.checked) {
-                        signupBtn.style.opacity = '1';
-                        signupBtn.style.cursor = 'pointer';
-                    } else {
-                        signupBtn.style.opacity = '0.6';
-                        signupBtn.style.cursor = 'not-allowed';
-                    }
                 });
-
-                // Initial state
-                signupBtn.style.opacity = '0.6';
-                signupBtn.style.cursor = 'not-allowed';
             }
         });
 
@@ -176,10 +164,10 @@ if ($isLoggedIn) {
             else feedback.push('number');
 
             if (strength === 4) {
-                requirements.style.color = 'green';
+                requirements.classList.add('is-valid');
                 requirements.innerHTML = '<i class="fas fa-check"></i> Password meets all requirements';
             } else {
-                requirements.style.color = '#666';
+                requirements.classList.remove('is-valid');
                 requirements.innerHTML = 'Password needs: ' + feedback.join(', ');
             }
         });

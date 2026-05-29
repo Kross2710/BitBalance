@@ -73,5 +73,63 @@
             <?php endif; ?>
         </div>
     </div>
-</div>
 
+    <?php if (($activePage ?? '') === 'overview'): ?>
+        <hr class="divider">
+
+        <div class="sidebar-section leaderboard-mini">
+            <div class="section-title">
+                <i class="fas fa-trophy"></i> Weekly Top 5
+            </div>
+
+            <?php if (!empty($isLoggedIn) && !empty($leaderboardWidgetRows)): ?>
+                <div class="leaderboard-mini-list">
+                    <?php foreach ($leaderboardWidgetRows as $row): ?>
+                        <?php
+                        $rank = (int) ($row['rank'] ?? 0);
+                        $rankClass = $rank === 1 ? ' leaderboard-mini-rank--gold' : ($rank === 2 ? ' leaderboard-mini-rank--silver' : ($rank === 3 ? ' leaderboard-mini-rank--bronze' : ''));
+                        $isYou = !empty($row['is_current_user']);
+                        $avatar = $row['profile_image'] ?? '';
+                        ?>
+                        <a
+                            class="leaderboard-mini-row<?= $isYou ? ' leaderboard-mini-row--you' : '' ?>"
+                            href="<?= BASE_URL ?>dashboard/dashboard-friends.php?tab=leaderboard"
+                        >
+                            <span class="leaderboard-mini-rank<?= $rankClass ?>">
+                                <?php if ($rank <= 3): ?>
+                                    <i class="fas <?= $rank === 1 ? 'fa-trophy' : 'fa-medal' ?>"></i>
+                                <?php else: ?>
+                                    <?= $rank ?>
+                                <?php endif; ?>
+                            </span>
+                            <span class="leaderboard-mini-avatar">
+                                <?php if ($avatar): ?>
+                                    <img src="<?= BASE_URL . htmlspecialchars($avatar, ENT_QUOTES) ?>" alt="">
+                                <?php else: ?>
+                                    <i class="fas fa-user"></i>
+                                <?php endif; ?>
+                            </span>
+                            <span class="leaderboard-mini-main">
+                                <span class="leaderboard-mini-name">
+                                    <span class="leaderboard-mini-user"><?= htmlspecialchars($row['user_name'] ?? '', ENT_QUOTES) ?></span>
+                                    <?php if ($isYou): ?><span class="leaderboard-mini-you">You</span><?php endif; ?>
+                                </span>
+                                <span class="leaderboard-mini-score"><?= number_format((int) ($row['score_xp'] ?? 0)) ?> XP</span>
+                            </span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php elseif (!empty($isLoggedIn)): ?>
+                <div class="leaderboard-mini-empty">
+                    <p>No leaderboard data yet.</p>
+                    <a href="<?= BASE_URL ?>dashboard/dashboard-friends.php?tab=friends" class="btn-small">Open Friends</a>
+                </div>
+            <?php else: ?>
+                <div class="leaderboard-mini-empty">
+                    <p>Sign in to compete with friends.</p>
+                    <a href="<?= BASE_URL ?>login.php" class="btn-small">Sign in</a>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>

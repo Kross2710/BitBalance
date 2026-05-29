@@ -37,7 +37,8 @@ if (isset($_GET['error'])) {
 
     <div class="container">
         <div class="form-section">
-            <h2>Sign In To BitBalance</h2>
+            <h2>Welcome back</h2>
+            <p class="auth-subtitle">Sign in to keep your streak alive.</p>
 
             <?php
             // Detect locked-account error so we can offer an immediate recovery path
@@ -46,19 +47,17 @@ if (isset($_GET['error'])) {
             ?>
 
             <?php if (!empty($error_message)): ?>
-                <div class="error-message"
-                    style="color: #d32f2f; margin-bottom: 15px; padding: 12px; background-color: #ffebee; border: 1px solid #e57373; border-radius: 5px; font-weight: bold;">
-                    <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
-                    <?php echo htmlspecialchars($error_message); ?>
-
-                    <?php if ($isLocked): ?>
-                        <div style="font-weight: 400; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e57373;">
-                            Don't want to wait? <a href="reset_password.php"
-                                style="color: #d32f2f; font-weight: 700; text-decoration: underline;">
-                                Reset your password to unlock instantly &rarr;
-                            </a>
-                        </div>
-                    <?php endif; ?>
+                <div class="auth-alert auth-alert--error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <?php echo htmlspecialchars($error_message); ?>
+                        <?php if ($isLocked): ?>
+                            <div class="auth-locked-recovery">
+                                Don't want to wait?
+                                <a href="reset_password.php">Reset your password to unlock instantly &rarr;</a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -66,20 +65,23 @@ if (isset($_GET['error'])) {
                 <input type="email" placeholder="Email" name="email" required
                     value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                 <input type="password" placeholder="Password" name="password" required>
-                <button type="submit" class="login-button">Login</button>
+                <button type="submit" class="login-button">Sign In</button>
 
-                <div class="forgot-link" style="text-align: center; margin-top: 10px; font-size: 0.9rem;">
-                    <a href="reset_password.php" style="color: #4a7ee3; text-decoration: none;">Forgot password?</a>
+                <div class="forgot-link">
+                    <a href="reset_password.php">Forgot password?</a>
                 </div>
 
                 <div class="signup-link">
                     <p>Don't have an account? <a href="signup.php">Sign Up</a></p>
                 </div>
-
             </form>
         </div>
         <div class="side-section">
-            <img src="images/food.jpg" alt="Food Image">
+            <img src="images/food.jpg" alt="Healthy food">
+            <div class="side-tagline">
+                <h3>Track. Earn XP. Level up.</h3>
+                <p>Your wellness journey, gamified.</p>
+            </div>
         </div>
     </div>
 </body>

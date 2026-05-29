@@ -52,10 +52,13 @@ function bb_css_link(string $relPath): void {
         . '?v=' . $ver . '">' . "\n";
 }
 ?>
+<?php /* Resolve theme (incl. "system" → OS) before CSS loads to avoid FOUC. */ ?>
+<?php include __DIR__ . '/theme-init.php'; ?>
 <?php bb_css_link('css/tokens.css'); ?>
 <?php bb_css_link('css/base.css'); ?>
 <?php bb_css_link('css/components/forms.css'); ?>
 <?php bb_css_link('css/components/header.css'); ?>
+<?php bb_css_link('css/components/xp-bar.css'); ?>
 <?php bb_css_link('css/components/footer.css'); ?>
 <?php bb_css_link('css/components/cookie-banner.css'); ?>
 <?php if (in_array('sidebar', $_components, true)) bb_css_link('css/components/sidebar.css'); ?>

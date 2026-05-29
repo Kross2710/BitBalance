@@ -12,6 +12,29 @@ $activeHeader = 'dashboard';
 $bodyClass = 'page-intake';
 $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
+if (!$isLoggedIn) {
+    // Guest demo — populate the Food Log with sample data (mirrors the
+    // Overview demo) so new visitors get the "this is what a day looks like"
+    // hook instead of a login wall. The auth-only actions (logging, scanner,
+    // edit/delete) stay gated below and nudge sign-up instead.
+    $userGoal = 2200;
+    $totalCalories = 1450;
+    $progressPercentage = round(($totalCalories / $userGoal) * 100);
+    $macroTotals = ['protein' => 85, 'carbs' => 175, 'fat' => 46];
+    $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal);
+    $intakeLog = [
+        ['intakeLog_id' => 0, 'food_item' => 'Pho Bo',               'calories' => 450, 'protein' => 30, 'carbs' => 55, 'fat' => 10, 'meal_category' => 'breakfast', 'date_intake' => date('Y-m-d 08:30:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Iced Coffee',          'calories' => 120, 'protein' => 2,  'carbs' => 18, 'fat' => 4,  'meal_category' => 'snack',     'date_intake' => date('Y-m-d 10:00:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Grilled Chicken Salad', 'calories' => 550, 'protein' => 40, 'carbs' => 35, 'fat' => 20, 'meal_category' => 'lunch',     'date_intake' => date('Y-m-d 12:30:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Apple',                'calories' => 80,  'protein' => 0,  'carbs' => 21, 'fat' => 0,  'meal_category' => 'snack',     'date_intake' => date('Y-m-d 15:00:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Salmon & Rice',         'calories' => 250, 'protein' => 13, 'carbs' => 46, 'fat' => 12, 'meal_category' => 'dinner',    'date_intake' => date('Y-m-d 19:00:00')],
+    ];
+    // Right-sidebar body metrics
+    $userAge = 25;
+    $userWeight = 70;
+    $userHeight = 175;
+}
+
 // Logic trạng thái Goal
 $status = 'Unset';
 $statusClass = 'unset';
@@ -32,7 +55,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
 <!DOCTYPE html>
 <html lang="en"
-    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'light') : 'light'; ?>">
+    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -57,11 +80,18 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     include PROJECT_ROOT . 'dashboard/views/sidebar.php';
     ?>
 
-    <?php if ($isLoggedIn): ?>
         <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
 
         <main class="dashboard-content">
             <div class="intake-container">
+
+                <?php if (!$isLoggedIn): ?>
+                    <div class="demo-banner">
+                        <i class="fas fa-flask"></i>
+                        <span><strong>You're exploring a live demo.</strong> This is sample data — create a free account to start your own Food Log.</span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                    </div>
+                <?php endif; ?>
 
                 <section class="progress-widget">
                     <div class="progress-card">
@@ -157,6 +187,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 </script>
 
                 <div class="content-split">
+                    <?php if ($isLoggedIn): ?>
                     <section class="dashboard-card intake-form-card">
                         <div class="card-header">
                             <h3><i class="fas fa-plus-circle"></i> Log Food</h3>
@@ -258,6 +289,49 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             </button>
                         </form>
                     </section>
+                    <?php else: ?>
+                    <section class="dashboard-card intake-form-card intake-form-card--demo">
+                        <div class="card-header">
+                            <h3><i class="fas fa-plus-circle"></i> Log Food</h3>
+                            <span class="demo-pill">Live demo</span>
+                        </div>
+
+                        <div class="demo-preview-fields" aria-hidden="true">
+                            <div class="form-group">
+                                <label>Food Name</label>
+                                <div class="input-icon-wrapper">
+                                    <i class="fas fa-utensils input-icon"></i>
+                                    <input type="text" value="Pho Bo" disabled>
+                                </div>
+                            </div>
+                            <div class="form-row-split">
+                                <div class="form-group">
+                                    <label>Calories</label>
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-bolt input-icon"></i>
+                                        <input type="number" value="450" disabled>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Category</label>
+                                    <div class="select-wrapper">
+                                        <select disabled>
+                                            <option>Breakfast 🌅</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="demo-cta">
+                            <p><i class="fas fa-lock"></i> Sign up to log your own meals, track macros, and earn XP.</p>
+                            <a href="<?= BASE_URL ?>signup.php" class="btn-submit">
+                                <i class="fas fa-user-plus"></i> Create free account
+                            </a>
+                            <a href="<?= BASE_URL ?>login.php" class="demo-cta-secondary">Already have one? Sign in</a>
+                        </div>
+                    </section>
+                    <?php endif; ?>
 
                     <section class="dashboard-card intake-list-card">
                         <div class="card-header">
@@ -273,7 +347,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                         <th>Macros (g)</th>
                                         <th>Category</th>
                                         <th>Time</th>
-                                        <th style="text-align: right;">Action</th>
+                                        <th class="row-actions-head">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="intakeTableBody">
@@ -286,7 +360,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                     <?php endif; ?>
 
                                     <?php foreach ($intakeLog as $log): ?>
-                                        <?php $entry = $log; $showDate = false; include PROJECT_ROOT . 'dashboard/views/_intake-row.php'; ?>
+                                        <?php $entry = $log; $showDate = false; $hideActions = !$isLoggedIn; include PROJECT_ROOT . 'dashboard/views/_intake-row.php'; ?>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -296,6 +370,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             </div>
         </main>
 
+        <?php if ($isLoggedIn): ?>
         <!-- =============== Barcode Scanner Modal =============== -->
         <div class="scanner-modal" id="scannerModal" role="dialog" aria-modal="true">
             <div class="scanner-modal-content">
@@ -865,13 +940,8 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 setTimeout(() => { formCard.style.boxShadow = ""; }, 1500);
             }
         </script>
-    <?php else: ?>
-        <main class="dashboard-content dashboard-empty-state">
-            <h2>Please log in to access your Food Log.</h2>
-            <a href="<?= BASE_URL ?>login.php" class="btn-submit"
-                style="display:inline-block; width:auto; margin-top:20px;">Sign In</a>
-        </main>
-    <?php endif; ?>
+        <?php endif; ?>
+
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
@@ -1037,7 +1107,25 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             // Toast notification (matches Adjust Goal UX)
                             const foodName = fd.get('food_item');
                             const cal = fd.get('calories');
-                            showLoggingToast('Food logged!', foodName + ' • ' + cal + ' kcal');
+                            const xpAdded = data.xp && data.xp.added;
+                            const subtext = foodName + ' • ' + cal + ' kcal' + (xpAdded ? ' • +' + xpAdded + ' XP' : '');
+                            showLoggingToast('Food logged!', subtext);
+
+                            // Update XP chip + fire +XP popup + level-up toast if needed
+                            if (data.xp) {
+                                if (data.xp.added && window.showXpPopup) {
+                                    // Anchor at the submit button so the popup rises
+                                    // from where the user just tapped — strongest dopamine cue.
+                                    window.showXpPopup(data.xp.added, btn);
+                                }
+                                if (data.xp.summary && window.updateXpChip) {
+                                    // Slight delay so the chip pulses AFTER the popup spawns
+                                    setTimeout(() => window.updateXpChip(data.xp.summary), 200);
+                                }
+                                if (data.xp.levelup && window.showLevelUpToast) {
+                                    setTimeout(() => window.showLevelUpToast(data.xp.levelup), 600);
+                                }
+                            }
 
                             form.reset();
                         } else {

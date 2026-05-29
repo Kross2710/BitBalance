@@ -16,10 +16,13 @@
  *   $showDate    — bool, default false. Prepend a Date <td> (history page).
  *   $timeLabel   — string override for the Time cell. Defaults to "H:i" of date_intake.
  *                  Used by process_intake.php to render "Just now" for fresh inserts.
+ *   $hideActions — bool, default false. Replace edit/delete buttons with a lock
+ *                  (guest demo rows that can't be mutated).
  */
 
 $_entry = $entry ?? [];
 $_showDate = !empty($showDate);
+$_hideActions = !empty($hideActions);
 $_timeLabel = $timeLabel ?? null;
 
 $_p = (float) ($_entry['protein'] ?? 0);
@@ -64,9 +67,9 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
     </td>
 
     <td data-label="Macros" class="macros-cell">
-        <span class="macro-chip p">P <?= $_pD ?>g</span>
-        <span class="macro-chip c">C <?= $_cD ?>g</span>
-        <span class="macro-chip f">F <?= $_fD ?>g</span>
+        <span class="macro-chip p">P <?= $_pD ?></span>
+        <span class="macro-chip c">C <?= $_cD ?></span>
+        <span class="macro-chip f">F <?= $_fD ?></span>
     </td>
 
     <td data-label="Category">
@@ -79,12 +82,20 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
         <?= htmlspecialchars($_timeText) ?>
     </td>
 
-    <td style="text-align: right;">
-        <button type="button" class="btn-edit" title="Edit Entry">
-            <i class="fas fa-edit"></i>
-        </button>
-        <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
-            <i class="fas fa-trash-alt"></i>
-        </button>
+    <td data-label="Action" class="row-actions-cell">
+        <div class="row-actions">
+        <?php if ($_hideActions): ?>
+            <span class="row-action-lock" title="Sign up to edit your own entries">
+                <i class="fas fa-lock"></i>
+            </span>
+        <?php else: ?>
+            <button type="button" class="btn-edit" title="Edit Entry">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        <?php endif; ?>
+        </div>
     </td>
 </tr>

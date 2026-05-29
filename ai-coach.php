@@ -13,7 +13,7 @@ $csrfToken    = csrf_token();
 ?>
 <!DOCTYPE html>
 <html lang="en"
-    data-theme="<?php echo $_SESSION['user']['theme_preference'] ?? 'light'; ?>">
+    data-theme="<?php echo $_SESSION['user']['theme_preference'] ?? 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">

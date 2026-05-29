@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     
                     $reset_link = "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'] . "?token=" . $token;
-                    $success_message = "Hello " . htmlspecialchars($user['first_name']) . "!<br><br>In a real application, an email would be sent to your address with a reset link.<br><br>For demo purposes, here's your reset link:<br><a href='$reset_link' style='color: #4a7ee3;'>$reset_link</a><br><br><strong>This link expires in 1 hour.</strong>";
+                    $success_message = "Hello " . htmlspecialchars($user['first_name']) . "!<br><br>In a real application, an email would be sent to your address with a reset link.<br><br>For demo purposes, here's your reset link:<br><a href='$reset_link' class='reset-demo-link'>$reset_link</a><br><br><strong>This link expires in 1 hour.</strong>";
                 } else {
                     // Don't reveal if email exists or not for security
                     $success_message = "If an account with that email exists, a password reset link has been sent.";
@@ -166,97 +166,124 @@ function hashPassword($password) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'light') : 'light'; ?>">
+<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - BitBalance</title>
     <?php
-    $pageCss = ['css/pages/reset-password.css'];
+    $pageCss = ['css/login.css', 'css/pages/reset-password.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="reset-container">
-        <?php if ($step == 'request'): ?>
-            <h1><i class="fas fa-key"></i> Reset Password</h1>
-            <p>Enter your email address and we'll send you a link to reset your password.</p>
-            
-            <?php if (!empty($error_message)): ?>
-                <div class="error-message"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
-            <?php endif; ?>
-            
-            <?php if (!empty($success_message)): ?>
-                <div class="success-message"><i class="fas fa-check-circle"></i> <?= $success_message ?></div>
-            <?php endif; ?>
-            
-            <form method="POST">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" name="email" required placeholder="Enter your email address">
+    <?php include 'views/header.php'; ?>
+
+    <div class="container">
+        <div class="form-section">
+            <?php if ($step == 'request'): ?>
+                <h2><i class="fas fa-key"></i> Reset Password</h2>
+                <p class="auth-subtitle">Enter your email and we'll send you a link to reset your password.</p>
+
+                <?php if (!empty($error_message)): ?>
+                    <div class="auth-alert auth-alert--error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div><?= $error_message ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($success_message)): ?>
+                    <div class="auth-alert auth-alert--success">
+                        <i class="fas fa-check-circle"></i>
+                        <div><?= $success_message ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="reset-email">Email Address</label>
+                        <input type="email" id="reset-email" name="email" required placeholder="Enter your email address">
+                    </div>
+                    <button type="submit" name="request_reset" class="login-button">
+                        <i class="fas fa-paper-plane"></i> Send Reset Link
+                    </button>
+                </form>
+
+            <?php elseif ($step == 'reset'): ?>
+                <h2><i class="fas fa-lock"></i> Set New Password</h2>
+                <p class="auth-subtitle">Choose a strong new password below.</p>
+
+                <?php if (!empty($error_message)): ?>
+                    <div class="auth-alert auth-alert--error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div><?= $error_message ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="password-requirements">
+                    <h4>Password Requirements</h4>
+                    <ul>
+                        <li id="length-req">At least 8 characters</li>
+                        <li id="upper-req">One uppercase letter (A-Z)</li>
+                        <li id="lower-req">One lowercase letter (a-z)</li>
+                        <li id="number-req">One number (0-9)</li>
+                        <li id="special-req">One special character (!@#$%^&amp;*)</li>
+                    </ul>
                 </div>
-                <button type="submit" name="request_reset" class="btn-primary">
-                    <i class="fas fa-paper-plane"></i> Send Reset Link
-                </button>
-            </form>
-            
-        <?php elseif ($step == 'reset'): ?>
-            <h1><i class="fas fa-lock"></i> Set New Password</h1>
-            <p>Enter your new password below.</p>
-            
-            <?php if (!empty($error_message)): ?>
-                <div class="error-message"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
+
+                <form method="POST">
+                    <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" name="new_password" required minlength="8"
+                            onkeyup="checkPasswordRequirements(this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" name="confirm_password" required minlength="8">
+                    </div>
+                    <button type="submit" name="reset_password" class="login-button">
+                        <i class="fas fa-save"></i> Reset Password
+                    </button>
+                </form>
+
+            <?php elseif ($step == 'complete'): ?>
+                <h2><i class="fas fa-check-circle"></i> All set!</h2>
+                <div class="auth-alert auth-alert--success">
+                    <i class="fas fa-check-circle"></i>
+                    <div><?= htmlspecialchars($success_message) ?></div>
+                </div>
+                <a href="login.php" class="login-button">
+                    <i class="fas fa-sign-in-alt"></i> Go to Login
+                </a>
             <?php endif; ?>
-            
-            <div class="password-requirements">
-                <h4>Password Requirements:</h4>
-                <ul>
-                    <li id="length-req">At least 8 characters</li>
-                    <li id="upper-req">One uppercase letter (A-Z)</li>
-                    <li id="lower-req">One lowercase letter (a-z)</li>
-                    <li id="number-req">One number (0-9)</li>
-                    <li id="special-req">One special character (!@#$%^&*)</li>
-                </ul>
+
+            <div class="login-link">
+                <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login</a>
             </div>
-            
-            <form method="POST">
-                <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
-                <div class="form-group">
-                    <label>New Password</label>
-                    <input type="password" name="new_password" required minlength="8" onkeyup="checkPasswordRequirements(this.value)">
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" name="confirm_password" required minlength="8">
-                </div>
-                <button type="submit" name="reset_password" class="btn-primary">
-                    <i class="fas fa-save"></i> Reset Password
-                </button>
-            </form>
-            
-        <?php elseif ($step == 'complete'): ?>
-            <h1><i class="fas fa-check-circle"></i> Password Reset Complete</h1>
-            <div class="success-message"><?= htmlspecialchars($success_message) ?></div>
-            <a href="login.php" class="btn-primary" style="display: inline-block; text-decoration: none;">
-                <i class="fas fa-sign-in-alt"></i> Go to Login
-            </a>
-        <?php endif; ?>
-        
-        <div class="login-link">
-            <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login</a>
+        </div>
+
+        <div class="side-section">
+            <img src="images/food.jpg" alt="Healthy food">
+            <div class="side-tagline">
+                <h3>Back in no time.</h3>
+                <p>Reset your password and pick your streak up right where you left off.</p>
+            </div>
         </div>
     </div>
-    
+
     <script>
         function checkPasswordRequirements(password) {
-            if (!password) return;
-            
-            document.getElementById('length-req').style.color = password.length >= 8 ? 'green' : 'red';
-            document.getElementById('upper-req').style.color = /[A-Z]/.test(password) ? 'green' : 'red';
-            document.getElementById('lower-req').style.color = /[a-z]/.test(password) ? 'green' : 'red';
-            document.getElementById('number-req').style.color = /[0-9]/.test(password) ? 'green' : 'red';
-            document.getElementById('special-req').style.color = /[^a-zA-Z0-9]/.test(password) ? 'green' : 'red';
+            const toggle = (id, ok) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('met', ok);
+            };
+            toggle('length-req', password.length >= 8);
+            toggle('upper-req', /[A-Z]/.test(password));
+            toggle('lower-req', /[a-z]/.test(password));
+            toggle('number-req', /[0-9]/.test(password));
+            toggle('special-req', /[^a-zA-Z0-9]/.test(password));
         }
     </script>
 </body>

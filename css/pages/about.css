@@ -298,6 +298,244 @@
     color: #a855f7;
 }
 
+/* C2. Section subtitle (under section titles) */
+.section-sub {
+    font-size: 1.05rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    margin-top: 10px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   SPOTLIGHT — 3 headline dashboard features with live mini-demos
+   ============================================================ */
+.spotlight-grid {
+    grid-column: span 12;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 24px;
+}
+
+.spotlight-card {
+    position: relative;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    transition: all var(--transition-base);
+    overflow: hidden;
+}
+
+.spotlight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 0 var(--color-border-subtle), var(--shadow-md);
+}
+
+/* Accent strip on top, color per card */
+.spotlight-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+}
+.spotlight-ai::before     { background: var(--color-secondary); }
+.spotlight-game::before   { background: var(--color-primary); }
+.spotlight-social::before { background: var(--color-accent); }
+
+.spotlight-tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+}
+.spotlight-tag--ai     { background: rgba(28, 176, 246, 0.14); color: var(--color-secondary); }
+.spotlight-tag--game   { background: var(--color-primary-soft); color: var(--color-primary); }
+.spotlight-tag--social { background: rgba(255, 150, 0, 0.14);   color: var(--color-accent); }
+
+.spotlight-card h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    line-height: 1.25;
+}
+
+.spotlight-card p {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* --- Mini-demo shared shell --- */
+.spotlight-demo {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+/* AI demo: camera → result */
+.demo-photo {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background: var(--color-secondary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+}
+.demo-arrow {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.demo-result {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.demo-food {
+    font-weight: 800;
+    color: var(--color-text);
+    font-size: 0.95rem;
+}
+.demo-cal {
+    font-weight: 700;
+    color: var(--color-secondary);
+    font-size: 0.85rem;
+}
+
+/* Gamification demo: level + xp bar + streak */
+.spotlight-game .spotlight-demo {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+.demo-level {
+    align-self: center;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 6px 16px;
+    border-radius: 999px;
+    box-shadow: inset 0 -3px 0 var(--color-primary-hover);
+}
+.demo-xp-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.demo-xp-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.demo-xp-fill {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    border-radius: 999px;
+    transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Bar visibly fills up when the card is hovered — a tiny "you earned XP" beat */
+.spotlight-game:hover .demo-xp-fill {
+    width: 78%;
+}
+
+.demo-streak .fa-fire {
+    animation: about-flicker 1.8s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+@keyframes about-flicker {
+    0%, 100% { transform: scale(1)    rotate(-2deg); opacity: 1;   }
+    50%      { transform: scale(1.15) rotate(2deg);  opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .demo-streak .fa-fire { animation: none; }
+    .spotlight-game:hover .demo-xp-fill { transition: none; }
+}
+.demo-xp-num {
+    font-weight: 800;
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    white-space: nowrap;
+}
+.demo-streak {
+    align-self: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--color-accent);
+}
+.demo-streak .fa-fire { margin-right: 4px; }
+
+/* Social demo: mini leaderboard */
+.demo-social {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+.demo-rank {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+}
+.demo-medal { font-size: 1rem; }
+.demo-ava {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.demo-rank-xp {
+    margin-left: auto;
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--color-text);
+}
+.demo-rank-xp::after {
+    content: ' XP';
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
 /* G. RESPONSIVE DESIGN */
 @media (max-width: 991px) {
     .hero-title {
@@ -313,6 +551,10 @@
 
     .features-wrapper {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .spotlight-grid {
+        grid-template-columns: 1fr;
     }
 }
 

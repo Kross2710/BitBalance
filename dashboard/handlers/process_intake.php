@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../include/init.php';
 require_once __DIR__ . '/../../include/db_config.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/../../include/handlers/log_attempt.php';
+require_once __DIR__ . '/../../include/handlers/xp.php';
 
 
 $error_message = '';
@@ -78,9 +79,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Use array-style execute
             if ($stmt->execute([$user_id, $food_item, $calories, $protein, $carbs, $fat, $meal_category])) {
+                // Award XP (state-based, idempotent — log+delete spam can't farm).
+                $xpResult = ['xp_added' => 0, 'leveled_up' => false];
+                try {
+                    $xpResult = xp_award_intake_log($pdo, $user_id);
+                } catch (Throwable $e) {
+                    // Don't fail the request if XP system errors — it's secondary.
+                    error_log('xp_award_intake_log: ' . $e->getMessage());
+                }
+
                 // Update logging streak
                 try {
                     updateLoggingStreak($pdo, $user_id);
+                    // Streak milestones may have just been crossed
+                    $streakRow = $pdo->prepare("SELECT logging_streak FROM userStatus WHERE user_id = ?");
+                    $streakRow->execute([$user_id]);
+                    $newStreak = (int) $streakRow->fetchColumn();
+                    $milestoneRes = xp_award_streak_milestone($pdo, $user_id, $newStreak);
+                    $xpResult['xp_added']   += $milestoneRes['xp_added'] ?? 0;
+                    $xpResult['leveled_up'] = $xpResult['leveled_up'] || !empty($milestoneRes['leveled_up']);
                 } catch (Throwable $e) {
                     if ($isAjax) {
                         header('Content-Type: application/json');
@@ -148,6 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Log the attempt
                     log_attempt($pdo, $user_id, 'log_intake', 'User logged intake', 'intakeLog', $newId);
 
+                    $xpSummary = xp_get_summary($pdo, $user_id);
+                    $levelUpFlash = xp_consume_levelup_flash();
+
                     header('Content-Type: application/json');
                     echo json_encode([
                         'ok' => true,
@@ -155,7 +175,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'total' => $totalCalories,
                         'percentage' => $pct,
                         'macros' => $macroTotals,
-                        'macro_goals' => $macroGoals
+                        'macro_goals' => $macroGoals,
+                        'xp' => [
+                            'added'   => (int) ($xpResult['xp_added'] ?? 0),
+                            'summary' => $xpSummary,
+                            'levelup' => $levelUpFlash,
+                        ],
                     ], JSON_UNESCAPED_UNICODE);
                     exit;
                 }

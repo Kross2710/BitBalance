@@ -336,8 +336,14 @@ textarea {
 /* 5. THEME SELECTION UTILITIES */
 .theme-options {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+}
+
+@media (max-width: 600px) {
+    .theme-options {
+        grid-template-columns: 1fr;
+    }
 }
 
 .theme-option {

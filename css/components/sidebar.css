@@ -69,6 +69,27 @@
     box-shadow: none !important;
 }
 
+/* Notification badge inside a sidebar nav-link (e.g. pending friend requests) */
+.sidebar .nav-link__badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    background: var(--color-danger);
+    color: #ffffff;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    animation: sidebar-badge-pulse 1.6s ease-in-out infinite;
+}
+@keyframes sidebar-badge-pulse {
+    0%, 100% { transform: scale(1);   }
+    50%      { transform: scale(1.12); }
+}
+
 .sidebar-footer {
     margin-top: auto;
     padding-top: 20px;
@@ -124,12 +145,13 @@
 }
 
 @media (max-width: 480px) {
-    /* Dùng grid 6 cột bằng nhau để mọi tab có cùng width, kể cả khi content
-       dài/ngắn khác nhau. minmax(0,1fr) ép min-width=0, ngăn cột nở theo
-       min-content (1fr thuần = minmax(auto,1fr) sẽ bị "Overview" làm phình). */
+    /* Grid 8 cột bằng nhau (= số nav-link) để mọi tab cùng width kể cả content
+       dài/ngắn. minmax(0,1fr) ép min-width=0, ngăn cột nở theo min-content
+       (1fr thuần = minmax(auto,1fr) sẽ bị "Overview" làm phình).
+       LƯU Ý: thêm/bớt nav-link phải cập nhật lại số cột ở đây. */
     .sidebar {
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: repeat(8, minmax(0, 1fr));
     }
 
     .sidebar .nav-link {
@@ -337,6 +359,150 @@
 .right-sidebar .btn-small:hover {
     background: var(--color-primary-hover);
     color: var(--color-text-on-primary);
+}
+
+.right-sidebar .leaderboard-mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.right-sidebar .leaderboard-mini-row {
+    display: grid;
+    grid-template-columns: 28px 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    text-decoration: none;
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 3px 0 var(--color-border-subtle);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.right-sidebar .leaderboard-mini-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--color-border-subtle);
+    border-color: var(--color-primary);
+}
+
+.right-sidebar .leaderboard-mini-row--you {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+    box-shadow: 0 3px 0 var(--color-primary-hover);
+}
+
+.right-sidebar .leaderboard-mini-rank {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    box-shadow: 0 2px 0 var(--color-border-subtle);
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.right-sidebar .leaderboard-mini-rank--gold {
+    background: var(--color-warning-bg);
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    box-shadow: 0 2px 0 var(--color-warning);
+}
+
+.right-sidebar .leaderboard-mini-rank--silver {
+    background: var(--color-info-bg);
+    border-color: var(--color-info);
+    color: var(--color-info);
+    box-shadow: 0 2px 0 var(--color-info);
+}
+
+.right-sidebar .leaderboard-mini-rank--bronze {
+    background: var(--color-surface);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    box-shadow: 0 2px 0 var(--color-accent);
+}
+
+.right-sidebar .leaderboard-mini-avatar {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    font-size: 0.85rem;
+}
+
+.right-sidebar .leaderboard-mini-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.right-sidebar .leaderboard-mini-main {
+    min-width: 0;
+}
+
+.right-sidebar .leaderboard-mini-name {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    color: var(--color-text);
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.right-sidebar .leaderboard-mini-user {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.right-sidebar .leaderboard-mini-you {
+    flex: 0 0 auto;
+    padding: 1px 5px;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    font-size: 0.62rem;
+    font-weight: 900;
+}
+
+.right-sidebar .leaderboard-mini-score {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.right-sidebar .leaderboard-mini-empty {
+    text-align: center;
+    background: var(--color-surface-alt);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+
+.right-sidebar .leaderboard-mini-empty p {
+    margin: 0 0 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 @media (max-width: 900px) {

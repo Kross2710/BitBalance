@@ -117,14 +117,14 @@ function calculateIdealWeight($height, $gender)
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $age = $_POST['age'];
-    $gender = $_POST['gender'];
-    $weight = $_POST['weight'];
-    $height = $_POST['height'];
-    $activity_level = $_POST['activity_level'];
+    $age = trim($_POST['age'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
+    $weight = trim($_POST['weight'] ?? '');
+    $height = trim($_POST['height'] ?? '');
+    $activity_level = trim($_POST['activity_level'] ?? '');
 
-    $error_message;
-    $success_message;
+    $validGenders = ['male', 'female'];
+    $validActivityLevels = ['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extra_active'];
 
     // Validate inputs not empty
     if (empty($age) || empty($gender) || empty($weight) || empty($height) || empty($activity_level)) {
@@ -133,10 +133,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Validate inputs are numeric and positive
         if (!is_numeric($age) || $age <= 0 || filter_var($age, FILTER_VALIDATE_INT) === false) {
             $error_message = "Please enter a valid whole number for age.";
+        } elseif (!in_array($gender, $validGenders, true)) {
+            $error_message = "Please select a valid gender.";
         } elseif (!is_numeric($weight) || $weight <= 0) {
             $error_message = "Weight must be a positive number.";
         } elseif (!is_numeric($height) || $height <= 0) {
             $error_message = "Height must be a positive number.";
+        } elseif (!in_array($activity_level, $validActivityLevels, true)) {
+            $error_message = "Please select a valid activity level.";
         }
 
         // If there are validation errors, redirect back with error message
@@ -144,6 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: ../dashboard-calculator.php?error=" . urlencode($error_message));
             exit();
         }
+
+        $age = (int) $age;
+        $weight = (float) $weight;
+        $height = (float) $height;
 
         // If no errors, proceed with calculations
         // Calculate BMI,BMR,TDEE, and Ideal Weight
@@ -155,6 +163,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Prepare data to display
         $result = [
+            'age' => $age,
+            'gender' => $gender,
+            'weight' => $weight,
             'height' => $height,
             'bmi' => round($bmi, 2),
             'tdee' => round($tdee, 2),

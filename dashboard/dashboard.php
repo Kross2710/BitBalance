@@ -8,10 +8,17 @@ require_once __DIR__ . '/handlers/dashboard_data.php';
 require_once __DIR__ . '/handlers/functions.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';
 
+$leaderboardWidgetRows = [];
 if ($isLoggedIn) {
+    require_once __DIR__ . '/../include/handlers/friends.php';
     // Real User
     log_attempt($pdo, $user['user_id'], 'view', 'User ' . $user['user_id'] . ' clicked on dashboard', 'dashboard', null);
     $displayUser = $user['user_name']; // Tên thật
+    try {
+        $leaderboardWidgetRows = leaderboard_friends($pdo, (int) $user['user_id'], 'weekly', 5);
+    } catch (PDOException $e) {
+        $leaderboardWidgetRows = [];
+    }
 } else {
     // Guest (Demo): Create mock data
     $displayUser = "Guest";
@@ -213,7 +220,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
 
 <!DOCTYPE html>
 <html lang="en"
-    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'light') : 'light'; ?>">
+    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -237,9 +244,9 @@ if ($actualWeight > 0 && $actualHeight > 0) {
 
         <?php if (!$isLoggedIn): ?>
             <div class="demo-banner">
-                <p><i class="fas fa-info-circle"></i> You are viewing a <strong>Demo Dashboard</strong>. Data shown is for
-                    illustration only.</p>
-                <a href="<?= BASE_URL ?>signup.php" class="btn-demo-signup">Create Account</a>
+                <i class="fas fa-flask"></i>
+                <span><strong>You're exploring a live demo.</strong> This is sample data — create a free account to start your own dashboard.</span>
+                <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
             </div>
         <?php endif; ?>
 

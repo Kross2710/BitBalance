@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../../include/handlers/xp.php';
 
 // Prepare data for the history chart (last 7 days)
 $historyData = [];
@@ -17,6 +18,18 @@ if ($isLoggedIn) {
     $userGoal = getUserIntakeGoal($userId); // Get user's calorie goal
     // Fallback khi user chưa có dòng trong userStatus (fetch trả về false)
     $userStreak = getUserLoggingStreak($userId) ?: ['logging_streak' => 0, 'longest_logging_streak' => 0];
+
+    // XP: lazy-finalize yesterday's goal-hit + re-check streak milestones,
+    // then load the summary the header bar renders. Wrapped — XP must never
+    // break the dashboard.
+    try {
+        xp_finalize_yesterday_goals($pdo, $userId);
+        xp_award_streak_milestone($pdo, $userId, (int) ($userStreak['logging_streak'] ?? 0));
+        $xpSummary = xp_get_summary($pdo, $userId);
+    } catch (Throwable $e) {
+        error_log('xp dashboard_data: ' . $e->getMessage());
+        $xpSummary = ['total_xp' => 0, 'current_level' => 1, 'xp_into_level' => 0, 'xp_for_next' => 100, 'progress_pct' => 0];
+    }
 
     // Macro totals for today and recommended macro goals derived from calorie goal
     $macroTotals = getMacroTotalsToday($userId);

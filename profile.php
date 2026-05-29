@@ -115,8 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $new_theme = $_POST['theme'];
 
         try {
-            // Verify theme is valid (only light or dark)
-            $valid_themes = ['light', 'dark'];
+            // Verify theme is valid. 'system' follows the OS color scheme;
+            // 'light'/'dark' are explicit overrides.
+            $valid_themes = ['light', 'dark', 'system'];
             if (in_array($new_theme, $valid_themes)) {
                 $stmt = $pdo->prepare("UPDATE userStatus SET theme_preference = ? WHERE user_id = ?");
                 $stmt->execute([$new_theme, $user_id]);
@@ -331,7 +332,7 @@ try {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?= htmlspecialchars($profile['theme_preference'] ?? 'light') ?>">
+<html lang="en" data-theme="<?= htmlspecialchars($profile['theme_preference'] ?? 'system') ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -493,9 +494,14 @@ try {
                             <i class="fas fa-moon"></i>
                             <div>Dark Mode</div>
                         </div>
+                        <div class="theme-option <?= (($profile['theme_preference'] ?? 'system') === 'system') ? 'active' : '' ?>"
+                            onclick="selectTheme('system')">
+                            <i class="fas fa-desktop"></i>
+                            <div>System</div>
+                        </div>
                     </div>
                     <input type="hidden" name="theme" id="selectedTheme"
-                        value="<?= htmlspecialchars($profile['theme_preference']) ?>">
+                        value="<?= htmlspecialchars($profile['theme_preference'] ?? 'system') ?>">
                     <button type="submit" name="change_theme" class="btn-save btn-save--theme">Apply Theme</button>
                 </form>
             </section>

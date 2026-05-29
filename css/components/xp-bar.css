@@ -1,0 +1,200 @@
+/* XP bar — sits next to the avatar in the main header. */
+
+.xp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.xp-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border-subtle);
+}
+
+.xp-chip:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--color-border-subtle);
+}
+
+.xp-chip__level-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.xp-chip__level {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: var(--color-primary);
+    color: #ffffff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 -3px 0 var(--color-primary-hover);
+    white-space: nowrap;
+}
+
+/* Progress ring — hidden on desktop (horizontal bar handles it), visible on mobile */
+.xp-chip__ring {
+    position: absolute;
+    inset: 0;
+    width: 44px;
+    height: 44px;
+    transform: rotate(-90deg); /* start fill from top */
+    display: none;
+}
+
+.xp-chip__ring-track,
+.xp-chip__ring-fill {
+    fill: none;
+    stroke-width: 4;
+}
+
+.xp-chip__ring-track {
+    stroke: var(--color-border);
+}
+
+.xp-chip__ring-fill {
+    stroke: var(--color-primary);
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: calc(100 - var(--xp-pct, 0));
+    /* pathLength="100" on the <circle> normalizes so offset = (100 - pct) */
+    transition: stroke-dashoffset 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.xp-chip__bar {
+    position: relative;
+    width: 110px;
+    height: 10px;
+    background: var(--color-surface-alt);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.xp-chip__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    border-radius: 999px;
+    transition: width 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.xp-chip__numbers {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    min-width: 64px;
+    text-align: right;
+}
+
+/* Mobile: hide horizontal bar + numbers, show the SVG ring instead */
+@media (max-width: 720px) {
+    .xp-chip {
+        padding: 4px 12px 4px 4px;
+        gap: 4px;
+    }
+    .xp-chip__bar,
+    .xp-chip__numbers {
+        display: none;
+    }
+    .xp-chip__ring {
+        display: block;
+    }
+    .xp-chip__level {
+        width: 30px;
+        height: 30px;
+        font-size: 10px;
+    }
+    /* On mobile, also surface "+XP today" badge as a mini number under the chip */
+    .xp-chip::after {
+        content: attr(data-xp-numbers);
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        font-weight: 700;
+        margin-left: 2px;
+    }
+}
+
+/* Tiny pulse animation when XP is added (toggle .xp-chip--bumped class via JS) */
+.xp-chip--bumped .xp-chip__level {
+    animation: xp-pulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes xp-pulse {
+    0%   { transform: scale(1);   }
+    40%  { transform: scale(1.18); }
+    100% { transform: scale(1);   }
+}
+
+/* Floating "+XP" popup — spawns near an anchor and drifts upward.
+   Big & punchy on mobile for max dopamine. */
+.xp-popup {
+    position: fixed;
+    z-index: 10000;
+    pointer-events: none;
+    padding: 8px 16px;
+    background: var(--color-primary);
+    color: #ffffff;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 0 var(--color-primary-hover), 0 12px 30px rgba(88, 204, 2, 0.45);
+    transform: translate(-50%, 0) scale(0.4);
+    opacity: 0;
+    animation: xp-popup-rise 1500ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+    white-space: nowrap;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.xp-popup__icon {
+    margin-right: 4px;
+    font-size: 14px;
+    vertical-align: -1px;
+}
+
+@keyframes xp-popup-rise {
+    0%   { transform: translate(-50%, 0)     scale(0.4); opacity: 0; }
+    20%  { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
+    40%  { transform: translate(-50%, -32px) scale(1);    opacity: 1; }
+    100% { transform: translate(-50%, -110px) scale(0.9); opacity: 0; }
+}
+
+/* Bigger popup variant on mobile — fills the dopamine center of the screen */
+@media (max-width: 720px) {
+    .xp-popup {
+        padding: 12px 24px;
+        font-size: 26px;
+        box-shadow: 0 8px 0 var(--color-primary-hover), 0 16px 40px rgba(88, 204, 2, 0.5);
+    }
+    @keyframes xp-popup-rise {
+        0%   { transform: translate(-50%, 0)      scale(0.3); opacity: 0; }
+        18%  { transform: translate(-50%, -18px)  scale(1.25); opacity: 1; }
+        40%  { transform: translate(-50%, -50px)  scale(1);    opacity: 1; }
+        100% { transform: translate(-50%, -160px) scale(0.85); opacity: 0; }
+    }
+}

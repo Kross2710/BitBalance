@@ -1,122 +1,142 @@
-        .form-row {
-            display: flex;
-            gap: 10px;
-        }
+/* =========================================================================
+   SIGN UP — extras on top of the shared auth shell (css/login.css).
+   Token-driven, dark-mode safe.
+   ========================================================================= */
 
-        .form-row input {
-            flex: 1;
-        }
+/* First name / last name side by side */
+.form-row {
+    display: flex;
+    gap: 12px;
+}
 
-        .password-requirements {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
+.form-row input {
+    flex: 1;
+    min-width: 0;
+}
 
-        .captcha-section {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            text-align: center;
-        }
+/* Password requirement hint (color toggled via .is-valid in JS) */
+.password-requirements {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    margin-top: -6px;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 
-        .captcha-question {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
+.password-requirements.is-valid {
+    color: var(--color-success);
+}
 
-        .captcha-input {
-            width: 100px;
-            text-align: center;
-            font-size: 16px;
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-        }
+/* CAPTCHA — 3D tactile panel */
+.captcha-section {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    text-align: center;
+}
 
-        .refresh-captcha {
-            margin-left: 10px;
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+.captcha-question {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 12px;
+}
 
-        .refresh-captcha:hover {
-            background: #0056b3;
-        }
+.captcha-question .fa-robot {
+    color: var(--color-secondary);
+    margin-right: 8px;
+}
 
-        /* Terms and Conditions Styling */
-        .terms-checkbox {
-            margin: 15px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 14px;
-            color: #333;
-        }
+.captcha-input {
+    width: 120px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 10px;
+    border: 2px solid var(--color-border) !important;
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
 
-        .terms-checkbox input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            flex-shrink: 0;
-            margin-top: 2px;
-            accent-color: #007bff;
-        }
+.captcha-input:focus {
+    outline: none;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
 
-        .terms-checkbox label {
-            cursor: pointer;
-            line-height: 1.4;
-        }
+.refresh-captcha {
+    margin-left: 10px;
+    background: var(--color-secondary);
+    color: #ffffff;
+    border: none;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+    transition: all 0.12s ease;
+}
 
-        .terms-checkbox a {
-            color: #007bff;
-            text-decoration: none;
-        }
+.refresh-captcha:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
+}
 
-        .terms-checkbox a:hover {
-            text-decoration: underline;
-        }
+.refresh-captcha:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.18);
+}
 
-        .login-button:disabled {
-            background-color: #6c757d !important;
-            cursor: not-allowed !important;
-            opacity: 0.6 !important;
-        }
+/* Terms & conditions */
+.terms-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
 
-        .login-button:disabled:hover {
-            background-color: #6c757d !important;
-        }
+.terms-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
 
-        @media (max-width: 768px) {
-            body {
-                padding-top: 70px;
-            }
+.terms-checkbox label {
+    cursor: pointer;
+    line-height: 1.45;
+}
 
-            .container {
-                margin-top: 20px;
-                flex-direction: column;
-            }
+.terms-checkbox a {
+    color: var(--color-primary);
+    font-weight: 700;
+    text-decoration: none;
+}
 
-            .form-section {
-                width: 100%;
-                max-width: none;
-            }
+.terms-checkbox a:hover {
+    text-decoration: underline;
+}
 
+@media (max-width: 480px) {
+    .form-row {
+        flex-direction: column;
+        gap: 16px;
+    }
 
-            .side-section {
-                display: none;
-            }
-
-
-
-            .form-section {
-                width: 100%;
-                max-width: none;
-            }
-        }
+    .refresh-captcha {
+        margin-left: 0;
+        margin-top: 10px;
+        display: inline-block;
+    }
+}

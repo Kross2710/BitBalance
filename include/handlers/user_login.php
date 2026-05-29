@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             'email' => $user['email'],
                             'role' => $user['role'],
                             'profile_image' => $user['profile_image'],
-                            'theme_preference' => $user['theme_preference'] ?? 'light'
+                            'theme_preference' => $user['theme_preference'] ?? 'system'
                         ];
 
                         // Set user ID for further processing

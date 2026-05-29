@@ -18,6 +18,15 @@ $activeHeader = 'dashboard';
 $bodyClass = 'page-plan';
 $displayUser = $isLoggedIn ? $user['user_name'] : 'Guest';
 
+if (!$isLoggedIn) {
+    $userAge = 25;
+    $userGender = 'male';
+    $userWeight = 70;
+    $userHeight = 175;
+    $userGoal = 2200;
+    $totalCalories = 1450;
+}
+
 $error_message = isset($_GET['error']) ? htmlspecialchars($_GET['error'], ENT_QUOTES) : '';
 $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success'], ENT_QUOTES) : '';
 
@@ -79,8 +88,7 @@ $fallbackWeight = is_numeric($userWeight) && (float) $userWeight > 0 ? (float) $
 $intakeSummary = ['daily' => [], 'logged_days' => 0, 'average_calories' => null];
 $weightSummary = ['current' => $fallbackWeight, 'current_date' => null, 'trend' => null, 'chart' => []];
 
-$physicalReady = $isLoggedIn
-    && is_numeric($userAge) && (int) $userAge > 0
+$physicalReady = is_numeric($userAge) && (int) $userAge > 0
     && in_array($userGender, ['male', 'female'], true)
     && is_numeric($userWeight) && (float) $userWeight > 0
     && is_numeric($userHeight) && (float) $userHeight > 0;
@@ -97,6 +105,46 @@ $planNotes = [];
 if ($isLoggedIn) {
     $intakeSummary = plan_recent_intake_summary($pdo, (int) $user['user_id'], 7);
     $weightSummary = plan_weight_summary($pdo, (int) $user['user_id'], $fallbackWeight);
+} else {
+    $demoCalories = [1800, 2100, 1950, 2200, 2050, 1500, 1450];
+    $demoProtein = [110, 135, 125, 140, 130, 90, 85];
+    $demoCarbs = [200, 250, 220, 260, 230, 180, 175];
+    $demoFat = [55, 62, 58, 65, 60, 48, 46];
+    $demoDaily = [];
+    $demoTotal = 0;
+
+    foreach ($demoCalories as $i => $calories) {
+        $date = date('Y-m-d', strtotime('-' . (6 - $i) . ' days'));
+        $demoTotal += $calories;
+        $demoDaily[] = [
+            'date' => $date,
+            'label' => date('D', strtotime($date)),
+            'calories' => $calories,
+            'protein' => $demoProtein[$i],
+            'carbs' => $demoCarbs[$i],
+            'fat' => $demoFat[$i],
+        ];
+    }
+
+    $intakeSummary = [
+        'daily' => $demoDaily,
+        'logged_days' => count($demoDaily),
+        'average_calories' => (int) round($demoTotal / count($demoDaily)),
+        'average_protein' => round(array_sum($demoProtein) / count($demoProtein), 1),
+        'average_carbs' => round(array_sum($demoCarbs) / count($demoCarbs), 1),
+        'average_fat' => round(array_sum($demoFat) / count($demoFat), 1),
+    ];
+    $weightSummary = [
+        'current' => 70.0,
+        'current_date' => date('Y-m-d'),
+        'trend' => -0.8,
+        'chart' => [
+            ['label' => date('d/m', strtotime('-21 days')), 'weight' => 70.8],
+            ['label' => date('d/m', strtotime('-14 days')), 'weight' => 70.5],
+            ['label' => date('d/m', strtotime('-7 days')), 'weight' => 70.2],
+            ['label' => date('d/m'), 'weight' => 70.0],
+        ],
+    ];
 }
 
 if ($physicalReady) {
@@ -160,7 +208,7 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
 <!DOCTYPE html>
 <html lang="en"
-    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'light') : 'light'; ?>">
+    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -178,12 +226,18 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 <body class="<?= htmlspecialchars($bodyClass, ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
-
-    <?php if ($isLoggedIn): ?>
-        <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
+    <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
 
         <main class="dashboard-content">
             <div class="plan-container">
+                <?php if (!$isLoggedIn): ?>
+                    <div class="demo-banner">
+                        <i class="fas fa-flask"></i>
+                        <span><strong>You're exploring a live demo.</strong> Goal Planner uses sample metrics here — create a free account to save and apply your own plan.</span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                    </div>
+                <?php endif; ?>
+
                 <?php if ($error_message): ?>
                     <div class="plan-alert plan-alert-error"><i class="fas fa-triangle-exclamation"></i> <?= $error_message ?></div>
                 <?php endif; ?>
@@ -340,13 +394,20 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                                 </div>
                             <?php endif; ?>
 
-                            <form action="handlers/apply_plan_goal.php" method="POST">
-                                <?= csrf_field() ?>
-                                <input type="hidden" name="calorie_goal" value="<?= (int) $recommendedGoal ?>">
-                                <button type="submit" class="plan-apply-btn">
-                                    <i class="fas fa-check"></i> Apply to Daily Goal
-                                </button>
-                            </form>
+                            <?php if ($isLoggedIn): ?>
+                                <form action="handlers/apply_plan_goal.php" method="POST">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="calorie_goal" value="<?= (int) $recommendedGoal ?>">
+                                    <button type="submit" class="plan-apply-btn">
+                                        <i class="fas fa-check"></i> Apply to Daily Goal
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <div class="plan-demo-apply">
+                                    <p><i class="fas fa-lock"></i> Sign up to save this recommendation as your daily goal.</p>
+                                    <a href="<?= BASE_URL ?>signup.php" class="plan-apply-btn">Create account to apply</a>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </section>
                 </div>
@@ -374,13 +435,7 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
             </div>
         </main>
 
-        <?php include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; ?>
-    <?php else: ?>
-        <main class="dashboard-content dashboard-empty-state">
-            <h2>Please log in to access Goal Planner.</h2>
-            <a href="<?= BASE_URL ?>login.php" class="btn-primary">Sign In</a>
-        </main>
-    <?php endif; ?>
+    <?php if ($isLoggedIn): include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; endif; ?>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
@@ -408,6 +463,11 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
             const chartEl = document.getElementById('planIntakeChart');
             if (chartEl && typeof Chart !== 'undefined') {
+                const styles = getComputedStyle(document.documentElement);
+                const chartBar = styles.getPropertyValue('--color-secondary').trim();
+                const chartLine = styles.getPropertyValue('--color-accent').trim();
+                const chartGrid = styles.getPropertyValue('--color-border').trim();
+
                 new Chart(chartEl.getContext('2d'), {
                     type: 'bar',
                     data: {
@@ -416,7 +476,7 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                             {
                                 label: 'Calories',
                                 data: <?= json_encode($chartCalories) ?>,
-                                backgroundColor: '#1CB0F6',
+                                backgroundColor: chartBar,
                                 borderRadius: 6,
                                 barThickness: 22
                             },
@@ -424,8 +484,8 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                                 label: <?= json_encode($goalLineLabel) ?>,
                                 data: <?= json_encode($goalLine) ?>,
                                 type: 'line',
-                                borderColor: '#FF9600',
-                                backgroundColor: '#FF9600',
+                                borderColor: chartLine,
+                                backgroundColor: chartLine,
                                 borderWidth: 2,
                                 pointRadius: 2,
                                 tension: 0.25
@@ -437,7 +497,7 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                         maintainAspectRatio: false,
                         plugins: { legend: { display: true, position: 'bottom' } },
                         scales: {
-                            y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.22)' } },
+                            y: { beginAtZero: true, grid: { color: chartGrid } },
                             x: { grid: { display: false } }
                         }
                     }

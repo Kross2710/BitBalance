@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $user_id = $pdo->lastInsertId();
 
                     // Insert default user status
-                    $stmt = $pdo->prepare("INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until) VALUES (?, 'active', 'light', 0, NULL)");
+                    $stmt = $pdo->prepare("INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until) VALUES (?, 'active', 'system', 0, NULL)");
                     $stmt->execute([$user_id]);
 
                     // Log the user creation attempt by the admin

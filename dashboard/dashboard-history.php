@@ -19,12 +19,32 @@ $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
 if ($isLoggedIn) {
     $historyData = getUserIntakeHistory($user['user_id'] ?? null);
+} else {
+    $userAge = 25;
+    $userWeight = 70;
+    $userHeight = 175;
+    $userGoal = 2200;
+    $totalCalories = 1450;
+    $historyData = [
+        ['intakeLog_id' => 0, 'food_item' => 'Pho Bo', 'calories' => 450, 'protein' => 30, 'carbs' => 55, 'fat' => 10, 'meal_category' => 'breakfast', 'date_intake' => date('Y-m-d 08:30:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Iced Coffee', 'calories' => 120, 'protein' => 2, 'carbs' => 18, 'fat' => 4, 'meal_category' => 'snack', 'date_intake' => date('Y-m-d 10:00:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Grilled Chicken Salad', 'calories' => 550, 'protein' => 40, 'carbs' => 35, 'fat' => 20, 'meal_category' => 'lunch', 'date_intake' => date('Y-m-d 12:30:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Apple', 'calories' => 80, 'protein' => 0, 'carbs' => 21, 'fat' => 0, 'meal_category' => 'snack', 'date_intake' => date('Y-m-d 15:00:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Salmon & Rice', 'calories' => 250, 'protein' => 13, 'carbs' => 46, 'fat' => 12, 'meal_category' => 'dinner', 'date_intake' => date('Y-m-d 19:00:00')],
+        ['intakeLog_id' => 0, 'food_item' => 'Greek Yogurt Bowl', 'calories' => 320, 'protein' => 24, 'carbs' => 42, 'fat' => 8, 'meal_category' => 'breakfast', 'date_intake' => date('Y-m-d 09:00:00', strtotime('-1 day'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Chicken Banh Mi', 'calories' => 610, 'protein' => 35, 'carbs' => 70, 'fat' => 18, 'meal_category' => 'lunch', 'date_intake' => date('Y-m-d 13:10:00', strtotime('-1 day'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Beef Stir Fry', 'calories' => 690, 'protein' => 45, 'carbs' => 62, 'fat' => 24, 'meal_category' => 'dinner', 'date_intake' => date('Y-m-d 19:25:00', strtotime('-1 day'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Oat Latte', 'calories' => 160, 'protein' => 4, 'carbs' => 22, 'fat' => 6, 'meal_category' => 'snack', 'date_intake' => date('Y-m-d 11:15:00', strtotime('-2 days'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Tofu Rice Bowl', 'calories' => 580, 'protein' => 28, 'carbs' => 78, 'fat' => 16, 'meal_category' => 'lunch', 'date_intake' => date('Y-m-d 12:45:00', strtotime('-2 days'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Banana', 'calories' => 105, 'protein' => 1, 'carbs' => 27, 'fat' => 0, 'meal_category' => 'snack', 'date_intake' => date('Y-m-d 16:00:00', strtotime('-2 days'))],
+        ['intakeLog_id' => 0, 'food_item' => 'Prawn Noodle Soup', 'calories' => 520, 'protein' => 32, 'carbs' => 58, 'fat' => 14, 'meal_category' => 'dinner', 'date_intake' => date('Y-m-d 18:50:00', strtotime('-3 days'))],
+    ];
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en"
-    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'light') : 'light'; ?>">
+    data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -45,12 +65,17 @@ if ($isLoggedIn) {
 <body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
-
-    <?php if ($isLoggedIn): ?>
-        <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
+    <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
 
         <main class="dashboard-content">
             <div class="history-container">
+                <?php if (!$isLoggedIn): ?>
+                    <div class="demo-banner">
+                        <i class="fas fa-flask"></i>
+                        <span><strong>You're exploring a live demo.</strong> This is sample history — create a free account to save and edit your own food log.</span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                    </div>
+                <?php endif; ?>
 
                 <section class="filter-card">
                     <div class="card-header">
@@ -103,13 +128,19 @@ if ($isLoggedIn) {
                                     <th>Macros (g)</th>
                                     <th>Meal Category</th>
                                     <th>Time</th>
-                                    <th style="text-align: right;">Action</th>
+                                    <th class="row-actions-head">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (!empty($historyData)): ?>
                                     <?php foreach ($historyData as $historyEntry): ?>
-                                        <?php $entry = $historyEntry; $showDate = true; include PROJECT_ROOT . 'dashboard/views/_intake-row.php'; ?>
+                                        <?php
+                                        $entry = $historyEntry;
+                                        $showDate = true;
+                                        $hideActions = !$isLoggedIn;
+                                        include PROJECT_ROOT . 'dashboard/views/_intake-row.php';
+                                        unset($hideActions);
+                                        ?>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
@@ -121,12 +152,6 @@ if ($isLoggedIn) {
 
             </div>
         </main>
-    <?php else: ?>
-        <main class="dashboard-content dashboard-empty-state">
-            <h2>Please log in to access your History.</h2>
-            <a href="<?= BASE_URL ?>login.php" class="btn-primary">Sign In</a>
-        </main>
-    <?php endif; ?>
 
     <?php if ($isLoggedIn): include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; endif; ?>
 
@@ -217,9 +242,10 @@ if ($isLoggedIn) {
         });
     </script>
 
-    <?php $modalTitle = 'Edit Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
-    <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
-    <script>
+    <?php if ($isLoggedIn): ?>
+        <?php $modalTitle = 'Edit Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
+        <script>
         $(document).ready(function () {
             // 1. Init DataTable
             var table = $('#logs-table').DataTable({
@@ -367,7 +393,8 @@ if ($isLoggedIn) {
                 }
             });
         });
-    </script>
+        </script>
+    <?php endif; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
 </body>
 

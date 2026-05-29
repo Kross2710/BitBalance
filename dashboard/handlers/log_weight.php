@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../include/init.php';
+require_once __DIR__ . '/../../include/handlers/xp.php';
 
 // 1. Kiểm tra đăng nhập
 if (!isset($_SESSION['user']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -27,6 +28,13 @@ try {
     // 4. Cập nhật luôn bảng userPhysicalInfo để đồng bộ dữ liệu
     $stmtUpdate = $pdo->prepare("UPDATE userPhysicalInfo SET weight = ? WHERE user_id = ?");
     $stmtUpdate->execute([$weight, $userId]);
+
+    // 5. Award XP (state-based — only the first weight log of the day counts).
+    try {
+        xp_award_weight_log($pdo, $userId);
+    } catch (Throwable $e) {
+        error_log('xp_award_weight_log: ' . $e->getMessage());
+    }
 
     header("Location: ../dashboard.php?success=" . urlencode("Weight logged successfully!"));
 
