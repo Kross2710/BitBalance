@@ -220,7 +220,7 @@ const BitBalanceStory = {
                                         <h2 class="bento-value" id="lblArchetypeName">Whey & Trà Sữa</h2>
                                         <div class="bento-archetype-tag" id="lblUserLevel">Lv 12</div>
                                     </div>
-                                    <div class="story-xp-bar" style="width: 250px;"><div class="story-xp-fill" id="pbSummaryXp"></div></div>
+                                    <div class="story-xp-bar"><div class="story-xp-fill" id="pbSummaryXp"></div></div>
                                 </div>
                                 <div class="bento-card">
                                     <h3 class="bento-title" id="lblBentoLogged">Foods Logged</h3>
@@ -232,14 +232,14 @@ const BitBalanceStory = {
                                 </div>
                                 <div class="bento-card">
                                     <h3 class="bento-title" id="lblBentoFavorite">Favorite Food</h3>
-                                    <h2 class="bento-value" id="lblBentoFavoriteVal" style="font-size: 34px;">Banh Mi</h2>
+                                    <h2 class="bento-value" id="lblBentoFavoriteVal">Banh Mi</h2>
                                 </div>
                                 <div class="bento-card">
                                     <h3 class="bento-title" id="lblBentoLeaderboard">Weekly Rank</h3>
                                     <h2 class="bento-value" id="lblBentoLeaderboardVal">#1</h2>
                                 </div>
                             </div>
-                            <div class="story-footer" style="margin-top: 50px;">
+                            <div class="story-footer">
                                 <span id="lblFooter5">Track meals. Earn XP. Level up.</span>
                                 <strong>bitbalance</strong>
                             </div>

@@ -40,23 +40,23 @@ if ($isLoggedIn) {
             <div class="menu" id="navMenu">
                 <div class="nav-links">
                     <a href="<?= BASE_URL ?>dashboard/dashboard.php"
-                        class="nav-item <?php echo ($activeHeader == 'dashboard') ? 'active' : ''; ?>">Dashboard</a>
+                        class="nav-item <?php echo ($activeHeader == 'dashboard') ? 'active' : ''; ?>"><?= t('header.nav.dashboard') ?></a>
                     <?php if ($isLoggedIn): ?>
                         <a href="<?= BASE_URL ?>ai-coach.php"
                             class="nav-item <?php echo ($activeHeader == 'ai-coach') ? 'active' : ''; ?>">
-                            <i class="fas fa-sparkles"></i> AI Coach
+                            <i class="fas fa-sparkles"></i> <?= t('header.nav.ai_coach') ?>
                         </a>
                     <?php endif; ?>
                     <!-- <a href="<?= BASE_URL ?>products.php"
-                        class="nav-item <?php echo ($activeHeader == 'products') ? 'active' : ''; ?>">Products</a>
+                        class="nav-item <?php echo ($activeHeader == 'products') ? 'active' : ''; ?>"><?= t('header.nav.products') ?></a>
                     <a href="<?= BASE_URL ?>forum.php"
-                        class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>">Forums</a> -->
+                        class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>"><?= t('header.nav.forum') ?></a> -->
                     <a href="<?= BASE_URL ?>about.php"
-                        class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>">About</a>
+                        class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>"><?= t('header.nav.about') ?></a>
                 </div>
 
                 <div class="user-actions">
-                    <!-- <a href="<?= BASE_URL ?>cart.php" class="cart-btn" title="View Cart">
+                    <!-- <a href="<?= BASE_URL ?>cart.php" class="cart-btn" title="<?= t('header.cart_title') ?>">
                         <i class="fas fa-shopping-bag"></i>
                         <?php if ($cart_count > 0): ?>
                             <span id="cart-count" class="badge-pulse"><?= $cart_count ?></span>
@@ -69,7 +69,7 @@ if ($isLoggedIn) {
                            class="xp-chip"
                            data-xp-numbers="<?= number_format($xpChip['xp_into_level']) ?>/<?= number_format($xpChip['xp_for_next']) ?>"
                            style="--xp-pct: <?= (int) $xpChip['progress_pct'] ?>;"
-                           title="<?= number_format($xpChip['xp_into_level']) ?> / <?= number_format($xpChip['xp_for_next']) ?> XP toward Lv <?= (int) $xpChip['current_level'] + 1 ?>">
+                           title="<?= t('header.xp_tooltip', ['into' => number_format($xpChip['xp_into_level']), 'ceil' => number_format($xpChip['xp_for_next']), 'level' => (int) $xpChip['current_level'] + 1]) ?>">
                             <span class="xp-chip__level-wrap">
                                 <svg class="xp-chip__ring" viewBox="0 0 44 44" aria-hidden="true">
                                     <circle class="xp-chip__ring-track" cx="22" cy="22" r="19" pathLength="100"></circle>
@@ -85,7 +85,7 @@ if ($isLoggedIn) {
                     <?php endif; ?>
 
                     <?php if (isset($_SESSION['user'])): ?>
-                        <a href="<?= BASE_URL ?>profile.php" class="profile-btn" title="My Profile">
+                        <a href="<?= BASE_URL ?>profile.php" class="profile-btn" title="<?= t('header.profile_title') ?>">
                             <?php if (!empty($_SESSION['user']['profile_image'])): ?>
                                 <img src="<?= BASE_URL ?><?= htmlspecialchars($_SESSION['user']['profile_image']) ?>"
                                     alt="Avatar">
@@ -94,12 +94,12 @@ if ($isLoggedIn) {
                             <?php endif; ?>
                         </a>
                     <?php else: ?>
-                        <a href="<?php echo BASE_URL; ?>login.php" class="btn-login">Sign In</a>
+                        <a href="<?php echo BASE_URL; ?>login.php" class="btn-login"><?= t('header.sign_in') ?></a>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle menu">
+            <button class="hamburger" onclick="toggleMenu()" aria-label="<?= t('header.toggle_menu') ?>">
                 <i class="fa-solid fa-bars"></i>
             </button>
         </nav>

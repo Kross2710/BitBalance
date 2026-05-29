@@ -166,31 +166,33 @@ if ($physicalReady) {
     $targetEta = plan_target_eta($weightSummary['current'], $targetWeight, $goalMode, $weeklyRate);
 
     if ($rawGoal !== $recommendedGoal) {
-        $planNotes[] = 'The recommendation was clamped to BitBalance goal limits.';
+        $planNotes[] = t_raw('plan.note.clamped');
     }
 
     if ($intakeSummary['average_calories'] === null) {
-        $planNotes[] = 'Log food for a few days to compare your real intake against this plan.';
+        $planNotes[] = t_raw('plan.note.need_logs');
     } else {
         $gap = (int) $intakeSummary['average_calories'] - $recommendedGoal;
         if (abs($gap) <= 100) {
-            $planNotes[] = 'Your recent logged-day average is already close to this target.';
+            $planNotes[] = t_raw('plan.note.close');
         } elseif ($gap > 0) {
-            $planNotes[] = 'Your recent logged-day average is about ' . abs($gap) . ' kcal above this target.';
+            $planNotes[] = t_raw('plan.note.above', ['n' => abs($gap)]);
         } else {
-            $planNotes[] = 'Your recent logged-day average is about ' . abs($gap) . ' kcal below this target.';
+            $planNotes[] = t_raw('plan.note.below', ['n' => abs($gap)]);
         }
     }
 
     if ($goalMode === 'lose' && $weeklyRate >= 0.75) {
-        $planNotes[] = 'This is an aggressive loss rate. Watch hunger, energy, and training performance.';
+        $planNotes[] = t_raw('plan.note.aggressive_lose');
     }
     if ($goalMode === 'gain' && $weeklyRate >= 0.75) {
-        $planNotes[] = 'This is a fast gain rate. A smaller surplus may reduce unwanted fat gain.';
+        $planNotes[] = t_raw('plan.note.aggressive_gain');
     }
     if ($currentGoal !== null && abs($currentGoal - $recommendedGoal) >= 150) {
-        $direction = $recommendedGoal > $currentGoal ? 'higher' : 'lower';
-        $planNotes[] = 'This plan is ' . abs($recommendedGoal - $currentGoal) . ' kcal ' . $direction . ' than your current daily goal.';
+        $delta = abs($recommendedGoal - $currentGoal);
+        $planNotes[] = $recommendedGoal > $currentGoal
+            ? t_raw('plan.note.delta_higher', ['n' => $delta])
+            : t_raw('plan.note.delta_lower', ['n' => $delta]);
     }
     if ($targetEta && !$targetEta['valid']) {
         $planNotes[] = $targetEta['message'];
@@ -207,13 +209,13 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 ?>
 
 <!DOCTYPE html>
-<html lang="en"
+<html lang="<?= html_lang_attr() ?>"
     data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goal Planner | BitBalance</title>
+    <title><?= t('plan.title_alt') ?></title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
     $pageCss = ['css/dashboard.css', 'css/pages/dashboard-plan.css'];
@@ -233,8 +235,8 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                 <?php if (!$isLoggedIn): ?>
                     <div class="demo-banner">
                         <i class="fas fa-flask"></i>
-                        <span><strong>You're exploring a live demo.</strong> Goal Planner uses sample metrics here — create a free account to save and apply your own plan.</span>
-                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                        <span><strong><?= t('plan.demo_note') ?></strong> <?= t('plan.demo_body') ?></span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta"><?= t('dashboard.demo.cta') ?></a>
                     </div>
                 <?php endif; ?>
 
@@ -247,23 +249,23 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
                 <section class="plan-hero">
                     <div class="plan-hero-copy">
-                        <span class="plan-kicker"><i class="fas fa-route"></i> Adaptive Goal Coach</span>
-                        <h1>Plan your next calorie target</h1>
-                        <p>Use your body metrics, recent intake, and weight trend to turn a goal into a daily calorie number.</p>
+                        <span class="plan-kicker"><i class="fas fa-route"></i> <?= t('plan.kicker') ?></span>
+                        <h1><?= t('plan.hero.title') ?></h1>
+                        <p><?= t('plan.hero.subtitle') ?></p>
                     </div>
                     <div class="plan-hero-metrics">
                         <div class="plan-metric">
-                            <span class="plan-metric-label">Current goal</span>
-                            <strong><?= $currentGoal ? number_format($currentGoal) : 'Unset' ?></strong>
-                            <small>kcal/day</small>
+                            <span class="plan-metric-label"><?= t('plan.metric.current_goal') ?></span>
+                            <strong><?= $currentGoal ? number_format($currentGoal) : t('plan.metric.unset') ?></strong>
+                            <small><?= t('plan.metric.kcal_day') ?></small>
                         </div>
                         <div class="plan-metric">
-                            <span class="plan-metric-label">7-day avg</span>
+                            <span class="plan-metric-label"><?= t('plan.metric.7day_avg') ?></span>
                             <strong><?= $intakeSummary['average_calories'] !== null ? number_format($intakeSummary['average_calories']) : '--' ?></strong>
-                            <small><?= (int) $intakeSummary['logged_days'] ?> logged days</small>
+                            <small><?= t('plan.metric.logged_days', ['n' => (int) $intakeSummary['logged_days']]) ?></small>
                         </div>
                         <div class="plan-metric">
-                            <span class="plan-metric-label">Current weight</span>
+                            <span class="plan-metric-label"><?= t('plan.metric.current_weight') ?></span>
                             <strong><?= $weightSummary['current'] !== null ? number_format($weightSummary['current'], 1) : '--' ?></strong>
                             <small>kg</small>
                         </div>
@@ -272,15 +274,14 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
                 <section class="plan-panel plan-intake-panel">
                     <div class="plan-section-head compact">
-                        <h2><i class="fas fa-chart-column"></i> Recent Intake vs Plan</h2>
+                        <h2><i class="fas fa-chart-column"></i> <?= t('plan.recent.heading') ?></h2>
                         <p>
                             <?php if ($currentGoal): ?>
-                                Tracking your last 7 days of logged calories against your current daily goal of
-                                <strong><?= number_format($currentGoal) ?></strong> kcal.
+                                <?= t_raw('plan.recent.with_goal', ['n' => number_format($currentGoal)]) ?>
                             <?php elseif ($recommendedGoal): ?>
-                                No daily goal saved yet — comparing against the recommended <strong><?= number_format($recommendedGoal) ?></strong> kcal.
+                                <?= t_raw('plan.recent.with_rec', ['n' => number_format($recommendedGoal)]) ?>
                             <?php else: ?>
-                                Log a few days and calculate a plan to see the comparison.
+                                <?= t('plan.recent.empty') ?>
                             <?php endif; ?>
                         </p>
                     </div>
@@ -292,8 +293,8 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                 <div class="plan-grid">
                     <section class="plan-panel plan-form-panel">
                         <div class="plan-section-head">
-                            <h2><i class="fas fa-sliders"></i> Plan Inputs</h2>
-                            <p>Adjust the target and activity estimate, then calculate a recommendation.</p>
+                            <h2><i class="fas fa-sliders"></i> <?= t('plan.inputs.heading') ?></h2>
+                            <p><?= t('plan.inputs.subtitle') ?></p>
                         </div>
 
                         <form method="POST" id="planForm">
@@ -310,25 +311,27 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
                             <div class="plan-form-grid">
                                 <div class="plan-field">
-                                    <label for="weekly_rate">Weekly rate</label>
+                                    <label for="weekly_rate"><?= t('plan.field.weekly_rate') ?></label>
                                     <select id="weekly_rate" name="weekly_rate">
-                                        <?php foreach ([0.25, 0.5, 0.75, 1.0] as $rate): ?>
+                                        <?php foreach ([0.25, 0.5, 0.75, 1.0] as $rate):
+                                            $rateLabel = rtrim(rtrim(number_format($rate, 2), '0'), '.');
+                                        ?>
                                             <option value="<?= $rate ?>" <?= abs($weeklyRate - $rate) < 0.001 ? 'selected' : '' ?>>
-                                                <?= rtrim(rtrim(number_format($rate, 2), '0'), '.') ?> kg/week
+                                                <?= t('plan.field.weekly_rate_unit', ['n' => $rateLabel]) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
 
                                 <div class="plan-field">
-                                    <label for="target_weight">Target weight <span>(optional)</span></label>
+                                    <label for="target_weight"><?= t('plan.field.target_weight') ?> <span><?= t('plan.field.target_weight_hint') ?></span></label>
                                     <input type="number" step="0.1" min="1" max="500" id="target_weight" name="target_weight"
                                         value="<?= $targetWeight !== null ? htmlspecialchars((string) $targetWeight, ENT_QUOTES) : '' ?>"
                                         placeholder="kg">
                                 </div>
 
                                 <div class="plan-field full">
-                                    <label for="activity_level">Activity level</label>
+                                    <label for="activity_level"><?= t('plan.field.activity_level') ?></label>
                                     <select id="activity_level" name="activity_level">
                                         <?php foreach ($activityOptions as $key => $option): ?>
                                             <option value="<?= htmlspecialchars($key) ?>" <?= $activityLevel === $key ? 'selected' : '' ?>>
@@ -340,57 +343,56 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                             </div>
 
                             <button type="submit" class="plan-primary-btn">
-                                <i class="fas fa-calculator"></i> Calculate Plan
+                                <i class="fas fa-calculator"></i> <?= t('plan.calc_btn') ?>
                             </button>
                         </form>
                     </section>
 
                     <section class="plan-panel plan-result-panel">
                         <div class="plan-section-head">
-                            <h2><i class="fas fa-bullseye"></i> Recommendation</h2>
-                            <p>Based on your selected plan and current profile data.</p>
+                            <h2><i class="fas fa-bullseye"></i> <?= t('plan.recommendation.heading') ?></h2>
+                            <p><?= t('plan.recommendation.subtitle') ?></p>
                         </div>
 
                         <?php if (!$physicalReady): ?>
                             <div class="plan-empty">
                                 <i class="fas fa-user-pen"></i>
-                                <h3>Body metrics needed</h3>
-                                <p>Add age, gender, weight, and height in Profile so BitBalance can estimate TDEE.</p>
-                                <a href="<?= BASE_URL ?>profile.php#physical-stats" class="plan-secondary-btn">Update Profile</a>
+                                <h3><?= t('plan.needs_metrics.title') ?></h3>
+                                <p><?= t('plan.needs_metrics.body') ?></p>
+                                <a href="<?= BASE_URL ?>profile.php#physical-stats" class="plan-secondary-btn"><?= t('plan.needs_metrics.cta') ?></a>
                             </div>
                         <?php else: ?>
                             <div class="plan-target">
-                                <span>Recommended daily goal</span>
+                                <span><?= t('plan.rec_goal') ?></span>
                                 <strong><?= number_format($recommendedGoal) ?></strong>
-                                <small>kcal/day</small>
+                                <small><?= t('plan.metric.kcal_day') ?></small>
                             </div>
 
                             <div class="plan-stats-row">
                                 <div class="plan-stat">
-                                    <span>BMR</span>
+                                    <span><?= t('plan.stat.bmr') ?></span>
                                     <strong><?= number_format((int) round($bmr)) ?></strong>
                                 </div>
                                 <div class="plan-stat">
-                                    <span>TDEE</span>
+                                    <span><?= t('plan.stat.tdee') ?></span>
                                     <strong><?= number_format((int) round($tdee)) ?></strong>
                                 </div>
                                 <div class="plan-stat">
-                                    <span><?= $goalMode === 'gain' ? 'Surplus' : ($goalMode === 'lose' ? 'Deficit' : 'Adjustment') ?></span>
+                                    <span><?= $goalMode === 'gain' ? t('plan.stat.surplus') : ($goalMode === 'lose' ? t('plan.stat.deficit') : t('plan.stat.adjustment')) ?></span>
                                     <strong><?= number_format($dailyAdjustment) ?></strong>
                                 </div>
                             </div>
 
                             <div class="plan-macro-strip">
-                                <div><span>Protein</span><strong><?= (int) $macroPlan['protein'] ?>g</strong></div>
-                                <div><span>Carbs</span><strong><?= (int) $macroPlan['carbs'] ?>g</strong></div>
-                                <div><span>Fat</span><strong><?= (int) $macroPlan['fat'] ?>g</strong></div>
+                                <div><span><?= t('dashboard.macros.protein') ?></span><strong><?= (int) $macroPlan['protein'] ?>g</strong></div>
+                                <div><span><?= t('dashboard.macros.carbs') ?></span><strong><?= (int) $macroPlan['carbs'] ?>g</strong></div>
+                                <div><span><?= t('dashboard.macros.fat') ?></span><strong><?= (int) $macroPlan['fat'] ?>g</strong></div>
                             </div>
 
                             <?php if ($targetEta && $targetEta['valid']): ?>
                                 <div class="plan-eta">
                                     <i class="fas fa-calendar-check"></i>
-                                    Estimated target date: <strong><?= htmlspecialchars($targetEta['date']) ?></strong>
-                                    <span>(about <?= htmlspecialchars((string) $targetEta['weeks']) ?> weeks)</span>
+                                    <?= t_raw('plan.eta', ['date' => htmlspecialchars($targetEta['date']), 'weeks' => htmlspecialchars((string) $targetEta['weeks'])]) ?>
                                 </div>
                             <?php endif; ?>
 
@@ -399,13 +401,13 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="calorie_goal" value="<?= (int) $recommendedGoal ?>">
                                     <button type="submit" class="plan-apply-btn">
-                                        <i class="fas fa-check"></i> Apply to Daily Goal
+                                        <i class="fas fa-check"></i> <?= t('plan.apply_goal') ?>
                                     </button>
                                 </form>
                             <?php else: ?>
                                 <div class="plan-demo-apply">
-                                    <p><i class="fas fa-lock"></i> Sign up to save this recommendation as your daily goal.</p>
-                                    <a href="<?= BASE_URL ?>signup.php" class="plan-apply-btn">Create account to apply</a>
+                                    <p><i class="fas fa-lock"></i> <?= t('plan.demo_apply_hint') ?></p>
+                                    <a href="<?= BASE_URL ?>signup.php" class="plan-apply-btn"><?= t('plan.demo_apply_cta') ?></a>
                                 </div>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -414,10 +416,10 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
 
                 <section class="plan-panel plan-notes-panel">
                     <div class="plan-section-head compact">
-                        <h2><i class="fas fa-compass"></i> Coach Notes</h2>
+                        <h2><i class="fas fa-compass"></i> <?= t('plan.notes.heading') ?></h2>
                     </div>
                     <?php if (empty($planNotes)): ?>
-                        <div class="plan-note muted">Calculate a plan to see personalized notes.</div>
+                        <div class="plan-note muted"><?= t('plan.notes.empty') ?></div>
                     <?php else: ?>
                         <div class="plan-notes">
                             <?php foreach ($planNotes as $note): ?>
@@ -427,9 +429,9 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                     <?php endif; ?>
 
                     <div class="plan-weekly-target">
-                        <span>Weekly calorie budget</span>
+                        <span><?= t('plan.weekly_budget') ?></span>
                         <strong><?= $weeklyTarget ? number_format($weeklyTarget) : '--' ?></strong>
-                        <small>kcal/week</small>
+                        <small><?= t('plan.weekly_budget_unit') ?></small>
                     </div>
                 </section>
             </div>
@@ -474,7 +476,7 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                         labels: <?= json_encode($chartLabels) ?>,
                         datasets: [
                             {
-                                label: 'Calories',
+                                label: <?= json_encode(t_raw('plan.chart.calories')) ?>,
                                 data: <?= json_encode($chartCalories) ?>,
                                 backgroundColor: chartBar,
                                 borderRadius: 6,

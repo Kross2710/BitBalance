@@ -9,27 +9,37 @@
             ?>
             <span data-iso="<?= $nowIso ?>" data-tz-format="date-long"><?= date('j F, Y') ?></span>
         </div>
-        <h2>Hello, <br><span class="user-name"><?php echo htmlspecialchars($displayUser); ?></span></h2>
+        <?php
+        // Greet with the friendly first name; user_name is just the searchable
+        // handle now. Fall back to handle, then to whatever $displayUser holds.
+        $greetName = '';
+        if (!empty($_SESSION['user'])) {
+            $greetName = trim((string) ($_SESSION['user']['first_name'] ?? ''));
+            if ($greetName === '') $greetName = (string) ($_SESSION['user']['user_name'] ?? '');
+        }
+        if ($greetName === '') $greetName = $displayUser ?? t_raw('dashboard.right.guest');
+        ?>
+        <h2><?= t('dashboard.right.hello') ?> <br><span class="user-name"><?php echo htmlspecialchars($greetName); ?></span></h2>
     </div>
 
     <hr class="divider">
 
     <div class="sidebar-section user-metrics">
         <div class="section-title">
-            <i class="fas fa-child"></i> Body Metrics
+            <i class="fas fa-child"></i> <?= t('dashboard.right.body_metrics') ?>
         </div>
-        
+
         <?php if (empty($userAge) || empty($userWeight) || empty($userHeight)): ?>
             <div class="empty-metrics">
-                <p>Missing info.</p>
-                <a href="profile.php" class="btn-text">Update Profile</a>
+                <p><?= t('dashboard.right.missing_info') ?></p>
+                <a href="profile.php" class="btn-text"><?= t('dashboard.right.update_profile') ?></a>
             </div>
         <?php else: ?>
             <div class="metrics-grid">
                 <div class="metric-box">
                     <div class="metric-icon age-icon"><i class="fas fa-birthday-cake"></i></div>
                     <span class="metric-val"><?php echo htmlspecialchars((int)$userAge); ?></span>
-                    <span class="metric-label">Age</span>
+                    <span class="metric-label"><?= t('dashboard.right.age') ?></span>
                 </div>
                 <div class="metric-box">
                     <div class="metric-icon weight-icon"><i class="fas fa-weight"></i></div>
@@ -49,27 +59,27 @@
 
     <div class="sidebar-section goal-summary">
         <div class="section-title">
-            <i class="fas fa-bullseye"></i> Daily Target
+            <i class="fas fa-bullseye"></i> <?= t('dashboard.right.daily_target') ?>
         </div>
-        
+
         <div class="goal-card-mini">
             <?php if (!empty($userGoal)): ?>
                 <?php $remaining = max(0, $userGoal - $totalCalories); ?>
-                
+
                 <div class="goal-row">
-                    <span class="goal-label">Target:</span>
+                    <span class="goal-label"><?= t('dashboard.right.target') ?></span>
                     <span class="goal-val"><?= htmlspecialchars($userGoal) ?></span>
                 </div>
-                
+
                 <div class="goal-row remaining-row">
-                    <span class="goal-label">Remaining:</span>
+                    <span class="goal-label"><?= t('dashboard.right.remaining') ?></span>
                     <span class="goal-val <?= $remaining <= 0 ? 'text-success' : 'text-danger' ?>">
                         <?= htmlspecialchars($remaining) ?>
                     </span>
                 </div>
             <?php else: ?>
-                <p class="no-goal-text">No goal set yet.</p>
-                <a href="set-goal.php" class="btn-small">Set Goal</a>
+                <p class="no-goal-text"><?= t('dashboard.right.no_goal') ?></p>
+                <a href="set-goal.php" class="btn-small"><?= t('dashboard.right.set_goal') ?></a>
             <?php endif; ?>
         </div>
     </div>
@@ -79,7 +89,7 @@
 
         <div class="sidebar-section leaderboard-mini">
             <div class="section-title">
-                <i class="fas fa-trophy"></i> Weekly Top 5
+                <i class="fas fa-trophy"></i> <?= t('dashboard.right.weekly_top5') ?>
             </div>
 
             <?php if (!empty($isLoggedIn) && !empty($leaderboardWidgetRows)): ?>
@@ -112,7 +122,7 @@
                             <span class="leaderboard-mini-main">
                                 <span class="leaderboard-mini-name">
                                     <span class="leaderboard-mini-user"><?= htmlspecialchars($row['user_name'] ?? '', ENT_QUOTES) ?></span>
-                                    <?php if ($isYou): ?><span class="leaderboard-mini-you">You</span><?php endif; ?>
+                                    <?php if ($isYou): ?><span class="leaderboard-mini-you"><?= t('dashboard.right.you') ?></span><?php endif; ?>
                                 </span>
                                 <span class="leaderboard-mini-score"><?= number_format((int) ($row['score_xp'] ?? 0)) ?> XP</span>
                             </span>
@@ -121,13 +131,13 @@
                 </div>
             <?php elseif (!empty($isLoggedIn)): ?>
                 <div class="leaderboard-mini-empty">
-                    <p>No leaderboard data yet.</p>
-                    <a href="<?= BASE_URL ?>dashboard/dashboard-friends.php?tab=friends" class="btn-small">Open Friends</a>
+                    <p><?= t('dashboard.right.no_leaderboard') ?></p>
+                    <a href="<?= BASE_URL ?>dashboard/dashboard-friends.php?tab=friends" class="btn-small"><?= t('dashboard.right.open_friends') ?></a>
                 </div>
             <?php else: ?>
                 <div class="leaderboard-mini-empty">
-                    <p>Sign in to compete with friends.</p>
-                    <a href="<?= BASE_URL ?>login.php" class="btn-small">Sign in</a>
+                    <p><?= t('dashboard.right.sign_in_compete') ?></p>
+                    <a href="<?= BASE_URL ?>login.php" class="btn-small"><?= t('dashboard.right.sign_in') ?></a>
                 </div>
             <?php endif; ?>
         </div>

@@ -32,12 +32,12 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
+<html lang="<?= html_lang_attr() ?>" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator | BitBalance</title>
+    <title><?= t('calc.title_alt') ?></title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
     $pageCss = ['css/dashboard.css', 'css/pages/dashboard-calculator.css'];
@@ -58,15 +58,15 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
             <?php if (!$isLoggedIn): ?>
                 <div class="demo-banner">
                     <i class="fas fa-flask"></i>
-                    <span><strong>You're exploring a live demo.</strong> Calculator works without an account — create a free account to save goals and track progress.</span>
-                    <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                    <span><strong><?= t('calc.demo_note') ?></strong> <?= t('calc.demo_body') ?></span>
+                    <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta"><?= t('dashboard.demo.cta') ?></a>
                 </div>
             <?php endif; ?>
 
             <section class="calc-form-card">
                 <div class="card-header">
-                    <h3><i class="fas fa-calculator"></i> Calorie Calculator</h3>
-                    <p class="subtitle">Calculate your TDEE & BMI instantly.</p>
+                    <h3><i class="fas fa-calculator"></i> <?= t('calc.card_title') ?></h3>
+                    <p class="subtitle"><?= t('calc.card_sub') ?></p>
                 </div>
 
                 <?php if (!empty($error_message)): ?>
@@ -76,60 +76,60 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                 <form action="handlers/process_calculator.php" method="POST" id="calcForm">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="age">Age</label>
+                            <label for="age"><?= t('calc.input.age') ?></label>
                             <div class="input-icon-wrapper">
                                 <i class="fas fa-birthday-cake input-icon"></i>
-                                <input type="number" id="age" name="age" min="1" max="120" required value="<?= htmlspecialchars((string)$formAge); ?>" placeholder="Years">
+                                <input type="number" id="age" name="age" min="1" max="120" required value="<?= htmlspecialchars((string)$formAge); ?>" placeholder="<?= t('calc.placeholder.years') ?>">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="gender">Gender</label>
+                            <label for="gender"><?= t('calc.input.gender') ?></label>
                             <div class="input-icon-wrapper">
                                 <i class="fas fa-venus-mars input-icon"></i>
                                 <select id="gender" name="gender" required>
-                                    <option value="">Select...</option>
-                                    <option value="male" <?= $formGender === 'male' ? 'selected' : ''; ?>>Male</option>
-                                    <option value="female" <?= $formGender === 'female' ? 'selected' : ''; ?>>Female</option>
+                                    <option value=""><?= t('calc.gender.select') ?></option>
+                                    <option value="male" <?= $formGender === 'male' ? 'selected' : ''; ?>><?= t('calc.input.gender.male') ?></option>
+                                    <option value="female" <?= $formGender === 'female' ? 'selected' : ''; ?>><?= t('calc.input.gender.female') ?></option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="weight">Weight (kg)</label>
+                            <label for="weight"><?= t('calc.input.weight') ?></label>
                             <div class="input-icon-wrapper">
                                 <i class="fas fa-weight input-icon"></i>
-                                <input type="number" id="weight" name="weight" min="1" step="0.1" required value="<?= htmlspecialchars((string)$formWeight); ?>" placeholder="kg">
+                                <input type="number" id="weight" name="weight" min="1" step="0.1" required value="<?= htmlspecialchars((string)$formWeight); ?>" placeholder="<?= t('calc.placeholder.kg') ?>">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="height">Height (cm)</label>
+                            <label for="height"><?= t('calc.input.height') ?></label>
                             <div class="input-icon-wrapper">
                                 <i class="fas fa-ruler-vertical input-icon"></i>
-                                <input type="number" id="height" name="height" min="1" step="0.1" required value="<?= htmlspecialchars((string)$formHeight); ?>" placeholder="cm">
+                                <input type="number" id="height" name="height" min="1" step="0.1" required value="<?= htmlspecialchars((string)$formHeight); ?>" placeholder="<?= t('calc.placeholder.cm') ?>">
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group full-width">
-                        <label for="activity-level">Activity Level</label>
+                        <label for="activity-level"><?= t('calc.input.activity') ?></label>
                         <div class="input-icon-wrapper">
                             <i class="fas fa-running input-icon"></i>
                             <select id="activity-level" name="activity_level" required>
-                                <option value="">Select Activity Level...</option>
-                                <option value="sedentary" <?= $selectedActivity === 'sedentary' ? 'selected' : ''; ?>>Sedentary (Little/no exercise)</option>
-                                <option value="lightly_active" <?= $selectedActivity === 'lightly_active' ? 'selected' : ''; ?>>Lightly Active (1-3 days/week)</option>
-                                <option value="moderately_active" <?= $selectedActivity === 'moderately_active' ? 'selected' : ''; ?>>Moderately Active (3-5 days/week)</option>
-                                <option value="very_active" <?= $selectedActivity === 'very_active' ? 'selected' : ''; ?>>Very Active (6-7 days/week)</option>
-                                <option value="extra_active" <?= $selectedActivity === 'extra_active' ? 'selected' : ''; ?>>Extra Active (Physical job/Training)</option>
+                                <option value=""><?= t('calc.activity.select') ?></option>
+                                <option value="sedentary" <?= $selectedActivity === 'sedentary' ? 'selected' : ''; ?>><?= t('calc.activity.sedentary_full') ?></option>
+                                <option value="lightly_active" <?= $selectedActivity === 'lightly_active' ? 'selected' : ''; ?>><?= t('calc.activity.light_full') ?></option>
+                                <option value="moderately_active" <?= $selectedActivity === 'moderately_active' ? 'selected' : ''; ?>><?= t('calc.activity.moderate_full') ?></option>
+                                <option value="very_active" <?= $selectedActivity === 'very_active' ? 'selected' : ''; ?>><?= t('calc.activity.very_full') ?></option>
+                                <option value="extra_active" <?= $selectedActivity === 'extra_active' ? 'selected' : ''; ?>><?= t('calc.activity.extra_full') ?></option>
                             </select>
                         </div>
                         <small id="activity-info" class="hint-text"></small>
                     </div>
 
                     <button type="submit" class="btn-calculate">
-                        <i class="fas fa-bolt"></i> Calculate Stats
+                        <i class="fas fa-bolt"></i> <?= t('calc.calc_stats') ?>
                     </button>
                 </form>
             </section>
@@ -137,22 +137,22 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
             <section class="calc-results-container">
                 <?php if ($calculatorResult): ?>
                     <div class="results-header">
-                        <h3><i class="fas fa-chart-pie"></i> Your Results</h3>
+                        <h3><i class="fas fa-chart-pie"></i> <?= t('calc.results.title') ?></h3>
                     </div>
 
                     <div class="metrics-row">
                         <div class="metric-card card-blue">
                             <div class="metric-icon"><i class="fas fa-fire"></i></div>
                             <div class="metric-info">
-                                <span class="metric-label">Maintenance</span>
-                                <span class="metric-value"><?= number_format($calculatorResult['tdee']); ?> <small>kcal</small></span>
+                                <span class="metric-label"><?= t('calc.results.maintenance') ?></span>
+                                <span class="metric-value"><?= number_format($calculatorResult['tdee']); ?> <small><?= t('common.kcal') ?></small></span>
                             </div>
                         </div>
 
                         <div class="metric-card card-purple">
                             <div class="metric-icon"><i class="fas fa-weight-hanging"></i></div>
                             <div class="metric-info">
-                                <span class="metric-label">BMI Score</span>
+                                <span class="metric-label"><?= t('calc.results.bmi_score') ?></span>
                                 <span class="metric-value"><?= number_format($calculatorResult['bmi'], 1); ?></span>
                             </div>
                         </div>
@@ -160,7 +160,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                         <div class="metric-card card-green">
                             <div class="metric-icon"><i class="fas fa-bullseye"></i></div>
                             <div class="metric-info">
-                                <span class="metric-label">Ideal Weight</span>
+                                <span class="metric-label"><?= t('calc.results.ideal_weight') ?></span>
                                 <span class="metric-value">
                                     <?= number_format($calculatorResult['ideal_weight']['min']) . '-' . number_format($calculatorResult['ideal_weight']['max']); ?>
                                     <small>kg</small>
@@ -173,18 +173,27 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 
                         <div class="accordion-item">
                             <button class="accordion-header" type="button">
-                                <span><i class="fas fa-list-alt"></i> Calorie Breakdown</span>
+                                <span><i class="fas fa-list-alt"></i> <?= t('calc.acc.breakdown') ?></span>
                                 <i class="fas fa-chevron-down arrow"></i>
                             </button>
                             <div class="accordion-content">
                                 <div class="content-inner">
-                                    <p class="desc-text">Based on the <strong>Mifflin-St Jeor</strong> formula, here is your estimated daily calorie needs:</p>
+                                    <p class="desc-text"><?= t_raw('calc.acc.breakdown_desc') ?></p>
                                     <table class="modern-table small-table">
-                                        <thead><tr><th>Activity Level</th><th>Calories</th></tr></thead>
+                                        <thead><tr><th><?= t('calc.col.activity') ?></th><th><?= t('calc.col.calories') ?></th></tr></thead>
                                         <tbody>
-                                            <?php foreach($calculatorResult['tdee_all'] as $level => $cal): ?>
+                                            <?php
+                                            // Map internal activity-level slugs to translated labels.
+                                            $__activityLabels = [
+                                                'sedentary' => t_raw('calc.activity.sedentary_full'),
+                                                'lightly_active' => t_raw('calc.activity.light_full'),
+                                                'moderately_active' => t_raw('calc.activity.moderate_full'),
+                                                'very_active' => t_raw('calc.activity.very_full'),
+                                                'extra_active' => t_raw('calc.activity.extra_full'),
+                                            ];
+                                            foreach($calculatorResult['tdee_all'] as $level => $cal): ?>
                                                 <tr class="<?= $selectedActivity == $level ? 'highlight-row' : '' ?>">
-                                                    <td><?= ucwords(str_replace('_', ' ', $level)) ?></td>
+                                                    <td><?= htmlspecialchars($__activityLabels[$level] ?? ucwords(str_replace('_', ' ', $level))) ?></td>
                                                     <td><strong><?= number_format($cal) ?></strong></td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -196,19 +205,19 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 
                         <div class="accordion-item">
                             <button class="accordion-header" type="button">
-                                <span><i class="fas fa-info-circle"></i> BMI Analysis</span>
+                                <span><i class="fas fa-info-circle"></i> <?= t('calc.acc.bmi_analysis') ?></span>
                                 <i class="fas fa-chevron-down arrow"></i>
                             </button>
                             <div class="accordion-content">
                                 <div class="content-inner">
-                                    <p class="desc-text">Your BMI is <strong><?= number_format($calculatorResult['bmi'], 1) ?></strong>.</p>
+                                    <p class="desc-text"><?= t_raw('calc.acc.bmi_desc', ['value' => number_format($calculatorResult['bmi'], 1)]) ?></p>
                                     <table class="modern-table small-table">
-                                        <thead><tr><th>Category</th><th>Range</th></tr></thead>
+                                        <thead><tr><th><?= t('calc.col.category') ?></th><th><?= t('calc.col.range') ?></th></tr></thead>
                                         <tbody>
-                                            <tr class="<?= $calculatorResult['bmi'] < 18.5 ? 'highlight-row' : '' ?>"><td>Underweight</td><td>&lt; 18.5</td></tr>
-                                            <tr class="<?= ($calculatorResult['bmi'] >= 18.5 && $calculatorResult['bmi'] < 25) ? 'highlight-row' : '' ?>"><td>Normal</td><td>18.5 - 24.9</td></tr>
-                                            <tr class="<?= ($calculatorResult['bmi'] >= 25 && $calculatorResult['bmi'] < 30) ? 'highlight-row' : '' ?>"><td>Overweight</td><td>25 - 29.9</td></tr>
-                                            <tr class="<?= $calculatorResult['bmi'] >= 30 ? 'highlight-row' : '' ?>"><td>Obese</td><td>30+</td></tr>
+                                            <tr class="<?= $calculatorResult['bmi'] < 18.5 ? 'highlight-row' : '' ?>"><td><?= t('dashboard.bmi.under') ?></td><td>&lt; 18.5</td></tr>
+                                            <tr class="<?= ($calculatorResult['bmi'] >= 18.5 && $calculatorResult['bmi'] < 25) ? 'highlight-row' : '' ?>"><td><?= t('dashboard.bmi.normal') ?></td><td>18.5 - 24.9</td></tr>
+                                            <tr class="<?= ($calculatorResult['bmi'] >= 25 && $calculatorResult['bmi'] < 30) ? 'highlight-row' : '' ?>"><td><?= t('dashboard.bmi.over') ?></td><td>25 - 29.9</td></tr>
+                                            <tr class="<?= $calculatorResult['bmi'] >= 30 ? 'highlight-row' : '' ?>"><td><?= t('dashboard.bmi.obese') ?></td><td>30+</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -219,8 +228,8 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                 <?php else: ?>
                     <div class="empty-calc-state">
                         <i class="fas fa-calculator"></i>
-                        <h4>Ready to Calculate?</h4>
-                        <p>Fill in your details to get your personalized nutrition stats.</p>
+                        <h4><?= t('calc.empty.title') ?></h4>
+                        <p><?= t('calc.empty.body') ?></p>
                     </div>
                 <?php endif; ?>
             </section>
@@ -233,13 +242,13 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Activity Level Hint
+            // 1. Activity Level Hint — strings come from the active locale.
             const descriptions = {
-                sedentary: "Desk job, little to no exercise.",
-                lightly_active: "Light exercise 1–3 days/week.",
-                moderately_active: "Moderate exercise 3–5 days/week.",
-                very_active: "Hard exercise 6–7 days/week.",
-                extra_active: "Very hard exercise & physical job."
+                sedentary: <?= json_encode(t_raw('calc.hint.sedentary')) ?>,
+                lightly_active: <?= json_encode(t_raw('calc.hint.light')) ?>,
+                moderately_active: <?= json_encode(t_raw('calc.hint.moderate')) ?>,
+                very_active: <?= json_encode(t_raw('calc.hint.very')) ?>,
+                extra_active: <?= json_encode(t_raw('calc.hint.extra')) ?>
             };
             const select = document.getElementById('activity-level');
             const info = document.getElementById('activity-info');
@@ -260,7 +269,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                 acc.addEventListener('click', function() {
                     this.classList.toggle('active');
                     const content = this.nextElementSibling;
-                    
+
                     if (content.style.maxHeight) {
                         content.style.maxHeight = null;
                     } else {
@@ -268,7 +277,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                     }
                 });
             });
-            
+
             // Open first accordion by default if exists
             if(accordions.length > 0) {
                 accordions[0].click();

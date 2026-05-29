@@ -4,16 +4,15 @@
         <div class="cookie-text">
             <div class="cookie-icon">🍪</div>
             <div class="cookie-message">
-                <h4>We value your privacy</h4>
-                <p>This website uses cookies to enhance your browsing experience, analyze site traffic, and provide personalized content. 
-                By clicking "Accept All", you consent to our use of cookies as described in our 
-                <a href="terms.php" target="_blank">Terms and Conditions</a>.</p>
+                <h4><?= t('cookie.title') ?></h4>
+                <p><?= t('cookie.body') ?>
+                <a href="terms.php" target="_blank"><?= t('footer.terms') ?></a>.</p>
             </div>
         </div>
         <div class="cookie-buttons">
-            <button id="manage-cookies" class="cookie-btn manage">Cookie Settings</button>
-            <button id="accept-essential" class="cookie-btn essential">Essential Only</button>
-            <button id="accept-all" class="cookie-btn accept">Accept All</button>
+            <button id="manage-cookies" class="cookie-btn manage"><?= t('cookie.customize') ?></button>
+            <button id="accept-essential" class="cookie-btn essential"><?= t('cookie.essential_only') ?></button>
+            <button id="accept-all" class="cookie-btn accept"><?= t('cookie.accept_all') ?></button>
         </div>
     </div>
 </div>
@@ -22,51 +21,51 @@
 <div id="cookie-modal" class="cookie-modal" style="display: none;">
     <div class="cookie-modal-content">
         <div class="cookie-modal-header">
-            <h3>Cookie Preferences</h3>
-            <button id="close-modal" class="close-modal">&times;</button>
+            <h3><?= t('cookie.settings_title') ?></h3>
+            <button id="close-modal" class="close-modal" aria-label="<?= t('common.close') ?>">&times;</button>
         </div>
         <div class="cookie-modal-body">
-            <p>We use different types of cookies to optimize your experience on our website. Choose which cookies you want to allow:</p>
-            
+            <p><?= t('cookie.body') ?></p>
+
             <div class="cookie-category">
                 <div class="cookie-category-header">
                     <input type="checkbox" id="essential-cookies" checked disabled>
                     <label for="essential-cookies">
-                        <strong>Essential Cookies</strong>
-                        <span class="required">(Required)</span>
+                        <strong><?= t('cookie.essential.title') ?></strong>
+                        <span class="required">(<?= t('common.required') ?>)</span>
                     </label>
                 </div>
-                <p class="cookie-description">These cookies are necessary for the website to function and cannot be disabled. They enable core functionality such as security, authentication, and accessibility.</p>
+                <p class="cookie-description"><?= t('cookie.essential.desc') ?></p>
             </div>
-            
+
             <div class="cookie-category">
                 <div class="cookie-category-header">
                     <input type="checkbox" id="analytics-cookies">
                     <label for="analytics-cookies">
-                        <strong>Analytics Cookies</strong>
+                        <strong><?= t('cookie.analytics.title') ?></strong>
                     </label>
                 </div>
-                <p class="cookie-description">These cookies help us understand how visitors interact with our website by collecting anonymous information about usage patterns.</p>
+                <p class="cookie-description"><?= t('cookie.analytics.desc') ?></p>
             </div>
-            
+
             <div class="cookie-category">
                 <div class="cookie-category-header">
                     <input type="checkbox" id="preference-cookies">
                     <label for="preference-cookies">
-                        <strong>Preference Cookies</strong>
+                        <strong><?= t('cookie.marketing.title') ?></strong>
                     </label>
                 </div>
-                <p class="cookie-description">These cookies remember your preferences and settings to provide a more personalized experience on future visits.</p>
+                <p class="cookie-description"><?= t('cookie.marketing.desc') ?></p>
             </div>
-            
+
             <div class="terms-link">
-                <p>For more detailed information about our data practices, please read our 
-                <a href="terms.php" target="_blank">Terms and Conditions</a>.</p>
+                <p><?= t('cookie.learn_more') ?>:
+                <a href="terms.php" target="_blank"><?= t('footer.terms') ?></a>.</p>
             </div>
         </div>
         <div class="cookie-modal-footer">
-            <button id="save-preferences" class="cookie-btn accept">Save Preferences</button>
-            <button id="accept-all-modal" class="cookie-btn accept">Accept All</button>
+            <button id="save-preferences" class="cookie-btn accept"><?= t('cookie.save_preferences') ?></button>
+            <button id="accept-all-modal" class="cookie-btn accept"><?= t('cookie.accept_all') ?></button>
         </div>
     </div>
 </div>

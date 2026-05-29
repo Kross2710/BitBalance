@@ -97,6 +97,14 @@ try {
             $response['pending'] = friends_pending_outgoing($pdo, $me);
             break;
 
+        case 'poll':
+            // Lightweight snapshot for the friends page's live polling: friends +
+            // both pending directions in one request. Read-only (no CSRF needed).
+            $response['friends']     = friends_list($pdo, $me);
+            $response['pending_in']  = friends_pending_incoming($pdo, $me);
+            $response['pending_out'] = friends_pending_outgoing($pdo, $me);
+            break;
+
         case 'leaderboard':
             $period = ($_POST['period'] ?? $_GET['period'] ?? 'weekly') === 'all_time' ? 'all_time' : 'weekly';
             $limit = (int) ($_POST['limit'] ?? $_GET['limit'] ?? 50);

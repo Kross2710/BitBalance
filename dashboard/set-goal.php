@@ -40,10 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
+<html lang="<?= html_lang_attr() ?>" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Set My Calorie Goal</title>
+    <title><?= t('setgoal.title_tag') ?></title>
     <?php
     $pageComponents = ['fab'];
     $pageCss = ['css/pages/set-goal.css'];
@@ -55,17 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include PROJECT_ROOT . 'views/header.php'; ?>
 
     <div class="container" style="max-width: 400px; margin: 40px auto;">
-        <h2>Set Your Daily Calorie Goal</h2>
+        <h2><?= t('setgoal.page_title') ?></h2>
         <?php if ($error_message): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+            <div class="alert alert-danger"><?= htmlspecialchars($error_message) ?></div>
         <?php endif; ?>
         <form method="POST">
-            <label for="calorie_goal">Calorie Goal (kcal):</label>
+            <label for="calorie_goal"><?= t('setgoal.calorie_label') ?></label>
             <input type="number" min="800" max="10000" name="calorie_goal" id="calorie_goal" required>
-            <button type="submit" class="btn-primary">Save Goal</button>
+            <button type="submit" class="btn-primary"><?= t('setgoal.submit') ?></button>
         </form>
         <?php if ($success_message): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+            <div class="alert alert-success"><?= htmlspecialchars($success_message) ?></div>
         <?php endif; ?>
     </div>
 

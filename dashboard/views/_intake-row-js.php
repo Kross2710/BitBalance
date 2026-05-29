@@ -3,7 +3,7 @@
  * Shared client-side helpers for the intake list + Edit Intake Entry modal.
  *
  * Exposes a single global `window.IntakeRow` namespace with order-independent
- * helpers (use td[data-label="..."] selectors, never numeric column indexes).
+ * helpers (use semantic cell classes, never numeric column indexes).
  *
  * Include AFTER the modal partial and the table markup are emitted. Each page
  * is still responsible for wiring its own openers / submit flow — see
@@ -32,7 +32,7 @@
     // Used as fallback when row.dataset.protein/carbs/fat is missing.
     function macrosFromChips(rowEl) {
         const out = { protein: '', carbs: '', fat: '' };
-        rowEl.querySelectorAll('td[data-label="Macros"] .macro-chip').forEach(chip => {
+        rowEl.querySelectorAll('.intake-macros-cell .macro-chip, td[data-label="Macros"] .macro-chip').forEach(chip => {
             const m = chip.textContent.trim().match(/([PCF])\s*([\d.]+)/i);
             if (!m) return;
             const k = m[1].toUpperCase() === 'P' ? 'protein'
@@ -43,7 +43,7 @@
     }
 
     function categoryFromBadge(rowEl) {
-        const badge = rowEl.querySelector('td[data-label="Category"] .cat-badge');
+        const badge = rowEl.querySelector('.intake-category-cell .cat-badge, td[data-label="Category"] .cat-badge');
         if (!badge) return 'breakfast';
         let cat = 'breakfast';
         badge.classList.forEach(cls => {
@@ -63,8 +63,8 @@
             const rowEl = asEl(row);
             if (!rowEl) return;
 
-            const foodCell = rowEl.querySelector('td[data-label="Food"]');
-            const calCell  = rowEl.querySelector('td[data-label="Calories"]');
+            const foodCell = rowEl.querySelector('.intake-food-cell, td[data-label="Food"]');
+            const calCell  = rowEl.querySelector('.intake-cal-cell, td[data-label="Calories"]');
             const food     = foodCell ? foodCell.innerText.trim() : '';
             const calText  = calCell  ? calCell.innerText.trim() : '';
             const calories = parseInt(calText.replace(/\D/g, ''), 10) || 0;
@@ -93,10 +93,10 @@
             const rowEl = asEl(row);
             if (!rowEl || !data) return;
 
-            const foodCell = rowEl.querySelector('td[data-label="Food"]');
+            const foodCell = rowEl.querySelector('.intake-food-cell, td[data-label="Food"]');
             if (foodCell) foodCell.innerText = data.food_item;
 
-            const calCell = rowEl.querySelector('td[data-label="Calories"]');
+            const calCell = rowEl.querySelector('.intake-cal-cell, td[data-label="Calories"]');
             if (calCell) {
                 // Preserve the <span class="cal-val"> wrapper if the page uses it.
                 if (calCell.querySelector('.cal-val')) {
@@ -109,7 +109,7 @@
             const pD = fmtMacro(data.protein);
             const cD = fmtMacro(data.carbs);
             const fD = fmtMacro(data.fat);
-            const macroCell = rowEl.querySelector('td[data-label="Macros"]');
+            const macroCell = rowEl.querySelector('.intake-macros-cell, td[data-label="Macros"]');
             if (macroCell) {
                 macroCell.innerHTML =
                     `<span class="macro-chip p">P ${pD}g</span>` +
@@ -117,7 +117,7 @@
                     `<span class="macro-chip f">F ${fD}g</span>`;
             }
 
-            const catCell = rowEl.querySelector('td[data-label="Category"]');
+            const catCell = rowEl.querySelector('.intake-category-cell, td[data-label="Category"]');
             if (catCell && data.meal_category) {
                 const cat = data.meal_category;
                 const label = cat.charAt(0).toUpperCase() + cat.slice(1);

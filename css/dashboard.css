@@ -660,6 +660,18 @@ table.meals-table {
     font-size: 22px;
 }
 
+.logging-toast.success .toast-icon {
+    color: var(--color-success);
+}
+
+.logging-toast.error .toast-icon {
+    color: var(--color-danger);
+}
+
+.logging-toast.warning .toast-icon {
+    color: var(--color-warning);
+}
+
 .toast-text {
     flex: 1;
 }
@@ -1498,140 +1510,24 @@ table.meals-table {
     border-radius: 3px;
 }
 
-/* --- MODAL STYLING --- */
 
-/* Lớp phủ mờ nền */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    /* Màu đen mờ */
-    backdrop-filter: blur(5px);
-    /* Hiệu ứng kính mờ */
-    z-index: 2000;
-    /* Nằm trên cùng */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
-
-/* Khi modal kích hoạt */
-.modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Hộp nội dung Modal */
-.modal-box {
-    background: var(--card-bg);
-    width: 95%;
-    max-width: 480px;
-    /* Tăng chiều rộng từ 400px lên 480px */
-    border-radius: 20px;
-    /* Bo góc mềm mại hơn */
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-    transform: translateY(20px) scale(0.98);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Hiệu ứng nảy nhẹ */
-    overflow: hidden;
-}
-
-.modal-overlay.active .modal-box {
-    transform: translateY(0) scale(1);
-}
-
-/* Header */
-.modal-header {
-    padding: 25px 30px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 1.5rem;
-    /* Tiêu đề to hơn */
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.close-modal {
-    font-size: 2rem;
-    line-height: 1;
-    color: var(--text-secondary);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: transform 0.2s;
-}
-
-.close-modal:hover {
-    transform: rotate(90deg);
-    color: #e74c3c;
-}
-
-/* Body */
-.modal-body {
-    padding: 25px;
-}
-
-.modal-desc {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 20px;
-}
-
-/* Footer & Buttons */
-.modal-footer {
-    padding: 15px 25px;
-    background: rgba(0, 0, 0, 0.02);
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* --- DARK MODE MODAL FIXES --- */
-[data-theme="dark"] .modal-box {
-    background: #2d2d2d;
-    border: 1px solid #404040;
-}
-
-[data-theme="dark"] .modal-header,
-[data-theme="dark"] .modal-footer {
-    border-color: #404040;
-}
-
-[data-theme="dark"] .modal-footer {
-    background: #343a40;
-}
-
-/* --- LARGE INPUT STYLING (Cho Modal Goal) --- */
+/* --- LARGE INPUT STYLING (Cho Modal Goal / Weight) --- */
 
 /* 1. Label (Nhãn) */
 .large-input-group {
     margin-top: 10px;
     margin-bottom: 20px;
     text-align: center;
-    /* Căn giữa nhãn */
 }
 
 .large-input-group label {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 15px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--color-text-secondary);
+    margin-bottom: 12px;
     display: block;
-    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 /* 2. Wrapper (Bao quanh input & icon) */
@@ -1640,9 +1536,7 @@ table.meals-table {
     display: flex;
     align-items: center;
     max-width: 320px;
-    /* Giới hạn chiều rộng để không bị bè ra */
     margin: 0 auto;
-    /* Căn giữa ô input */
 }
 
 /* 3. Icon (Cái hồng tâm) */
@@ -1650,8 +1544,7 @@ table.meals-table {
     position: absolute;
     left: 20px;
     font-size: 1.8rem;
-    /* Icon to hơn */
-    color: var(--primary-color);
+    color: var(--color-primary);
     opacity: 0.8;
     z-index: 2;
     transition: transform 0.2s;
@@ -1660,35 +1553,24 @@ table.meals-table {
 /* 4. Input (Ô nhập liệu chính) */
 .input-wrapper-lg input {
     width: 100%;
-    /* Padding: Trên/Dưới 15px, Trái 60px (chừa chỗ icon), Phải 15px */
     padding: 15px 15px 15px 60px;
-
     font-size: 2.2rem;
-    /* CỠ CHỮ SIÊU TO */
     font-weight: 800;
-    /* CỰC ĐẬM */
-    color: var(--text-primary);
-
-    border: 2px solid #e1e4e8;
-    border-radius: 16px;
-    /* Bo góc tròn trịa */
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
     background-color: var(--color-surface-alt);
-    /* Nền xám nhẹ để nổi bật trên nền trắng Modal */
-
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-    /* Bóng đổ trong nhẹ */
 }
 
 /* Hiệu ứng khi bấm vào nhập (Focus) */
 .input-wrapper-lg input:focus {
-    border-color: var(--primary-color);
+    border-color: var(--color-primary);
     background-color: var(--color-surface);
-    box-shadow: 0 0 0 5px rgba(74, 126, 227, 0.15);
-    /* Vòng sáng lan tỏa */
+    box-shadow: 0 0 0 5px var(--color-primary-soft);
     outline: none;
     transform: scale(1.02);
-    /* Phóng to nhẹ 1 chút */
 }
 
 /* Khi focus thì icon cũng đậm lên chút */
@@ -1709,20 +1591,6 @@ table.meals-table {
     -moz-appearance: textfield;
 }
 
-/* --- DARK MODE ADJUSTMENTS --- */
-[data-theme="dark"] .input-wrapper-lg input {
-    background-color: #1f1f1f;
-    /* Nền input tối hơn nền modal */
-    border-color: #444;
-    color: #fff;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .input-wrapper-lg input:focus {
-    background-color: #2a2a2a;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 5px rgba(74, 126, 227, 0.25);
-}
 
 /* --- AI Nutrition Card Styles --- */
 .nutri-card {
@@ -1937,7 +1805,7 @@ main.dashboard-content.dashboard-empty-state {
     top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--color-overlay);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
     align-items: center;
@@ -1954,12 +1822,12 @@ main.dashboard-content.dashboard-empty-state {
 .modal-content,
 .modal-box {
     background: var(--color-surface);
-    border: 2px solid var(--color-border);
+    border: 3px solid var(--color-border);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 12px 0 var(--color-border-subtle), var(--shadow-xl);
     width: 90%;
-    max-width: 450px;
-    padding: 24px;
+    max-width: 440px;
+    padding: 28px 24px;
     position: relative;
     box-sizing: border-box;
     transform: translateY(20px) scale(0.98);
@@ -1983,40 +1851,66 @@ main.dashboard-content.dashboard-empty-state {
     }
 }
 
+.modal-header {
+    padding: 0;
+    margin-bottom: 20px;
+    border-bottom: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent !important;
+}
+
 .modal-content h3,
 .modal-box h3 {
-    margin: 0 0 16px 0;
-    font-size: 1.25rem;
+    margin: 0;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--color-text);
-    border-bottom: 2px solid var(--color-border-subtle);
-    padding-bottom: 12px;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    border-bottom: none;
+    padding-bottom: 0;
+    text-align: center;
+}
+
+.modal-body {
+    padding: 0;
+}
+
+.modal-desc {
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
 }
 
 .modal-body .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 18px;
 }
 
 .modal-body label {
     display: block;
     margin-bottom: 6px;
     color: var(--color-text-secondary);
-    font-weight: 700;
-    font-size: 0.85rem;
+    font-weight: 800;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.8px;
 }
 
 .modal-body input,
 .modal-body select {
     width: 100%;
-    padding: 12px 14px;
+    padding: 12px 16px;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-md);
     font-size: 0.95rem;
+    font-weight: 600;
     background: var(--color-surface-alt);
     color: var(--color-text);
     transition: all var(--transition-base);
@@ -2034,17 +1928,19 @@ main.dashboard-content.dashboard-empty-state {
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
     margin-top: 20px;
-    padding-top: 16px;
+    padding-top: 20px;
     border-top: 2px solid var(--color-border-subtle);
+    background: transparent !important;
 }
 
 .modal-footer button,
 .modal-footer .btn-submit,
 .modal-footer .btn-cancel,
-.modal-footer .btn-save {
-    padding: 12px 20px;
+.modal-footer .btn-save,
+.modal-footer .btn-danger {
+    padding: 12px 24px;
     border-radius: var(--radius-md);
     font-size: 0.95rem;
     font-weight: 800;
@@ -2061,25 +1957,37 @@ main.dashboard-content.dashboard-empty-state {
 .modal-footer button[type="submit"] {
     background-color: var(--color-primary);
     color: var(--color-text-on-primary);
-    border-bottom: 4px solid var(--color-primary-hover);
-    box-shadow: 0 4px 0 rgba(76, 175, 80, 0.15);
+    box-shadow: 0 4px 0 var(--color-primary-hover);
 }
 
 .modal-footer .btn-submit:hover,
 .modal-footer .btn-save:hover,
 .modal-footer button[type="submit"]:hover {
-    filter: brightness(1.05);
     transform: translateY(-2px);
-    border-bottom-width: 6px;
-    box-shadow: 0 6px 0 rgba(76, 175, 80, 0.2);
+    box-shadow: 0 6px 0 var(--color-primary-hover);
 }
 
 .modal-footer .btn-submit:active,
 .modal-footer .btn-save:active,
 .modal-footer button[type="submit"]:active {
-    transform: translateY(2px);
-    border-bottom-width: 2px;
-    box-shadow: none;
+    transform: translateY(4px);
+    box-shadow: 0 0 0 transparent;
+}
+
+.modal-footer .btn-danger {
+    background-color: var(--color-danger);
+    color: var(--color-text-on-primary);
+    box-shadow: 0 4px 0 var(--color-danger-border);
+}
+
+.modal-footer .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-danger-border);
+}
+
+.modal-footer .btn-danger:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 transparent;
 }
 
 .modal-footer .btn-cancel,
@@ -2087,72 +1995,139 @@ main.dashboard-content.dashboard-empty-state {
     background-color: var(--color-surface-alt);
     color: var(--color-text-secondary);
     border: 2px solid var(--color-border);
-    border-bottom-width: 4px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
 }
 
 .modal-footer .btn-cancel:hover,
 .modal-footer button.btn-cancel:hover {
-    background-color: var(--color-surface-hover);
     transform: translateY(-2px);
-    border-bottom-width: 5px;
+    box-shadow: 0 6px 0 var(--color-border-subtle);
 }
 
 .modal-footer .btn-cancel:active,
 .modal-footer button.btn-cancel:active {
-    transform: translateY(1px);
-    border-bottom-width: 2px;
+    transform: translateY(4px);
+    box-shadow: 0 0 0 transparent;
 }
 
 .close-modal {
     position: absolute;
-    right: 20px;
-    top: 20px;
+    right: 16px;
+    top: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
     color: var(--color-text-secondary);
-    font-size: 1.6rem;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 800;
     cursor: pointer;
     line-height: 1;
-    transition: color 0.2s, transform 0.2s;
+    transition: all var(--transition-fast);
     z-index: 10;
+    box-shadow: 0 2px 0 var(--color-border-subtle);
 }
 
 .close-modal:hover {
+    background: var(--color-danger-bg);
     color: var(--color-danger);
-    transform: rotate(90deg);
+    border-color: var(--color-danger-border);
+    box-shadow: 0 2px 0 var(--color-danger-border);
+    transform: rotate(90deg) translateY(-1px);
 }
+
+.close-modal:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+/* Weight History List Styling */
+.weight-history-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.weight-history-list::-webkit-scrollbar {
+    width: 6px;
+}
+.weight-history-list::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+.weight-history-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+.weight-history-list tr {
+    border-bottom: 2px solid var(--color-border-subtle);
+    transition: background-color var(--transition-fast);
+}
+.weight-history-list tr:hover {
+    background-color: var(--color-surface-alt);
+}
+.weight-history-list tr:last-child {
+    border-bottom: none;
+}
+.weight-history-list td {
+    padding: 14px 20px;
+    vertical-align: middle;
+}
+.weight-history-value {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--color-text);
+}
+.weight-history-date {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.weight-history-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-weight: 700;
+}
+
+
 
 /* =========================================
    AI CHATBOT WIDGET (Global)
    ========================================= */
 
-/* --- 1. CHATBOT COMMON STYLES (Cả Desktop & Mobile) --- */
-#ai-widget-container {
-    position: fixed;
-    z-index: 9999;
-}
-
-/* Bong bóng chat */
+/* --- 1. CHAT BUBBLE (Premium 3D Tactile Floating Button) --- */
 .chat-bubble {
     position: fixed;
     bottom: 30px;
     right: 30px;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #4a7ee3, #764ba2);
+    background: var(--color-secondary);
+    border: 2px solid rgba(0, 0, 0, 0.15);
     border-radius: 50%;
-    box-shadow: 0 4px 20px rgba(74, 126, 227, 0.4);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18), var(--shadow-md);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 28px;
+    font-size: 26px;
     cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
     z-index: 10000;
 }
 
 .chat-bubble:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.18), var(--shadow-lg);
+}
+
+.chat-bubble:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18), var(--shadow-xs);
 }
 
 .chat-bubble.hidden {
@@ -2161,29 +2136,25 @@ main.dashboard-content.dashboard-empty-state {
     pointer-events: none;
 }
 
-/* --- 2. DESKTOP CHAT WINDOW (Facebook Messenger Style) --- */
+/* --- 2. DESKTOP CHAT WINDOW (Premium 3D Tactile Drawer) --- */
 .chat-window {
     position: fixed;
     bottom: 100px;
-    /* Nằm trên bong bóng một chút */
     right: 30px;
     width: 360px;
     height: 520px;
-    background: var(--card-bg);
-    /* Theo theme sáng/tối */
-    border-radius: 16px;
-    box-shadow: 0 5px 40px rgba(0, 0, 0, 0.15);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-
-    /* Hiệu ứng mở từ góc dưới lên */
     transform-origin: bottom right;
     transform: scale(0);
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 9999;
 }
 
@@ -2195,14 +2166,14 @@ main.dashboard-content.dashboard-empty-state {
 
 /* Header */
 .chat-header {
-    background: linear-gradient(135deg, #4a7ee3, #764ba2);
-    padding: 12px 15px;
+    background: var(--color-secondary);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    padding: 14px 18px;
     color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header-info {
@@ -2243,162 +2214,205 @@ main.dashboard-content.dashboard-empty-state {
     font-size: 1.2rem;
     cursor: pointer;
     padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--transition-fast);
+}
+
+.close-chat:hover {
+    transform: scale(1.1);
 }
 
 /* Body */
 .chat-body {
     flex: 1;
-    padding: 15px;
-    background: var(--bg-body);
+    padding: 16px;
+    background: var(--color-surface-alt);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     scroll-behavior: smooth;
 }
 
 .message {
-    max-width: 80%;
-    padding: 10px 14px;
-    border-radius: 18px;
-    font-size: 0.9rem;
-    line-height: 1.4;
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
+    line-height: 1.5;
     position: relative;
     word-wrap: break-word;
+    box-sizing: border-box;
 }
 
 .bot-message {
     align-self: flex-start;
-    background: var(--card-bg);
-    color: var(--text-primary);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
     border-bottom-left-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 0 var(--color-border-subtle);
 }
 
 .user-message {
     align-self: flex-end;
-    background: var(--primary-color);
-    color: white;
+    background: rgba(28, 176, 246, 0.1);
+    color: var(--color-text);
+    border: 2px solid var(--color-secondary);
     border-bottom-right-radius: 4px;
-    box-shadow: 0 2px 8px rgba(74, 126, 227, 0.3);
+    box-shadow: 0 2px 0 rgba(28, 176, 246, 0.1);
 }
 
 /* Footer */
 .chat-footer {
-    padding: 10px;
-    background: var(--card-bg);
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 12px;
+    background: var(--color-surface);
+    border-top: 2px solid var(--color-border);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
 .chat-footer input {
     flex: 1;
-    border: 1px solid transparent;
-    background: #f0f2f5;
-    padding: 10px 15px;
-    border-radius: 20px;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface-alt);
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
     outline: none;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    transition: all 0.2s;
+    color: var(--color-text);
+    font-size: 0.92rem;
+    transition: all var(--transition-base);
 }
 
 .chat-footer input:focus {
-    background: white;
-    border-color: var(--primary-color);
+    background: var(--color-surface);
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 0 4px rgba(28, 176, 246, 0.15);
 }
 
 .btn-tool,
 .btn-send {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    color: var(--primary-color);
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
     cursor: pointer;
-    padding: 6px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 var(--color-border-subtle);
+    transition: all var(--transition-fast);
 }
 
 .btn-tool:hover,
 .btn-send:hover {
-    background: rgba(74, 126, 227, 0.1);
+    color: var(--color-secondary);
+    border-color: var(--color-secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 rgba(28, 176, 246, 0.2);
 }
 
-/* Nutrition Card Style */
+.btn-tool:active,
+.btn-send:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 transparent;
+}
+
+/* Nutrition Card Style (AI response bento card) */
 .nutri-card {
-    background: var(--color-surface-alt);
-    border: 1px solid #e1e4e8;
-    border-radius: 12px;
-    padding: 12px;
-    margin-top: 5px;
-    min-width: 220px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-top: 8px;
+    min-width: 240px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    transition: transform var(--transition-base);
+}
+
+.nutri-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border-subtle);
 }
 
 .nutri-header {
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-    margin-bottom: 5px;
+    align-items: center;
+    border-bottom: 2px solid var(--color-border-subtle);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
 }
 
 .nutri-cal {
-    background: var(--primary-color);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 0.8rem;
+    background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-weight: 800;
+    font-size: 0.82rem;
+    box-shadow: 0 2px 0 var(--color-primary-hover);
 }
 
 .nutri-macros {
     display: flex;
     gap: 8px;
     font-size: 0.8rem;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .macro {
-    font-weight: 600;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
 }
 
-.macro.p {
-    color: #c62828;
-}
+.macro.p { background: var(--color-danger-bg); color: var(--color-danger); }
+.macro.c { background: var(--color-warning-bg); color: var(--color-warning); }
+.macro.f { background: var(--color-info-bg); color: var(--color-info); }
 
-.macro.c {
-    color: #1565c0;
-}
-
-.macro.f {
-    color: #ef6c00;
+.nutri-advice {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+    margin: 0 0 12px 0;
 }
 
 .btn-add-log {
     width: 100%;
-    background: white;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-    padding: 6px;
-    border-radius: 6px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-secondary);
+    color: var(--color-secondary);
+    padding: 8px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-weight: 700;
+    font-size: 0.88rem;
+    box-shadow: 0 3px 0 rgba(28, 176, 246, 0.2);
+    transition: all var(--transition-fast);
 }
 
 .btn-add-log:hover {
-    background: var(--primary-color);
+    background: var(--color-secondary);
     color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 rgba(28, 176, 246, 0.3);
 }
 
-/* --- 3. MOBILE OVERRIDES (Giao diện Native App) --- */
-@media (max-width: 480px) {
+.btn-add-log:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 transparent;
+}
 
+/* --- 3. MOBILE OVERRIDES (Native App Bouncy Drawer) --- */
+@media (max-width: 480px) {
     /* Bong bóng trên mobile */
     .chat-bubble {
         width: 56px;
@@ -2410,21 +2424,22 @@ main.dashboard-content.dashboard-empty-state {
     /* Cửa sổ chat full màn hình */
     .chat-window {
         width: 100% !important;
-        height: 100% !important;
-        height: 100dvh !important;
-        /* Fix lỗi thanh địa chỉ iOS */
+        height: var(--chat-vh, 100%) !important;
+        height: var(--chat-vh, 100dvh) !important;
+        position: fixed !important;
+        top: var(--chat-vp-top, auto) !important;
         bottom: 0 !important;
         right: 0 !important;
         border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
         transform-origin: bottom center;
-        transform: translateY(100%);
-        /* Trượt từ dưới lên */
+        transform: translateY(100%) !important;
         opacity: 1;
-        /* Luôn visible để trượt */
     }
 
     .chat-window.active {
-        transform: translateY(0);
+        transform: translateY(0) !important;
     }
 
     /* Chặn cuộn nền khi mở chat */
@@ -2440,7 +2455,7 @@ main.dashboard-content.dashboard-empty-state {
     }
 
     .chat-footer {
-        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
     }
 
     .close-chat {

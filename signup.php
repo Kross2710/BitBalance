@@ -54,9 +54,6 @@ if ($isLoggedIn) {
                         value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ''; ?>">
                 </div>
 
-                <input type="text" placeholder="Username" name="username" required
-                    value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
-
                 <input type="email" placeholder="Email" name="email" required
                     value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
 

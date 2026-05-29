@@ -17,7 +17,7 @@ if ($isLoggedIn) {
 
     $userGoal = getUserIntakeGoal($userId); // Get user's calorie goal
     // Fallback khi user chưa có dòng trong userStatus (fetch trả về false)
-    $userStreak = getUserLoggingStreak($userId) ?: ['logging_streak' => 0, 'longest_logging_streak' => 0];
+    $userStreak = getUserLoggingStreak($userId) ?: ['logging_streak' => 0, 'longest_logging_streak' => 0, 'streak_freezes' => 0, 'broken_streak' => 0];
 
     // XP: lazy-finalize yesterday's goal-hit + re-check streak milestones,
     // then load the summary the header bar renders. Wrapped — XP must never

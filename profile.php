@@ -61,11 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Update basic profile information
         $first_name = trim($_POST['first_name']);
         $last_name = trim($_POST['last_name']);
+        $username = trim($_POST['username'] ?? '');
         $email = trim($_POST['email']);
         $bio = trim($_POST['bio']);
 
-        if (empty($first_name) || empty($last_name) || empty($email)) {
+        if (empty($first_name) || empty($last_name) || empty($username) || empty($email)) {
             $error_message = "Please fill in all required fields.";
+        } elseif (!preg_match('/^[A-Za-z0-9_.#\-]{3,30}$/', $username)) {
+            $error_message = "Username must be 3–30 characters: letters, numbers, and . # - _";
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error_message = "Please enter a valid email address.";
         } else {
@@ -76,34 +79,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($stmt->fetch()) {
                     $error_message = "This email is already taken by another user.";
                 } else {
-                    // Update user information
-                    $stmt = $pdo->prepare("
-                        UPDATE user 
-                        SET first_name = ?, last_name = ?, email = ? 
-                        WHERE user_id = ?
-                    ");
-                    $stmt->execute([$first_name, $last_name, $email, $user_id]);
+                    // Check if username is taken by another user (collation is _ci → case-insensitive)
+                    $stmt = $pdo->prepare("SELECT user_id FROM user WHERE user_name = ? AND user_id != ?");
+                    $stmt->execute([$username, $user_id]);
+                    if ($stmt->fetch()) {
+                        $error_message = "This username is already taken.";
+                    } else {
+                        // Update user information
+                        $stmt = $pdo->prepare("
+                            UPDATE user
+                            SET first_name = ?, last_name = ?, user_name = ?, email = ?
+                            WHERE user_id = ?
+                        ");
+                        $stmt->execute([$first_name, $last_name, $username, $email, $user_id]);
 
-                    // Update bio in userStatus
-                    $stmt = $pdo->prepare("UPDATE userStatus SET profile_bio = ? WHERE user_id = ?");
-                    $stmt->execute([$bio, $user_id]);
+                        // Update bio in userStatus
+                        $stmt = $pdo->prepare("UPDATE userStatus SET profile_bio = ? WHERE user_id = ?");
+                        $stmt->execute([$bio, $user_id]);
 
-                    // Update session data
-                    $_SESSION['user']['first_name'] = $first_name;
-                    $_SESSION['user']['last_name'] = $last_name;
-                    $_SESSION['user']['email'] = $email;
+                        // Update session data
+                        $_SESSION['user']['first_name'] = $first_name;
+                        $_SESSION['user']['last_name'] = $last_name;
+                        $_SESSION['user']['user_name'] = $username;
+                        $_SESSION['user']['email'] = $email;
 
-                    $success_message = "Profile updated successfully!";
+                        $success_message = "Profile updated successfully!";
 
-                    // Refresh profile data
-                    $stmt = $pdo->prepare("
-                        SELECT u.*, us.theme_preference, us.profile_bio, us.status 
-                        FROM user u 
-                        JOIN userStatus us ON u.user_id = us.user_id 
-                        WHERE u.user_id = ?
-                    ");
-                    $stmt->execute([$user_id]);
-                    $profile = $stmt->fetch();
+                        // Refresh profile data
+                        $stmt = $pdo->prepare("
+                            SELECT u.*, us.theme_preference, us.profile_bio, us.status
+                            FROM user u
+                            JOIN userStatus us ON u.user_id = us.user_id
+                            WHERE u.user_id = ?
+                        ");
+                        $stmt->execute([$user_id]);
+                        $profile = $stmt->fetch();
+                    }
                 }
             } catch (PDOException $e) {
                 $error_message = "Error updating profile.";
@@ -134,6 +145,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } catch (PDOException $e) {
             $error_message = "Error updating theme.";
             error_log("Theme update error: " . $e->getMessage());
+        }
+    } elseif (isset($_POST['change_language'])) {
+        // Update language preference. Mirrors theme: persist to userStatus,
+        // refresh session + cookie via set_locale(), then redirect so the
+        // new locale paints on the next request.
+        $new_lang = $_POST['language'] ?? '';
+        if (is_valid_locale($new_lang)) {
+            set_locale($new_lang, $pdo, $user_id);
+            header('Location: profile.php?lang_updated=1#appearance');
+            exit();
+        } else {
+            $error_message = 'Invalid language selected.';
         }
     } elseif (isset($_POST['upload_image'])) {
         // Handle profile image upload
@@ -332,12 +355,12 @@ try {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?= htmlspecialchars($profile['theme_preference'] ?? 'system') ?>">
+<html lang="<?= html_lang_attr() ?>" data-theme="<?= htmlspecialchars($profile['theme_preference'] ?? 'system') ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile Settings | BitBalance</title>
+    <title><?= t('profile.title_alt') ?></title>
 
     <?php
     $pageCss = ['css/pages/profile.css'];
@@ -356,7 +379,7 @@ try {
 
         <aside class="profile-sidebar">
             <form id="avatarUploadForm" method="POST" enctype="multipart/form-data">
-                <div class="avatar-container" onclick="document.getElementById('avatarFileInput').click()" title="Click to change profile picture">
+                <div class="avatar-container" onclick="document.getElementById('avatarFileInput').click()" title="<?= t('profile.avatar.title') ?>">
                     <?php if (!empty($profile['profile_image']) && file_exists($profile['profile_image'])): ?>
                         <img src="<?= BASE_URL ?><?= htmlspecialchars($profile['profile_image']) ?>" class="profile-avatar" alt="Avatar">
                     <?php else: ?>
@@ -364,7 +387,7 @@ try {
                     <?php endif; ?>
                     <div class="avatar-overlay">
                         <i class="fas fa-camera"></i>
-                        <span>Change Photo</span>
+                        <span><?= t('profile.avatar.change') ?></span>
                     </div>
                 </div>
                 <input type="file" name="profile_image" id="avatarFileInput" accept="image/*" style="display: none;" onchange="document.getElementById('avatarSubmitBtn').click()">
@@ -375,21 +398,25 @@ try {
             <p class="profile-email"><?= htmlspecialchars($profile['email']) ?></p>
 
             <nav class="sidebar-menu">
-                <a href="#basic-info" class="menu-link"><i class="fas fa-user-edit"></i> Personal Info</a>
-                <a href="#physical-stats" class="menu-link"><i class="fas fa-child"></i> Body Metrics</a>
-                <a href="#appearance" class="menu-link"><i class="fas fa-paint-brush"></i> Appearance</a>
-                <a href="#security" class="menu-link"><i class="fas fa-shield-alt"></i> Security</a>
+                <a href="#basic-info" class="menu-link"><i class="fas fa-user-edit"></i> <?= t('profile.nav.personal') ?></a>
+                <a href="#physical-stats" class="menu-link"><i class="fas fa-child"></i> <?= t('profile.nav.body') ?></a>
+                <a href="#appearance" class="menu-link"><i class="fas fa-paint-brush"></i> <?= t('profile.nav.appearance') ?></a>
+                <a href="#language" class="menu-link"><i class="fas fa-globe"></i> <?= t('profile.nav.language') ?></a>
+                <a href="#security" class="menu-link"><i class="fas fa-shield-alt"></i> <?= t('profile.nav.security') ?></a>
             </nav>
 
             <a href="<?= BASE_URL ?>logout.php" class="btn-logout">
-                <i class="fas fa-sign-out-alt"></i> Sign Out
+                <i class="fas fa-sign-out-alt"></i> <?= t('profile.sign_out') ?>
             </a>
         </aside>
 
         <main class="profile-content">
 
             <?php if (isset($_GET['theme_updated'])): ?>
-                <div class="alert success"><i class="fas fa-check-circle"></i> Theme updated!</div>
+                <div class="alert success"><i class="fas fa-check-circle"></i> <?= t('profile.alert.theme_updated') ?></div>
+            <?php endif; ?>
+            <?php if (isset($_GET['lang_updated'])): ?>
+                <div class="alert success"><i class="fas fa-check-circle"></i> <?= t('profile.alert.lang_updated') ?></div>
             <?php endif; ?>
             <?php if (!empty($success_message)): ?>
                 <div class="alert success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success_message) ?>
@@ -404,34 +431,43 @@ try {
                 <div class="card-header">
                     <div class="header-icon icon-blue"><i class="fas fa-user"></i></div>
                     <div>
-                        <h2>Basic Information</h2>
-                        <p>Update your personal details and bio.</p>
+                        <h2><?= t('profile.basic.title') ?></h2>
+                        <p><?= t('profile.basic.sub') ?></p>
                     </div>
                 </div>
                 <form method="POST">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>First Name</label>
+                            <label><?= t('profile.field.first_name') ?></label>
                             <input type="text" name="first_name" value="<?= htmlspecialchars($profile['first_name']) ?>"
                                 required>
                         </div>
                         <div class="form-group">
-                            <label>Last Name</label>
+                            <label><?= t('profile.field.last_name') ?></label>
                             <input type="text" name="last_name" value="<?= htmlspecialchars($profile['last_name']) ?>"
                                 required>
                         </div>
                         <div class="form-group full-width">
-                            <label>Email Address</label>
+                            <label><?= t('profile.field.username') ?></label>
+                            <input type="text" name="username" id="usernameInput"
+                                value="<?= htmlspecialchars($profile['user_name'] ?? '') ?>"
+                                pattern="[A-Za-z0-9_.#\-]{3,30}"
+                                title="<?= t('profile.field.username_title') ?>"
+                                autocomplete="off" required>
+                            <small class="field-hint"><?= t_raw('profile.field.username_hint') ?></small>
+                        </div>
+                        <div class="form-group full-width">
+                            <label><?= t('profile.field.email') ?></label>
                             <input type="email" name="email" value="<?= htmlspecialchars($profile['email']) ?>"
                                 required>
                         </div>
                         <div class="form-group full-width">
-                            <label>Bio</label>
+                            <label><?= t('profile.field.bio') ?></label>
                             <textarea name="bio"
-                                placeholder="Share a little about yourself..."><?= htmlspecialchars($profile['profile_bio'] ?? '') ?></textarea>
+                                placeholder="<?= t('profile.field.bio_placeholder') ?>"><?= htmlspecialchars($profile['profile_bio'] ?? '') ?></textarea>
                         </div>
                     </div>
-                    <button type="submit" name="update_info" class="btn-save">Save Changes</button>
+                    <button type="submit" name="update_info" class="btn-save"><?= t('profile.basic.save') ?></button>
                 </form>
             </section>
 
@@ -439,38 +475,38 @@ try {
                 <div class="card-header">
                     <div class="header-icon icon-green"><i class="fas fa-ruler-combined"></i></div>
                     <div>
-                        <h2>Body Metrics</h2>
-                        <p>Used to calculate your daily calorie goals.</p>
+                        <h2><?= t('profile.body.title') ?></h2>
+                        <p><?= t('profile.body.sub') ?></p>
                     </div>
                 </div>
                 <form method="POST">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Age</label>
+                            <label><?= t('profile.body.age') ?></label>
                             <input type="number" name="age"
-                                value="<?= htmlspecialchars((int) $physical_info['age'] ?? '') ?>" placeholder="Years">
+                                value="<?= htmlspecialchars((int) $physical_info['age'] ?? '') ?>" placeholder="<?= t('profile.body.age_placeholder') ?>">
                         </div>
                         <div class="form-group">
-                            <label>Gender</label>
+                            <label><?= t('profile.body.gender') ?></label>
                             <select name="gender">
-                                <option value="">Select...</option>
+                                <option value=""><?= t('profile.body.gender.select') ?></option>
                                 <option value="male" <?= ($physical_info['gender'] ?? '') === 'male' ? 'selected' : '' ?>>
-                                    Male</option>
-                                <option value="female" <?= ($physical_info['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
+                                    <?= t('profile.body.gender.male') ?></option>
+                                <option value="female" <?= ($physical_info['gender'] ?? '') === 'female' ? 'selected' : '' ?>><?= t('profile.body.gender.female') ?></option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Weight (kg)</label>
+                            <label><?= t('profile.body.weight') ?></label>
                             <input type="number" name="weight"
                                 value="<?= htmlspecialchars((int) $physical_info['weight'] ?? '') ?>" placeholder="kg">
                         </div>
                         <div class="form-group">
-                            <label>Height (cm)</label>
+                            <label><?= t('profile.body.height') ?></label>
                             <input type="number" name="height"
                                 value="<?= htmlspecialchars((int) $physical_info['height'] ?? '') ?>" placeholder="cm">
                         </div>
                     </div>
-                    <button type="submit" name="update_physical_stats" class="btn-save">Update Stats</button>
+                    <button type="submit" name="update_physical_stats" class="btn-save"><?= t('profile.body.save') ?></button>
                 </form>
             </section>
 
@@ -478,8 +514,8 @@ try {
                 <div class="card-header">
                     <div class="header-icon icon-purple"><i class="fas fa-moon"></i></div>
                     <div>
-                        <h2>Appearance</h2>
-                        <p>Customize how BitBalance looks for you.</p>
+                        <h2><?= t('profile.appearance.title') ?></h2>
+                        <p><?= t('profile.appearance.sub') ?></p>
                     </div>
                 </div>
                 <form method="POST">
@@ -487,64 +523,93 @@ try {
                         <div class="theme-option <?= ($profile['theme_preference'] === 'light') ? 'active' : '' ?>"
                             onclick="selectTheme('light')">
                             <i class="fas fa-sun"></i>
-                            <div>Light Mode</div>
+                            <div><?= t('profile.theme.light') ?></div>
                         </div>
                         <div class="theme-option <?= ($profile['theme_preference'] === 'dark') ? 'active' : '' ?>"
                             onclick="selectTheme('dark')">
                             <i class="fas fa-moon"></i>
-                            <div>Dark Mode</div>
+                            <div><?= t('profile.theme.dark') ?></div>
                         </div>
                         <div class="theme-option <?= (($profile['theme_preference'] ?? 'system') === 'system') ? 'active' : '' ?>"
                             onclick="selectTheme('system')">
                             <i class="fas fa-desktop"></i>
-                            <div>System</div>
+                            <div><?= t('profile.theme.system') ?></div>
                         </div>
                     </div>
                     <input type="hidden" name="theme" id="selectedTheme"
                         value="<?= htmlspecialchars($profile['theme_preference'] ?? 'system') ?>">
-                    <button type="submit" name="change_theme" class="btn-save btn-save--theme">Apply Theme</button>
+                    <button type="submit" name="change_theme" class="btn-save btn-save--theme"><?= t('profile.theme.apply') ?></button>
                 </form>
             </section>
 
+            <section id="language" class="settings-card">
+                <div class="card-header">
+                    <div class="header-icon icon-blue"><i class="fas fa-globe"></i></div>
+                    <div>
+                        <h2><?= t('profile.language.title') ?></h2>
+                        <p><?= t('profile.language.sub') ?></p>
+                    </div>
+                </div>
+                <form method="POST">
+                    <div class="theme-options">
+                        <?php
+                        // Render one tile per registered locale. The tile mirrors the
+                        // theme-tile UX so we don't need new CSS.
+                        $__currentLocale = current_locale();
+                        foreach (available_locales() as $__code => $__meta):
+                        ?>
+                            <div class="theme-option <?= $__code === $__currentLocale ? 'active' : '' ?>"
+                                 onclick="selectLanguage('<?= htmlspecialchars($__code, ENT_QUOTES) ?>')">
+                                <i class="fas fa-language"></i>
+                                <div><?= htmlspecialchars($__meta['native']) ?></div>
+                                <small><?= htmlspecialchars($__meta['english']) ?></small>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <input type="hidden" name="language" id="selectedLanguage"
+                        value="<?= htmlspecialchars($__currentLocale) ?>">
+                    <button type="submit" name="change_language" class="btn-save btn-save--theme"><?= t('profile.language.apply') ?></button>
+                </form>
+            </section>
 
 
             <section id="security" class="settings-card danger-zone">
                 <div class="card-header card-header--danger">
                     <div class="header-icon icon-red"><i class="fas fa-shield-alt"></i></div>
                     <div>
-                        <h2>Security Zone</h2>
-                        <p>Manage password and account status.</p>
+                        <h2><?= t('profile.security.title') ?></h2>
+                        <p><?= t('profile.security.sub') ?></p>
                     </div>
                 </div>
 
                 <form method="POST" class="security-form">
-                    <h4 class="security-form__title">Change Password</h4>
+                    <h4 class="security-form__title"><?= t('profile.security.change_password') ?></h4>
                     <div class="form-grid">
                         <div class="form-group full-width">
-                            <label>Current Password</label>
+                            <label><?= t('profile.security.current') ?></label>
                             <input type="password" name="current_password" placeholder="********">
                         </div>
                         <div class="form-group">
-                            <label>New Password</label>
+                            <label><?= t('profile.security.new') ?></label>
                             <input type="password" name="new_password" placeholder="********">
                         </div>
                         <div class="form-group">
-                            <label>Confirm Password</label>
+                            <label><?= t('profile.security.confirm') ?></label>
                             <input type="password" name="confirm_new_password" placeholder="********">
                         </div>
                     </div>
-                    <button type="submit" name="change_password" class="btn-save">Update Password</button>
+                    <button type="submit" name="change_password" class="btn-save"><?= t('profile.security.update') ?></button>
                 </form>
 
                 <div class="archive-section">
-                    <h4 class="archive-section__title">Archive Account</h4>
+                    <h4 class="archive-section__title"><?= t('profile.archive.title') ?></h4>
                     <p class="archive-section__desc">
-                        This will archive your account. Type <strong>ARCHIVE</strong> to confirm.
+                        <?= t_raw('profile.archive.desc') ?>
                     </p>
-                    <form method="POST" onsubmit="return confirm('Are you sure?');" class="archive-section__form">
-                        <input type="text" name="confirm_archive" placeholder="Type ARCHIVE" required
+                    <form method="POST" onsubmit="return confirm(<?= json_encode(t_raw('profile.archive.confirm')) ?>);" class="archive-section__form">
+                        <input type="text" name="confirm_archive" placeholder="<?= t('profile.archive.placeholder') ?>" required
                             class="archive-section__input">
-                        <button type="submit" name="archive_account" class="btn-danger">Archive Account</button>
+                        <button type="submit" name="archive_account" class="btn-danger"><?= t('profile.archive.btn') ?></button>
                     </form>
                 </div>
             </section>
@@ -553,10 +618,23 @@ try {
     </div>
 
     <script>
+        // Each settings section has its own form/tile set, so scope the
+        // "active" toggle to the clicked tile's parent rather than nuking
+        // every .theme-option on the page (which used to clear Language
+        // when you picked a Theme and vice versa).
         function selectTheme(theme) {
             document.getElementById('selectedTheme').value = theme;
-            document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            const tile = event.currentTarget;
+            const parent = tile.closest('.theme-options') || document;
+            parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+            tile.classList.add('active');
+        }
+        function selectLanguage(code) {
+            document.getElementById('selectedLanguage').value = code;
+            const tile = event.currentTarget;
+            const parent = tile.closest('.theme-options') || document;
+            parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+            tile.classList.add('active');
         }
     </script>
 </body>

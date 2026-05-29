@@ -12,13 +12,13 @@ $activeHeader = 'ai-coach';
 $csrfToken    = csrf_token();
 ?>
 <!DOCTYPE html>
-<html lang="en"
+<html lang="<?= html_lang_attr() ?>"
     data-theme="<?php echo $_SESSION['user']['theme_preference'] ?? 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Coach — BitBalance</title>
+    <title><?= t('aic.title_tag') ?></title>
 
     <?php
     $pageCss = ['css/pages/ai-coach.css'];
@@ -38,34 +38,34 @@ $csrfToken    = csrf_token();
         <aside class="aic-sidebar" id="aicSidebar">
             <div class="aic-sidebar-header">
                 <button class="aic-new-chat-btn" id="aicNewChatBtn">
-                    <i class="fas fa-plus"></i> New chat
+                    <i class="fas fa-plus"></i> <?= t('aic.new_chat') ?>
                 </button>
             </div>
             <div class="aic-conv-list" id="aicConvList">
-                <div class="aic-conv-empty">Loading...</div>
+                <div class="aic-conv-empty"><?= t('aic.loading') ?></div>
             </div>
             <div class="aic-sidebar-footer">
-                <span class="aic-usage" id="aicUsage">— / — today</span>
+                <span class="aic-usage" id="aicUsage"><?= t('aic.usage_placeholder') ?></span>
             </div>
         </aside>
 
         <!-- Main chat panel -->
         <section class="aic-main">
             <div class="aic-main-topbar">
-                <button class="aic-sidebar-toggle" id="aicSidebarToggle" title="Toggle chats" aria-label="Toggle chat list">
+                <button class="aic-sidebar-toggle" id="aicSidebarToggle" title="<?= t('aic.toggle_chats_title') ?>" aria-label="<?= t('aic.toggle_chats_aria') ?>">
                     <i class="fas fa-bars"></i>
                 </button>
-                <span class="aic-main-title">AI Coach</span>
+                <span class="aic-main-title"><?= t('aic.main_title') ?></span>
             </div>
             <div class="aic-messages" id="aicMessages">
                 <div class="aic-welcome">
                     <div class="aic-welcome-icon"><i class="fas fa-sparkles"></i></div>
-                    <h1>AI Coach</h1>
-                    <p>Your personal nutrition &amp; fitness assistant. Ask me anything about your goals, meals, or progress.</p>
+                    <h1><?= t('aic.welcome.title') ?></h1>
+                    <p><?= t('aic.welcome.subtitle') ?></p>
                     <div class="aic-suggestions">
-                        <button class="aic-suggest" data-prompt="How am I doing toward my calorie goal today?">How am I doing toward my calorie goal today?</button>
-                        <button class="aic-suggest" data-prompt="Suggest a high-protein dinner under 600 kcal.">Suggest a high-protein dinner under 600 kcal.</button>
-                        <button class="aic-suggest" data-prompt="What patterns do you see in my last week of eating?">What patterns do you see in my last week of eating?</button>
+                        <button class="aic-suggest" data-prompt="<?= t('aic.suggest.goal') ?>"><?= t('aic.suggest.goal') ?></button>
+                        <button class="aic-suggest" data-prompt="<?= t('aic.suggest.dinner') ?>"><?= t('aic.suggest.dinner') ?></button>
+                        <button class="aic-suggest" data-prompt="<?= t('aic.suggest.patterns') ?>"><?= t('aic.suggest.patterns') ?></button>
                     </div>
                 </div>
             </div>
@@ -76,13 +76,13 @@ $csrfToken    = csrf_token();
 
                 <div class="aic-image-preview" id="aicImagePreview" hidden>
                     <img id="aicImagePreviewImg" alt="">
-                    <button type="button" class="aic-img-remove" id="aicImageRemove" title="Remove image">
+                    <button type="button" class="aic-img-remove" id="aicImageRemove" title="<?= t('aic.remove_image') ?>">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <div class="aic-composer-row">
-                    <label class="aic-attach-btn" title="Attach image">
+                    <label class="aic-attach-btn" title="<?= t('aic.attach_image') ?>">
                         <i class="fas fa-image"></i>
                         <input type="file" name="image" id="aicImageInput" accept="image/jpeg,image/png,image/webp" hidden>
                     </label>
@@ -90,14 +90,14 @@ $csrfToken    = csrf_token();
                         class="aic-input"
                         id="aicInput"
                         name="message"
-                        placeholder="Ask your AI Coach..."
+                        placeholder="<?= t('aic.input_placeholder') ?>"
                         rows="1"></textarea>
-                    <button type="submit" class="aic-send-btn" id="aicSendBtn" title="Send">
+                    <button type="submit" class="aic-send-btn" id="aicSendBtn" title="<?= t('aic.send_title') ?>">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
                 <div class="aic-composer-hint">
-                    AI may make mistakes. Verify important advice with a professional.
+                    <?= t('aic.composer_hint') ?>
                 </div>
             </form>
         </section>
@@ -108,6 +108,27 @@ $csrfToken    = csrf_token();
         const API = '<?= BASE_URL ?>handlers/ai_coach.php';
         const BASE = '<?= BASE_URL ?>';
         const CSRF = '<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>';
+        // Translated strings used by the streaming chat client. We expose them
+        // as raw template strings; the JS does its own {placeholder} substitution
+        // alongside DOM-safe escaping.
+        const I18N = {
+            logging: <?= json_encode(t_raw('aic.logging')) ?>,
+            logged: <?= json_encode(t_raw('aic.logged')) ?>,
+            couldNotLog: <?= json_encode(t_raw('aic.could_not_log', ['error' => '{error}'])) ?>,
+            unknownError: <?= json_encode(t_raw('aic.unknown_error')) ?>,
+            networkError: <?= json_encode(t_raw('aic.network_error', ['error' => '{error}'])) ?>,
+            errorLoading: <?= json_encode(t_raw('aic.error_loading')) ?>,
+            noChats: <?= json_encode(t_raw('aic.no_chats')) ?>,
+            deleteTitle: <?= json_encode(t_raw('aic.delete_title')) ?>,
+            confirmDelete: <?= json_encode(t_raw('aic.confirm_delete')) ?>,
+            couldNotLoad: <?= json_encode(t_raw('aic.could_not_load', ['error' => '{error}'])) ?>,
+            imageTooBig: <?= json_encode(t_raw('aic.image_too_big')) ?>,
+            imageReadFailed: <?= json_encode(t_raw('aic.image_read_failed', ['error' => '{error}'])) ?>,
+            decodeFailed: <?= json_encode(t_raw('aic.decode_failed')) ?>,
+            emptyImage: <?= json_encode(t_raw('aic.empty_image')) ?>,
+            encodeFailed: <?= json_encode(t_raw('aic.encode_failed')) ?>,
+            usageFmt: <?= json_encode(t_raw('aic.usage', ['used' => '{used}', 'limit' => '{limit}'])) ?>,
+        };
 
         const $messages = document.getElementById('aicMessages');
         const $convList = document.getElementById('aicConvList');
@@ -170,10 +191,6 @@ $csrfToken    = csrf_token();
             const vt = vv ? vv.offsetTop : 0;
             docEl.style.setProperty('--aic-vh', vh + 'px');
             docEl.style.setProperty('--aic-vp-top', vt + 'px');
-            // Belt-and-braces: undo any stray scroll iOS may have introduced.
-            if (window.scrollY !== 0 || window.scrollX !== 0) {
-                window.scrollTo(0, 0);
-            }
         }
         syncViewport();
         window.addEventListener('resize', syncViewport);
@@ -182,9 +199,22 @@ $csrfToken    = csrf_token();
             window.visualViewport.addEventListener('resize', syncViewport);
             window.visualViewport.addEventListener('scroll', syncViewport);
         }
-        // After keyboard dismisses, iOS may briefly leave scroll offset.
+        
+        // Programmatically reset scroll position on focus and blur to counteract iOS forced page scrolling.
+        // We isolate this logic from continuous visualViewport event listeners to prevent the infinite
+        // scroll event recursion loop which freezes and crashes Safari on iOS (iPhones).
+        const resetScroll = () => {
+            if (window.scrollY !== 0 || window.scrollX !== 0) {
+                window.scrollTo(0, 0);
+            }
+            syncViewport();
+        };
+
+        $input.addEventListener('focus', () => {
+            setTimeout(resetScroll, 100);
+        });
         $input.addEventListener('blur', () => {
-            setTimeout(syncViewport, 50);
+            setTimeout(resetScroll, 100);
         });
 
         // ---------- Helpers ----------
@@ -309,7 +339,7 @@ $csrfToken    = csrf_token();
 
                 btn.disabled = true;
                 const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + I18N.logging;
 
                 const fd = new FormData();
                 fd.append('food_item',     item.food_name);
@@ -329,16 +359,16 @@ $csrfToken    = csrf_token();
                     const data = await r.json();
                     if (data.ok) {
                         btn.classList.add('logged');
-                        btn.innerHTML = '<i class="fas fa-check"></i> Logged';
+                        btn.innerHTML = '<i class="fas fa-check"></i> ' + I18N.logged;
                     } else {
                         btn.disabled = false;
                         btn.innerHTML = originalHtml;
-                        alert('Could not log: ' + (data.error || 'unknown error'));
+                        alert(I18N.couldNotLog.replace('{error}', data.error || I18N.unknownError));
                     }
                 } catch (err) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
-                    alert('Network error: ' + err.message);
+                    alert(I18N.networkError.replace('{error}', err.message));
                 }
             });
         }
@@ -385,18 +415,18 @@ $csrfToken    = csrf_token();
         async function loadConversations() {
             const data = await apiGet('list_conversations');
             if (!data.ok) {
-                $convList.innerHTML = `<div class="aic-conv-empty">Error loading</div>`;
+                $convList.innerHTML = `<div class="aic-conv-empty">${escapeHtml(I18N.errorLoading)}</div>`;
                 return;
             }
             if (!data.conversations.length) {
-                $convList.innerHTML = `<div class="aic-conv-empty">No chats yet</div>`;
+                $convList.innerHTML = `<div class="aic-conv-empty">${escapeHtml(I18N.noChats)}</div>`;
                 return;
             }
             $convList.innerHTML = data.conversations.map(c => `
                 <div class="aic-conv-item ${c.conversation_id == currentConvId ? 'active' : ''}"
                      data-id="${c.conversation_id}">
                     <div class="aic-conv-title">${escapeHtml(c.title)}</div>
-                    <button class="aic-conv-del" title="Delete" data-id="${c.conversation_id}">
+                    <button class="aic-conv-del" title="${escapeHtml(I18N.deleteTitle)}" data-id="${c.conversation_id}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -407,7 +437,7 @@ $csrfToken    = csrf_token();
             const delBtn = e.target.closest('.aic-conv-del');
             if (delBtn) {
                 e.stopPropagation();
-                if (!confirm('Delete this conversation?')) return;
+                if (!confirm(I18N.confirmDelete)) return;
                 const fd = new FormData();
                 fd.append('conversation_id', delBtn.dataset.id);
                 const r = await apiPost('delete_conversation', fd);
@@ -432,7 +462,7 @@ $csrfToken    = csrf_token();
             clearMessages();
             const data = await apiGet('get_conversation', { id });
             if (!data.ok) {
-                $messages.innerHTML = `<div class="aic-error">Could not load: ${escapeHtml(data.error || '')}</div>`;
+                $messages.innerHTML = `<div class="aic-error">${escapeHtml(I18N.couldNotLoad.replace('{error}', data.error || ''))}</div>`;
                 return;
             }
             data.messages.forEach(appendMessage);
@@ -483,11 +513,11 @@ $csrfToken    = csrf_token();
                 const img = await new Promise((resolve, reject) => {
                     const i = new Image();
                     i.onload  = () => resolve(i);
-                    i.onerror = () => reject(new Error('Could not decode image'));
+                    i.onerror = () => reject(new Error(I18N.decodeFailed));
                     i.src = blobUrl;
                 });
                 let w = img.naturalWidth, h = img.naturalHeight;
-                if (!w || !h) throw new Error('Empty image');
+                if (!w || !h) throw new Error(I18N.emptyImage);
                 if (w > MAX_EDGE || h > MAX_EDGE) {
                     const r = Math.min(MAX_EDGE / w, MAX_EDGE / h);
                     w = Math.round(w * r);
@@ -500,7 +530,7 @@ $csrfToken    = csrf_token();
                 ctx.drawImage(img, 0, 0, w, h);
                 const blob = await new Promise((resolve, reject) => {
                     canvas.toBlob(
-                        (b) => b ? resolve(b) : reject(new Error('Encode failed')),
+                        (b) => b ? resolve(b) : reject(new Error(I18N.encodeFailed)),
                         'image/jpeg',
                         JPEG_QUALITY
                     );
@@ -529,7 +559,7 @@ $csrfToken    = csrf_token();
             try {
                 const processed = await processImage(raw);
                 if (processed.size > MAX_UPLOAD_BYTES) {
-                    alert('Image is still over 5MB after processing — please try a smaller photo.');
+                    alert(I18N.imageTooBig);
                     clearPreview();
                     return;
                 }
@@ -540,7 +570,7 @@ $csrfToken    = csrf_token();
                 $previewImg.src = URL.createObjectURL(processed);
                 $preview.hidden = false;
             } catch (err) {
-                alert('Could not read image: ' + err.message);
+                alert(I18N.imageReadFailed.replace('{error}', err.message));
                 clearPreview();
             } finally {
                 $sendBtn.disabled = false;
@@ -695,10 +725,10 @@ $csrfToken    = csrf_token();
                         }
                     },
                     done: (data) => { doneInfo = data; },
-                    error: (data) => { streamError = (data && data.error) || 'Unknown error'; },
+                    error: (data) => { streamError = (data && data.error) || I18N.unknownError; },
                 });
             } catch (err) {
-                streamError = streamError || ('Network error: ' + err.message);
+                streamError = streamError || I18N.networkError.replace('{error}', err.message);
             } finally {
                 hideTyping();
             }
@@ -714,7 +744,9 @@ $csrfToken    = csrf_token();
                     attachSuggestions(bubble.node, doneInfo.food_log_suggestions);
                 }
                 if (doneInfo.usage_today != null) {
-                    $usage.textContent = `${doneInfo.usage_today} / ${doneInfo.daily_limit} today`;
+                    $usage.textContent = I18N.usageFmt
+                        .replace('{used}', doneInfo.usage_today)
+                        .replace('{limit}', doneInfo.daily_limit);
                 }
                 loadConversations();
             } else if (!bubble) {

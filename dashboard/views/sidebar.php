@@ -12,45 +12,50 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
 ?>
 <div class="sidebar">
     <a href="dashboard.php" class="nav-link <?php echo ($activePage == 'overview') ? 'active' : ''; ?>"
-        data-short="Home">
-        <i class="fas fa-th-large"></i> Overview
+        data-short="<?= t('dashboard.sidebar.overview_short') ?>">
+        <i class="fas fa-th-large"></i> <?= t('dashboard.sidebar.overview') ?>
     </a>
 
     <a href="dashboard-intake.php" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
-        data-short="Intake">
-        <i class="fas fa-utensils"></i> Food Intake
+        data-short="<?= t('dashboard.sidebar.intake_short') ?>">
+        <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>
     </a>
 
     <a href="dashboard-calculator.php" class="nav-link <?php echo ($activePage == 'calculator') ? 'active' : ''; ?>"
-        data-short="Calc">
-        <i class="fas fa-calculator"></i> Calculator
+        data-short="<?= t('dashboard.sidebar.calculator_short') ?>">
+        <i class="fas fa-calculator"></i> <?= t('dashboard.sidebar.calculator') ?>
     </a>
 
     <a href="dashboard-plan.php" class="nav-link <?php echo ($activePage == 'plan') ? 'active' : ''; ?>"
-        data-short="Plan">
-        <i class="fas fa-route"></i> Plan
+        data-short="<?= t('dashboard.sidebar.plan_short') ?>">
+        <i class="fas fa-route"></i> <?= t('dashboard.sidebar.plan') ?>
     </a>
 
     <a href="dashboard-progress.php" class="nav-link <?php echo ($activePage == 'progress') ? 'active' : ''; ?>"
-        data-short="XP">
-        <i class="fas fa-bolt"></i> Progress
+        data-short="<?= t('dashboard.sidebar.progress_short') ?>">
+        <i class="fas fa-bolt"></i> <?= t('dashboard.sidebar.progress') ?>
     </a>
 
     <a href="dashboard-history.php" class="nav-link <?php echo ($activePage == 'history') ? 'active' : ''; ?>"
-        data-short="Hist">
-        <i class="fas fa-history"></i> History
+        data-short="<?= t('dashboard.sidebar.history_short') ?>">
+        <i class="fas fa-history"></i> <?= t('dashboard.sidebar.history') ?>
     </a>
 
     <a href="dashboard-wiki.php" class="nav-link <?php echo ($activePage == 'wiki') ? 'active' : ''; ?>"
-        data-short="Wiki">
-        <i class="fas fa-book-medical"></i> Wiki
+        data-short="<?= t('dashboard.sidebar.wiki_short') ?>">
+        <i class="fas fa-book-medical"></i> <?= t('dashboard.sidebar.wiki') ?>
     </a>
 
     <a href="dashboard-friends.php" class="nav-link <?php echo ($activePage == 'friends') ? 'active' : ''; ?>"
-        data-short="Friends">
-        <i class="fas fa-user-friends"></i> Friends
+        data-short="<?= t('dashboard.sidebar.friends_short') ?>">
+        <i class="fas fa-user-friends"></i> <?= t('dashboard.sidebar.friends') ?>
         <?php if ($sidebarPendingFriends > 0): ?>
             <span class="nav-link__badge"><?= $sidebarPendingFriends ?></span>
         <?php endif; ?>
     </a>
+
+    <!-- <a href="promo-video.php" class="nav-link <?php echo ($activePage == 'promo-video') ? 'active' : ''; ?>"
+        data-short="Promo">
+        <i class="fas fa-video"></i> Video Promo
+    </a> -->
 </div>

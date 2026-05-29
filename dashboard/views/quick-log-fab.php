@@ -10,8 +10,8 @@
 ?>
 <a href="<?= BASE_URL ?>dashboard/dashboard-intake.php"
    class="quick-log-fab quick-log-fab--extended"
-   aria-label="Log food intake"
-   title="Log food intake">
+   aria-label="<?= t('fab.log_food') ?>"
+   title="<?= t('fab.log_food') ?>">
     <i class="fas fa-plus"></i>
-    <span class="quick-log-fab__label">Log</span>
+    <span class="quick-log-fab__label"><?= t('fab.log') ?></span>
 </a>

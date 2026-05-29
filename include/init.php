@@ -58,4 +58,10 @@ if ($isLoggedIn) {
 }
 
 $user = $isLoggedIn ? $_SESSION['user'] : null;
+
+// i18n bootstrap. Safe to load for both guests and logged-in users — the
+// resolver tolerates a missing $pdo and a missing language_preference column
+// (e.g. before the migration runs). See include/i18n/i18n.php.
+require_once __DIR__ . '/i18n/i18n.php';
+apply_locale(resolve_locale($pdo ?? null, $user));
 ?>

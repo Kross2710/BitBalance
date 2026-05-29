@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/log_attempt.php';
+require_once __DIR__ . '/username.php';
 
 $error_message = '';
 $success_message = '';
@@ -15,7 +16,8 @@ if (!isset($_SESSION['captcha_answer']) || !isset($_SESSION['captcha_question'])
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $first_name = trim($_POST['first_name']);
     $last_name = trim($_POST['last_name']);
-    $username = trim($_POST['username']);
+    // Username is no longer entered by the user — it is auto-generated from the
+    // first name as a Discord-style handle (e.g. "Hung4821"). See username.php.
     $email = trim($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
@@ -23,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $accept_terms = isset($_POST['accept_terms']);
 
     // Basic validation including terms acceptance
-    if (empty($first_name) || empty($last_name) || empty($username) || empty($email) || empty($password) || empty($confirm_password) || empty($captcha_answer)) {
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($confirm_password) || empty($captcha_answer)) {
         $error_message = "Please fill in all fields.";
         $captcha_question = CustomCaptcha::generateCaptcha();
     } elseif (!$accept_terms) {
@@ -53,43 +55,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $error_message = "An account with this email already exists.";
                 $captcha_question = CustomCaptcha::generateCaptcha();
             } else {
-                // Check if username already exists
-                $stmt = $pdo->prepare("SELECT user_id FROM user WHERE user_name = ?");
-                $stmt->execute([$username]);
-                if ($stmt->fetch()) {
-                    $error_message = "This username is already taken.";
-                    $captcha_question = CustomCaptcha::generateCaptcha();
-                } else {
-                    // Hash the password
-                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                // Auto-generate a unique handle from the first name (Hung → Hung4821).
+                $username = generate_handle($pdo, $first_name);
 
-                    // Insert new user
-                    $stmt = $pdo->prepare("INSERT INTO user (user_name, first_name, last_name, email, password, role, created_at) VALUES (?, ?, ?, ?, ?, 'regular', NOW())");
-                    $stmt->execute([$username, $first_name, $last_name, $email, $hashed_password]);
+                // Hash the password
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-                    $user_id = $pdo->lastInsertId();
+                // Insert new user. The UNIQUE key on user_name is the final guard
+                // against a rare race; the outer catch surfaces a retry message.
+                $stmt = $pdo->prepare("INSERT INTO user (user_name, first_name, last_name, email, password, role, created_at) VALUES (?, ?, ?, ?, ?, 'regular', NOW())");
+                $stmt->execute([$username, $first_name, $last_name, $email, $hashed_password]);
 
-                    // Insert default user status
-                    $stmt = $pdo->prepare("INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until) VALUES (?, 'active', 'system', 0, NULL)");
-                    $stmt->execute([$user_id]);
+                $user_id = $pdo->lastInsertId();
 
-                    // Auto-login the user after successful registration
-                    $_SESSION['user'] = [
-                        'user_id' => $user_id,
-                        'user_name' => $username,
-                        'first_name' => $first_name,
-                        'last_name' => $last_name,
-                        'email' => $email,
-                        'role' => 'regular'
-                    ];
+                // Insert default user status
+                $stmt = $pdo->prepare("INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until) VALUES (?, 'active', 'system', 0, NULL)");
+                $stmt->execute([$user_id]);
 
-                    // Log the signup attempt
-                    log_attempt($pdo, $user_id, 'signup', 'User signed up successfully');
+                // Auto-login the user after successful registration
+                $_SESSION['user'] = [
+                    'user_id' => $user_id,
+                    'user_name' => $username,
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'email' => $email,
+                    'role' => 'regular'
+                ];
 
-                    // Redirect to homepage
-                    header("Location: index.php");
-                    exit();
-                }
+                // Log the signup attempt
+                log_attempt($pdo, $user_id, 'signup', 'User signed up successfully');
+
+                // Redirect to homepage
+                header("Location: index.php");
+                exit();
             }
         } catch (PDOException $e) {
             $error_message = "Registration failed. Please try again.";

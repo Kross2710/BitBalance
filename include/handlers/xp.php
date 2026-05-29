@@ -185,6 +185,16 @@ function xp_commit(
         );
         $upd->execute([$newTotal, $newLevel, $newLevel, $userId]);
 
+        if ($leveledUp) {
+            $diff = $newLevel - $oldLevel;
+            $awardFreeze = $pdo->prepare(
+                "UPDATE userStatus 
+                 SET streak_freezes = streak_freezes + ?
+                 WHERE user_id = ?"
+            );
+            $awardFreeze->execute([$diff, $userId]);
+        }
+
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
@@ -372,4 +382,62 @@ function xp_consume_levelup_flash(): ?array
     $f = $_SESSION['xp_levelup_flash'];
     unset($_SESSION['xp_levelup_flash']);
     return $f;
+}
+
+/**
+ * Safely deduct XP from a user, logging a negative event in the xp_event ledger.
+ * Recalculates user's total_xp and current_level. Clamps level to prevent level down
+ * for a friendly, encouraging gamified experience.
+ */
+function xp_deduct(PDO $pdo, int $userId, string $source, int $amount): bool
+{
+    if ($amount <= 0) return false;
+    xp_ensure_row($pdo, $userId);
+
+    $pdo->beginTransaction();
+    try {
+        // Fetch current XP and level
+        $row = $pdo->prepare("SELECT total_xp, current_level FROM user_xp WHERE user_id = ? FOR UPDATE");
+        $row->execute([$userId]);
+        $r = $row->fetch(PDO::FETCH_ASSOC) ?: ['total_xp' => 0, 'current_level' => 1];
+        
+        $currentXp = (int) $r['total_xp'];
+        $currentLevel = (int) $r['current_level'];
+
+        if ($currentXp < $amount) {
+            // Not enough XP to buy/deduct
+            $pdo->rollBack();
+            return false;
+        }
+
+        // Insert a negative event to balance the ledger
+        $ins = $pdo->prepare(
+            "INSERT INTO xp_event (user_id, source, amount, ref_table, ref_id)
+             VALUES (?, ?, ?, NULL, NULL)"
+        );
+        $ins->execute([$userId, $source, -$amount]);
+
+        $newTotal = $currentXp - $amount;
+        
+        // Recalculate level based on new experience total.
+        // We clamp the level so that users NEVER drop levels upon spending XP!
+        $newLevel = xp_level_for($newTotal);
+        if ($newLevel < $currentLevel) {
+            $newLevel = $currentLevel;
+        }
+
+        $upd = $pdo->prepare(
+            "UPDATE user_xp
+             SET total_xp = ?, current_level = ?
+             WHERE user_id = ?"
+        );
+        $upd->execute([$newTotal, $newLevel, $userId]);
+
+        $pdo->commit();
+        return true;
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        error_log('xp_deduct error: ' . $e->getMessage());
+        return false;
+    }
 }

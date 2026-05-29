@@ -43,13 +43,13 @@ if ($isLoggedIn) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en"
+<html lang="<?= html_lang_attr() ?>"
     data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Log | BitBalance</title>
+    <title><?= t('history.title_alt') ?></title>
 
     <?php
     $pageComponents = ['sidebar', 'fab'];
@@ -57,8 +57,6 @@ if ($isLoggedIn) {
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
@@ -72,42 +70,42 @@ if ($isLoggedIn) {
                 <?php if (!$isLoggedIn): ?>
                     <div class="demo-banner">
                         <i class="fas fa-flask"></i>
-                        <span><strong>You're exploring a live demo.</strong> This is sample history — create a free account to save and edit your own food log.</span>
-                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                        <span><strong><?= t('history.demo_note') ?></strong> <?= t('history.demo_body') ?></span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta"><?= t('dashboard.demo.cta') ?></a>
                     </div>
                 <?php endif; ?>
 
                 <section class="filter-card">
                     <div class="card-header">
-                        <h3><i class="fas fa-history"></i> Intake History</h3>
-                        <p class="subtitle">Review your past meals and nutritional data.</p>
+                        <h3><i class="fas fa-history"></i> <?= t('history.heading') ?></h3>
+                        <p class="subtitle"><?= t('history.subtitle_short') ?></p>
                     </div>
 
                     <div class="filter-grid">
                         <div class="filter-item search-box">
                             <i class="fas fa-search search-icon"></i>
-                            <input id="searchInput" type="text" placeholder="Search food, meal type...">
+                            <input id="searchInput" type="text" placeholder="<?= t('history.search_placeholder') ?>">
                         </div>
 
                         <div class="filter-item">
                             <div class="select-wrapper">
                                 <select id="mealTypeFilter">
-                                    <option value="">🍽️ All Meals</option>
-                                    <option value="breakfast">🌅 Breakfast</option>
-                                    <option value="lunch">☀️ Lunch</option>
-                                    <option value="dinner">🌙 Dinner</option>
-                                    <option value="snack">🍪 Snack</option>
+                                    <option value=""><?= t('history.all_meals') ?></option>
+                                    <option value="breakfast"><?= t('history.meal.breakfast_emoji') ?></option>
+                                    <option value="lunch"><?= t('history.meal.lunch_emoji') ?></option>
+                                    <option value="dinner"><?= t('history.meal.dinner_emoji') ?></option>
+                                    <option value="snack"><?= t('history.meal.snack_emoji') ?></option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="filter-item date-group">
                             <div class="date-input">
-                                <span class="date-label">From</span>
+                                <span class="date-label"><?= t('history.from') ?></span>
                                 <input type="date" id="startDateFilter">
                             </div>
                             <div class="date-input">
-                                <span class="date-label">To</span>
+                                <span class="date-label"><?= t('history.to') ?></span>
                                 <input type="date" id="endDateFilter">
                             </div>
                         </div>
@@ -122,13 +120,13 @@ if ($isLoggedIn) {
                         <table id="logs-table" class="modern-table modern-table--with-date">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Food Item</th>
-                                    <th>Calories</th>
-                                    <th>Macros (g)</th>
-                                    <th>Meal Category</th>
-                                    <th>Time</th>
-                                    <th class="row-actions-head">Action</th>
+                                    <th><?= t('history.col.date') ?></th>
+                                    <th><?= t('history.col.food_item') ?></th>
+                                    <th><?= t('history.col.calories') ?></th>
+                                    <th><?= t('history.col.macros') ?></th>
+                                    <th><?= t('history.col.meal_category') ?></th>
+                                    <th><?= t('history.col.time') ?></th>
+                                    <th class="row-actions-head"><?= t('history.col.action') ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -158,242 +156,368 @@ if ($isLoggedIn) {
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
     <script>
-        $(document).ready(function () {
-            // Init DataTable
-            var table = $('#logs-table').DataTable({
-                dom: 't<"bottom-controls"p>',
-                pagingType: 'simple_numbers',
-                pageLength: 10,
-                order: [[0, 'desc']], // Sort by hidden timestamp
-                language: {
-                    emptyTable: "<div class='empty-state'><i class='fas fa-folder-open'></i><p>No records found.</p></div>"
-                },
-                columnDefs: [
-                    { targets: 0, type: 'num' }, // Sort date as number
-                    { targets: 3, orderable: false }, // Macros col not sortable
-                    { targets: 6, orderable: false }  // Action col not sortable
-                ]
-            });
+    (function () {
+        const HistoryTable = {
+            allRows: [],
+            currentPage: 1,
+            rowsPerPage: 10,
 
-            // Move pagination
-            $('.bottom-controls').appendTo('#custom-pagination');
+            init() {
+                this.allRows = Array.from(document.querySelectorAll('#logs-table tbody tr'));
+                
+                // Bind Filters
+                const search = document.getElementById('searchInput');
+                const meal = document.getElementById('mealTypeFilter');
+                const start = document.getElementById('startDateFilter');
+                const end = document.getElementById('endDateFilter');
 
-            // 1. Search & Filter Logic (Giữ nguyên)
-            $('#searchInput').on('keyup', function () { table.search(this.value).draw(); });
-            $('#mealTypeFilter').on('change', function () { table.column(4).search(this.value).draw(); });
+                if (search) search.addEventListener('keyup', () => { this.currentPage = 1; this.filterAndPaginate(); });
+                if (meal) meal.addEventListener('change', () => { this.currentPage = 1; this.filterAndPaginate(); });
+                if (start) start.addEventListener('change', () => { this.currentPage = 1; this.filterAndPaginate(); });
+                if (end) end.addEventListener('change', () => { this.currentPage = 1; this.filterAndPaginate(); });
 
-            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                var min = $('#startDateFilter').val();
-                var max = $('#endDateFilter').val();
-                var dateTimestamp = $(table.cell(dataIndex, 0).node()).attr('data-sort'); // Lấy timestamp từ attribute
-                var dateVal = new Date(parseInt(dateTimestamp) * 1000); // Chuyển sang Date object
+                this.filterAndPaginate();
+            },
 
-                if (
-                    (min === "" && max === "") ||
-                    (min === "" && dateVal <= new Date(max + "T23:59:59")) ||
-                    (new Date(min) <= dateVal && max === "") ||
-                    (new Date(min) <= dateVal && dateVal <= new Date(max + "T23:59:59"))
-                ) { return true; }
-                return false;
-            });
+            filterAndPaginate() {
+                const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+                const mealVal = (document.getElementById('mealTypeFilter')?.value || '').toLowerCase();
+                const startVal = document.getElementById('startDateFilter')?.value || '';
+                const endVal = document.getElementById('endDateFilter')?.value || '';
 
-            $('#startDateFilter, #endDateFilter').on('change', function () { table.draw(); });
-
-            // --- 2. DELETE LOGIC (AJAX) ---
-            // Sử dụng Event Delegation để bắt sự kiện click cho cả các trang sau của bảng
-            $('#logs-table tbody').on('click', '.deleteBtn', async function (e) {
-                e.preventDefault();
-
-                if (!confirm('Are you sure you want to delete this entry?')) return;
-
-                const btn = $(this);
-                const row = btn.closest('tr');
-                // Lấy ID từ attribute data-id của tr
-                const id = row.attr('data-id');
-
-                // Tạo FormData
-                const fd = new FormData();
-                fd.append('intake_id', id);
-
-                try {
-                    // Gọi API xóa (Dùng lại handler của trang Intake)
-                    const res = await fetch('handlers/delete_intake.php', {
-                        method: 'POST',
-                        headers: { 'X-Requested-With': 'fetch' },
-                        body: fd
-                    });
-                    const data = await res.json();
-
-                    if (data.ok) {
-                        // Hiệu ứng mờ dần
-                        row.fadeOut(300, function () {
-                            // Quan trọng: Xóa dòng khỏi DataTables chứ không chỉ xóa khỏi DOM
-                            // Nếu không DataTables sẽ bị lỗi phân trang
-                            table.row(row).remove().draw(false);
-                        });
-                    } else {
-                        alert(data.error || 'Failed to delete');
+                const filteredRows = this.allRows.filter(row => {
+                    // 1. Search text
+                    if (searchVal) {
+                        const foodText = (row.querySelector('td.fw-bold')?.textContent || '').toLowerCase();
+                        if (!foodText.includes(searchVal)) return false;
                     }
-                } catch (err) {
-                    console.error(err);
-                    alert('Connection error');
+
+                    // 2. Meal Category
+                    if (mealVal) {
+                        const badge = row.querySelector('.cat-badge');
+                        let category = 'breakfast';
+                        if (badge) {
+                            badge.classList.forEach(cls => {
+                                if (cls.startsWith('cat-') && cls !== 'cat-badge') {
+                                    category = cls.slice(4);
+                                }
+                            });
+                        }
+                        if (category !== mealVal) return false;
+                    }
+
+                    // 3. Date Range
+                    const dateCell = row.querySelector('td[data-sort]');
+                    if (dateCell) {
+                        const timestamp = parseInt(dateCell.getAttribute('data-sort'), 10);
+                        const dateVal = new Date(timestamp * 1000);
+                        
+                        if (startVal) {
+                            const startDate = new Date(startVal + "T00:00:00");
+                            if (dateVal < startDate) return false;
+                        }
+                        if (endVal) {
+                            const endDate = new Date(endVal + "T23:59:59");
+                            if (dateVal > endDate) return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                const tableContainer = document.querySelector('.table-responsive');
+                const paginationContainer = document.getElementById('custom-pagination');
+                let emptyState = document.querySelector('.history-list-card .empty-state');
+
+                if (filteredRows.length === 0) {
+                    if (!emptyState) {
+                        emptyState = document.createElement('div');
+                        emptyState.className = 'empty-state';
+                        emptyState.innerHTML = `<i class="fas fa-folder-open"></i><p>${<?= json_encode(t_raw('history.empty_records')) ?>}</p>`;
+                        tableContainer.parentNode.insertBefore(emptyState, paginationContainer);
+                    }
+                    tableContainer.style.display = 'none';
+                    paginationContainer.style.display = 'none';
+                    return;
+                } else {
+                    if (emptyState) emptyState.remove();
+                    tableContainer.style.display = '';
+                    paginationContainer.style.display = '';
                 }
-            });
+
+                const totalRows = filteredRows.length;
+                const totalPages = Math.ceil(totalRows / this.rowsPerPage);
+                
+                if (this.currentPage > totalPages) this.currentPage = Math.max(1, totalPages);
+
+                const startIndex = (this.currentPage - 1) * this.rowsPerPage;
+                const endIndex = startIndex + this.rowsPerPage;
+
+                // Show/hide rows
+                this.allRows.forEach(row => row.style.display = 'none');
+                filteredRows.slice(startIndex, endIndex).forEach(row => row.style.display = '');
+
+                this.renderPagination(totalPages);
+            },
+
+            renderPagination(totalPages) {
+                const container = document.getElementById('custom-pagination');
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (totalPages <= 1) return;
+
+                // Prev
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'page-btn';
+                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevBtn.disabled = this.currentPage === 1;
+                prevBtn.addEventListener('click', () => {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.filterAndPaginate();
+                    }
+                });
+                container.appendChild(prevBtn);
+
+                // Pages
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = 'page-btn' + (i === this.currentPage ? ' active' : '');
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => {
+                        this.currentPage = i;
+                        this.filterAndPaginate();
+                    });
+                    container.appendChild(pageBtn);
+                }
+
+                // Next
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'page-btn';
+                nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextBtn.disabled = this.currentPage === totalPages;
+                nextBtn.addEventListener('click', () => {
+                    if (this.currentPage < totalPages) {
+                        this.currentPage++;
+                        this.filterAndPaginate();
+                    }
+                });
+                container.appendChild(nextBtn);
+            }
+        };
+
+        window.HistoryTable = HistoryTable;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            HistoryTable.init();
         });
+    })();
     </script>
 
     <?php if ($isLoggedIn): ?>
         <?php $modalTitle = 'Edit Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/_confirm-delete-modal.php'; ?>
         <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
         <script>
-        $(document).ready(function () {
-            // 1. Init DataTable
-            var table = $('#logs-table').DataTable({
-                destroy: true, // <--- QUAN TRỌNG: Thêm dòng này để fix lỗi reinitialise
-                dom: 't<"bottom-controls"p>',
-                pagingType: 'simple_numbers',
-                pageLength: 10,
-                order: [[0, 'desc']],
-                language: { emptyTable: "<div class='empty-state'><p>No records found.</p></div>" },
-                columnDefs: [
-                    { targets: 0, type: 'num' },
-                    { targets: 4, orderable: false },
-                    { targets: 6, orderable: false }
-                ]
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableController = window.HistoryTable;
+            const tbody = document.querySelector('#logs-table tbody');
+            if (!tbody || !tableController) return;
+
+            // --- 1. Event Delegation for Row Actions ---
+            let deleteRowTarget = null;
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            const closeConfirmBtn = document.getElementById('closeConfirmDeleteModal');
+            const cancelConfirmBtn = document.getElementById('cancelDeleteBtn');
+            const doConfirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+            function closeDeleteConfirmModal() {
+                if (confirmDeleteModal) confirmDeleteModal.classList.remove('active');
+                deleteRowTarget = null;
+            }
+
+            if (confirmDeleteModal) {
+                closeConfirmBtn.addEventListener('click', closeDeleteConfirmModal);
+                cancelConfirmBtn.addEventListener('click', closeDeleteConfirmModal);
+                confirmDeleteModal.addEventListener('click', e => {
+                    if (e.target === confirmDeleteModal) closeDeleteConfirmModal();
+                });
+            }
+
+            tbody.addEventListener('click', function (e) {
+                // Delete button
+                const deleteBtn = e.target.closest('.deleteBtn');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    deleteRowTarget = deleteBtn.closest('tr');
+                    if (confirmDeleteModal) confirmDeleteModal.classList.add('active');
+                    return;
+                }
+
+                // Edit button
+                const editBtn = e.target.closest('.btn-edit');
+                if (editBtn) {
+                    e.preventDefault();
+                    currentRow = editBtn.closest('tr');
+                    IntakeRow.fillEditForm(currentRow);
+                    IntakeRow.openModal();
+                    return;
+                }
+
+                // Log Again button
+                const logAgainBtn = e.target.closest('.btnLogAgain');
+                if (logAgainBtn) {
+                    e.preventDefault();
+                    handleLogAgain(logAgainBtn);
+                    return;
+                }
             });
 
-            // Nếu wrapper pagination đã có nội dung cũ (do re-init), hãy xóa đi trước khi append
-            $('#custom-pagination').empty();
-            $('.bottom-controls').appendTo('#custom-pagination');
+            // --- 2. DELETE CONFIRMATION ACTION ---
+            if (doConfirmDeleteBtn) {
+                doConfirmDeleteBtn.addEventListener('click', async function () {
+                    if (!deleteRowTarget) return;
 
-            // Search & Filters
-            // Cần unbind sự kiện cũ trước khi bind mới để tránh bị duplicate event khi reload
-            $('#searchInput').off('keyup').on('keyup', function () { table.search(this.value).draw(); });
-            $('#mealTypeFilter').off('change').on('change', function () { table.column(4).search(this.value).draw(); });
+                    const row = deleteRowTarget;
+                    const id = row.getAttribute('data-id');
+                    if (!id) {
+                        alert('Error: Could not find entry ID');
+                        return;
+                    }
 
-            // Xóa các search function cũ nếu có để tránh bị chồng chéo
-            $.fn.dataTable.ext.search = [];
+                    doConfirmDeleteBtn.disabled = true;
+                    const fd = new FormData();
+                    fd.append('intake_id', id);
 
-            // Date Filter Logic
-            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-                var min = $('#startDateFilter').val();
-                var max = $('#endDateFilter').val();
-                // Kiểm tra an toàn để tránh lỗi undefined
-                var cell = table.cell(dataIndex, 0);
-                if (!cell) return false;
+                    try {
+                        const res = await fetch('handlers/delete_intake.php', { method: 'POST', body: fd });
+                        const data = await res.json();
 
-                var dateTimestamp = $(cell.node()).attr('data-sort');
-                if (!dateTimestamp) return false;
+                        if (data.ok) {
+                            row.style.transition = 'opacity 0.3s, transform 0.3s';
+                            row.style.opacity = '0';
+                            row.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                row.remove();
+                                const idx = tableController.allRows.indexOf(row);
+                                if (idx > -1) tableController.allRows.splice(idx, 1);
+                                tableController.filterAndPaginate();
+                            }, 300);
+                            closeDeleteConfirmModal();
+                        } else {
+                            alert(data.error || 'Failed to delete');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Connection error');
+                    } finally {
+                        doConfirmDeleteBtn.disabled = false;
+                    }
+                });
+            }
 
-                var dateVal = new Date(parseInt(dateTimestamp) * 1000);
+            // --- 3. EDIT SUBMIT ACTION ---
+            const editForm = document.getElementById('editIntakeForm');
+            let currentRow = null;
 
-                if (
-                    (min === "" && max === "") ||
-                    (min === "" && dateVal <= new Date(max + "T23:59:59")) ||
-                    (new Date(min) <= dateVal && max === "") ||
-                    (new Date(min) <= dateVal && dateVal <= new Date(max + "T23:59:59"))
-                ) { return true; }
-                return false;
-            });
+            IntakeRow.bindCloseHandlers();
 
-            $('#startDateFilter, #endDateFilter').off('change').on('change', function () { table.draw(); });
+            if (editForm) {
+                editForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const fd = new FormData(editForm);
+                    try {
+                        const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+                        if (!data.ok) {
+                            alert(data.error || 'Update failed');
+                            return;
+                        }
+                        if (currentRow) {
+                            IntakeRow.updateRow(currentRow, data);
+                            tableController.filterAndPaginate();
+                        }
+                        IntakeRow.closeModal();
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error connecting to server');
+                    }
+                });
+            }
 
-
-// --- 2. DELETE ACTION ---
-            $('#logs-table tbody').off('click', '.deleteBtn').on('click', '.deleteBtn', async function(e) {
-                e.preventDefault();
-                
-                // 1. Lấy dòng chứa nút bấm
-                const btn = $(this);
+            // --- 4. QUICK LOG ACTION ---
+            async function handleLogAgain(btn) {
                 const row = btn.closest('tr');
-                
-                // 2. Lấy ID chuẩn xác từ attribute data-id
-                const id = row.attr('data-id');
-
-                // Debug: Kiểm tra xem ID có lấy được không
-                console.log("Deleting ID:", id); 
-
+                const id = row.getAttribute('data-id');
                 if (!id) {
                     alert('Error: Could not find entry ID');
                     return;
                 }
 
-                if (!confirm('Delete this entry?')) return;
+                btn.disabled = true;
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
                 const fd = new FormData();
                 fd.append('intake_id', id);
+                fd.append('show_date', '1'); // Ask handler to render the Date cell!
 
                 try {
-                    const res = await fetch('handlers/delete_intake.php', { 
-                        method: 'POST', 
-                        body: fd 
-                    });
-
-                    // 3. Kiểm tra phản hồi thô trước khi parse JSON (Để debug lỗi cú pháp PHP nếu có)
-                    const textResponse = await res.text();
-                    console.log("Server Response:", textResponse); 
-
-                    let data;
-                    try {
-                        data = JSON.parse(textResponse);
-                    } catch (e) {
-                        console.error("Invalid JSON:", textResponse);
-                        alert('Server error: Invalid response format');
-                        return;
-                    }
-
-                    if (data.ok) {
-                        // Hiệu ứng mờ dần và xóa khỏi DataTable
-                        row.fadeOut(300, function() { 
-                            // Xóa khỏi dữ liệu DataTable để không bị lỗi phân trang
-                            table.row(row).remove().draw(false); 
-                        });
-                    } else { 
-                        alert(data.error || 'Failed to delete'); 
-                    }
-                } catch (err) { 
-                    console.error(err);
-                    alert('Connection error'); 
-                }
-            });
-
-            // --- 3. EDIT ACTION ---
-            // Uses the shared IntakeRow helpers (loaded via _intake-row-js.php below)
-            // for row reading + form filling + row patching. Column-index-based selectors
-            // have been replaced with data-label selectors so they're order-independent.
-            const editForm  = document.getElementById('editIntakeForm');
-            let currentRow = null;
-
-            // Open Modal
-            $('#logs-table tbody').off('click.editopen').on('click.editopen', '.btn-edit', function () {
-                currentRow = $(this).closest('tr');
-                IntakeRow.fillEditForm(currentRow);
-                IntakeRow.openModal();
-            });
-
-            // Close handlers (Cancel / X / backdrop) wired via the shared helper.
-            IntakeRow.bindCloseHandlers();
-
-            // Submit
-            $(editForm).off('submit.editsave').on('submit.editsave', async function (e) {
-                e.preventDefault();
-                const fd = new FormData(editForm);
-                try {
-                    const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
+                    const res = await fetch('handlers/quick_log_from_history.php', { method: 'POST', body: fd });
                     const data = await res.json();
-                    if (!data.ok) {
-                        alert(data.error || 'Update failed');
-                        return;
+
+                    if (data.ok && data.new_row) {
+                        // Success toast
+                        if (typeof showLoggingToast === 'function') {
+                            showLoggingToast('Food logged!', data.food_item + ' • ' + data.calories + ' kcal');
+                        }
+
+                        // Parse the compiled row markup
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data.new_row, 'text/html');
+                        const newRow = doc.querySelector('tr');
+
+                        if (newRow) {
+                            // Prepend to tbody
+                            tbody.insertBefore(newRow, tbody.firstChild);
+                            // Prepend to controller array
+                            tableController.allRows.unshift(newRow);
+                            // Redraw table
+                            tableController.filterAndPaginate();
+
+                            // Soft green flash
+                            newRow.style.transition = 'background-color 0.3s';
+                            newRow.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+                            setTimeout(() => { newRow.style.backgroundColor = ''; }, 1000);
+                        }
+
+                        // XP Popups
+                        if (data.xp) {
+                            if (data.xp.added && window.showXpPopup) {
+                                window.showXpPopup(data.xp.added, btn);
+                            }
+                            if (data.xp.summary && window.updateXpChip) {
+                                setTimeout(() => window.updateXpChip(data.xp.summary), 200);
+                            }
+                            if (data.xp.levelup && window.showLevelUpToast) {
+                                setTimeout(() => window.showLevelUpToast(data.xp.levelup), 600);
+                            }
+                        }
+                    } else {
+                        alert(data.error || 'Failed to log entry');
                     }
-                    if (currentRow) IntakeRow.updateRow(currentRow, data);
-                    IntakeRow.closeModal();
                 } catch (err) {
                     console.error(err);
-                    alert('Error connecting to server');
+                    alert('Connection error');
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
                 }
-            });
+            }
         });
         </script>
+        <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
     <?php endif; ?>
     <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
 </body>

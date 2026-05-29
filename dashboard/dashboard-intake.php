@@ -54,14 +54,14 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 ?>
 
 <!DOCTYPE html>
-<html lang="en"
+<html lang="<?= html_lang_attr() ?>"
     data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>Food Log | BitBalance</title>
+    <title><?= t('intake.title_alt') ?></title>
     <?php
     // Intake IS the logging UI itself, so no quick-log FAB on this page.
     $pageComponents = ['sidebar'];
@@ -88,109 +88,134 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 <?php if (!$isLoggedIn): ?>
                     <div class="demo-banner">
                         <i class="fas fa-flask"></i>
-                        <span><strong>You're exploring a live demo.</strong> This is sample data — create a free account to start your own Food Log.</span>
-                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta">Get started free</a>
+                        <span><strong><?= t('intake.demo_note') ?></strong> <?= t('intake.demo_body') ?></span>
+                        <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta"><?= t('dashboard.demo.cta') ?></a>
                     </div>
                 <?php endif; ?>
 
-                <section class="progress-widget">
-                    <div class="progress-card">
-                        <div class="progress-card-content">
-                            <div class="progress-header">
-                                <h3>Today's Intake</h3>
-                                <span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span>
-                            </div>
-
-                            <div class="progress-value">
-                                <span class="<?php echo $statusClass; ?>" id="totalDisplay"><?php echo $totalCalories; ?></span>
-                                <small>calories</small>
-                            </div>
-
-                            <div class="progress-bar">
-                                <div class="progress-fill <?php echo htmlspecialchars($statusClass); ?>" id="progressFill" style="width: 0%;"></div>
-                            </div>
-
-                            <div class="progress-labels">
-                                <span>Goal: <strong><?php echo $userGoal ? number_format($userGoal) : 'Unset'; ?></strong></span>
-                                <span class="pct-label"><?php echo $userGoal ? round(($totalCalories / $userGoal) * 100) . '%' : '0%'; ?></span>
-                            </div>
+                <!-- COLUMN 1: Nutrition Summary & Food Form -->
+                <div class="flex intake-left-column">
+                    <!-- NUTRITION HUB CARD -->
+                    <section class="dashboard-card stats-hub-card" id="nutritionHubCard">
+                        <!-- 3D Segmented Tabs Switcher -->
+                        <div class="stats-hub-tabs">
+                            <button type="button" class="tab-btn active" onclick="switchNutritionTab('calories')">
+                                <i class="fas fa-bolt"></i> <?= t('dashboard.tabs.nutrition') ?>
+                            </button>
+                            <button type="button" class="tab-btn" onclick="switchNutritionTab('macros')">
+                                <i class="fas fa-chart-pie"></i> <?= t('intake.macros_today') ?>
+                            </button>
                         </div>
-                    </div>
-                </section>
 
-                <?php
-                $macros = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
-                $mGoals = $macroGoals  ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
-                $macroDefs = [
-                    'protein' => ['label' => 'Protein', 'class' => 'p', 'icon' => 'fa-drumstick-bite'],
-                    'carbs'   => ['label' => 'Carbs',   'class' => 'c', 'icon' => 'fa-bread-slice'],
-                    'fat'     => ['label' => 'Fat',     'class' => 'f', 'icon' => 'fa-cheese'],
-                ];
-                ?>
-                <section class="chart-section macros-widget meals-card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-chart-pie"></i> Macros Today</h4>
-                    </div>
+                        <!-- TAB PANES -->
+                        <!-- Pane 1: Calories (Dinh Dưỡng) -->
+                        <div class="chart-wrapper-tab active" id="tabPane-calories">
+                            <section class="progress-widget">
+                                <div class="progress-card">
+                                    <div class="progress-card-content">
+                                        <div class="progress-header">
+                                            <h3><?= t('intake.todays_intake') ?></h3>
+                                            <span class="status-badge <?php echo $statusClass; ?>"><?php
+                                                $__statusMap = [
+                                                    'Unset' => 'intake.status.unset',
+                                                    'Ongoing' => 'intake.status.ongoing',
+                                                    'Overlimit' => 'intake.status.overlimit',
+                                                ];
+                                                echo isset($__statusMap[$status]) ? t($__statusMap[$status]) : htmlspecialchars($status);
+                                            ?></span>
+                                        </div>
 
-                    <div class="doughnut-container">
-                        <canvas id="macrosDonut"></canvas>
-                        <div class="doughnut-center-text">
-                            <span class="center-val" id="donutKcalLabel">0</span>
-                            <span class="center-label">grams</span>
-                        </div>
-                    </div>
+                                        <div class="progress-value">
+                                            <span class="<?php echo $statusClass; ?>" id="totalDisplay"><?php echo $totalCalories; ?></span>
+                                            <small><?= t('intake.calories_unit') ?></small>
+                                        </div>
 
-                    <div class="macro-list-container">
-                        <?php foreach ($macroDefs as $key => $def):
-                            $cur = (float) ($macros[$key] ?? 0);
-                            $goal = (int) ($mGoals[$key] ?? 0);
-                            $pct = $goal > 0 ? min(100, round($cur / $goal * 100)) : 0;
-                            $curDisp = rtrim(rtrim(number_format($cur, 1, '.', ''), '0'), '.');
-                            if ($curDisp === '') $curDisp = '0';
-                        ?>
-                        <div class="macro-item <?= $def['class'] ?>">
-                            <div class="macro-icon-box">
-                                <i class="fas <?= $def['icon'] ?>"></i>
-                            </div>
-                            <div class="macro-info">
-                                <div class="macro-info-top">
-                                    <span class="macro-name"><?= $def['label'] ?></span>
-                                    <span class="macro-numbers">
-                                        <strong id="macroVal_<?= $key ?>"><?= $curDisp ?></strong>g
-                                        <small>/ <span id="macroGoal_<?= $key ?>"><?= $goal ?: '–' ?></span>g</small>
-                                    </span>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill <?php echo htmlspecialchars($statusClass); ?>" id="progressFill" style="width: 0%;"></div>
+                                        </div>
+
+                                        <div class="progress-labels">
+                                            <span><?= t_raw('intake.goal_label', ['value' => '<strong>' . ($userGoal ? number_format($userGoal) : t_raw('intake.status.unset')) . '</strong>']) ?></span>
+                                            <span class="pct-label"><?php echo $userGoal ? round(($totalCalories / $userGoal) * 100) . '%' : '0%'; ?></span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="macro-track">
-                                    <div class="macro-fill macro-fill-<?= $def['class'] ?>"
-                                         id="macroFill_<?= $key ?>" style="width: <?= $pct ?>%;"></div>
-                                </div>
-                            </div>
+                            </section>
                         </div>
-                        <?php endforeach; ?>
 
-                        <?php if (!$userGoal): ?>
-                            <p class="macros-hint-empty">
-                                <i class="fas fa-info-circle"></i>
-                                Set a calorie goal to see daily macro targets.
-                            </p>
-                        <?php endif; ?>
-                    </div>
-                </section>
+                        <!-- Pane 2: Macros (Macronutrients) -->
+                        <div class="chart-wrapper-tab" id="tabPane-macros">
+                            <?php
+                            $macros = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+                            $mGoals = $macroGoals  ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
+                            $macroDefs = [
+                                'protein' => ['label' => t_raw('dashboard.macros.protein'), 'class' => 'p', 'icon' => 'fa-drumstick-bite'],
+                                'carbs'   => ['label' => t_raw('dashboard.macros.carbs'),   'class' => 'c', 'icon' => 'fa-bread-slice'],
+                                'fat'     => ['label' => t_raw('dashboard.macros.fat'),     'class' => 'f', 'icon' => 'fa-cheese'],
+                            ];
+                            ?>
+                            <section class="chart-section macros-widget meals-card">
+                                <div class="doughnut-container">
+                                    <canvas id="macrosDonut"></canvas>
+                                    <div class="doughnut-center-text">
+                                        <span class="center-val" id="donutKcalLabel">0</span>
+                                        <span class="center-label"><?= t('intake.grams') ?></span>
+                                    </div>
+                                </div>
 
-                <script>
-                    // Initial macro values for donut (grams)
-                    window.__macroState = {
-                        protein: <?= json_encode((float) ($macros['protein'] ?? 0)) ?>,
-                        carbs:   <?= json_encode((float) ($macros['carbs']   ?? 0)) ?>,
-                        fat:     <?= json_encode((float) ($macros['fat']     ?? 0)) ?>,
-                    };
-                </script>
+                                <div class="macro-list-container">
+                                    <?php foreach ($macroDefs as $key => $def):
+                                        $cur = (float) ($macros[$key] ?? 0);
+                                        $goal = (int) ($mGoals[$key] ?? 0);
+                                        $pct = $goal > 0 ? min(100, round($cur / $goal * 100)) : 0;
+                                        $curDisp = rtrim(rtrim(number_format($cur, 1, '.', ''), '0'), '.');
+                                        if ($curDisp === '') $curDisp = '0';
+                                    ?>
+                                    <div class="macro-item <?= $def['class'] ?>">
+                                        <div class="macro-icon-box">
+                                            <i class="fas <?= $def['icon'] ?>"></i>
+                                        </div>
+                                        <div class="macro-info">
+                                            <div class="macro-info-top">
+                                                <span class="macro-name"><?= $def['label'] ?></span>
+                                                <span class="macro-numbers">
+                                                    <strong id="macroVal_<?= $key ?>"><?= $curDisp ?></strong>g
+                                                    <small>/ <span id="macroGoal_<?= $key ?>"><?= $goal ?: '–' ?></span>g</small>
+                                                </span>
+                                            </div>
+                                            <div class="macro-track">
+                                                <div class="macro-fill macro-fill-<?= $def['class'] ?>"
+                                                     id="macroFill_<?= $key ?>" style="width: <?= $pct ?>%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
 
-                <div class="content-split">
+                                    <?php if (!$userGoal): ?>
+                                        <p class="macros-hint-empty">
+                                            <i class="fas fa-info-circle"></i>
+                                            <?= t('intake.set_goal_hint') ?>
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                            </section>
+                        </div>
+                    </section>
+
+                    <script>
+                        // Initial macro values for donut (grams)
+                        window.__macroState = {
+                            protein: <?= json_encode((float) ($macros['protein'] ?? 0)) ?>,
+                            carbs:   <?= json_encode((float) ($macros['carbs']   ?? 0)) ?>,
+                            fat:     <?= json_encode((float) ($macros['fat']     ?? 0)) ?>,
+                        };
+                    </script>
+
+                    <!-- LOG FOOD FORM -->
                     <?php if ($isLoggedIn): ?>
                     <section class="dashboard-card intake-form-card">
                         <div class="card-header">
-                            <h3><i class="fas fa-plus-circle"></i> Log Food</h3>
+                            <h3><i class="fas fa-plus-circle"></i> <?= t('intake.log_food_heading') ?></h3>
                         </div>
 
                         <div id="alertPlaceholder">
@@ -198,26 +223,25 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <div class="alert error"><i class="fas fa-exclamation-triangle"></i>
                                     <?php echo $error_message; ?></div>
                             <?php endif; ?>
-                            <?php /* Success now handled by logging-toast partial (slide-up toast). */ ?>
                         </div>
 
                         <div class="quick-actions-row">
                             <button type="button" class="quick-action-chip" id="openScannerChip">
-                                <i class="fas fa-barcode"></i> Scan Barcode
+                                <i class="fas fa-barcode"></i> <?= t('intake.scan_barcode_chip') ?>
                             </button>
                             <button type="button" class="quick-action-chip" onclick="toggleChat()">
-                                <i class="fas fa-robot"></i> AI Photo
+                                <i class="fas fa-robot"></i> <?= t('intake.ai_photo_chip') ?>
                             </button>
                         </div>
 
                         <form id="intakeForm" action="handlers/process_intake.php" method="POST">
                             <div class="form-group">
-                                <label for="food_item">Food Name</label>
+                                <label for="food_item"><?= t('intake.food_name') ?></label>
                                 <div class="input-icon-wrapper food-name-wrapper">
                                     <i class="fas fa-utensils input-icon"></i>
-                                    <input type="text" id="food_item" name="food_item" placeholder="e.g., Pho Bo, Apple..."
+                                    <input type="text" id="food_item" name="food_item" placeholder="<?= t('intake.food_name_placeholder') ?>"
                                         required>
-                                    <button type="button" class="btn-inline-scan" id="openScannerInline" title="Scan barcode">
+                                    <button type="button" class="btn-inline-scan" id="openScannerInline" title="<?= t('intake.scan_barcode_inline') ?>">
                                         <i class="fas fa-barcode"></i>
                                     </button>
                                 </div>
@@ -225,80 +249,74 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
                             <div class="form-row-split">
                                 <div class="form-group">
-                                    <label for="calories" id="calorieLabel">Calories</label>
+                                    <label for="calories" id="calorieLabel"><?= t('intake.calories_label') ?></label>
                                     <div class="input-icon-wrapper">
                                         <i class="fas fa-bolt input-icon"></i>
                                         <input type="number" id="calories" name="calories" placeholder="0" required>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="unit_toggle">Unit</label>
+                                    <label for="unit_toggle"><?= t('intake.unit') ?></label>
                                     <div class="select-wrapper">
                                         <select id="unit_toggle">
-                                            <option value="cal">Cal (kcal)</option>
-                                            <option value="kj">kJ</option>
+                                            <option value="cal"><?= t('intake.unit.cal') ?></option>
+                                            <option value="kj"><?= t('intake.unit.kj') ?></option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group macros-input-group">
-                                <label class="macros-input-label">Macros <small>(grams, optional)</small></label>
+                                <label class="macros-input-label"><?= t('intake.macros_label') ?> <small><?= t('intake.macros_hint_inline') ?></small></label>
                                 <div class="macros-input-row">
                                     <div class="macro-input p">
-                                        <label for="protein" title="Protein (g)">P</label>
+                                        <label for="protein" title="<?= t('intake.form.protein') ?>">P</label>
                                         <input type="number" id="protein" name="protein" min="0" max="999" step="0.1" placeholder="0">
                                     </div>
                                     <div class="macro-input c">
-                                        <label for="carbs" title="Carbs (g)">C</label>
+                                        <label for="carbs" title="<?= t('intake.form.carbs') ?>">C</label>
                                         <input type="number" id="carbs" name="carbs" min="0" max="999" step="0.1" placeholder="0">
                                     </div>
                                     <div class="macro-input f">
-                                        <label for="fat" title="Fat (g)">F</label>
+                                        <label for="fat" title="<?= t('intake.form.fat') ?>">F</label>
                                         <input type="number" id="fat" name="fat" min="0" max="999" step="0.1" placeholder="0">
                                     </div>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="meal_category">Category</label>
+                                <label for="meal_category"><?= t('intake.category_label') ?></label>
                                 <div class="select-wrapper">
                                     <select id="meal_category" name="meal_category" required>
-                                        <option value="" disabled selected>Select Category</option>
-                                        <option value="breakfast">Breakfast 🌅</option>
-                                        <option value="lunch">Lunch ☀️</option>
-                                        <option value="dinner">Dinner 🌙</option>
-                                        <option value="snack">Snack 🍪</option>
+                                        <option value="" disabled selected><?= t('intake.select_category') ?></option>
+                                        <option value="breakfast"><?= t('intake.meal.breakfast_emoji') ?></option>
+                                        <option value="lunch"><?= t('intake.meal.lunch_emoji') ?></option>
+                                        <option value="dinner"><?= t('intake.meal.dinner_emoji') ?></option>
+                                        <option value="snack"><?= t('intake.meal.snack_emoji') ?></option>
                                     </select>
                                 </div>
                             </div>
 
-                            <!-- <div class="ai-tip">
-                                <i class="fas fa-robot"></i>
-                                <span>Not sure? Ask <a href="https://chat.openai.com/" target="_blank">ChatGPT</a> to
-                                    estimate.</span>
-                            </div> -->
                             <div class="ai-tip">
                                 <i class="fas fa-robot"></i>
-                                <span>Not sure? Ask our BitBalance AI</a> to
-                                    estimate.</span>
+                                <span><?= t('intake.ai_tip') ?></span>
                             </div>
 
                             <button type="submit" class="btn-submit">
-                                <i class="fas fa-check"></i> Log Entry
+                                <i class="fas fa-check"></i> <?= t('intake.log_entry_btn') ?>
                             </button>
                         </form>
                     </section>
                     <?php else: ?>
                     <section class="dashboard-card intake-form-card intake-form-card--demo">
                         <div class="card-header">
-                            <h3><i class="fas fa-plus-circle"></i> Log Food</h3>
-                            <span class="demo-pill">Live demo</span>
+                            <h3><i class="fas fa-plus-circle"></i> <?= t('intake.log_food_heading') ?></h3>
+                            <span class="demo-pill"><?= t('intake.live_demo') ?></span>
                         </div>
 
                         <div class="demo-preview-fields" aria-hidden="true">
                             <div class="form-group">
-                                <label>Food Name</label>
+                                <label><?= t('intake.food_name') ?></label>
                                 <div class="input-icon-wrapper">
                                     <i class="fas fa-utensils input-icon"></i>
                                     <input type="text" value="Pho Bo" disabled>
@@ -306,17 +324,17 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             </div>
                             <div class="form-row-split">
                                 <div class="form-group">
-                                    <label>Calories</label>
+                                    <label><?= t('intake.calories_label') ?></label>
                                     <div class="input-icon-wrapper">
                                         <i class="fas fa-bolt input-icon"></i>
                                         <input type="number" value="450" disabled>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Category</label>
+                                    <label><?= t('intake.category_label') ?></label>
                                     <div class="select-wrapper">
                                         <select disabled>
-                                            <option>Breakfast 🌅</option>
+                                            <option><?= t('intake.meal.breakfast_emoji') ?></option>
                                         </select>
                                     </div>
                                 </div>
@@ -324,37 +342,40 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         </div>
 
                         <div class="demo-cta">
-                            <p><i class="fas fa-lock"></i> Sign up to log your own meals, track macros, and earn XP.</p>
+                            <p><i class="fas fa-lock"></i> <?= t('intake.signup_hint') ?></p>
                             <a href="<?= BASE_URL ?>signup.php" class="btn-submit">
-                                <i class="fas fa-user-plus"></i> Create free account
+                                <i class="fas fa-user-plus"></i> <?= t('intake.signup_btn') ?>
                             </a>
-                            <a href="<?= BASE_URL ?>login.php" class="demo-cta-secondary">Already have one? Sign in</a>
+                            <a href="<?= BASE_URL ?>login.php" class="demo-cta-secondary"><?= t('intake.signin_alt') ?></a>
                         </div>
                     </section>
                     <?php endif; ?>
+                </div>
 
+                <!-- COLUMN 2: Today's Food History Table -->
+                <div class="flex intake-right-column">
                     <section class="dashboard-card intake-list-card">
                         <div class="card-header">
-                            <h3><i class="fas fa-list-ul"></i> Today's History</h3>
+                            <h3><i class="fas fa-list-ul"></i> <?= t('intake.todays_history') ?></h3>
                         </div>
 
                         <div class="table-responsive">
                             <table class="modern-table">
                                 <thead>
                                     <tr>
-                                        <th>Food Item</th>
-                                        <th>Calories</th>
-                                        <th>Macros (g)</th>
-                                        <th>Category</th>
-                                        <th>Time</th>
-                                        <th class="row-actions-head">Action</th>
+                                        <th><?= t('intake.col.food_item') ?></th>
+                                        <th><?= t('intake.col.calories') ?></th>
+                                        <th><?= t('intake.col.macros') ?></th>
+                                        <th><?= t('intake.col.category') ?></th>
+                                        <th><?= t('intake.col.time') ?></th>
+                                        <th class="row-actions-head"><?= t('intake.col.action') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="intakeTableBody">
                                     <?php if (empty($intakeLog)): ?>
                                         <tr id="noIntakeRow">
                                             <td colspan="6" class="empty-state">
-                                                <i class="fas fa-drumstick-bite"></i> No food logged yet today.
+                                                <i class="fas fa-drumstick-bite"></i> <?= t('intake.empty_today') ?>
                                             </td>
                                         </tr>
                                     <?php endif; ?>
@@ -375,26 +396,26 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
         <div class="scanner-modal" id="scannerModal" role="dialog" aria-modal="true">
             <div class="scanner-modal-content">
                 <div class="scanner-modal-header">
-                    <h3><i class="fas fa-barcode"></i> Scan Product Barcode</h3>
-                    <button type="button" class="scanner-close" id="scannerCloseBtn" aria-label="Close">&times;</button>
+                    <h3><i class="fas fa-barcode"></i> <?= t('intake.scanner.title') ?></h3>
+                    <button type="button" class="scanner-close" id="scannerCloseBtn" aria-label="<?= t('common.close') ?>">&times;</button>
                 </div>
 
                 <div id="scannerReader"></div>
 
                 <div class="scanner-controls">
                     <button type="button" class="scanner-btn-start" id="scannerStartBtn">
-                        <i class="fas fa-camera"></i> Start Camera
+                        <i class="fas fa-camera"></i> <?= t('intake.scanner.start_camera') ?>
                     </button>
                     <button type="button" class="scanner-btn-stop" id="scannerStopBtn" style="display:none;">
-                        <i class="fas fa-stop"></i> Stop
+                        <i class="fas fa-stop"></i> <?= t('intake.scanner.stop') ?>
                     </button>
                 </div>
 
                 <div class="scanner-manual">
-                    <label for="scannerManualInput">Or enter barcode manually</label>
+                    <label for="scannerManualInput"><?= t('intake.scanner.manual_label') ?></label>
                     <div class="scanner-manual-row">
-                        <input type="text" id="scannerManualInput" inputmode="numeric" placeholder="e.g., 0884394009401">
-                        <button type="button" id="scannerManualBtn">Lookup</button>
+                        <input type="text" id="scannerManualInput" inputmode="numeric" placeholder="<?= t('intake.scanner.manual_placeholder') ?>">
+                        <button type="button" id="scannerManualBtn"><?= t('intake.scanner.lookup') ?></button>
                     </div>
                 </div>
 
@@ -442,7 +463,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             startBtn.addEventListener('click', async () => {
                 if (scanning || typeof Html5Qrcode === 'undefined') {
                     if (typeof Html5Qrcode === 'undefined') {
-                        alert('Scanner library failed to load. Check your internet connection.');
+                        alert(<?= json_encode(t_raw('intake.scanner.lib_failed')) ?>);
                     }
                     return;
                 }
@@ -560,15 +581,15 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     </div>
 
                     <div class="scanner-portion">
-                      <label for="portionMult">Servings:</label>
+                      <label for="portionMult"><?= t('intake.scanner.servings') ?></label>
                       <input type="number" id="portionMult" value="1" min="0.1" step="0.1">
                       <span class="portion-kcal" id="portionKcalDisplay">${kcalBase != null ? Math.round(kcalBase) : 0} kcal</span>
                     </div>
 
                     <div class="scanner-actions">
-                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn">Cancel</button>
+                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn"><?= t('intake.scanner.cancel') ?></button>
                       <button type="button" class="scanner-btn-confirm" id="scannerConfirmBtn">
-                        <i class="fas fa-plus"></i> Fill Form
+                        <i class="fas fa-plus"></i> <?= t('intake.scanner.confirm') ?>
                       </button>
                     </div>
                   </div>
@@ -598,7 +619,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                       Enter the product manually in the form below — we'll log this attempt to improve coverage.
                     </p>
                     <div class="scanner-actions">
-                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn">Close</button>
+                      <button type="button" class="scanner-btn-cancel" id="scannerCancelBtn"><?= t('intake.scanner.close') ?></button>
                     </div>
                   </div>
                 `;
@@ -659,7 +680,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     <div class="header-info">
                         <div class="ai-avatar"><i class="fas fa-robot"></i></div>
                         <div>
-                            <h4>BitBalance AI Nutritionist</h4>
+                            <h4><?= t('intake.chat.title') ?></h4>
                             <span class="status-dot"></span> <small>Online</small>
                         </div>
                     </div>
@@ -674,13 +695,13 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 </div>
 
                 <div class="chat-footer">
-                    <button class="btn-tool" title="Upload Photo" onclick="document.getElementById('imgUpload').click()">
+                    <button class="btn-tool" title="<?= t('intake.chat.upload_photo') ?>" onclick="document.getElementById('imgUpload').click()">
                         <i class="fas fa-camera"></i>
                     </button>
                     <input type="file" id="imgUpload" accept="image/*" style="display: none;"
                         onchange="handleImageUpload(this)">
 
-                    <input type="text" id="chatInput" placeholder="Ex: 1 bowl of Pho..." onkeypress="handleEnter(event)">
+                    <input type="text" id="chatInput" placeholder="<?= t('intake.chat.placeholder') ?>" onkeypress="handleEnter(event)">
 
                     <button class="btn-send" onclick="sendMessage()">
                         <i class="fas fa-paper-plane"></i>
@@ -698,6 +719,39 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             const chatBody = document.getElementById('chatBody');
             const chatInput = document.getElementById('chatInput');
             let currentImageFile = null;
+
+            // --- VIEWPORT SYNC FOR MOBILE KEYBOARD ---
+            // Shrinks and shifts the mobile full-screen chat drawer in real time with the on-screen keyboard,
+            // keeping the input footer always perfectly visible above the keyboard.
+            function syncChatViewport() {
+                if (window.innerWidth <= 480 && chatWindow.classList.contains('active')) {
+                    const vv = window.visualViewport;
+                    const vh = vv ? vv.height : window.innerHeight;
+                    const vt = vv ? vv.offsetTop : 0;
+                    chatWindow.style.setProperty('--chat-vh', vh + 'px');
+                    chatWindow.style.setProperty('--chat-vp-top', vt + 'px');
+                } else {
+                    chatWindow.style.removeProperty('--chat-vh');
+                    chatWindow.style.removeProperty('--chat-vp-top');
+                }
+            }
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncChatViewport);
+                window.visualViewport.addEventListener('scroll', syncChatViewport);
+            }
+            window.addEventListener('resize', syncChatViewport);
+            window.addEventListener('orientationchange', syncChatViewport);
+
+            // Programmatic safe scroll reset to undo iOS auto-scrolling
+            const resetIntakeScroll = () => {
+                if (window.innerWidth <= 480) {
+                    if (window.scrollY !== 0 || window.scrollX !== 0) {
+                        window.scrollTo(0, 0);
+                    }
+                    syncChatViewport();
+                }
+            };
 
             // --- 1. LOGIC GIAO DIỆN (UI) ---
 
@@ -735,6 +789,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         if (window.innerWidth > 480) chatInput.focus();
                     }, 300);
                 }
+                syncChatViewport(); // Synchronize viewport heights immediately
             }
 
             // Nút đóng chat
@@ -832,7 +887,13 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
             // Mobile focus fix
             if (chatInput) {
-                chatInput.addEventListener('focus', scrollToBottom);
+                chatInput.addEventListener('focus', () => {
+                    scrollToBottom();
+                    setTimeout(resetIntakeScroll, 100);
+                });
+                chatInput.addEventListener('blur', () => {
+                    setTimeout(resetIntakeScroll, 100);
+                });
             }
 
             function handleImageUpload(input) {
@@ -1047,6 +1108,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             const unitToggle = document.getElementById('unit_toggle');
             const calorieLabel = document.getElementById('calorieLabel');
             const pctLabel = document.querySelector('.pct-label');
+            const __intakeEmptyTodayText = <?php echo json_encode(t_raw('intake.empty_today')); ?>;
 
             // Toggle Unit Label
             if (unitToggle && calorieLabel) {
@@ -1142,15 +1204,123 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             }
 
             // --- Delete Action ---
+            let deleteRowTarget = null;
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            const closeConfirmBtn = document.getElementById('closeConfirmDeleteModal');
+            const cancelConfirmBtn = document.getElementById('cancelDeleteBtn');
+            const doConfirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+            function closeDeleteConfirmModal() {
+                if (confirmDeleteModal) confirmDeleteModal.classList.remove('active');
+                deleteRowTarget = null;
+            }
+
+            if (confirmDeleteModal) {
+                closeConfirmBtn.addEventListener('click', closeDeleteConfirmModal);
+                cancelConfirmBtn.addEventListener('click', closeDeleteConfirmModal);
+
+                // Close modal if clicking overlay background
+                confirmDeleteModal.addEventListener('click', e => {
+                    if (e.target === confirmDeleteModal) {
+                        closeDeleteConfirmModal();
+                    }
+                });
+            }
+
             if (body) {
                 body.addEventListener('click', async e => {
-                    const btn = e.target.closest('.deleteBtn');
-                    if (!btn) return;
+                    // 1. Handle Delete Action
+                    const deleteBtn = e.target.closest('.deleteBtn');
+                    if (deleteBtn) {
+                        deleteRowTarget = deleteBtn.closest('tr');
+                        if (confirmDeleteModal) {
+                            confirmDeleteModal.classList.add('active');
+                        }
+                        return;
+                    }
 
-                    const row = btn.closest('tr');
+                    // 2. Handle Quick Log / Clone Action
+                    const logAgainBtn = e.target.closest('.btnLogAgain');
+                    if (logAgainBtn) {
+                        const row = logAgainBtn.closest('tr');
+                        const id = row.dataset.id;
+
+                        // Loading state
+                        logAgainBtn.disabled = true;
+                        const originalHtml = logAgainBtn.innerHTML;
+                        logAgainBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        const fd = new FormData();
+                        fd.append('intake_id', id);
+
+                        try {
+                            const res = await fetch('handlers/quick_log_from_history.php', {
+                                method: 'POST',
+                                headers: { 'X-Requested-With': 'fetch' },
+                                body: fd
+                            });
+                            const data = await res.json();
+
+                            if (data.ok) {
+                                // Remove empty row placeholder if exists
+                                const noRow = document.getElementById('noIntakeRow');
+                                if (noRow) noRow.remove();
+
+                                // Insert cloned row
+                                body.insertAdjacentHTML('afterbegin', data.new_row);
+
+                                // Convert timestamp to visitor's local TZ
+                                const newRow = body.firstElementChild;
+                                if (window.applyLocalTime) window.applyLocalTime(newRow);
+
+                                // Update Totals display
+                                totalDisplay.textContent = data.total;
+                                progressFill.style.width = data.percentage + '%';
+                                if (pctLabel) pctLabel.textContent = Math.round(data.percentage) + '%';
+
+                                // Update Macros widget
+                                updateMacrosWidget(data.macros, data.macro_goals);
+
+                                // Toast notification
+                                showLoggingToast('Food logged!', data.food_item + ' • ' + data.calories + ' kcal');
+
+                                // Award XP dopamine cue
+                                if (data.xp) {
+                                    if (data.xp.added && window.showXpPopup) {
+                                        window.showXpPopup(data.xp.added, logAgainBtn);
+                                    }
+                                    if (data.xp.summary && window.updateXpChip) {
+                                        setTimeout(() => window.updateXpChip(data.xp.summary), 200);
+                                    }
+                                    if (data.xp.levelup && window.showLevelUpToast) {
+                                        setTimeout(() => window.showLevelUpToast(data.xp.levelup), 600);
+                                    }
+                                }
+                            } else {
+                                alert(data.error || 'Failed to log entry');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Connection error');
+                        } finally {
+                            logAgainBtn.innerHTML = originalHtml;
+                            logAgainBtn.disabled = false;
+                        }
+                    }
+                });
+            }
+
+            if (doConfirmDeleteBtn) {
+                doConfirmDeleteBtn.addEventListener('click', async () => {
+                    if (!deleteRowTarget) return;
+
+                    const row = deleteRowTarget;
                     const id = row.dataset.id;
                     const fd = new FormData();
                     fd.append('intake_id', id);
+
+                    // Disable button during execution
+                    doConfirmDeleteBtn.disabled = true;
 
                     try {
                         const res = await fetch('handlers/delete_intake.php', {
@@ -1162,10 +1332,22 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
                         if (data.ok) {
                             // Grab food name from row BEFORE removal for the toast subtext
-                            const deletedFood = row.querySelector('td[data-label="Food"]')?.innerText.trim() || '';
+                            const deletedFood = row.querySelector('.intake-food-cell, td[data-label="Food"]')?.innerText.trim() || '';
 
                             row.style.opacity = '0';
-                            setTimeout(() => row.remove(), 300);
+                            setTimeout(() => {
+                                row.remove();
+                                if (body.querySelectorAll('tr').length === 0) {
+                                    const emptyRowHtml = `
+                                        <tr id="noIntakeRow">
+                                            <td colspan="6" class="empty-state">
+                                                <i class="fas fa-drumstick-bite"></i> ${__intakeEmptyTodayText}
+                                            </td>
+                                        </tr>
+                                    `;
+                                    body.insertAdjacentHTML('beforeend', emptyRowHtml);
+                                }
+                            }, 300);
 
                             totalDisplay.textContent = data.total;
                             progressFill.style.width = data.percentage + '%';
@@ -1176,23 +1358,42 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             // Toast notification
                             showLoggingToast('Entry deleted', deletedFood);
 
-                            // Show empty state if needed
-                            if (body.children.length <= 1) { // 1 because row is removed after timeout
-                                // Logic to re-add empty row could go here
-                            }
+                            closeDeleteConfirmModal();
                         } else {
                             alert(data.error);
                         }
                     } catch (err) {
                         alert('Connection error');
+                    } finally {
+                        doConfirmDeleteBtn.disabled = false;
                     }
                 });
             }
         });
+
+    // Switcher logic for Nutrition Hub
+    function switchNutritionTab(tabId) {
+        // Remove active class from all tab buttons
+        document.querySelectorAll('#nutritionHubCard .tab-btn').forEach(btn => btn.classList.remove('active'));
+        // Remove active class from all tab panes
+        document.querySelectorAll('#nutritionHubCard .chart-wrapper-tab').forEach(pane => pane.classList.remove('active'));
+
+        // Add active class to clicked button
+        const btn = Array.from(document.querySelectorAll('#nutritionHubCard .tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+        if (btn) btn.classList.add('active');
+
+        // Add active class to corresponding tab pane
+        const pane = document.getElementById(`tabPane-${tabId}`);
+        if (pane) pane.classList.add('active');
+
+        // Force Chart.js reflows immediately to correct zero-width layout issue
+        window.dispatchEvent(new Event('resize'));
+    }
     </script>
 
     <?php if ($isLoggedIn): ?>
         <?php $modalTitle = 'Edit Intake Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/_confirm-delete-modal.php'; ?>
         <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
         <script>
             // Intake page edit wiring — IntakeRow handles row reading + form filling

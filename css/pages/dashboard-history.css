@@ -28,7 +28,7 @@
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 24px;
     }
 
     .history-container > .demo-banner {
@@ -37,30 +37,40 @@
 
     /* 3. FILTER CARD */
     .filter-card {
-        background: var(--card-bg);
-        border-radius: var(--border-radius);
-        padding: 25px;
-        box-shadow: var(--shadow-soft);
+        background: var(--color-surface);
+        border: 3px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+        transition: all var(--transition-base);
         min-width: 0;
+    }
+    .filter-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
     }
 
     .card-header h3 {
         margin: 0;
-        color: var(--text-primary);
+        color: var(--color-text);
+        font-weight: 800;
         font-size: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .subtitle {
-        margin: 5px 0 20px 0;
-        color: var(--text-secondary);
+        margin: 6px 0 20px 0;
+        color: var(--color-text-secondary);
         font-size: 0.9rem;
+        font-weight: 600;
     }
 
     .filter-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr 2fr;
-        /* Search rộng hơn, Meal nhỏ, Date rộng */
-        gap: 15px;
+        grid-template-columns: 2fr 1.2fr 2fr;
+        gap: 16px;
         align-items: center;
     }
 
@@ -68,21 +78,23 @@
     .filter-item input,
     .filter-item select {
         width: 100%;
-        padding: 12px 15px;
-        border: 1px solid #e1e4e8;
-        border-radius: 10px;
+        padding: 12px 16px;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
         font-size: 0.95rem;
-        background: var(--bg-body);
-        color: var(--text-primary);
-        transition: all 0.2s;
+        font-weight: 600;
+        background: var(--color-surface-alt);
+        color: var(--color-text);
+        transition: all var(--transition-base);
+        box-sizing: border-box;
     }
 
     .filter-item input:focus,
     .filter-item select:focus {
-        border-color: var(--primary-color);
+        border-color: var(--color-primary);
         outline: none;
-        background: var(--card-bg);
-        box-shadow: 0 0 0 3px rgba(74, 126, 227, 0.1);
+        background: var(--color-surface);
+        box-shadow: 0 0 0 4px var(--color-primary-soft);
     }
 
     .search-box {
@@ -90,20 +102,21 @@
     }
 
     .search-box input {
-        padding-left: 40px;
+        padding-left: 42px;
     }
 
     .search-icon {
         position: absolute;
-        left: 15px;
+        left: 16px;
         top: 50%;
         transform: translateY(-50%);
-        color: #adb5bd;
+        color: var(--color-text-secondary);
+        opacity: 0.8;
     }
 
     .date-group {
         display: flex;
-        gap: 10px;
+        gap: 12px;
     }
 
     .date-input {
@@ -114,64 +127,146 @@
     .date-label {
         position: absolute;
         top: -8px;
-        left: 10px;
-        background: var(--card-bg);
-        padding: 0 5px;
+        left: 12px;
+        background: var(--color-surface);
+        padding: 0 6px;
         font-size: 0.75rem;
-        color: var(--text-secondary);
-        font-weight: 600;
+        color: var(--color-text-secondary);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     /* 4. HISTORY TABLE CARD */
     .history-list-card {
-        background: var(--card-bg);
-        border-radius: var(--border-radius);
-        padding: 20px;
-        box-shadow: var(--shadow-soft);
+        background: var(--color-surface);
+        border: 3px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+        transition: all var(--transition-base);
         min-width: 0;
     }
+    .history-list-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+    }
 
-    /* .modern-table base, .cat-badge variants, typography helpers
-       (.fw-bold, .text-primary, .cal-val), and .date-cell all moved to
-       css/components/intake-list.css (shared with dashboard-intake.php). */
-
-    /* 5. PAGINATION CUSTOMIZATION (DataTables override) */
+    /* 5. TACTILE PAGINATION DESIGN */
     .pagination-container {
         display: flex;
         justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
         padding-top: 20px;
+        border-top: 2px solid var(--color-border-subtle);
+        margin-top: 20px;
     }
 
-    .dataTables_paginate .paginate_button {
-        padding: 6px 12px;
-        margin-left: 5px;
-        border-radius: 6px;
+    .page-btn {
+        background: var(--color-surface-alt);
+        color: var(--color-text-secondary);
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-weight: 800;
+        font-size: 0.9rem;
         cursor: pointer;
-        color: var(--text-secondary);
-        background: var(--bg-body);
-        border: none;
+        box-shadow: 0 3px 0 var(--color-border-subtle);
+        transition: all 0.1s ease;
     }
 
-    .dataTables_paginate .paginate_button.current {
-        background: var(--primary-color);
-        color: white !important;
-        font-weight: bold;
+    .page-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 0 var(--color-border-subtle);
+        background: var(--color-surface-hover);
+        color: var(--color-primary);
+        border-color: var(--color-primary);
     }
 
-    .dataTables_paginate .paginate_button:hover:not(.current) {
-        background: #e9ecef;
-        color: var(--text-primary) !important;
+    .page-btn:active:not(:disabled) {
+        transform: translateY(3px);
+        box-shadow: 0 0 0 transparent;
     }
 
-    /* .empty-state, .macro-chip, .macros-input-group, and the mobile card
-       layout (table → cards) moved to css/components/intake-list.css. */
+    .page-btn.active {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+        box-shadow: 0 3px 0 var(--color-primary-hover);
+    }
+
+    .page-btn.active:hover {
+        color: #fff;
+        border-color: var(--color-primary);
+        box-shadow: 0 3px 0 var(--color-primary-hover);
+        transform: none;
+    }
+
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: 0 3px 0 var(--color-border-subtle) !important;
+    }
 
     /* 6. RESPONSIVE DESIGN */
-    /* Stack filter inputs vertically on narrow screens (≤900px).
-       The table-to-card transformation now kicks in at the shared 768px
-       breakpoint (see css/components/intake-list.css). */
     @media (max-width: 900px) {
         .filter-grid {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        body.page-history .history-container {
+            gap: 16px;
+        }
+
+        body.page-history .filter-card,
+        body.page-history .history-list-card {
+            padding: 16px;
+            border-radius: var(--radius-md);
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        body.page-history .card-header h3 {
+            font-size: 1.15rem;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        body.page-history .subtitle {
+            margin-bottom: 16px;
+            overflow-wrap: anywhere;
+        }
+
+        body.page-history .date-group {
+            flex-direction: column;
+        }
+
+        body.page-history .table-responsive {
+            overflow-x: visible;
+            min-width: 0;
+        }
+
+        body.page-history .pagination-container {
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 16px;
+            margin-top: 16px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        body.page-history .page-btn {
+            min-width: 40px;
+            height: 40px;
+            padding: 8px 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
     }

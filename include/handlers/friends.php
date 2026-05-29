@@ -120,7 +120,7 @@ function friends_send_request(PDO $pdo, int $me, int $other): array
     if ($rel === 'friends')      throw new FriendsActionException('Already friends.');
     if ($rel === 'pending_out')  throw new FriendsActionException('Request already pending.');
     if ($rel === 'pending_in')   throw new FriendsActionException('They already sent you a request — accept it instead.');
-    if (str_starts_with($rel, 'blocked')) throw new FriendsActionException('Cannot send request.');
+    if (strpos($rel, 'blocked') === 0) throw new FriendsActionException('Cannot send request.');
 
     // Rate limit
     $cap = $pdo->prepare(

@@ -127,7 +127,8 @@
 
 /* ---------- Row action buttons ---------- */
 .btn-edit,
-.btn-delete {
+.btn-delete,
+.btn-quick-log {
     background: #e3f2fd;
     color: #1976d2;
     border: none;
@@ -147,6 +148,14 @@
 }
 .btn-delete:hover {
     background: #ef5350;
+    color: #fff;
+}
+.btn-quick-log {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.btn-quick-log:hover {
+    background: #2e7d32;
     color: #fff;
 }
 
@@ -179,12 +188,16 @@
 .macros-input-group .macros-input-label {
     display: block;
     margin-bottom: 6px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 .macros-input-label small {
-    font-weight: 400;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: normal;
     opacity: 0.8;
 }
 
@@ -253,6 +266,8 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         align-items: center;
         transition: box-shadow 0.2s, transform 0.2s;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     /* Variant with Date column (history page) */
@@ -273,38 +288,47 @@
         display: block;
         padding: 0;
         border: none;
+        min-width: 0;
     }
 
     /* Kill the auto-injected "Food/Calories/..." label prefix */
     .modern-table td::before { content: none; }
 
+    .modern-table td.intake-date-cell,
     .modern-table td[data-label="Date"] {
         grid-area: date;
         padding-bottom: 6px;
         margin-bottom: 4px;
         border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
     }
+    .modern-table td.intake-date-cell .date-cell,
     .modern-table td[data-label="Date"] .date-cell {
         flex-direction: row;
         align-items: baseline;
         gap: 6px;
     }
+    .modern-table td.intake-date-cell .day,
     .modern-table td[data-label="Date"] .day {
         font-size: 0.95rem;
     }
+    .modern-table td.intake-date-cell .month,
     .modern-table td[data-label="Date"] .month {
         font-size: 0.75rem;
     }
 
+    .modern-table td.intake-food-cell,
     .modern-table td[data-label="Food"] {
         grid-area: food;
+        min-width: 0;
         font-size: 1rem;
         font-weight: 700;
         line-height: 1.3;
         color: var(--text-primary);
-        word-break: break-word;
+        overflow-wrap: anywhere;
+        word-break: normal;
     }
 
+    .modern-table td.intake-cal-cell,
     .modern-table td[data-label="Calories"] {
         grid-area: kcal;
         text-align: right;
@@ -315,31 +339,47 @@
         align-self: start;
     }
 
-    .modern-table td[data-label="Category"] { grid-area: cat; }
+    .modern-table td.intake-category-cell,
+    .modern-table td[data-label="Category"] {
+        grid-area: cat;
+        min-width: 0;
+    }
 
     /* Emoji prefix on the badge (replaces a separate "Category" label) */
+    .modern-table td.intake-category-cell .cat-badge,
     .modern-table td[data-label="Category"] .cat-badge {
         font-size: 0.75rem;
         padding: 3px 10px 3px 8px;
         text-transform: capitalize;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
+    .modern-table td.intake-category-cell .cat-badge.cat-breakfast::before,
     .modern-table td[data-label="Category"] .cat-badge.cat-breakfast::before { content: "🌅 "; }
+    .modern-table td.intake-category-cell .cat-badge.cat-lunch::before,
     .modern-table td[data-label="Category"] .cat-badge.cat-lunch::before     { content: "☀️ "; }
+    .modern-table td.intake-category-cell .cat-badge.cat-dinner::before,
     .modern-table td[data-label="Category"] .cat-badge.cat-dinner::before    { content: "🌙 "; }
+    .modern-table td.intake-category-cell .cat-badge.cat-snack::before,
     .modern-table td[data-label="Category"] .cat-badge.cat-snack::before     { content: "🍪 "; }
 
+    .modern-table td.intake-time-cell,
     .modern-table td[data-label="Time"] {
         grid-area: time;
         text-align: right;
         font-size: 0.85rem;
         color: var(--text-secondary);
+        white-space: nowrap;
     }
+    .modern-table td.intake-time-cell::before,
     .modern-table td[data-label="Time"]::before {
         content: "🕐 ";
         font-size: 0.8rem;
         margin-right: 2px;
     }
 
+    .modern-table td.intake-macros-cell,
     .modern-table td[data-label="Macros"] {
         grid-area: macros;
         display: flex;
@@ -359,8 +399,10 @@
         display: flex;
         width: 100%;
         gap: 10px;
+        min-width: 0;
     }
 
+    .btn-quick-log,
     .btn-edit,
     .btn-delete {
         width: auto;

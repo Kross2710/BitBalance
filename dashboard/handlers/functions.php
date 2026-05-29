@@ -27,7 +27,7 @@ function updateLoggingStreak(PDO $pdo, int $userId): void
 {
     // Fetch current status row (lock it FOR UPDATE to prevent race conditions)
     $stmt = $pdo->prepare("
-        SELECT last_logging_date, logging_streak, longest_logging_streak 
+        SELECT last_logging_date, logging_streak, longest_logging_streak, streak_freezes, broken_streak
         FROM userStatus 
         WHERE user_id = ? 
         FOR UPDATE
@@ -45,6 +45,8 @@ function updateLoggingStreak(PDO $pdo, int $userId): void
     $lastLogging = isset($status['last_logging_date']) ? new DateTimeImmutable($status['last_logging_date']) : null;
     $streak = isset($status['logging_streak']) ? (int) $status['logging_streak'] : 0; // default to 0
     $longest = isset($status['longest_logging_streak']) ? (int) $status['longest_logging_streak'] : 0;
+    $freezes = isset($status['streak_freezes']) ? (int) $status['streak_freezes'] : 0;
+    $broken = isset($status['broken_streak']) ? (int) $status['broken_streak'] : 0;
 
     /* --- decide new streak value --- */
     if ($lastLogging && $lastLogging->format('Y-m-d') === $today->format('Y-m-d')) {
@@ -56,8 +58,18 @@ function updateLoggingStreak(PDO $pdo, int $userId): void
         $streak++;  // consecutive day
         log_attempt($pdo, $userId, 'streak_update', "Streak incremented to $streak");
     } else {
-        $streak = 1;  // reset / first login
-        log_attempt($pdo, $userId, 'streak_reset', "Streak reset to 1");
+        // Streak is broken (either first login or missed yesterday)
+        if ($lastLogging && $freezes > 0) {
+            $freezes--;
+            $streak++; // keep streak active and increment
+            log_attempt($pdo, $userId, 'streak_freeze_consumed', "Streak freeze consumed. Streak preserved and incremented to $streak. Freezes left: $freezes");
+        } else {
+            if ($streak > 1) {
+                $broken = $streak;
+            }
+            $streak = 1;  // reset / first login
+            log_attempt($pdo, $userId, 'streak_reset', "Streak reset to 1. Broken streak stored: $broken");
+        }
     }
 
     // update longest streak if needed
@@ -68,10 +80,10 @@ function updateLoggingStreak(PDO $pdo, int $userId): void
     // Persist changes
     $upd = $pdo->prepare("
         UPDATE userStatus 
-        SET last_logging_date = ?, logging_streak = ?, longest_logging_streak = ?
+        SET last_logging_date = ?, logging_streak = ?, longest_logging_streak = ?, streak_freezes = ?, broken_streak = ?
         WHERE user_id = ?
     ");
-    $upd->execute([$now->format('Y-m-d H:i:s'), $streak, $longest, $userId]);
+    $upd->execute([$now->format('Y-m-d H:i:s'), $streak, $longest, $freezes, $broken, $userId]);
 }
 
 function getTotalCaloriesToday($userId)
@@ -185,9 +197,9 @@ function getUserLoggingStreak($userId)
 {
     global $pdo;
 
-    // Fetch the user's logging streak
+    // Fetch the user's logging streak and freeze status
     $stmt = $pdo->prepare("
-        SELECT logging_streak, longest_logging_streak
+        SELECT logging_streak, longest_logging_streak, streak_freezes, broken_streak
         FROM userStatus
         WHERE user_id = ?
     ");

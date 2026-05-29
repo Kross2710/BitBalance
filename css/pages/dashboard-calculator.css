@@ -54,7 +54,9 @@
 }
 
 .calc-form-card {
-    padding: 24px;
+    container-type: inline-size;
+    container-name: formCard;
+    padding: 20px;
     min-width: 0;
 }
 
@@ -75,7 +77,7 @@
 }
 
 .subtitle {
-    margin: 6px 0 22px;
+    margin: 4px 0 16px;
     color: var(--color-text-secondary);
     font-size: 0.92rem;
     line-height: 1.5;
@@ -83,12 +85,12 @@
 
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* Default to 2 columns for narrow viewports */
+    gap: 12px;
 }
 
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .form-group.full-width {
@@ -97,9 +99,9 @@
 
 .form-group label {
     display: block;
-    margin-bottom: 7px;
+    margin-bottom: 6px;
     color: var(--color-text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 800;
 }
 
@@ -109,26 +111,33 @@
 
 .input-icon {
     position: absolute;
-    left: 14px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-text-muted);
+    font-size: 0.85rem;
     pointer-events: none;
 }
 
 .calc-form-card input,
 .calc-form-card select {
     width: 100%;
-    min-height: 48px;
-    padding: 12px 14px 12px 40px;
+    min-height: 42px;
+    padding: 8px 10px 8px 34px;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-surface-alt);
     color: var(--color-text);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 700;
     box-sizing: border-box;
     transition: all var(--transition-base);
+}
+
+/* Specific optimization for the gender select dropdown to prevent clipping */
+.calc-form-card #gender {
+    padding-right: 28px;
+    background-position: right 8px center;
 }
 
 .calc-form-card input:focus,
@@ -146,7 +155,7 @@
 .hint-text {
     display: block;
     min-height: 1rem;
-    margin-top: 7px;
+    margin-top: 6px;
     color: var(--color-primary);
     font-size: 0.82rem;
     font-weight: 700;
@@ -158,15 +167,15 @@
     justify-content: center;
     gap: 8px;
     width: 100%;
-    min-height: 50px;
-    margin-top: 10px;
-    padding: 12px 24px;
+    min-height: 42px;
+    margin-top: 8px;
+    padding: 10px 20px;
     background: var(--color-primary);
     color: var(--color-text-on-primary);
     border: none;
     border-radius: var(--radius-md);
     box-shadow: 0 4px 0 var(--color-primary-hover);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 800;
     text-decoration: none;
     cursor: pointer;
@@ -185,7 +194,20 @@
     box-shadow: 0 0 0 var(--color-primary-hover);
 }
 
+/* Form Card Responsive Layout (Container Query) */
+@container formCard (min-width: 460px) {
+    .form-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    
+    .form-group.full-width {
+        grid-column: span 4;
+    }
+}
+
 .calc-results-container {
+    container-type: inline-size;
+    container-name: resultsCard;
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -200,17 +222,18 @@
 
 .metrics-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    grid-template-columns: 1fr; /* Default to 1 column in list layout for narrow cards */
+    gap: 10px;
 }
 
 .metric-card {
-    min-height: 150px;
-    padding: 18px;
+    min-height: auto;
+    padding: 12px 16px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
+    flex-direction: row; /* Default to sleek horizontal layout on mobile/narrow viewports */
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
 }
 
 .card-blue {
@@ -232,25 +255,29 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
     border: 2px solid var(--metric-color);
     border-radius: var(--radius-md);
     background: var(--metric-soft);
     color: var(--metric-color);
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     box-shadow: 0 3px 0 var(--metric-color);
+    flex-shrink: 0;
 }
 
 .metric-info {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .metric-label {
     display: block;
     color: var(--color-text-secondary);
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -258,17 +285,49 @@
 
 .metric-value {
     display: block;
-    margin-top: 4px;
+    margin-top: 2px;
     color: var(--color-text);
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     font-weight: 900;
     line-height: 1.15;
 }
 
 .metric-value small {
     color: var(--color-text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
+}
+
+/* Results Card Responsive Layout (Container Query) */
+@container resultsCard (min-width: 420px) {
+    .metrics-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr)); /* Upgrade to 3 columns when wide */
+        gap: 14px;
+    }
+
+    .metric-card {
+        min-height: 130px;
+        padding: 16px;
+        flex-direction: column; /* Upgrade to classic vertical dashboard layout */
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0;
+    }
+
+    .metric-icon {
+        width: 46px;
+        height: 46px;
+        font-size: 1.25rem;
+    }
+
+    .metric-label {
+        font-size: 0.76rem;
+    }
+
+    .metric-value {
+        margin-top: 4px;
+        font-size: 1.45rem;
+    }
 }
 
 .details-section {
@@ -417,16 +476,6 @@
     .calculator-container {
         grid-template-columns: 1fr;
     }
-
-    .metrics-row {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 720px) {
-    .metrics-row {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 600px) {
@@ -435,14 +484,6 @@
     .accordion-item,
     .empty-calc-state {
         border-radius: var(--radius-md);
-    }
-
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .form-group.full-width {
-        grid-column: span 1;
     }
 
     .empty-calc-state {

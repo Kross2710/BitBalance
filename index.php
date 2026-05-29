@@ -15,12 +15,12 @@ if ($isLoggedIn) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
+<html lang="<?= html_lang_attr() ?>" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BitBalance — Calorie Tracking, Gamified</title>
+    <title><?= t('index.title_tag') ?></title>
 
     <!-- Progressive enhancement: mark JS available BEFORE CSS paints so reveal
          elements only start hidden when JS can actually un-hide them. -->
@@ -39,20 +39,19 @@ if ($isLoggedIn) {
 
     <!-- ============================ HERO ============================ -->
     <section class="hero-section">
-        <span class="hero-badge"><i class="fas fa-bolt"></i> Track. Earn XP. Level up.</span>
-        <h1 class="hero-title">Calorie Tracking That<br><span class="gradient-text">Feels Like a Game</span></h1>
+        <span class="hero-badge"><i class="fas fa-bolt"></i> <?= t('index.hero.badge') ?></span>
+        <h1 class="hero-title"><?= t_raw('index.hero.title_html') ?></h1>
         <p class="hero-subtitle">
-            Snap a photo of your meal, earn XP for every log, keep your streak alive, and climb the leaderboard with
-            friends. Nutrition tracking you'll actually stick with.
+            <?= t('index.hero.subtitle') ?>
         </p>
         <div class="hero-actions">
-            <a href="signup.php" class="btn-start"><i class="fas fa-rocket"></i> Get Started Free</a>
-            <a href="login.php" class="btn-secondary">I already have an account</a>
+            <a href="signup.php" class="btn-start"><i class="fas fa-rocket"></i> <?= t('index.hero.cta_primary') ?></a>
+            <a href="login.php" class="btn-secondary"><?= t('index.hero.cta_secondary') ?></a>
         </div>
         <div class="hero-proof">
-            <span class="proof-chip"><i class="fas fa-camera"></i> AI photo logging</span>
-            <span class="proof-chip"><i class="fas fa-fire"></i> Daily streaks</span>
-            <span class="proof-chip"><i class="fas fa-user-friends"></i> Friend leaderboards</span>
+            <span class="proof-chip"><i class="fas fa-camera"></i> <?= t('index.hero.proof.ai') ?></span>
+            <span class="proof-chip"><i class="fas fa-fire"></i> <?= t('index.hero.proof.streaks') ?></span>
+            <span class="proof-chip"><i class="fas fa-user-friends"></i> <?= t('index.hero.proof.leaderboards') ?></span>
         </div>
     </section>
 
@@ -60,8 +59,8 @@ if ($isLoggedIn) {
 
         <!-- ===================== FEATURE SHOWCASE ===================== -->
         <div class="section-title reveal">
-            <h2>Why you'll keep <span class="gradient-text">coming back</span></h2>
-            <p class="section-sub">The hooks that turn tracking from a chore into a daily habit.</p>
+            <h2><?= t_raw('index.showcase.title_html') ?></h2>
+            <p class="section-sub"><?= t('index.showcase.subtitle') ?></p>
         </div>
 
         <div class="showcase-grid">
@@ -71,30 +70,28 @@ if ($isLoggedIn) {
                     <div class="demo-photo"><i class="fas fa-camera"></i></div>
                     <div class="demo-arrow"><i class="fas fa-arrow-right"></i></div>
                     <div class="demo-result">
-                        <span class="demo-food">🍜 Phở Bò</span>
-                        <span class="demo-cal">≈ 450 kcal</span>
+                        <span class="demo-food"><?= t('index.showcase.ai.demo_food') ?></span>
+                        <span class="demo-cal"><?= t('index.showcase.ai.demo_cal') ?></span>
                     </div>
                 </div>
-                <span class="showcase-tag showcase-tag--ai">AI-Powered</span>
-                <h3>Snap a photo. We do the math.</h3>
-                <p>Our Gemini-powered analyzer estimates calories and macros from a single photo. Or scan a barcode for
-                    instant results.</p>
+                <span class="showcase-tag showcase-tag--ai"><?= t('index.showcase.ai.tag') ?></span>
+                <h3><?= t('index.showcase.ai.title') ?></h3>
+                <p><?= t('index.showcase.ai.body') ?></p>
             </article>
 
             <!-- Gamification -->
             <article class="showcase-card showcase-game reveal">
                 <div class="showcase-demo">
-                    <div class="demo-level">Lv 7</div>
+                    <div class="demo-level"><?= t('index.showcase.game.level') ?></div>
                     <div class="demo-xp-row">
                         <span class="demo-xp-bar"><span class="demo-xp-fill"></span></span>
-                        <span class="demo-xp-num">+10 XP</span>
+                        <span class="demo-xp-num"><?= t('index.showcase.game.xp') ?></span>
                     </div>
-                    <div class="demo-streak"><i class="fas fa-fire"></i> 14-day streak</div>
+                    <div class="demo-streak"><i class="fas fa-fire"></i> <?= t('index.showcase.game.streak') ?></div>
                 </div>
-                <span class="showcase-tag showcase-tag--game">Gamified</span>
-                <h3>Level up every single day.</h3>
-                <p>Earn XP for logging meals, hitting your goals, and keeping streaks alive. Watch your level climb and
-                    unlock that daily dopamine hit.</p>
+                <span class="showcase-tag showcase-tag--game"><?= t('index.showcase.game.tag') ?></span>
+                <h3><?= t('index.showcase.game.title') ?></h3>
+                <p><?= t('index.showcase.game.body') ?></p>
             </article>
 
             <!-- Social -->
@@ -107,56 +104,55 @@ if ($isLoggedIn) {
                     <div class="demo-rank"><span class="demo-medal">🥉</span><span class="demo-ava">M</span><span
                             class="demo-rank-xp">1,210</span></div>
                 </div>
-                <span class="showcase-tag showcase-tag--social">Social</span>
-                <h3>Bring your crew along.</h3>
-                <p>Add friends, compare weekly XP on a private leaderboard, and keep each other accountable through every
-                    streak.</p>
+                <span class="showcase-tag showcase-tag--social"><?= t('index.showcase.social.tag') ?></span>
+                <h3><?= t('index.showcase.social.title') ?></h3>
+                <p><?= t('index.showcase.social.body') ?></p>
             </article>
         </div>
 
         <!-- ===================== SECONDARY FEATURES ===================== -->
         <div class="section-title reveal">
-            <h2>Everything else in the box</h2>
+            <h2><?= t('index.mini.heading') ?></h2>
         </div>
 
         <div class="mini-grid">
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--green"><i class="fas fa-chart-line"></i></div>
-                <h4>Visual Analytics</h4>
-                <p>7-day calorie & macro trends in clean, interactive charts.</p>
+                <h4><?= t('index.mini.analytics.title') ?></h4>
+                <p><?= t('index.mini.analytics.body') ?></p>
             </div>
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--blue"><i class="fas fa-route"></i></div>
-                <h4>Adaptive Goal Planner</h4>
-                <p>TDEE-based targets that adjust to your weight trend.</p>
+                <h4><?= t('index.mini.planner.title') ?></h4>
+                <p><?= t('index.mini.planner.body') ?></p>
             </div>
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--orange"><i class="fas fa-comments"></i></div>
-                <h4>AI Coach</h4>
-                <p>Chat for tailored nutrition advice anytime.</p>
+                <h4><?= t('index.mini.coach.title') ?></h4>
+                <p><?= t('index.mini.coach.body') ?></p>
             </div>
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--green"><i class="fas fa-weight-scale"></i></div>
-                <h4>Weight Tracking</h4>
-                <p>Log your weight and watch progress over time.</p>
+                <h4><?= t('index.mini.weight.title') ?></h4>
+                <p><?= t('index.mini.weight.body') ?></p>
             </div>
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--blue"><i class="fas fa-moon"></i></div>
-                <h4>Light & Dark Mode</h4>
-                <p>A polished interface that's easy on the eyes, day or night.</p>
+                <h4><?= t('index.mini.theme.title') ?></h4>
+                <p><?= t('index.mini.theme.body') ?></p>
             </div>
             <div class="mini-card reveal">
                 <div class="mini-icon mini-icon--orange"><i class="fas fa-shield-alt"></i></div>
-                <h4>Privacy First</h4>
-                <p>Secure data and granular control over what friends can see.</p>
+                <h4><?= t('index.mini.privacy.title') ?></h4>
+                <p><?= t('index.mini.privacy.body') ?></p>
             </div>
         </div>
 
         <!-- ============================ FINAL CTA ============================ -->
         <section class="final-cta reveal">
-            <h2>Ready to make tracking a habit?</h2>
-            <p>Join BitBalance and turn your first meal log into your first level-up.</p>
-            <a href="signup.php" class="btn-start btn-start--lg"><i class="fas fa-rocket"></i> Start Your Journey</a>
+            <h2><?= t('index.final.heading') ?></h2>
+            <p><?= t('index.final.body') ?></p>
+            <a href="signup.php" class="btn-start btn-start--lg"><i class="fas fa-rocket"></i> <?= t('index.final.button') ?></a>
         </section>
 
     </main>

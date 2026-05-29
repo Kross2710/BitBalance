@@ -4,7 +4,7 @@
  *
  * Include on any dashboard page that needs success notifications.
  * Auto-fires once on page load if $success_message (from $_GET['success']) is set.
- * Call window.showLoggingToast(message, subtext?) from JS to trigger manually.
+ * Call window.showLoggingToast(message, subtext?, type?) from JS to trigger manually.
  *
  * Usage:
  *   $success_message = $_GET['success'] ?? '';
@@ -16,7 +16,7 @@ $success_message = $success_message ?? '';
     <div class="toast-content">
         <div class="toast-icon"><i class="fas fa-check-circle"></i></div>
         <div class="toast-text">
-            <span id="toastMessage">Logged successfully!</span>
+            <span id="toastMessage"><?= t('toast.logged_success') ?></span>
             <span id="toastSubtext" class="toast-subtext"></span>
         </div>
     </div>
@@ -24,13 +24,22 @@ $success_message = $success_message ?? '';
 
 <script>
     // Logging success toast — slides up, auto-hides after 3.5s
-    window.showLoggingToast = function (message, subtext) {
+    window.showLoggingToast = function (message, subtext, type) {
         subtext = subtext || '';
+        type = type || 'success';
         const toast = document.getElementById('loggingToast');
+        const iconEl = toast ? toast.querySelector('.toast-icon i') : null;
         const msgEl = document.getElementById('toastMessage');
         const subEl = document.getElementById('toastSubtext');
         if (!toast || !msgEl) return;
 
+        toast.classList.remove('success', 'error', 'warning');
+        toast.classList.add(type);
+        if (iconEl) {
+            iconEl.className = type === 'error'
+                ? 'fas fa-circle-exclamation'
+                : (type === 'warning' ? 'fas fa-triangle-exclamation' : 'fas fa-check-circle');
+        }
         msgEl.textContent = message;
         if (subEl) subEl.textContent = subtext;
 

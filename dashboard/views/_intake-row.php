@@ -38,7 +38,12 @@ $_fD = $_fmtNum($_f);
 
 $_catRaw   = strtolower($_entry['meal_category'] ?? '');
 $_catCls   = 'cat-' . $_catRaw;
-$_catLabel = ucfirst($_catRaw);
+// Translate the category label when we recognise it; fall back to ucfirst
+// of the raw value for custom/unknown categories.
+$_catKey   = 'dashboard.meal.' . $_catRaw;
+$_catLabel = function_exists('t_raw') && in_array($_catRaw, ['breakfast', 'lunch', 'dinner', 'snack'], true)
+    ? t_raw($_catKey)
+    : ucfirst($_catRaw);
 
 $_dateIntake = $_entry['date_intake'] ?? null;
 $_iso        = function_exists('toIsoVN') && $_dateIntake ? toIsoVN($_dateIntake) : ($_dateIntake ?? '');
@@ -50,7 +55,7 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
     data-carbs="<?= htmlspecialchars($_cD) ?>"
     data-fat="<?= htmlspecialchars($_fD) ?>">
     <?php if ($_showDate): ?>
-        <td data-label="Date" data-sort="<?= $_ts ?>">
+        <td data-label="<?= t('intake.row.date') ?>" class="intake-date-cell" data-sort="<?= $_ts ?>">
             <div class="date-cell">
                 <span class="day"   data-iso="<?= htmlspecialchars($_iso) ?>" data-tz-format="date-day"><?= date('d', $_ts) ?></span>
                 <span class="month" data-iso="<?= htmlspecialchars($_iso) ?>" data-tz-format="date-monthyear"><?= date('M Y', $_ts) ?></span>
@@ -58,41 +63,44 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
         </td>
     <?php endif; ?>
 
-    <td data-label="Food" class="fw-bold">
+    <td data-label="<?= t('intake.row.food') ?>" class="fw-bold intake-food-cell">
         <?= htmlspecialchars(ucfirst($_entry['food_item'] ?? '')) ?>
     </td>
 
-    <td data-label="Calories" class="text-primary cal-cell">
-        <span class="cal-val"><?= htmlspecialchars((string) ($_entry['calories'] ?? 0)) ?></span> kcal
+    <td data-label="<?= t('intake.row.calories') ?>" class="text-primary cal-cell intake-cal-cell">
+        <span class="cal-val"><?= htmlspecialchars((string) ($_entry['calories'] ?? 0)) ?></span> <?= t('common.kcal') ?>
     </td>
 
-    <td data-label="Macros" class="macros-cell">
+    <td data-label="<?= t('intake.row.macros') ?>" class="macros-cell intake-macros-cell">
         <span class="macro-chip p">P <?= $_pD ?></span>
         <span class="macro-chip c">C <?= $_cD ?></span>
         <span class="macro-chip f">F <?= $_fD ?></span>
     </td>
 
-    <td data-label="Category">
+    <td data-label="<?= t('intake.row.category') ?>" class="intake-category-cell">
         <span class="cat-badge <?= $_catCls ?>"><?= htmlspecialchars($_catLabel) ?></span>
     </td>
 
-    <td data-label="Time" class="text-muted"
+    <td data-label="<?= t('intake.row.time') ?>" class="text-muted intake-time-cell"
         data-iso="<?= htmlspecialchars($_iso) ?>"
         data-tz-format="time">
         <?= htmlspecialchars($_timeText) ?>
     </td>
 
-    <td data-label="Action" class="row-actions-cell">
+    <td data-label="<?= t('intake.row.action') ?>" class="row-actions-cell">
         <div class="row-actions">
         <?php if ($_hideActions): ?>
-            <span class="row-action-lock" title="Sign up to edit your own entries">
+            <span class="row-action-lock" title="<?= t('intake.row.lock_title') ?>">
                 <i class="fas fa-lock"></i>
             </span>
         <?php else: ?>
-            <button type="button" class="btn-edit" title="Edit Entry">
+            <button type="button" class="btn-quick-log btnLogAgain" title="<?= t('intake.row.log_again_title') ?>">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="btn-edit" title="<?= t('intake.row.edit_title') ?>">
                 <i class="fas fa-edit"></i>
             </button>
-            <button type="button" class="btn-delete deleteBtn" title="Delete Entry">
+            <button type="button" class="btn-delete deleteBtn" title="<?= t('intake.row.delete_title') ?>">
                 <i class="fas fa-trash-alt"></i>
             </button>
         <?php endif; ?>
