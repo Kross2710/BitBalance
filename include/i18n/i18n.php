@@ -115,7 +115,7 @@ function negotiate_accept_language(string $header): ?string
         $q = 1.0;
         for ($j = 1; $j < count($segments); $j++) {
             $seg = trim($segments[$j]);
-            if (str_starts_with($seg, 'q=')) {
+            if (strpos($seg, 'q=') === 0) {
                 $q = (float) substr($seg, 2);
             }
         }

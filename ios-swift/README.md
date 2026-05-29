@@ -73,16 +73,22 @@ POST /api/auth/login.php
 POST /api/auth/logout.php
 GET  /api/me.php
 GET  /api/dashboard/summary.php
-```
-
-Next endpoints to add:
-
-```text
 POST /api/intake/create.php
 GET  /api/intake/history.php
+POST /api/intake/update.php
+POST /api/intake/delete.php
+GET  /api/profile/get.php
+POST /api/profile/update.php
 ```
 
 These endpoints should reuse the existing PHP functions and PDO connection instead of duplicating business logic.
+
+The Xcode project currently has three tabs after login:
+
+- Dashboard
+- Log
+- History
+- Profile
 
 ## Test On iPhone
 

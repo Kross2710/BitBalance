@@ -59,9 +59,41 @@ if ($isLoggedIn) {
 
 $user = $isLoggedIn ? $_SESSION['user'] : null;
 
-// i18n bootstrap. Safe to load for both guests and logged-in users — the
-// resolver tolerates a missing $pdo and a missing language_preference column
-// (e.g. before the migration runs). See include/i18n/i18n.php.
-require_once __DIR__ . '/i18n/i18n.php';
-apply_locale(resolve_locale($pdo ?? null, $user));
-?>
+// i18n bootstrap. Safe to load for both guests and logged-in users.
+// Keep a tiny fallback so a partial RMIT deploy does not fatal before the
+// include/i18n directory has been uploaded.
+$i18nPath = __DIR__ . '/i18n/i18n.php';
+if (is_file($i18nPath)) {
+    require_once $i18nPath;
+}
+
+if (!function_exists('t_raw')) {
+    function t_raw($key, $vars = [])
+    {
+        $msg = (string) $key;
+        if (is_array($vars)) {
+            foreach ($vars as $name => $value) {
+                $msg = str_replace('{' . $name . '}', (string) $value, $msg);
+            }
+        }
+        return $msg;
+    }
+}
+
+if (!function_exists('t')) {
+    function t($key, $vars = [])
+    {
+        return htmlspecialchars(t_raw($key, $vars), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('html_lang_attr')) {
+    function html_lang_attr()
+    {
+        return 'en';
+    }
+}
+
+if (function_exists('apply_locale') && function_exists('resolve_locale')) {
+    apply_locale(resolve_locale($pdo ?? null, $user));
+}

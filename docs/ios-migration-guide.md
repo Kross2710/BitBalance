@@ -30,17 +30,19 @@ POST /api/auth/login.php
 POST /api/auth/logout.php
 GET  /api/me.php
 GET  /api/dashboard/summary.php
+POST /api/intake/create.php
+GET  /api/intake/history.php
+POST /api/intake/update.php
+POST /api/intake/delete.php
+GET  /api/profile/get.php
+POST /api/profile/update.php
 ```
 
 Build these next before translating every screen:
 
 ```text
-POST /api/intake/create.php
-GET  /api/intake/history.php
-POST /api/intake/update.php
-POST /api/intake/delete.php
-GET  /api/profile.php
-POST /api/profile/update.php
+GET  /api/ai-coach/history.php
+POST /api/ai-coach/message.php
 ```
 
 Response shape:

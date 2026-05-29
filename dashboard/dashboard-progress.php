@@ -76,11 +76,23 @@ function bb_progress_format_value($value): string
 function bb_progress_unit(string $unit): string
 {
     static $map = [
-        'meals'    => 'progress.unit.meals',
-        'days'     => 'progress.unit.days',
-        'kcal'     => 'progress.unit.kcal',
-        'XP'       => 'progress.unit.xp',
-        'mornings' => 'progress.unit.mornings',
+        // Achievement units (from bb_achievement_build in achievements.php)
+        'food logged'      => 'progress.unit.food_logged',
+        'logged days'      => 'progress.unit.logged_days',
+        'best streak days' => 'progress.unit.best_streak_days',
+        'full days'        => 'progress.unit.full_days',
+        'balanced days'    => 'progress.unit.balanced_days',
+        'total XP'         => 'progress.unit.total_xp',
+        'rice logs'        => 'progress.unit.rice_logs',
+        'pho logs'         => 'progress.unit.pho_logs',
+        'banh mi logs'     => 'progress.unit.banh_mi_logs',
+        'friends'          => 'progress.unit.friends',
+        'rank 1 status'    => 'progress.unit.rank1',
+        'comebacks'        => 'progress.unit.comebacks',
+        // Record units
+        'days'             => 'progress.unit.days',
+        'XP'               => 'progress.unit.xp',
+        'foods'            => 'progress.unit.foods',
     ];
     return isset($map[$unit]) ? t_raw($map[$unit]) : $unit;
 }
@@ -98,9 +110,9 @@ function bb_progress_render_achievement(array $achievement): void
         ? t_raw('progress.ach.max_level')
         : ($isUnlocked ? t_raw('progress.ach.level_x_of_y', ['n' => $level, 'm' => $maxLevel]) : t_raw('progress.ach.locked'));
 
-    // Translate name/description by the achievement `key`; fall back to the
+    // Translate name/description by the achievement `id`; fall back to the
     // English value carried in the data if a key is somehow missing.
-    $achKey = $achievement['key'] ?? '';
+    $achKey = $achievement['id'] ?? '';
     $achName = $achKey ? t_raw('progress.ach.' . $achKey . '.name') : $achievement['name'];
     if ($achName === 'progress.ach.' . $achKey . '.name') $achName = $achievement['name'];
     $achDesc = $achKey ? t_raw('progress.ach.' . $achKey . '.desc') : $achievement['description'];

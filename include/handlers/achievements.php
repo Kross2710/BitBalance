@@ -262,10 +262,20 @@ function bb_achievements_progress(PDO $pdo, int $userId): array
             'goal' => $goal,
         ],
         'records' => [
-            ['label' => 'Longest streak', 'value' => (int) ($status['longest_logging_streak'] ?? 0), 'unit' => 'days', 'icon' => 'fa-fire'],
-            ['label' => 'Most XP in a day', 'value' => $mostXpDay, 'unit' => 'XP', 'icon' => 'fa-bolt'],
-            ['label' => 'Most foods in a day', 'value' => $mostFoodsDay, 'unit' => 'foods', 'icon' => 'fa-utensils'],
-            ['label' => 'Favorite food', 'value' => $favorite['food_item'] ?? 'Not enough data', 'unit' => !empty($favorite['c']) ? ((int) $favorite['c']) . ' logs' : '', 'icon' => 'fa-star'],
+            ['key' => 'longest_streak', 'label' => 'Longest streak', 'value' => (int) ($status['longest_logging_streak'] ?? 0), 'unit' => 'days', 'icon' => 'fa-fire'],
+            ['key' => 'most_xp_day', 'label' => 'Most XP in a day', 'value' => $mostXpDay, 'unit' => 'XP', 'icon' => 'fa-bolt'],
+            ['key' => 'most_foods_day', 'label' => 'Most foods in a day', 'value' => $mostFoodsDay, 'unit' => 'foods', 'icon' => 'fa-utensils'],
+            // Favorite food value/unit are localized here (user-data value falls
+            // back to a translated "not enough data"; unit is the {n} logs phrase).
+            [
+                'key' => 'favorite_food',
+                'label' => 'Favorite food',
+                'value' => $favorite['food_item'] ?? (function_exists('t_raw') ? t_raw('progress.rec.not_enough_data') : 'Not enough data'),
+                'unit' => !empty($favorite['c'])
+                    ? (function_exists('t_raw') ? t_raw('progress.unit.logs_n', ['n' => (int) $favorite['c']]) : ((int) $favorite['c']) . ' logs')
+                    : '',
+                'icon' => 'fa-star',
+            ],
         ],
         'achievements' => $achievements,
     ];

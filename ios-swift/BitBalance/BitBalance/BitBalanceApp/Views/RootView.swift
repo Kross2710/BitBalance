@@ -10,7 +10,7 @@ struct RootView: View {
             } else if session.user == nil {
                 LoginView()
             } else {
-                DashboardView()
+                MainTabView()
             }
         }
         .task {

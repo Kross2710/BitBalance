@@ -408,7 +408,6 @@ return [
     'friends.subtitle'                 => 'Add friends, compare progress, climb the leaderboard.',
     'friends.tab.friends'              => 'My Friends',
     'friends.tab.requests'             => 'Requests',
-    'friends.tab.leaderboard'          => 'Leaderboard',
     'friends.search.placeholder'       => 'Search by username handle (e.g. Hung#2117)',
     'friends.search.button'            => 'Search',
     'friends.add'                      => 'Add friend',
@@ -616,31 +615,56 @@ return [
     'progress.ach.locked'              => 'Locked',
 
     // Achievement catalog — names + descriptions, keyed by the achievement
-    // `key` in include/handlers/achievements.php.
-    'progress.ach.first_bites.name'    => 'First Bites',
-    'progress.ach.first_bites.desc'    => 'Log your first meals and keep the plates coming.',
-    'progress.ach.streak_keeper.name'  => 'Streak Keeper',
-    'progress.ach.streak_keeper.desc'  => 'Log on consecutive days to build your streak.',
-    'progress.ach.xp_grinder.name'     => 'XP Grinder',
-    'progress.ach.xp_grinder.desc'     => 'Earn XP from logging, streaks, and goals.',
-    'progress.ach.goal_getter.name'    => 'Goal Getter',
-    'progress.ach.goal_getter.desc'    => 'Hit your daily calorie goal again and again.',
-    'progress.ach.early_bird.name'     => 'Early Bird',
-    'progress.ach.early_bird.desc'     => 'Log breakfast before 9am to bank the morning.',
+    // `id` in include/handlers/achievements.php (bb_achievement_build).
+    'progress.ach.first_bite.name'        => 'First Bite',
+    'progress.ach.first_bite.desc'        => 'Log your first food. The fork has entered the chat.',
+    'progress.ach.daily_logger.name'      => 'Daily Logger',
+    'progress.ach.daily_logger.desc'      => 'Log food on different days.',
+    'progress.ach.streak_cooker.name'     => 'Streak Cooker',
+    'progress.ach.streak_cooker.desc'     => 'Keep your logging streak hot.',
+    'progress.ach.full_plate.name'        => 'Full Plate',
+    'progress.ach.full_plate.desc'        => 'Log breakfast, lunch, and dinner in the same day.',
+    'progress.ach.balanced_bowl.name'     => 'Balanced Bowl',
+    'progress.ach.balanced_bowl.desc'     => 'Finish a day within 10% of your calorie goal.',
+    'progress.ach.xp_grinder.name'        => 'XP Grinder',
+    'progress.ach.xp_grinder.desc'        => 'Earn XP across BitBalance.',
+    'progress.ach.rice_goddess.name'      => 'Rice Goddess',
+    'progress.ach.rice_goddess.desc'      => 'Log rice dishes until the bowl starts recognizing you.',
+    'progress.ach.pho_real.name'          => 'Pho Real',
+    'progress.ach.pho_real.desc'          => 'Log pho enough times that the broth becomes a personality trait.',
+    'progress.ach.banh_mi_baron.name'     => 'Banh Mi Baron',
+    'progress.ach.banh_mi_baron.desc'     => 'Log banh mi in any spelling. Diacritics are optional; devotion is not.',
+    'progress.ach.friend_fuel.name'       => 'Friend Fuel',
+    'progress.ach.friend_fuel.desc'       => 'Build a crew for accountability and leaderboard chaos.',
+    'progress.ach.leaderboard_menace.name'=> 'Leaderboard Menace',
+    'progress.ach.leaderboard_menace.desc'=> 'Hold rank 1 on your current weekly friend leaderboard.',
+    'progress.ach.comeback_meal.name'     => 'Comeback Meal',
+    'progress.ach.comeback_meal.desc'     => 'Return after a 2+ day logging gap. No drama, just dinner.',
 
     // Personal records — labels keyed by record `key`.
-    'progress.rec.foods_logged'        => 'Foods Logged',
-    'progress.rec.current_streak'      => 'Current Streak',
-    'progress.rec.biggest_day'         => 'Biggest Day',
-    'progress.rec.avg_7day'            => '7-Day Avg',
-    'progress.rec.best_xp_day'         => 'Best XP Day',
+    'progress.rec.longest_streak'      => 'Longest streak',
+    'progress.rec.most_xp_day'         => 'Most XP in a day',
+    'progress.rec.most_foods_day'      => 'Most foods in a day',
+    'progress.rec.favorite_food'       => 'Favorite food',
+    'progress.rec.not_enough_data'     => 'Not enough data',
 
-    // Units shared by achievements + records.
-    'progress.unit.meals'              => 'meals',
+    // Units shared by achievements + records (mapped in bb_progress_unit).
+    'progress.unit.food_logged'        => 'food logged',
+    'progress.unit.logged_days'        => 'logged days',
+    'progress.unit.best_streak_days'   => 'best streak days',
+    'progress.unit.full_days'          => 'full days',
+    'progress.unit.balanced_days'      => 'balanced days',
+    'progress.unit.total_xp'           => 'total XP',
+    'progress.unit.rice_logs'          => 'rice logs',
+    'progress.unit.pho_logs'           => 'pho logs',
+    'progress.unit.banh_mi_logs'       => 'banh mi logs',
+    'progress.unit.friends'            => 'friends',
+    'progress.unit.rank1'              => 'rank 1 status',
+    'progress.unit.comebacks'          => 'comebacks',
     'progress.unit.days'               => 'days',
-    'progress.unit.kcal'               => 'kcal',
     'progress.unit.xp'                 => 'XP',
-    'progress.unit.mornings'           => 'mornings',
+    'progress.unit.foods'              => 'foods',
+    'progress.unit.logs_n'             => '{n} logs',
 
     // ── History page ────────────────────────────────────────────────────────
     'history.title_alt'                => 'History Log | BitBalance',
@@ -678,6 +702,11 @@ return [
     'wiki.cat.habits'                  => 'Healthy Habits',
     'wiki.no_results'                  => 'No articles match your search.',
     'wiki.disclaimer'                  => 'This guide offers general nutrition education and is not a substitute for personalized advice from a doctor or registered dietitian.',
+    // Wiki article title/summary/body are NOT keyed here: the canonical English
+    // text lives inline in dashboard-wiki.php ($wikiArticles) and is used as the
+    // fallback. Only non-English locales add wiki.art.* keys. read_time IS keyed
+    // because it is rendered purely via t_raw() with no inline fallback.
+    'wiki.read_time'                   => '{n} min',
 
     // ── Friends page ────────────────────────────────────────────────────────
     'friends.title_alt'                => 'Friends | BitBalance',
