@@ -145,22 +145,18 @@
 }
 
 @media (max-width: 480px) {
-    /* Grid 8 cột bằng nhau (= số nav-link) để mọi tab cùng width kể cả content
-       dài/ngắn. minmax(0,1fr) ép min-width=0, ngăn cột nở theo min-content
-       (1fr thuần = minmax(auto,1fr) sẽ bị "Overview" làm phình).
-       LƯU Ý: thêm/bớt nav-link phải cập nhật lại số cột ở đây. */
+    /* Equal-width tabs without hard-coding nav count. */
     .sidebar {
-        display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+        display: flex;
     }
 
     .sidebar .nav-link {
+        flex: 1 1 0;
         flex-direction: column;
         font-size: 0.72rem;
         padding: 12px 2px;
         gap: 4px;
         min-width: 0;
-        /* Bỏ flex:1 cũ, grid lo width; nội dung vẫn center bằng justify-content */
     }
 
     /* Icon hiển thị lại (trước đây đang ẩn) để tăng nhận diện nhanh */
