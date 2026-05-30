@@ -53,7 +53,7 @@ if ($age !== null && ($age < 1 || $age > 130)) {
 if ($gender === '') {
     $gender = null;
 }
-if ($gender !== null && !in_array($gender, ['male', 'female'], true)) {
+if ($gender !== null && !in_array($gender, ['male', 'female', 'other'], true)) {
     api_error('Invalid gender selected.', 422);
 }
 

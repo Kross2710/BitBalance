@@ -21,11 +21,6 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>
     </a>
 
-    <a href="dashboard-calculator.php" class="nav-link <?php echo ($activePage == 'calculator') ? 'active' : ''; ?>"
-        data-short="<?= t('dashboard.sidebar.calculator_short') ?>">
-        <i class="fas fa-calculator"></i> <?= t('dashboard.sidebar.calculator') ?>
-    </a>
-
     <a href="dashboard-plan.php" class="nav-link <?php echo ($activePage == 'plan') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.plan_short') ?>">
         <i class="fas fa-route"></i> <?= t('dashboard.sidebar.plan') ?>
@@ -34,11 +29,6 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
     <a href="dashboard-progress.php" class="nav-link <?php echo ($activePage == 'progress') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.progress_short') ?>">
         <i class="fas fa-bolt"></i> <?= t('dashboard.sidebar.progress') ?>
-    </a>
-
-    <a href="dashboard-history.php" class="nav-link <?php echo ($activePage == 'history') ? 'active' : ''; ?>"
-        data-short="<?= t('dashboard.sidebar.history_short') ?>">
-        <i class="fas fa-history"></i> <?= t('dashboard.sidebar.history') ?>
     </a>
 
     <a href="dashboard-wiki.php" class="nav-link <?php echo ($activePage == 'wiki') ? 'active' : ''; ?>"
@@ -53,6 +43,12 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
             <span class="nav-link__badge"><?= $sidebarPendingFriends ?></span>
         <?php endif; ?>
     </a>
+
+    <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
+        data-short="<?= t('dashboard.sidebar.beats_short') ?>">
+        <i class="fa-solid fa-music"></i> <?= t('dashboard.sidebar.beats') ?>
+    </a>
+
 
     <!-- <a href="promo-video.php" class="nav-link <?php echo ($activePage == 'promo-video') ? 'active' : ''; ?>"
         data-short="Promo">

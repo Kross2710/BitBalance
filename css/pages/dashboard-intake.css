@@ -62,6 +62,14 @@
         min-width: 0;
     }
 
+    /* The list card is the only `.flex > section:last-child` in its column, so the
+       global rule (css/dashboard.css) forces justify-content: space-between — that
+       strands the header at the top and the table at the bottom of the tall card.
+       Anchor the content to the top instead. (Selector ≥ global specificity.) */
+    .intake-right-column > .intake-list-card {
+        justify-content: flex-start;
+    }
+
     .card-header h3 {
         margin: 0 0 20px 0;
         font-size: 1.1rem;
@@ -199,7 +207,7 @@
 
     /* 7. RESPONSIVE DESIGN */
     /* content-split chỉ chia 2 cột khi có đủ chỗ giữa hai sidebar. */
-    @media (max-width: 1439px) {
+    @media (max-width: 1799px) {
         .content-split {
             grid-template-columns: 1fr;
         }
@@ -213,6 +221,53 @@
     }
 
     /* Mobile card layout for the table moved to css/components/intake-list.css. */
+    @media (max-width: 768px) {
+        body.page-intake .intake-list-card {
+            overflow: hidden;
+            scroll-margin-top: 86px;
+        }
+
+        body.page-intake .intake-list-card .card-header h3 {
+            margin-bottom: 14px;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        body.page-intake .modern-table--today,
+        body.page-intake .modern-table--today tbody {
+            display: block;
+            width: 100%;
+            min-width: 0;
+        }
+
+        body.page-intake .modern-table--today tr:not(#noIntakeRow) {
+            width: 100%;
+            background: var(--color-surface-alt);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-sm);
+        }
+
+        body.page-intake .modern-table--today tr:not(#noIntakeRow):hover {
+            transform: none;
+            box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-sm);
+        }
+
+        body.page-intake .modern-table--today .row-actions-cell {
+            border-top-color: var(--color-border);
+        }
+
+        body.page-intake .modern-table--today tr td.row-actions-cell--locked:last-child {
+            display: none;
+        }
+
+        body.page-intake .modern-table--today tr.intake-row--locked:not(#noIntakeRow) {
+            grid-template-areas:
+                "food    kcal"
+                "cat     time"
+                "macros  macros";
+        }
+    }
 
     /* ================================================
        MACROS WIDGET — mirrors Intake Breakdown style
@@ -978,6 +1033,78 @@
 
         .demo-banner {
             grid-column: 1 / -1;
+        }
+    }
+
+    @media (min-width: 901px) and (max-width: 1799px) {
+        body.page-intake .intake-container {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+
+        .intake-left-column {
+            display: grid;
+            grid-template-columns: minmax(320px, 0.9fr) minmax(380px, 1.1fr);
+            align-items: start;
+            gap: 18px;
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .intake-right-column {
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .stats-hub-card,
+        .intake-form-card,
+        .intake-list-card {
+            padding: 18px !important;
+        }
+
+        .stats-hub-tabs {
+            margin-bottom: 16px;
+        }
+
+        .stats-hub-tabs .tab-btn {
+            padding: 8px 10px;
+            font-size: 11px;
+            gap: 6px;
+        }
+
+        .chart-wrapper-tab {
+            min-height: 0;
+        }
+
+        .stats-hub-card .progress-value span {
+            font-size: 1.75rem;
+        }
+
+        .stats-hub-card .progress-widget .progress-bar {
+            height: 18px !important;
+            margin: 10px 0;
+        }
+
+        .stats-hub-card .doughnut-container {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 16px;
+        }
+
+        .macro-list-container {
+            gap: 6px;
+        }
+
+        .macro-item {
+            padding: 10px 6px;
+        }
+
+        .intake-form-card .form-group {
+            margin-bottom: 12px;
+        }
+
+        .demo-cta {
+            margin-top: 14px;
+            padding-top: 14px;
         }
     }
 

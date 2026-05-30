@@ -17,6 +17,13 @@
    ============================================================ */
 
 /* ---------- Table base ---------- */
+/* Horizontal-scroll wrapper. Lives here (shared) so any page embedding the
+   table gets it — dashboard.php only loads this component CSS, not the
+   per-page dashboard-intake.css where this rule used to be. */
+.table-responsive {
+    overflow-x: auto;
+}
+
 .modern-table {
     width: 100%;
     border-collapse: separate;
@@ -42,6 +49,9 @@
     font-size: 0.95rem;
     vertical-align: middle;
     color: var(--text-primary);
+    /* Anchor left: the dashboard Meals tab lives in a .chart-section
+       (text-align:center), which otherwise centres the food/category cells. */
+    text-align: left;
 }
 
 .modern-table tr:last-child td {

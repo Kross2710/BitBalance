@@ -115,6 +115,9 @@ return [
     'dashboard.sidebar.wiki_short' => 'Wiki',
     'dashboard.sidebar.friends' => 'Bạn bè',
     'dashboard.sidebar.friends_short' => 'Bạn',
+    'dashboard.sidebar.beats' => 'Nhạc & Thực đơn',
+    'dashboard.sidebar.beats_short' => 'Nhạc',
+
     'dashboard.right.hello' => 'Xin chào,',
     'dashboard.right.body_metrics' => 'Chỉ số cơ thể',
     'dashboard.right.missing_info' => 'Thiếu thông tin.',
@@ -278,6 +281,7 @@ return [
     'calc.input.gender' => 'Giới tính',
     'calc.input.gender.male' => 'Nam',
     'calc.input.gender.female' => 'Nữ',
+    'calc.input.gender.other' => 'Khác',
     'calc.input.weight' => 'Cân nặng (kg)',
     'calc.input.height' => 'Chiều cao (cm)',
     'calc.input.activity' => 'Mức vận động',
@@ -669,6 +673,7 @@ return [
     'profile.body.gender.select' => 'Chọn…',
     'profile.body.gender.male' => 'Nam',
     'profile.body.gender.female' => 'Nữ',
+    'profile.body.gender.other' => 'Khác',
     'profile.body.weight' => 'Cân nặng (kg)',
     'profile.body.height' => 'Chiều cao (cm)',
     'profile.body.save' => 'Cập nhật chỉ số',
@@ -815,4 +820,48 @@ return [
     'wiki.art.snacking.title' => 'Ăn vặt thông minh & thời điểm bữa ăn',
     'wiki.art.snacking.summary' => 'Khi nào nên ăn và cách ăn vặt có chủ đích.',
     'wiki.art.snacking.body' => '<p>Khi nào bạn ăn ít quan trọng hơn ăn gì và ăn bao nhiêu — nhưng thời điểm khéo léo giúp duy trì chế độ ăn lành mạnh dễ hơn.</p><ul><li>Ăn vặt không xấu; ăn vặt <strong>không có kế hoạch</strong> mới xấu. Hãy chọn món giàu đạm hoặc chất xơ.</li><li>Tổng lượng nạp hằng ngày quyết định cân nặng nhiều hơn số bữa.</li><li>Ăn quanh buổi tập có thể hỗ trợ năng lượng và phục hồi.</li></ul><p class=\'wiki-tip\'><i class=\'fas fa-lightbulb\'></i> Luôn để sẵn một món ăn vặt — quá đói dẫn đến những lựa chọn lớn hơn, vội hơn.</p>',
+
+    // ── Điều khoản & Điều kiện ────────────────────────────────────────────────
+    'terms.title' => 'Điều khoản & Điều kiện',
+    'terms.subtitle' => 'Minh bạch, Riêng tư và Tin cậy',
+    'terms.intro' => '<strong>Quan trọng:</strong> Dù BitBalance là một dự án sinh viên, chúng tôi rất coi trọng sự tin tưởng của người dùng. Trang này giải thích cách chúng tôi xử lý dữ liệu của bạn một cách có trách nhiệm.',
+
+    'terms.privacy.heading' => 'Quyền riêng tư & Bảo mật dữ liệu',
+    'terms.privacy.p1' => 'Toàn bộ thông tin người dùng (như thông tin đăng nhập, chiều cao và cân nặng) được lưu trữ an toàn trong cơ sở dữ liệu của dự án. Chúng tôi không chia sẻ dữ liệu này với bên thứ ba — dữ liệu chỉ được dùng để duy trì hoạt động của trang và giúp bạn theo dõi mục tiêu.',
+    'terms.privacy.p2' => 'Bạn có toàn quyền kiểm soát dữ liệu của mình. Bạn có thể xóa, lưu trữ hoặc chỉnh sửa thông tin tài khoản bất cứ lúc nào trong phần cài đặt hồ sơ.',
+
+    'terms.cookies.heading' => 'Chính sách Cookie',
+    'terms.cookies.intro' => 'Cookie là các tệp văn bản nhỏ được lưu trên thiết bị của bạn. Chúng tôi dùng cookie để nâng cao trải nghiệm bằng cách ghi nhớ tùy chọn của bạn.',
+    'terms.cookies.types_heading' => 'Các loại Cookie chúng tôi sử dụng',
+
+    'terms.cookies.essential.title' => 'Cookie thiết yếu',
+    'terms.cookies.essential.desc' => 'Cần thiết để trang web hoạt động bình thường. Không thể tắt.',
+    'terms.cookies.essential.item1' => 'Xác thực người dùng (giữ bạn luôn đăng nhập)',
+    'terms.cookies.essential.item2' => 'Sản phẩm trong giỏ hàng',
+    'terms.cookies.essential.item3' => 'Bảo mật và phòng chống gian lận',
+
+    'terms.cookies.preference.title' => 'Cookie tùy chọn',
+    'terms.cookies.preference.desc' => 'Ghi nhớ cài đặt của bạn để mang lại trải nghiệm cá nhân hóa.',
+    'terms.cookies.preference.item1' => 'Tùy chọn giao diện (Chế độ Tối/Sáng)',
+    'terms.cookies.preference.item2' => 'Cài đặt bố cục bảng điều khiển',
+
+    'terms.cookies.analytics.title' => 'Cookie phân tích',
+    'terms.cookies.analytics.desc' => 'Giúp chúng tôi hiểu cách khách truy cập tương tác với trang (ẩn danh).',
+    'terms.cookies.analytics.item1' => 'Số lượt truy cập trang',
+    'terms.cookies.analytics.item2' => 'Nguồn truy cập',
+
+    'terms.community.heading' => 'Quy tắc cộng đồng',
+    'terms.community.intro' => 'Diễn đàn của chúng tôi là nơi để hỗ trợ và chia sẻ. Khi sử dụng, bạn đồng ý:',
+    'terms.community.item1' => 'Tôn trọng các thành viên khác.',
+    'terms.community.item2' => 'Không đăng nội dung gây hại hoặc xúc phạm.',
+    'terms.community.item3' => 'Giữ thảo luận liên quan đến sức khỏe và dinh dưỡng.',
+
+    'terms.rmit.heading' => 'Tuân thủ RMIT',
+    'terms.rmit.body' => 'BitBalance được lưu trữ trên máy chủ giảng dạy của RMIT. Chúng tôi tuân thủ nghiêm ngặt các hướng dẫn kỹ thuật và đạo đức của trường, bao gồm chính sách sử dụng hợp lý và tiêu chuẩn bảo mật.',
+
+    'terms.dev.title' => 'Công cụ nhà phát triển',
+    'terms.dev.show_banner' => 'Hiện banner Cookie',
+    'terms.dev.clear_cookies' => 'Xóa dữ liệu Cookie',
+
+    'terms.last_updated' => 'Cập nhật lần cuối: {date}',
 ];

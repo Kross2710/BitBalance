@@ -2,7 +2,13 @@
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/../../include/handlers/xp.php';
 
-// Prepare data for the history chart (last 7 days)
+// Resolve selected date (default to today)
+$selectedDate = date('Y-m-d');
+if (isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'])) {
+    $selectedDate = $_GET['date'];
+}
+
+// Prepare data for the history chart (last 7 days relative to selected date)
 $historyData = [];
 $historyLabels = [];
 
@@ -11,9 +17,9 @@ if ($isLoggedIn) {
     require_once PROJECT_ROOT . '/include/db_config.php'; // Include database configuration
     $userId = $user['user_id']; // Get user ID from session
 
-    $totalCalories = getTotalCaloriesToday($userId) ?? 0; // Get total calories for today, default to 0 if null
+    $totalCalories = getTotalCaloriesToday($userId, $selectedDate) ?? 0; // Get total calories for selected date, default to 0 if null
 
-    $intakeLog = getIntakeLogToday($userId); // Get today's intake log
+    $intakeLog = getIntakeLogToday($userId, $selectedDate); // Get selected date's intake log
 
     $userGoal = getUserIntakeGoal($userId); // Get user's calorie goal
     // Fallback khi user chưa có dòng trong userStatus (fetch trả về false)
@@ -31,8 +37,8 @@ if ($isLoggedIn) {
         $xpSummary = ['total_xp' => 0, 'current_level' => 1, 'xp_into_level' => 0, 'xp_for_next' => 100, 'progress_pct' => 0];
     }
 
-    // Macro totals for today and recommended macro goals derived from calorie goal
-    $macroTotals = getMacroTotalsToday($userId);
+    // Macro totals for selected date and recommended macro goals derived from calorie goal
+    $macroTotals = getMacroTotalsToday($userId, $selectedDate);
     $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal ? (int) $userGoal : null);
 
     $progressPercentage = 0; // Default progress percentage
@@ -42,12 +48,12 @@ if ($isLoggedIn) {
         $progressPercentage = max($progressPercentage, 0); // Ensure it's not negative
     }
 
-    // Get the past 7 days (calories + macros)
+    // Get the past 7 days leading to the selected date (calories + macros)
     $historyProtein = [];
     $historyCarbs   = [];
     $historyFat     = [];
     for ($i = 6; $i >= 0; $i--) {
-        $date = date('Y-m-d', strtotime("-$i days"));
+        $date = date('Y-m-d', strtotime("-$i days", strtotime($selectedDate)));
         $stmt = $pdo->prepare("
             SELECT
                 COALESCE(SUM(calories), 0) AS total,
@@ -67,7 +73,7 @@ if ($isLoggedIn) {
         $historyLabels[] = date('D', strtotime($date));
     }
 
-    // Prepare data for the meal categories chart
+    // Prepare data for the meal categories chart for the selected date
     $mealCategories = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
     $mealCategoryData = [];
     foreach ($mealCategories as $category) {
@@ -76,9 +82,9 @@ if ($isLoggedIn) {
             FROM intakeLog
             WHERE user_id = ?
             AND meal_category = ?
-            AND DATE(date_intake) = CURDATE()
+            AND DATE(date_intake) = ?
         ");
-        $stmt->execute([$userId, $category]);
+        $stmt->execute([$userId, $category, $selectedDate]);
         $total = $stmt->fetchColumn();
         $mealCategoryData[$category] = $total ? (int) $total : 0; // Default to 0 if no records found
     }

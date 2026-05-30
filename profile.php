@@ -268,6 +268,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $gender = !empty($_POST['gender']) ? $_POST['gender'] : null;
         $weight = !empty($_POST['weight']) ? (float) $_POST['weight'] : null;
         $height = !empty($_POST['height']) ? (float) $_POST['height'] : null;
+        $valid_genders = ['male', 'female', 'other'];
+        if ($gender !== null && !in_array($gender, $valid_genders, true)) {
+            $gender = null;
+        }
 
         try {
             // Check if user already has physical info
@@ -493,6 +497,7 @@ try {
                                 <option value="male" <?= ($physical_info['gender'] ?? '') === 'male' ? 'selected' : '' ?>>
                                     <?= t('profile.body.gender.male') ?></option>
                                 <option value="female" <?= ($physical_info['gender'] ?? '') === 'female' ? 'selected' : '' ?>><?= t('profile.body.gender.female') ?></option>
+                                <option value="other" <?= ($physical_info['gender'] ?? '') === 'other' ? 'selected' : '' ?>><?= t('profile.body.gender.other') ?></option>
                             </select>
                         </div>
                         <div class="form-group">

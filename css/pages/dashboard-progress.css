@@ -515,3 +515,9 @@
         text-align: left;
     }
 }
+
+/* Alert Spacing */
+.progress-container .alert {
+    margin-bottom: 22px;
+}
+

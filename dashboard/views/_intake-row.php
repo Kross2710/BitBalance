@@ -50,7 +50,8 @@ $_iso        = function_exists('toIsoVN') && $_dateIntake ? toIsoVN($_dateIntake
 $_ts         = $_dateIntake ? strtotime($_dateIntake) : time();
 $_timeText   = $_timeLabel ?? date('H:i', $_ts);
 ?>
-<tr data-id="<?= (int) ($_entry['intakeLog_id'] ?? 0) ?>"
+<tr<?= $_hideActions ? ' class="intake-row--locked"' : '' ?>
+    data-id="<?= (int) ($_entry['intakeLog_id'] ?? 0) ?>"
     data-protein="<?= htmlspecialchars($_pD) ?>"
     data-carbs="<?= htmlspecialchars($_cD) ?>"
     data-fat="<?= htmlspecialchars($_fD) ?>">
@@ -87,7 +88,7 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
         <?= htmlspecialchars($_timeText) ?>
     </td>
 
-    <td data-label="<?= t('intake.row.action') ?>" class="row-actions-cell">
+    <td data-label="<?= t('intake.row.action') ?>" class="row-actions-cell<?= $_hideActions ? ' row-actions-cell--locked' : '' ?>">
         <div class="row-actions">
         <?php if ($_hideActions): ?>
             <span class="row-action-lock" title="<?= t('intake.row.lock_title') ?>">

@@ -89,7 +89,7 @@ $intakeSummary = ['daily' => [], 'logged_days' => 0, 'average_calories' => null]
 $weightSummary = ['current' => $fallbackWeight, 'current_date' => null, 'trend' => null, 'chart' => []];
 
 $physicalReady = is_numeric($userAge) && (int) $userAge > 0
-    && in_array($userGender, ['male', 'female'], true)
+    && in_array($userGender, ['male', 'female', 'other'], true)
     && is_numeric($userWeight) && (float) $userWeight > 0
     && is_numeric($userHeight) && (float) $userHeight > 0;
 
@@ -206,6 +206,28 @@ $goalLine = array_fill(0, count($chartLabels), $goalLineValue);
 $goalLineLabel = $currentGoal ? 'Current goal' : ($recommendedGoal ? 'Recommended goal' : 'Goal');
 $weightLabelsForChart = array_map(fn($d) => $d['label'], $weightSummary['chart']);
 $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart']);
+
+$calculatorBmi = null;
+$calculatorIdealRange = null;
+$calculatorGenderLabel = '';
+$calculatorActivityLabel = $activityOptions[$activityLevel]['label'] ?? '';
+if ($physicalReady) {
+    $heightM = (float) $userHeight / 100;
+    if ($heightM > 0) {
+        $calculatorBmi = (float) $userWeight / ($heightM * $heightM);
+        $calculatorIdealRange = [
+            'min' => 18.5 * $heightM * $heightM,
+            'max' => 24.9 * $heightM * $heightM,
+        ];
+    }
+
+    $genderLabels = [
+        'male' => t_raw('calc.input.gender.male'),
+        'female' => t_raw('calc.input.gender.female'),
+        'other' => t_raw('calc.input.gender.other'),
+    ];
+    $calculatorGenderLabel = $genderLabels[$userGender] ?? ucfirst((string) $userGender);
+}
 ?>
 
 <!DOCTYPE html>
@@ -221,7 +243,6 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
     $pageCss = ['css/dashboard.css', 'css/pages/dashboard-plan.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
@@ -247,11 +268,10 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                     <div class="plan-alert plan-alert-success"><i class="fas fa-circle-check"></i> <?= $success_message ?></div>
                 <?php endif; ?>
 
-                <section class="plan-hero">
-                    <div class="plan-hero-copy">
+                <section class="plan-summary-strip">
+                    <div class="plan-summary-title">
                         <span class="plan-kicker"><i class="fas fa-route"></i> <?= t('plan.kicker') ?></span>
-                        <h1><?= t('plan.hero.title') ?></h1>
-                        <p><?= t('plan.hero.subtitle') ?></p>
+                        <h1><?= t('plan.page_title') ?></h1>
                     </div>
                     <div class="plan-hero-metrics">
                         <div class="plan-metric">
@@ -272,81 +292,58 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                     </div>
                 </section>
 
-                <section class="plan-panel plan-intake-panel">
-                    <div class="plan-section-head compact">
-                        <h2><i class="fas fa-chart-column"></i> <?= t('plan.recent.heading') ?></h2>
-                        <p>
-                            <?php if ($currentGoal): ?>
-                                <?= t_raw('plan.recent.with_goal', ['n' => number_format($currentGoal)]) ?>
-                            <?php elseif ($recommendedGoal): ?>
-                                <?= t_raw('plan.recent.with_rec', ['n' => number_format($recommendedGoal)]) ?>
-                            <?php else: ?>
-                                <?= t('plan.recent.empty') ?>
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                    <div class="plan-chart-wrap">
-                        <canvas id="planIntakeChart"></canvas>
-                    </div>
-                </section>
-
                 <div class="plan-grid">
-                    <section class="plan-panel plan-form-panel">
+                    <section class="plan-panel plan-calculator-panel">
                         <div class="plan-section-head">
-                            <h2><i class="fas fa-sliders"></i> <?= t('plan.inputs.heading') ?></h2>
-                            <p><?= t('plan.inputs.subtitle') ?></p>
+                            <h2><i class="fas fa-calculator"></i> <?= t('calc.card_title') ?></h2>
+                            <p><?= t('calc.card_sub') ?></p>
                         </div>
 
-                        <form method="POST" id="planForm">
-                            <div class="plan-goal-options">
-                                <?php foreach ($goalModes as $key => $mode): ?>
-                                    <label class="goal-option <?= $goalMode === $key ? 'active' : '' ?>">
-                                        <input type="radio" name="goal_mode" value="<?= htmlspecialchars($key) ?>" <?= $goalMode === $key ? 'checked' : '' ?>>
-                                        <i class="fas <?= htmlspecialchars($mode['icon']) ?>"></i>
-                                        <span><?= htmlspecialchars($mode['label']) ?></span>
-                                        <small><?= htmlspecialchars($mode['copy']) ?></small>
-                                    </label>
-                                <?php endforeach; ?>
+                        <?php if (!$physicalReady): ?>
+                            <div class="plan-empty compact">
+                                <i class="fas fa-user-pen"></i>
+                                <h3><?= t('plan.needs_metrics.title') ?></h3>
+                                <p><?= t('plan.needs_metrics.body') ?></p>
+                                <a href="<?= BASE_URL ?>dashboard/set-goal.php" class="plan-secondary-btn"><?= t('plan.needs_metrics.cta') ?></a>
                             </div>
-
-                            <div class="plan-form-grid">
-                                <div class="plan-field">
-                                    <label for="weekly_rate"><?= t('plan.field.weekly_rate') ?></label>
-                                    <select id="weekly_rate" name="weekly_rate">
-                                        <?php foreach ([0.25, 0.5, 0.75, 1.0] as $rate):
-                                            $rateLabel = rtrim(rtrim(number_format($rate, 2), '0'), '.');
-                                        ?>
-                                            <option value="<?= $rate ?>" <?= abs($weeklyRate - $rate) < 0.001 ? 'selected' : '' ?>>
-                                                <?= t('plan.field.weekly_rate_unit', ['n' => $rateLabel]) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                        <?php else: ?>
+                            <div class="calculator-readout">
+                                <div class="calculator-readout-main">
+                                    <span><?= t('calc.results.maintenance') ?></span>
+                                    <strong><?= number_format((int) round($tdee)) ?></strong>
+                                    <small><?= t('common.kcal') ?>/<?= t('common.day') ?></small>
                                 </div>
-
-                                <div class="plan-field">
-                                    <label for="target_weight"><?= t('plan.field.target_weight') ?> <span><?= t('plan.field.target_weight_hint') ?></span></label>
-                                    <input type="number" step="0.1" min="1" max="500" id="target_weight" name="target_weight"
-                                        value="<?= $targetWeight !== null ? htmlspecialchars((string) $targetWeight, ENT_QUOTES) : '' ?>"
-                                        placeholder="kg">
+                                <div class="calculator-mini-grid">
+                                    <div>
+                                        <span><?= t('plan.stat.bmr') ?></span>
+                                        <strong><?= number_format((int) round($bmr)) ?></strong>
+                                    </div>
+                                    <div>
+                                        <span><?= t('calc.results.bmi_score') ?></span>
+                                        <strong><?= $calculatorBmi !== null ? number_format($calculatorBmi, 1) : '--' ?></strong>
+                                    </div>
+                                    <div>
+                                        <span><?= t('calc.results.ideal_weight') ?></span>
+                                        <strong>
+                                            <?= $calculatorIdealRange ? number_format($calculatorIdealRange['min']) . '-' . number_format($calculatorIdealRange['max']) : '--' ?>
+                                        </strong>
+                                    </div>
                                 </div>
-
-                                <div class="plan-field full">
-                                    <label for="activity_level"><?= t('plan.field.activity_level') ?></label>
-                                    <select id="activity_level" name="activity_level">
-                                        <?php foreach ($activityOptions as $key => $option): ?>
-                                            <option value="<?= htmlspecialchars($key) ?>" <?= $activityLevel === $key ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($option['label'] . ' - ' . $option['detail']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
+                                <dl class="calculator-profile-list">
+                                    <div><dt><?= t('calc.input.age') ?></dt><dd><?= htmlspecialchars((string) $userAge) ?></dd></div>
+                                    <div><dt><?= t('calc.input.gender') ?></dt><dd><?= htmlspecialchars($calculatorGenderLabel) ?></dd></div>
+                                    <div><dt><?= t('calc.input.weight') ?></dt><dd><?= htmlspecialchars((string) $userWeight) ?> kg</dd></div>
+                                    <div><dt><?= t('calc.input.height') ?></dt><dd><?= htmlspecialchars((string) $userHeight) ?> cm</dd></div>
+                                    <div><dt><?= t('calc.input.activity') ?></dt><dd><?= htmlspecialchars($calculatorActivityLabel) ?></dd></div>
+                                </dl>
+                                <a href="<?= BASE_URL ?>dashboard/set-goal.php" class="plan-secondary-btn plan-full-width-btn">
+                                    <i class="fas fa-sliders"></i> <?= t('plan.adjust_cta') ?>
+                                </a>
                             </div>
-
-                            <button type="submit" class="plan-primary-btn">
-                                <i class="fas fa-calculator"></i> <?= t('plan.calc_btn') ?>
-                            </button>
-                        </form>
+                        <?php endif; ?>
                     </section>
+
+
 
                     <section class="plan-panel plan-result-panel">
                         <div class="plan-section-head">
@@ -393,21 +390,6 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
                                 <div class="plan-eta">
                                     <i class="fas fa-calendar-check"></i>
                                     <?= t_raw('plan.eta', ['date' => htmlspecialchars($targetEta['date']), 'weeks' => htmlspecialchars((string) $targetEta['weeks'])]) ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <?php if ($isLoggedIn): ?>
-                                <form action="handlers/apply_plan_goal.php" method="POST">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="calorie_goal" value="<?= (int) $recommendedGoal ?>">
-                                    <button type="submit" class="plan-apply-btn">
-                                        <i class="fas fa-check"></i> <?= t('plan.apply_goal') ?>
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <div class="plan-demo-apply">
-                                    <p><i class="fas fa-lock"></i> <?= t('plan.demo_apply_hint') ?></p>
-                                    <a href="<?= BASE_URL ?>signup.php" class="plan-apply-btn"><?= t('plan.demo_apply_cta') ?></a>
                                 </div>
                             <?php endif; ?>
                         <?php endif; ?>
@@ -463,48 +445,6 @@ $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart'
             });
             syncGoalMode();
 
-            const chartEl = document.getElementById('planIntakeChart');
-            if (chartEl && typeof Chart !== 'undefined') {
-                const styles = getComputedStyle(document.documentElement);
-                const chartBar = styles.getPropertyValue('--color-secondary').trim();
-                const chartLine = styles.getPropertyValue('--color-accent').trim();
-                const chartGrid = styles.getPropertyValue('--color-border').trim();
-
-                new Chart(chartEl.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: <?= json_encode($chartLabels) ?>,
-                        datasets: [
-                            {
-                                label: <?= json_encode(t_raw('plan.chart.calories')) ?>,
-                                data: <?= json_encode($chartCalories) ?>,
-                                backgroundColor: chartBar,
-                                borderRadius: 6,
-                                barThickness: 22
-                            },
-                            {
-                                label: <?= json_encode($goalLineLabel) ?>,
-                                data: <?= json_encode($goalLine) ?>,
-                                type: 'line',
-                                borderColor: chartLine,
-                                backgroundColor: chartLine,
-                                borderWidth: 2,
-                                pointRadius: 2,
-                                tension: 0.25
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: true, position: 'bottom' } },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: chartGrid } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
         })();
     </script>
 </body>

@@ -13,6 +13,8 @@ function calculateBMR($age, $gender, $weight, $height)
 {
     if ($gender == 'female') {
         return 10 * $weight + 6.25 * $height - 5 * $age - 161;
+    } elseif ($gender == 'other') {
+        return 10 * $weight + 6.25 * $height - 5 * $age - 78;
     } else {
         return 10 * $weight + 6.25 * $height - 5 * $age + 5;
     }
@@ -74,36 +76,30 @@ function calculateIdealWeight($height, $gender)
     // Inches over 5 feet (60 inches)
     $inches_over_5ft = $height_in_inches - 60;
 
+    $averageForOther = function ($femaleValue, $maleValue) use ($gender) {
+        if ($gender === 'female') {
+            return $femaleValue;
+        }
+        if ($gender === 'other') {
+            return ($femaleValue + $maleValue) / 2;
+        }
+        return $maleValue;
+    };
+
     // G.J. Hamwi Formula
-    if ($gender === 'female') {
-        $hamwi = 45.5 + 2.2 * $inches_over_5ft;
-    } else {
-        $hamwi = 48.0 + 2.7 * $inches_over_5ft;
-    }
+    $hamwi = $averageForOther(45.5 + 2.2 * $inches_over_5ft, 48.0 + 2.7 * $inches_over_5ft);
     $results['Hamwi'] = round($hamwi, 1);
 
     // B.J. Devine Formula
-    if ($gender === 'female') {
-        $devine = 45.5 + 2.3 * $inches_over_5ft;
-    } else {
-        $devine = 50.0 + 2.3 * $inches_over_5ft;
-    }
+    $devine = $averageForOther(45.5 + 2.3 * $inches_over_5ft, 50.0 + 2.3 * $inches_over_5ft);
     $results['Devine'] = round($devine, 1);
 
     // J.D. Robinson Formula
-    if ($gender === 'female') {
-        $robinson = 48.67 + 1.7 * $inches_over_5ft;
-    } else {
-        $robinson = 52.0 + 1.9 * $inches_over_5ft;
-    }
+    $robinson = $averageForOther(48.67 + 1.7 * $inches_over_5ft, 52.0 + 1.9 * $inches_over_5ft);
     $results['Robinson'] = round($robinson, 1);
 
     // D.R. Miller Formula
-    if ($gender === 'female') {
-        $miller = 53.1 + 1.36 * $inches_over_5ft;
-    } else {
-        $miller = 56.2 + 1.41 * $inches_over_5ft;
-    }
+    $miller = $averageForOther(53.1 + 1.36 * $inches_over_5ft, 56.2 + 1.41 * $inches_over_5ft);
     $results['Miller'] = round($miller, 1);
 
     // Get the lowest and highest ideal weight
@@ -123,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $height = trim($_POST['height'] ?? '');
     $activity_level = trim($_POST['activity_level'] ?? '');
 
-    $validGenders = ['male', 'female'];
+    $validGenders = ['male', 'female', 'other'];
     $validActivityLevels = ['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extra_active'];
 
     // Validate inputs not empty

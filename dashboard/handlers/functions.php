@@ -86,40 +86,43 @@ function updateLoggingStreak(PDO $pdo, int $userId): void
     $upd->execute([$now->format('Y-m-d H:i:s'), $streak, $longest, $freezes, $broken, $userId]);
 }
 
-function getTotalCaloriesToday($userId)
+function getTotalCaloriesToday($userId, $date = null)
 {
     global $pdo;
+    $date = $date ?: date('Y-m-d');
 
     // Count total calories for the day
     $stmt = $pdo->prepare("
         SELECT SUM(calories) AS total_calories
         FROM intakeLog
         WHERE user_id = ?
-        AND DATE(date_intake) = CURDATE()
+        AND DATE(date_intake) = ?
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$userId, $date]);
     return $stmt->fetchColumn();
 }
 
-function getIntakeLogToday(int $userId)
+function getIntakeLogToday(int $userId, $date = null)
 {
     global $pdo;
+    $date = $date ?: date('Y-m-d');
 
     // Fetch intake log for the user, including local time (hour:minute)
     $stmt = $pdo->prepare("
         SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, date_intake
         FROM intakeLog
         WHERE user_id = ?
-        AND DATE(date_intake) = CURDATE()
+        AND DATE(date_intake) = ?
         ORDER BY date_intake DESC
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$userId, $date]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getMacroTotalsToday(int $userId): array
+function getMacroTotalsToday(int $userId, $date = null): array
 {
     global $pdo;
+    $date = $date ?: date('Y-m-d');
 
     $stmt = $pdo->prepare("
         SELECT
@@ -128,9 +131,9 @@ function getMacroTotalsToday(int $userId): array
             COALESCE(SUM(fat),     0) AS fat
         FROM intakeLog
         WHERE user_id = ?
-        AND DATE(date_intake) = CURDATE()
+        AND DATE(date_intake) = ?
     ");
-    $stmt->execute([$userId]);
+    $stmt->execute([$userId, $date]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     return [
         'protein' => (float) ($row['protein'] ?? 0),

@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Log the signup attempt
                 log_attempt($pdo, $user_id, 'signup', 'User signed up successfully');
 
-                // Redirect to homepage
-                header("Location: index.php");
+                // Send new users straight into the personalized plan wizard.
+                header("Location: dashboard/set-goal.php");
                 exit();
             }
         } catch (PDOException $e) {

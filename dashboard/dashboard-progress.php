@@ -64,6 +64,15 @@ $achievementPct = $summary['total_achievements'] > 0
     ? (int) round($summary['unlocked'] / $summary['total_achievements'] * 100)
     : 0;
 
+$spotifyConnected = false;
+try {
+    $spotifyStmt = $pdo->prepare("SELECT 1 FROM user_spotify WHERE user_id = ? LIMIT 1");
+    $spotifyStmt->execute([(int) $user['user_id']]);
+    $spotifyConnected = (bool) $spotifyStmt->fetchColumn();
+} catch (PDOException $e) {
+    // Fail silently in case database table does not exist yet
+}
+
 function bb_progress_format_value($value): string
 {
     return is_numeric($value) ? number_format((float) $value) : (string) $value;
@@ -159,6 +168,17 @@ function bb_progress_render_achievement(array $achievement): void
 
     <main class="dashboard-content">
         <div class="progress-container">
+            <?php if (isset($_GET['error'])): ?>
+                <div class="alert error">
+                    <i class="fa-solid fa-circle-exclamation"></i> <?= htmlspecialchars($_GET['error']) ?>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_GET['success'])): ?>
+                <div class="alert success">
+                    <i class="fa-solid fa-circle-check"></i> <?= htmlspecialchars($_GET['success']) ?>
+                </div>
+            <?php endif; ?>
+
             <section class="progress-hero">
                 <div class="progress-hero__copy">
                     <span class="progress-kicker"><i class="fas fa-bolt"></i> <?= t('progress.hero.kicker') ?></span>
@@ -167,6 +187,16 @@ function bb_progress_render_achievement(array $achievement): void
                     <button id="btnOpenStory" class="story-btn-primary">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> <?= t('progress.hero.weekly_wrapped') ?>
                     </button>
+
+                    <?php if ($spotifyConnected): ?>
+                        <span class="spotify-badge-connected" title="Spotify linked successfully! Diet & Beats slide unlocked in your story.">
+                            <i class="fa-brands fa-spotify"></i> Spotify Connected
+                        </span>
+                    <?php else: ?>
+                        <a href="handlers/spotify_auth.php" class="spotify-badge-connect" title="Link Spotify account to unlock the special 'Diet & Beats' slide!">
+                            <i class="fa-brands fa-spotify"></i> Connect Spotify
+                        </a>
+                    <?php endif; ?>
                 </div>
                 <div class="progress-level-card">
                     <div class="progress-level-card__ring">

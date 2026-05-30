@@ -1,0 +1,698 @@
+/* dashboard-beats.css - Premium, gamified layout for Diet & Beats integration */
+
+.beats-container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px 20px 90px;
+}
+
+/* =========================================================================
+   HERO SECTION & PROMO CARD
+   ========================================================================= */
+.beats-hero,
+.beats-promo-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    padding: 30px;
+    margin-bottom: 30px;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.beats-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+}
+
+.beats-hero__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.beats-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.beats-hero h1 {
+    color: var(--color-text);
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1.1;
+    margin: 0 0 10px 0;
+}
+
+.beats-hero p {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.beats-hero__actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.beats-status-card {
+    flex: 0 0 300px;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+
+.beats-spotify-logo {
+    font-size: 44px;
+    color: #1DB954;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 2px 4px rgba(29, 185, 84, 0.2));
+}
+
+.beats-status-card h3 {
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 900;
+    margin: 0 0 8px 0;
+}
+
+.beats-status-card p {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* =========================================================================
+   BUTTON STYLES (Duolingo-inspired 3D tactile)
+   ========================================================================= */
+.beats-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    background: var(--color-danger);
+    color: #ffffff;
+    box-shadow: 0 4px 0 var(--color-danger-border);
+    transition: all var(--transition-fast);
+}
+
+.beats-btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-danger-border);
+    filter: brightness(1.05);
+    color: #ffffff;
+}
+
+.beats-btn-danger:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 transparent;
+}
+
+.beats-btn-connect {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 36px;
+    border-radius: var(--radius-lg);
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    background: #1DB954;
+    color: #ffffff;
+    box-shadow: 0 5px 0 #1aa34a;
+    transition: all var(--transition-fast);
+    margin-bottom: 34px;
+}
+
+.beats-btn-connect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 #1aa34a;
+    filter: brightness(1.06);
+    color: #ffffff;
+}
+
+.beats-btn-connect:active {
+    transform: translateY(5px);
+    box-shadow: 0 0 0 transparent;
+}
+
+/* =========================================================================
+   DASHBOARD GRID & SECTIONS
+   ========================================================================= */
+.beats-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.beats-section {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    padding: 24px;
+}
+
+.beats-section h2 {
+    color: var(--color-text);
+    font-size: 22px;
+    font-weight: 900;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.beats-section h2 i {
+    color: var(--color-primary);
+}
+
+/* =========================================================================
+   LEFT COLUMN: AI VIBE CARD STYLING
+   ========================================================================= */
+.vibe-card {
+    border-color: var(--color-primary-soft);
+    box-shadow: 0 8px 0 var(--color-primary-soft), var(--shadow-sm);
+}
+
+.vibe-loading-box {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.beats-spinner {
+    font-size: 32px;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.vibe-loading-box p {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    margin: 0;
+}
+
+.vibe-badge-container {
+    margin-bottom: 16px;
+}
+
+.vibe-sparkle-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(88, 204, 2, 0.15) 0%, rgba(28, 176, 246, 0.15) 100%);
+    border: 2px solid var(--color-primary);
+    color: var(--color-text);
+    font-size: 18px;
+    font-weight: 900;
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    box-shadow: 0 4px 0 var(--color-primary-soft);
+}
+
+.vibe-sparkle-badge i {
+    color: var(--color-accent);
+}
+
+.vibe-explanation {
+    font-size: 15px;
+    color: var(--color-text);
+    line-height: 1.6;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+}
+
+/* Concept match visual row */
+.concept-match-box {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.concept-match-box h4 {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.concept-match-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.concept-music-side,
+.concept-food-side {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.concept-disc-art {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 12px;
+}
+
+.concept-disc-art img {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    position: relative;
+    z-index: 3;
+}
+
+.concept-disc-art .vinyl-disc {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 76px;
+    height: 76px;
+    z-index: 1;
+}
+
+/* Rotating Disc Effect on Vibe Card */
+.concept-match-box:hover .vinyl-disc {
+    transform: translateX(24px) rotate(180deg);
+}
+
+.concept-music-side strong,
+.concept-food-side strong {
+    display: block;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 850;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.concept-music-side span,
+.concept-food-side span {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 2px;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.concept-food-art {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    font-size: 28px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    margin-bottom: 12px;
+}
+
+.concept-link-icon {
+    font-size: 26px;
+    color: var(--color-danger);
+    animation: heartPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+/* =========================================================================
+   RIGHT COLUMN: REALTIME LISTS & MINI-VINYL HOVERS
+   ========================================================================= */
+.beats-simple-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.beats-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    box-shadow: 0 3px 0 var(--color-border-subtle);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.beats-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--color-border-subtle);
+}
+
+.mini-artwork {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+}
+
+.mini-disc {
+    width: 40px;
+    height: 40px;
+}
+
+.beats-list-item:hover .mini-disc {
+    transform: translateX(12px) rotate(180deg);
+}
+
+.item-info {
+    flex: 1;
+    min-width: 0;
+    padding: 0 12px;
+}
+
+.item-info strong {
+    display: block;
+    color: var(--color-text);
+    font-size: 14px;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-info span {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 1px;
+}
+
+.item-calories {
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    color: var(--color-text);
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.food-artwork-badge {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-secondary);
+    font-size: 16px;
+}
+
+.empty-list-text {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    margin: 10px 0;
+}
+
+/* =========================================================================
+   VIBES & RECOMMENDATIONS PANEL
+   ========================================================================= */
+.recommendations-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.recommend-card {
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    transition: transform var(--transition-fast);
+}
+
+.recommend-card:hover {
+    transform: translateY(-2px);
+}
+
+.recommend-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+
+.recommend-card h4 {
+    font-size: 14px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0 0 6px 0;
+    letter-spacing: 0.03em;
+}
+
+.recommend-card p {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Estimated-calorie chip on AI fuel suggestions */
+.fuel-kcal {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+/* Pastel mood HSL colors */
+.lofi-theme {
+    background: rgba(28, 176, 246, 0.08);
+    border-color: rgba(28, 176, 246, 0.3);
+    box-shadow: 0 4px 0 rgba(28, 176, 246, 0.15);
+}
+.lofi-theme .recommend-icon,
+.lofi-theme h4 {
+    color: #1cb0f6;
+}
+
+.workout-theme {
+    background: rgba(255, 150, 0, 0.08);
+    border-color: rgba(255, 150, 0, 0.3);
+    box-shadow: 0 4px 0 rgba(255, 150, 0, 0.15);
+}
+.workout-theme .recommend-icon,
+.workout-theme h4 {
+    color: #ff9600;
+}
+
+.sad-theme {
+    background: rgba(147, 51, 234, 0.08);
+    border-color: rgba(147, 51, 234, 0.3);
+    box-shadow: 0 4px 0 rgba(147, 51, 234, 0.15);
+}
+.sad-theme .recommend-icon,
+.sad-theme h4 {
+    color: #a855f7;
+}
+
+/* =========================================================================
+   PROMOTIONAL / EMPTY STATE PAGE
+   ========================================================================= */
+.beats-promo-card {
+    text-align: center;
+    padding: 60px 40px;
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.beats-promo-icon {
+    font-size: 80px;
+    color: #1DB954;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 10px rgba(29, 185, 84, 0.25));
+    animation: bounceLogo 3s infinite ease-in-out;
+}
+
+@keyframes bounceLogo {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.beats-promo-card h1 {
+    color: var(--color-text);
+    font-size: 38px;
+    font-weight: 900;
+    margin: 0 0 14px 0;
+    line-height: 1.1;
+}
+
+.beats-promo-card .promo-desc {
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    max-width: 580px;
+    margin: 0 auto 30px auto;
+    line-height: 1.6;
+}
+
+.beats-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+    text-align: left;
+    border-top: 2px dashed var(--color-border);
+    padding-top: 36px;
+}
+
+.feature-item {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+
+.feature-item .feature-icon {
+    font-size: 26px;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+}
+
+.feature-item h3 {
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 900;
+    margin: 0 0 8px 0;
+}
+
+.feature-item p {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN (down to 375px mobile width)
+   ========================================================================= */
+@media (max-width: 980px) {
+    .beats-hero {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .beats-status-card {
+        flex-basis: auto;
+    }
+    
+    .beats-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .beats-container {
+        padding: 16px 12px 80px;
+    }
+    
+    .beats-hero,
+    .beats-promo-card {
+        padding: 20px;
+    }
+    
+    .beats-hero h1 {
+        font-size: 28px;
+    }
+    
+    .beats-promo-card h1 {
+        font-size: 26px;
+    }
+    
+    .beats-features-grid {
+        grid-template-columns: 1fr;
+        padding-top: 24px;
+    }
+    
+    .concept-match-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .concept-link-icon {
+        transform: rotate(90deg);
+        padding: 10px 0;
+        display: flex;
+        justify-content: center;
+    }
+}

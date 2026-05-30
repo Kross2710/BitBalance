@@ -26,6 +26,7 @@ const BitBalanceStory = {
             kicker_badge: "Achievement Unlocked",
             kicker_streak: "Discipline Burning",
             kicker_leaderboard: "Leaderboard Menace",
+            kicker_spotify: "Diet & Beats",
             kicker_summary: "Your Wrapped Summary",
             footer_text: "Track meals. Earn XP. Level up.",
             logged_title: "Foods Logged",
@@ -44,6 +45,7 @@ const BitBalanceStory = {
             kicker_badge: "Mở Khóa Huy Hiệu",
             kicker_streak: "Kỷ Luật Rực Lửa",
             kicker_leaderboard: "Đỉnh Cao Xếp Hạng",
+            kicker_spotify: "Khớp Nhạc & Thực Đơn",
             kicker_summary: "Tóm Tắt Tuần Qua",
             footer_text: "Ghi chép món ăn. Nhận XP. Lên cấp.",
             logged_title: "Món Đã Ăn",
@@ -59,9 +61,28 @@ const BitBalanceStory = {
 
     // Initialize DOM and event listeners
     init() {
+        this.currentLang = this.resolveGlobalLang();
         this.injectModalMarkup();
         this.bindEvents();
         this.loadHtml2Canvas();
+        this.maybeAutoOpen();
+    },
+
+    // Deep-link support: pages without their own trigger (e.g. Diet & Beats)
+    // link here with ?story=open to open the Weekly Wrapped immediately.
+    maybeAutoOpen() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('story') === 'open' || window.location.hash === '#weekly-wrapped') {
+            this.open();
+            // Strip the trigger from the URL so a refresh/back doesn't re-open it.
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    },
+
+    // Resolve the site-wide language from <html lang> (set by the global i18n locale)
+    resolveGlobalLang() {
+        const lang = (document.documentElement.lang || 'en').toLowerCase();
+        return lang.indexOf('vi') === 0 ? 'vi' : 'en';
     },
 
     // Dynamically load html2canvas library
@@ -92,14 +113,8 @@ const BitBalanceStory = {
                 <!-- Main viewport scaled down for responsive preview in-app -->
                 <div class="story-preview-viewport">
                     <div id="storyExportRoot">
-                        <!-- Top Progress Bar Indicators -->
-                        <div class="story-progress-indicators">
-                            <div class="story-progress-bar"><div class="story-progress-fill"></div></div>
-                            <div class="story-progress-bar"><div class="story-progress-fill"></div></div>
-                            <div class="story-progress-bar"><div class="story-progress-fill"></div></div>
-                            <div class="story-progress-bar"><div class="story-progress-fill"></div></div>
-                            <div class="story-progress-bar"><div class="story-progress-fill"></div></div>
-                        </div>
+                        <!-- Top Progress Bar Indicators (Populated dynamically) -->
+                        <div class="story-progress-indicators"></div>
 
                         <!-- Confetti decorations -->
                         <span class="story-confetti conf-c1"></span>
@@ -210,7 +225,47 @@ const BitBalanceStory = {
                         </div>
 
                         <!-- ==========================================
-                             SLIDE 5: BENTO SUMMARY
+                             SLIDE 5 (NEW): DIET & BEATS (SPOTIFY)
+                             ========================================== -->
+                        <div class="story-slide" id="slideSpotify">
+                            <div class="story-hero-card">
+                                <span class="story-kicker" id="lblKickerSpotify">Diet & Beats</span>
+                                <h1 class="story-title" id="lblSpotifyTitle">Sad Ramen Hours</h1>
+                                <p class="story-desc" id="lblSpotifyDesc">Eating instant noodles while sobbing to Taylor Swift. A balanced diet of tears and sodium.</p>
+                            </div>
+                            <div class="story-spotify-visual">
+                                <div class="spotify-card">
+                                    <div class="spotify-card-top">
+                                        <i class="fa-brands fa-spotify spotify-logo-icon"></i>
+                                        <span class="spotify-badge">MAPPED VIBE</span>
+                                    </div>
+                                    <div class="spotify-card-body">
+                                        <div class="spotify-music-info">
+                                            <img id="imgSpotifyArt" class="spotify-album-art" crossorigin="anonymous" alt="" style="display:none">
+                                            <i class="fa-solid fa-music music-note-icon" id="iconSpotifyNote"></i>
+                                            <div>
+                                                <strong id="lblSpotifyTrack">All Too Well</strong>
+                                                <span id="lblSpotifyArtist">Taylor Swift</span>
+                                            </div>
+                                        </div>
+                                        <div class="spotify-food-info">
+                                            <i class="fa-solid fa-utensils food-icon"></i>
+                                            <div>
+                                                <strong id="lblSpotifyFood">Mì Ly</strong>
+                                                <span id="lblSpotifyFoodTime">at 01:45 AM</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="story-footer">
+                                <span id="lblFooterSpotify">Track meals. Earn XP. Level up.</span>
+                                <strong>bitbalance</strong>
+                            </div>
+                        </div>
+
+                        <!-- ==========================================
+                             SLIDE 6: BENTO SUMMARY
                              ========================================== -->
                         <div class="story-slide" id="slideSummary">
                             <div class="story-bento-grid">
@@ -251,12 +306,6 @@ const BitBalanceStory = {
                 <!-- Story Controls Overlay -->
                 <div class="story-controls">
                     <div class="story-controls-row">
-                        <!-- Bilingual Language Toggle selector -->
-                        <div class="story-lang-toggle">
-                            <button class="story-lang-btn active" id="btnLangEn" data-lang="en">EN</button>
-                            <button class="story-lang-btn" id="btnLangVi" data-lang="vi">VN</button>
-                        </div>
-                        
                         <!-- Actions -->
                         <button class="story-btn-primary" id="btnDownloadStory">
                             <i class="fa-solid fa-download"></i> <span id="txtDownloadBtn">Download Story</span>
@@ -283,8 +332,6 @@ const BitBalanceStory = {
         const storyModal = document.getElementById('storyModal');
         const tapLeft = document.getElementById('storyTapLeft');
         const tapRight = document.getElementById('storyTapRight');
-        const btnLangEn = document.getElementById('btnLangEn');
-        const btnLangVi = document.getElementById('btnLangVi');
         const btnDownload = document.getElementById('btnDownloadStory');
         const btnShare = document.getElementById('btnShareStory');
         const viewport = document.querySelector('.story-preview-viewport');
@@ -314,10 +361,6 @@ const BitBalanceStory = {
             this.pauseCarousel();
         }, { passive: true });
         viewport.addEventListener('touchend', () => this.resumeCarousel(), { passive: true });
-
-        // Language Selectors
-        btnLangEn.addEventListener('click', () => this.switchLanguage('en'));
-        btnLangVi.addEventListener('click', () => this.switchLanguage('vi'));
 
         // Action Buttons
         btnDownload.addEventListener('click', () => this.exportPng(false));
@@ -354,7 +397,7 @@ const BitBalanceStory = {
         // Update Static translation labels immediately
         this.applyStaticTranslations();
 
-        fetch(`handlers/story_data.php?lang=${this.currentLang}`)
+        fetch('handlers/story_data.php')
             .then(res => res.json())
             .then(data => {
                 if (data.ok) {
@@ -374,18 +417,6 @@ const BitBalanceStory = {
             });
     },
 
-    // Switch between English and Vietnamese
-    switchLanguage(lang) {
-        if (this.currentLang === lang) return;
-        this.currentLang = lang;
-
-        // Toggle buttons active state
-        document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
-        document.getElementById('btnLangVi').classList.toggle('active', lang === 'vi');
-
-        this.fetchAndPopulateData();
-    },
-
     // Update static labels in the story based on language
     applyStaticTranslations() {
         const text = this.translations[this.currentLang];
@@ -396,11 +427,13 @@ const BitBalanceStory = {
         document.getElementById('lblKickerBadge').innerText = text.kicker_badge;
         document.getElementById('lblKickerStreak').innerText = text.kicker_streak;
         document.getElementById('lblKickerLeaderboard').innerText = text.kicker_leaderboard;
+        document.getElementById('lblKickerSpotify').innerText = text.kicker_spotify;
         
         document.getElementById('lblFooter1').innerText = text.footer_text;
         document.getElementById('lblFooter2').innerText = text.footer_text;
         document.getElementById('lblFooter3').innerText = text.footer_text;
         document.getElementById('lblFooter4').innerText = text.footer_text;
+        document.getElementById('lblFooterSpotify').innerText = text.footer_text;
         document.getElementById('lblFooter5').innerText = text.footer_text;
 
         document.getElementById('lblStreakCountLabel').innerText = text.streak_title;
@@ -415,10 +448,62 @@ const BitBalanceStory = {
         document.getElementById('txtShareBtn').innerText = text.share_btn;
     },
 
+    // Filter out display:none slides dynamically
+    getActiveSlides() {
+        return Array.from(document.querySelectorAll('.story-slide')).filter(slide => slide.style.display !== 'none');
+    },
+
+    // Dynamically render top progress bars
+    renderProgressBars() {
+        const container = document.querySelector('.story-progress-indicators');
+        if (!container) return;
+        container.innerHTML = '';
+        const slides = this.getActiveSlides();
+        slides.forEach(() => {
+            container.insertAdjacentHTML('beforeend', '<div class="story-progress-bar"><div class="story-progress-fill"></div></div>');
+        });
+    },
+
     // Populate data contents into DOM
     populateSlidesContent() {
         const data = this.storyData;
         const lang = this.currentLang;
+
+        // Manage Dynamic Spotify Slide Insertion
+        if (data.spotify) {
+            this.totalSlides = 6;
+            document.getElementById('slideSpotify').style.display = 'flex';
+            
+            // Populate Spotify Slide Elements
+            document.getElementById('lblSpotifyTitle').innerText = data.spotify.archetype;
+            document.getElementById('lblSpotifyDesc').innerText = data.spotify.desc;
+            document.getElementById('lblSpotifyTrack').innerText = data.spotify.track;
+            document.getElementById('lblSpotifyArtist').innerText = data.spotify.artist;
+            document.getElementById('lblSpotifyFood').innerText = data.spotify.food;
+            // We don't track a per-pairing timestamp — show a label, not a time
+            // (this previously read data.spotify.time_str → "at undefined").
+            document.getElementById('lblSpotifyFoodTime').innerText = (lang === 'vi' ? 'Món ăn yêu thích' : 'Favorite snack');
+
+            // Real album art, with the music-note icon as a graceful fallback.
+            const art = document.getElementById('imgSpotifyArt');
+            const note = document.getElementById('iconSpotifyNote');
+            if (art && note) {
+                if (data.spotify.image) {
+                    art.onerror = () => { art.style.display = 'none'; note.style.display = ''; };
+                    art.onload = () => { art.style.display = ''; note.style.display = 'none'; };
+                    art.src = data.spotify.image;
+                } else {
+                    art.style.display = 'none';
+                    note.style.display = '';
+                }
+            }
+        } else {
+            this.totalSlides = 5;
+            document.getElementById('slideSpotify').style.display = 'none';
+        }
+
+        // Render progress bar counts dynamically
+        this.renderProgressBars();
 
         // Apply Aura Slide Backgrounds based on dynamic archetype name / favorites
         const root = document.getElementById('storyExportRoot');
@@ -465,7 +550,7 @@ const BitBalanceStory = {
         document.getElementById('lblLeaderboardDesc').innerText = data.slide4_leaderboard;
         document.getElementById('lblUserAvatar').innerText = data.user.username.charAt(0).toUpperCase();
 
-        // SLIDE 5: BENTO SUMMARY
+        // SLIDE 6 (INDEX 5): BENTO SUMMARY
         document.getElementById('lblArchetypeName').innerText = data.diet_archetype;
         document.getElementById('lblUserLevel').innerText = `Lv ${data.user.level}`;
         document.getElementById('pbSummaryXp').style.width = data.user.progress_pct + '%';
@@ -507,14 +592,15 @@ const BitBalanceStory = {
 
     // Show a specific slide by index
     showSlide(index) {
-        const slides = document.querySelectorAll('.story-slide');
-        slides.forEach((slide, idx) => {
+        const activeSlides = this.getActiveSlides();
+        activeSlides.forEach((slide, idx) => {
             slide.classList.toggle('active', idx === index);
         });
 
         // Set dark-mode background style on Slide 3 (Streak Cooker) for high-contrast fire effect!
         const root = document.getElementById('storyExportRoot');
-        if (index === 2) {
+        const activeSlide = activeSlides[index];
+        if (activeSlide && activeSlide.id === 'slideStreak') {
             root.classList.add('aura-bg-dark');
         } else {
             root.classList.remove('aura-bg-dark');
@@ -604,7 +690,8 @@ const BitBalanceStory = {
             onclone: (clonedDoc) => {
                 const clonedEl = clonedDoc.getElementById('storyExportRoot');
                 // Ensure correct visibility of the active slide in the clone
-                const activeSlideId = clonedEl.querySelectorAll('.story-slide')[this.currentSlide].id;
+                const activeSlides = this.getActiveSlides();
+                const activeSlideId = activeSlides[this.currentSlide].id;
                 clonedEl.querySelectorAll('.story-slide').forEach(slide => {
                     if (slide.id === activeSlideId) {
                         slide.style.opacity = '1';

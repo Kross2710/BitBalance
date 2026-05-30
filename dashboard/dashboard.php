@@ -230,7 +230,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
     <title><?= t('dashboard.title_tag') ?></title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-home.css'];
+    $pageCss = ['css/dashboard.css', 'css/components/intake-list.css', 'css/pages/dashboard-history.css', 'css/pages/dashboard-home.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -243,6 +243,9 @@ if ($actualWeight > 0 && $actualHeight > 0) {
     <?php include PROJECT_ROOT . 'dashboard/views/right-sidebar.php'; ?>
 
     <main class="dashboard">
+
+        <!-- PREMIUM 3D CALENDAR NAVBAR -->
+        <?php include PROJECT_ROOT . 'dashboard/views/_calendar-navbar.php'; ?>
 
         <?php if (!$isLoggedIn): ?>
             <div class="demo-banner">
@@ -360,7 +363,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                     gradientH.addColorStop(0, 'rgba(88, 204, 2, 0.2)');
                                     gradientH.addColorStop(1, 'rgba(88, 204, 2, 0.0)');
 
-                                    new Chart(hCtx, {
+                                    window.historyChartInstance = new Chart(hCtx, {
                                         type: 'line',
                                         data: {
                                             labels: <?php echo json_encode($historyLabels); ?>,
@@ -401,7 +404,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                         const textColor = (rootStyles.getPropertyValue('--color-text-secondary') || '#64748b').trim();
                                         const gridColor = (rootStyles.getPropertyValue('--color-border-subtle') || '#f1f5f9').trim();
 
-                                        new Chart(mtCtx.getContext('2d'), {
+                                        window.macrosTrendChartInstance = new Chart(mtCtx.getContext('2d'), {
                                             type: 'bar',
                                             data: {
                                                 labels: <?php echo json_encode($historyLabels); ?>,
@@ -527,7 +530,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                     gradientW.addColorStop(0, 'rgba(155, 89, 182, 0.2)');
                                     gradientW.addColorStop(1, 'rgba(155, 89, 182, 0.0)');
 
-                                    new Chart(ctxW, {
+                                    window.weightChartInstance = new Chart(ctxW, {
                                         type: 'line',
                                         data: {
                                             labels: <?php echo json_encode($weightLabels); ?>,
@@ -589,21 +592,27 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 'dinner' => ['icon' => 'fa-utensils', 'color' => '#FFCE56', 'label' => t_raw('dashboard.meal.dinner')],
                                 'snack' => ['icon' => 'fa-apple-alt', 'color' => '#4BC0C0', 'label' => t_raw('dashboard.meal.snack')]
                             ];
+                            // Normalize per-category kcal: keys are capitalized for real users
+                            // but lowercase in the guest mock — accept either.
+                            $mealLegendData = [];
+                            foreach (['breakfast', 'lunch', 'dinner', 'snack'] as $__c) {
+                                $mealLegendData[$__c] = (int) ($mealCategoryData[ucfirst($__c)] ?? $mealCategoryData[$__c] ?? 0);
+                            }
                             ?>
 
                             <script>
                                 document.addEventListener('DOMContentLoaded', () => {
                                     const ctx = document.getElementById('mealCategoriesChart').getContext('2d');
-                                    new Chart(ctx, {
+                                    window.mealDoughnutChartInstance = new Chart(ctx, {
                                         type: 'doughnut',
                                         data: {
                                             labels: ['Breakfast', 'Lunch', 'Dinner', 'Snack'],
                                             datasets: [{
                                                 data: [
-                                                    <?php echo (int)($mealCategoryData['Breakfast'] ?? 0); ?>,
-                                                    <?php echo (int)($mealCategoryData['Lunch'] ?? 0); ?>,
-                                                    <?php echo (int)($mealCategoryData['Dinner'] ?? 0); ?>,
-                                                    <?php echo (int)($mealCategoryData['Snack'] ?? 0); ?>
+                                                    <?php echo $mealLegendData['breakfast']; ?>,
+                                                    <?php echo $mealLegendData['lunch']; ?>,
+                                                    <?php echo $mealLegendData['dinner']; ?>,
+                                                    <?php echo $mealLegendData['snack']; ?>
                                                 ],
                                                 backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
                                                 hoverOffset: 4,
@@ -616,28 +625,47 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 });
                             </script>
 
-                            <div class="meal-list-container">
-                                <?php foreach ($intakeLog as $meal):
-                                    $cat = strtolower($meal['meal_category']);
-                                    $config = $mealConfig[$cat] ?? ['icon' => 'fa-circle', 'color' => '#999', 'label' => $cat];
-                                    ?>
-                                    <div class="meal-item" style="--meal-accent-color: <?php echo $config['color']; ?>; --meal-hover-bg: <?php echo $config['color']; ?>08;">
-                                        <div class="meal-icon-box"
-                                            style="background-color: <?php echo $config['color']; ?>20; color: <?php echo $config['color']; ?>;">
-                                            <i class="fas <?php echo $config['icon']; ?>"></i>
-                                        </div>
-                                        <div class="meal-info">
-                                            <span class="meal-name"><?php echo htmlspecialchars($meal['food_item']); ?></span>
-                                            <span class="meal-type"
-                                                style="color: <?php echo $config['color']; ?>"><?php echo htmlspecialchars($config['label']); ?></span>
-                                        </div>
-                                        <div class="meal-calories">
-                                            <span class="cal-val"><?php echo htmlspecialchars($meal['calories']); ?></span>
-                                            <small><?= t('common.kcal') ?></small>
-                                        </div>
+                            <!-- Per-category calorie legend for the doughnut -->
+                            <div class="meal-legend" id="mealLegend">
+                                <?php foreach ($mealConfig as $__cat => $__cfg): ?>
+                                    <div class="meal-legend-item" data-cat="<?= $__cat ?>">
+                                        <span class="legend-dot" style="background: <?= $__cfg['color'] ?>;"></span>
+                                        <span class="legend-label"><?= htmlspecialchars($__cfg['label']) ?></span>
+                                        <span class="legend-val"><?= $mealLegendData[$__cat] ?> <?= t('common.kcal') ?></span>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
+
+                            <!-- Eaten food logs (no search/filter — this is the day's breakdown) -->
+                            <div class="table-responsive" style="margin-top: 16px;">
+                                <table id="logs-table" class="modern-table">
+                                    <thead>
+                                        <tr>
+                                            <th><?= t('history.col.food_item') ?></th>
+                                            <th><?= t('history.col.calories') ?></th>
+                                            <th><?= t('history.col.macros') ?></th>
+                                            <th><?= t('history.col.meal_category') ?></th>
+                                            <th><?= t('history.col.time') ?></th>
+                                            <th class="row-actions-head"><?= t('history.col.action') ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (!empty($intakeLog)): ?>
+                                            <?php foreach ($intakeLog as $historyEntry): ?>
+                                                <?php
+                                                $entry = $historyEntry;
+                                                $showDate = false; // Date is selected globally
+                                                $hideActions = !$isLoggedIn;
+                                                include PROJECT_ROOT . 'dashboard/views/_intake-row.php';
+                                                unset($hideActions);
+                                                ?>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="custom-pagination" class="pagination-container"></div>
                         </section>
                     </div>
                 </section>
@@ -972,9 +1000,596 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     const fill = document.getElementById('progressFill');
                     if (fill) fill.style.width = '<?php echo $progressPercentage; ?>%';
                 }, 100);
-            });
         </script>
     <?php endif; ?>
+
+        <!-- INTAKE HISTORY MODALS & SCRIPT INCLUSION -->
+        <?php $modalTitle = 'Edit Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
+        
+        <!-- Custom Intake Delete Confirmation Modal to avoid ID conflict with Weight delete modal -->
+        <div id="confirmIntakeDeleteModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeConfirmIntakeDeleteModal" aria-label="<?= t('common.close') ?>">&times;</span>
+                <h3>
+                    <i class="fas fa-exclamation-triangle" style="color: var(--color-danger); margin-right: 8px;"></i>
+                    <?= t('intake.delete.confirm_title') ?>
+                </h3>
+                <div class="modal-body">
+                    <p class="modal-desc" id="confirmIntakeDeleteDesc">
+                        <?= t('intake.delete.confirm_desc') ?>
+                    </p>
+                </div>
+                <div class="modal-footer" style="justify-content: center; gap: 16px;">
+                    <button type="button" class="btn-cancel" id="cancelIntakeDeleteBtn"><?= t('common.cancel') ?></button>
+                    <button type="button" class="btn-danger" id="confirmIntakeDeleteBtn"><?= t('common.delete') ?></button>
+                </div>
+            </div>
+        </div>
+
+        <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
+
+        <script>
+            // --- Zero-Dependency Vanilla JS Table Controller ---
+            (function () {
+                const HistoryTable = {
+                    allRows: [],
+                    currentPage: 1,
+                    rowsPerPage: 5, // 5 items per page is perfect inside a tab pane
+
+                    init() {
+                        const logsTable = document.getElementById('logs-table');
+                        if (!logsTable) return;
+                        this.allRows = Array.from(logsTable.querySelectorAll('tbody tr'));
+                        
+                        // Bind Filters
+                        const search = document.getElementById('searchInput');
+                        const meal = document.getElementById('mealTypeFilter');
+
+                        if (search) search.addEventListener('keyup', () => { this.currentPage = 1; this.filterAndPaginate(); });
+                        if (meal) meal.addEventListener('change', () => { this.currentPage = 1; this.filterAndPaginate(); });
+
+                        this.filterAndPaginate();
+                    },
+
+                    filterAndPaginate() {
+                        const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+                        const mealVal = (document.getElementById('mealTypeFilter')?.value || '').toLowerCase();
+
+                        const filteredRows = this.allRows.filter(row => {
+                            if (searchVal) {
+                                const foodText = (row.querySelector('td.fw-bold')?.textContent || '').toLowerCase();
+                                if (!foodText.includes(searchVal)) return false;
+                            }
+
+                            if (mealVal) {
+                                const badge = row.querySelector('.cat-badge');
+                                let category = 'breakfast';
+                                if (badge) {
+                                    badge.classList.forEach(cls => {
+                                        if (cls.startsWith('cat-') && cls !== 'cat-badge') {
+                                            category = cls.slice(4);
+                                        }
+                                    });
+                                }
+                                if (category !== mealVal) return false;
+                            }
+
+                            return true;
+                        });
+
+                        const tableContainer = document.querySelector('.table-responsive');
+                        const paginationContainer = document.getElementById('custom-pagination');
+                        let emptyState = document.querySelector('#tabPane-meals .empty-state');
+
+                        if (filteredRows.length === 0) {
+                            if (!emptyState && tableContainer) {
+                                emptyState = document.createElement('div');
+                                emptyState.className = 'empty-state';
+                                emptyState.innerHTML = `<i class="fas fa-folder-open"></i><p>${<?= json_encode(t_raw('history.empty_records')) ?>}</p>`;
+                                tableContainer.parentNode.insertBefore(emptyState, paginationContainer);
+                            }
+                            if (tableContainer) tableContainer.style.display = 'none';
+                            if (paginationContainer) paginationContainer.style.display = 'none';
+                            return;
+                        } else {
+                            if (emptyState) emptyState.remove();
+                            if (tableContainer) tableContainer.style.display = '';
+                            if (paginationContainer) paginationContainer.style.display = '';
+                        }
+
+                        const totalRows = filteredRows.length;
+                        const totalPages = Math.ceil(totalRows / this.rowsPerPage);
+                        
+                        if (this.currentPage > totalPages) this.currentPage = Math.max(1, totalPages);
+
+                        const startIndex = (this.currentPage - 1) * this.rowsPerPage;
+                        const endIndex = startIndex + this.rowsPerPage;
+
+                        this.allRows.forEach(row => row.style.display = 'none');
+                        filteredRows.slice(startIndex, endIndex).forEach(row => row.style.display = '');
+
+                        this.renderPagination(totalPages);
+                    },
+
+                    renderPagination(totalPages) {
+                        const container = document.getElementById('custom-pagination');
+                        if (!container) return;
+                        container.innerHTML = '';
+
+                        if (totalPages <= 1) return;
+
+                        // Prev
+                        const prevBtn = document.createElement('button');
+                        prevBtn.className = 'page-btn';
+                        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                        prevBtn.disabled = this.currentPage === 1;
+                        prevBtn.addEventListener('click', () => {
+                            if (this.currentPage > 1) {
+                                this.currentPage--;
+                                this.filterAndPaginate();
+                            }
+                        });
+                        container.appendChild(prevBtn);
+
+                        // Pages
+                        for (let i = 1; i <= totalPages; i++) {
+                            const pageBtn = document.createElement('button');
+                            pageBtn.className = 'page-btn' + (i === this.currentPage ? ' active' : '');
+                            pageBtn.textContent = i;
+                            pageBtn.addEventListener('click', () => {
+                                this.currentPage = i;
+                                this.filterAndPaginate();
+                            });
+                            container.appendChild(pageBtn);
+                        }
+
+                        // Next
+                        const nextBtn = document.createElement('button');
+                        nextBtn.className = 'page-btn';
+                        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                        nextBtn.disabled = this.currentPage === totalPages;
+                        nextBtn.addEventListener('click', () => {
+                            if (this.currentPage < totalPages) {
+                                this.currentPage++;
+                                this.filterAndPaginate();
+                            }
+                        });
+                        container.appendChild(nextBtn);
+                    }
+                };
+
+                window.HistoryTable = HistoryTable;
+
+                // ============================================================
+                //  CALENDAR AJAX NAVIGATION (day click · month arrows · picker)
+                // ============================================================
+                <?php
+                $__locale = current_locale();
+                $pickerMonthLabels = [];
+                for ($m = 1; $m <= 12; $m++) {
+                    $pickerMonthLabels[] = ($__locale === 'vi') ? ('Th ' . $m) : date('M', mktime(0, 0, 0, $m, 1));
+                }
+                ?>
+                const CAL = {
+                    monthLabels: <?= json_encode($pickerMonthLabels) ?>,
+                    yearWord: <?= json_encode($__locale === 'vi' ? 'Năm' : '') ?>,
+                    maxYear: <?= (int) date('Y') ?>,
+                    maxMonth: <?= (int) date('n') ?>,
+                    minYear: <?= ((int) date('Y')) - 5 ?>,
+                    today: <?= json_encode(date('Y-m-d')) ?>,
+                    kcalLabel: <?= json_encode(t_raw('common.kcal')) ?>
+                };
+
+                const pad2 = (n) => String(n).padStart(2, '0');
+
+                // Sensible, never-future date to land on when jumping to a month.
+                function firstSelectableOfMonth(year, month) {
+                    if (year > CAL.maxYear || (year === CAL.maxYear && month >= CAL.maxMonth)) return CAL.today;
+                    return `${year}-${pad2(month)}-01`;
+                }
+
+                function centerActiveChip() {
+                    const dayScroll = document.querySelector('.day-scroll');
+                    const activeDay = document.querySelector('.day-chip.active');
+                    if (activeDay && dayScroll) {
+                        const containerWidth = dayScroll.clientWidth;
+                        dayScroll.scrollLeft = activeDay.offsetLeft - (containerWidth / 2) + (activeDay.clientWidth / 2);
+                    }
+                }
+
+                // Patch every widget/chart/table from a day-data payload.
+                function applyDayData(data) {
+                    const tableController = window.HistoryTable;
+
+                    const metSpan = document.querySelector('.welcome-stat-chip span');
+                    if (metSpan) metSpan.textContent = `Goal Met: ${data.progressPercentage}%`;
+
+                    const welcomeP = document.querySelector('.welcome-text p');
+                    if (welcomeP) welcomeP.innerHTML = data.welcomeSubtext;
+
+                    const progressVal = document.querySelector('.progress-value span');
+                    if (progressVal) {
+                        progressVal.className = data.statusClass;
+                        progressVal.textContent = data.totalCalories + ' kcal';
+                    }
+                    const progressFill = document.getElementById('progressFill');
+                    if (progressFill) {
+                        progressFill.className = 'progress-fill ' + data.statusClass;
+                        progressFill.style.width = data.progressPercentage + '%';
+                    }
+
+                    const avgBadge = document.querySelector('.chart-average-badge .value');
+                    if (avgBadge) avgBadge.textContent = data.averageCalories;
+
+                    const centerVal = document.querySelector('.doughnut-center-text .center-val');
+                    if (centerVal) centerVal.textContent = data.totalCalories;
+
+                    if (window.historyChartInstance) {
+                        window.historyChartInstance.data.labels = data.historyLabels;
+                        window.historyChartInstance.data.datasets[0].data = data.historyData;
+                        window.historyChartInstance.update();
+                    }
+                    if (window.macrosTrendChartInstance) {
+                        window.macrosTrendChartInstance.data.labels = data.historyLabels;
+                        window.macrosTrendChartInstance.data.datasets[0].data = data.historyProtein;
+                        window.macrosTrendChartInstance.data.datasets[1].data = data.historyCarbs;
+                        window.macrosTrendChartInstance.data.datasets[2].data = data.historyFat;
+                        window.macrosTrendChartInstance.update();
+                    }
+                    if (window.mealDoughnutChartInstance) {
+                        window.mealDoughnutChartInstance.data.datasets[0].data = [
+                            data.mealCategoryData.Breakfast,
+                            data.mealCategoryData.Lunch,
+                            data.mealCategoryData.Dinner,
+                            data.mealCategoryData.Snack
+                        ];
+                        window.mealDoughnutChartInstance.update();
+                    }
+
+                    // Per-category legend values
+                    const legendCap = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
+                    document.querySelectorAll('#mealLegend .meal-legend-item').forEach(item => {
+                        const valEl = item.querySelector('.legend-val');
+                        const val = data.mealCategoryData[legendCap[item.dataset.cat]] ?? 0;
+                        if (valEl) valEl.textContent = `${val} ${CAL.kcalLabel}`;
+                    });
+
+                    const tbody = document.querySelector('#logs-table tbody');
+                    if (tbody && tableController) {
+                        tbody.innerHTML = data.rowsHtml;
+                        tableController.allRows = Array.from(tbody.querySelectorAll('tr'));
+                        tableController.currentPage = 1;
+                        tableController.filterAndPaginate();
+                    }
+
+                    const focusTitle = document.querySelector('.focus-main strong');
+                    if (focusTitle) focusTitle.textContent = data.focusTitle;
+                    const focusCopy = document.querySelector('.focus-main p');
+                    if (focusCopy) focusCopy.textContent = data.focusCopy;
+                    const focusStatus = document.querySelector('.focus-status');
+                    if (focusStatus) {
+                        focusStatus.className = 'focus-status ' + data.focusTone;
+                        focusStatus.textContent = (data.focusTone === 'alert') ? 'Needs Adjustment' : 'Active';
+                    }
+                    const macroFocusTitleVal = document.querySelector('.macro-focus strong');
+                    if (macroFocusTitleVal) macroFocusTitleVal.textContent = data.macroFocusText;
+                    const macroFocusIconVal = document.querySelector('.macro-focus i');
+                    if (macroFocusIconVal) macroFocusIconVal.className = 'fas ' + data.macroFocusIcon;
+                    const macroFocusDiv = document.querySelector('.macro-focus');
+                    if (macroFocusDiv) macroFocusDiv.className = 'focus-insight macro-focus ' + data.macroFocusKey;
+                    const bmiStrong = document.querySelector('.bmi-focus strong');
+                    if (bmiStrong) bmiStrong.textContent = data.bmi > 0 ? `${data.bmi} (${data.bmiClass})` : 'Needs Info';
+                }
+
+                // Core loader. reRenderCalendar=true swaps the whole navbar
+                // (used for month arrows + picker, which change the day strip).
+                async function loadDate(date, reRenderCalendar = false) {
+                    const containersToFade = [
+                        document.querySelector('.progress-widget'),
+                        document.querySelector('#statsHubCard'),
+                        document.querySelector('.focus-card')
+                    ];
+                    containersToFade.forEach(c => { if (c) c.style.opacity = '0.5'; });
+
+                    try {
+                        const res = await fetch(`handlers/get_dashboard_day_data.php?date=${date}`);
+                        const data = await res.json();
+                        if (!data.ok) return;
+
+                        history.pushState(null, '', `?date=${date}`);
+
+                        if (reRenderCalendar && data.calendarHtml) {
+                            const navbar = document.querySelector('.calendar-navbar');
+                            if (navbar) {
+                                navbar.outerHTML = data.calendarHtml;
+                                bindCalendar();
+                            }
+                        } else {
+                            document.querySelectorAll('.day-scroll .day-chip').forEach(c => c.classList.remove('active'));
+                            const activeChip = document.querySelector(`.day-scroll .day-chip[data-date="${date}"]`);
+                            if (activeChip) activeChip.classList.add('active');
+                        }
+                        centerActiveChip();
+                        applyDayData(data);
+                    } catch (err) {
+                        console.error('AJAX Load Error:', err);
+                    } finally {
+                        containersToFade.forEach(c => { if (c) c.style.opacity = '1'; });
+                    }
+                }
+
+                // ---- Month / Year picker ----
+                function closePicker() {
+                    const picker = document.getElementById('monthPicker');
+                    const titleBtn = document.getElementById('monthTitleBtn');
+                    if (picker) picker.hidden = true;
+                    if (titleBtn) titleBtn.setAttribute('aria-expanded', 'false');
+                }
+
+                function buildPicker(pickerEl, year) {
+                    year = Math.max(CAL.minYear, Math.min(CAL.maxYear, year));
+                    const titleBtn = document.getElementById('monthTitleBtn');
+                    const selYear = titleBtn ? parseInt(titleBtn.dataset.year, 10) : year;
+                    const selMonth = titleBtn ? parseInt(titleBtn.dataset.month, 10) : 0;
+                    const yearLabel = CAL.yearWord ? `${CAL.yearWord} ${year}` : year;
+
+                    let html = '<div class="month-picker-head">';
+                    html += `<button type="button" class="picker-year-nav" data-step="-1"${year <= CAL.minYear ? ' disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+                    html += `<span class="picker-year">${yearLabel}</span>`;
+                    html += `<button type="button" class="picker-year-nav" data-step="1"${year >= CAL.maxYear ? ' disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                    html += '</div><div class="month-picker-grid">';
+                    for (let m = 1; m <= 12; m++) {
+                        const isFuture = (year > CAL.maxYear) || (year === CAL.maxYear && m > CAL.maxMonth);
+                        const isActive = (year === selYear && m === selMonth);
+                        html += `<button type="button" class="picker-month${isActive ? ' active' : ''}" data-year="${year}" data-month="${m}"${isFuture ? ' disabled' : ''}>${CAL.monthLabels[m - 1]}</button>`;
+                    }
+                    html += '</div>';
+                    pickerEl.innerHTML = html;
+
+                    pickerEl.querySelectorAll('.picker-year-nav:not([disabled])').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            buildPicker(pickerEl, year + parseInt(btn.dataset.step, 10));
+                        });
+                    });
+                    pickerEl.querySelectorAll('.picker-month:not([disabled])').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            closePicker();
+                            loadDate(firstSelectableOfMonth(parseInt(btn.dataset.year, 10), parseInt(btn.dataset.month, 10)), true);
+                        });
+                    });
+                }
+
+                function openPicker() {
+                    const picker = document.getElementById('monthPicker');
+                    const titleBtn = document.getElementById('monthTitleBtn');
+                    if (!picker || !titleBtn) return;
+                    buildPicker(picker, parseInt(titleBtn.dataset.year, 10) || CAL.maxYear);
+                    picker.hidden = false;
+                    titleBtn.setAttribute('aria-expanded', 'true');
+                }
+
+                // (Re)bind all calendar controls. Called on load and after each
+                // navbar swap, since outerHTML replacement drops old listeners.
+                function bindCalendar() {
+                    document.querySelectorAll('.day-scroll .day-chip[data-date]').forEach(chip => {
+                        chip.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            loadDate(chip.dataset.date, false);
+                        });
+                    });
+                    document.querySelectorAll('.month-selector .btn-month-nav[data-date]').forEach(arrow => {
+                        arrow.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            loadDate(arrow.dataset.date, true);
+                        });
+                    });
+                    const titleBtn = document.getElementById('monthTitleBtn');
+                    if (titleBtn) {
+                        titleBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const picker = document.getElementById('monthPicker');
+                            if (picker && !picker.hidden) closePicker(); else openPicker();
+                        });
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    const tableController = window.HistoryTable;
+                    if (tableController) tableController.init();
+
+                    bindCalendar();
+                    centerActiveChip();
+
+                    // Close picker when clicking outside it.
+                    document.addEventListener('click', (e) => {
+                        const picker = document.getElementById('monthPicker');
+                        if (!picker || picker.hidden) return;
+                        if (!picker.contains(e.target) && !e.target.closest('#monthTitleBtn')) closePicker();
+                    });
+                });
+            })();
+
+            // --- 1. Event Delegation for Row Actions ---
+            document.addEventListener('DOMContentLoaded', () => {
+                const tbody = document.querySelector('#logs-table tbody');
+                const tableController = window.HistoryTable;
+                if (!tbody || !tableController) return;
+
+                let deleteRowTarget = null;
+                const confirmIntakeDeleteModal = document.getElementById('confirmIntakeDeleteModal');
+                const closeConfirmBtn = document.getElementById('closeConfirmIntakeDeleteModal');
+                const cancelConfirmBtn = document.getElementById('cancelIntakeDeleteBtn');
+                const doConfirmDeleteBtn = document.getElementById('confirmIntakeDeleteBtn');
+
+                function closeIntakeDeleteConfirmModal() {
+                    if (confirmIntakeDeleteModal) confirmIntakeDeleteModal.classList.remove('active');
+                    deleteRowTarget = null;
+                }
+
+                if (confirmIntakeDeleteModal) {
+                    closeConfirmBtn.addEventListener('click', closeIntakeDeleteConfirmModal);
+                    cancelConfirmBtn.addEventListener('click', closeIntakeDeleteConfirmModal);
+                    confirmIntakeDeleteModal.addEventListener('click', e => {
+                        if (e.target === confirmIntakeDeleteModal) closeIntakeDeleteConfirmModal();
+                    });
+                }
+
+                tbody.addEventListener('click', function (e) {
+                    // Delete button
+                    const deleteBtn = e.target.closest('.deleteBtn');
+                    if (deleteBtn) {
+                        e.preventDefault();
+                        deleteRowTarget = deleteBtn.closest('tr');
+                        if (confirmIntakeDeleteModal) confirmIntakeDeleteModal.classList.add('active');
+                        return;
+                    }
+
+                    // Edit button
+                    const editBtn = e.target.closest('.btn-edit');
+                    if (editBtn) {
+                        e.preventDefault();
+                        currentRow = editBtn.closest('tr');
+                        if (typeof IntakeRow !== 'undefined') {
+                            IntakeRow.fillEditForm(currentRow);
+                            IntakeRow.openModal();
+                        }
+                        return;
+                    }
+
+                    // Log Again button
+                    const logAgainBtn = e.target.closest('.btnLogAgain');
+                    if (logAgainBtn) {
+                        e.preventDefault();
+                        handleLogAgain(logAgainBtn);
+                        return;
+                    }
+                });
+
+                // --- 2. DELETE CONFIRMATION ACTION ---
+                if (doConfirmDeleteBtn) {
+                    doConfirmDeleteBtn.addEventListener('click', async function () {
+                        if (!deleteRowTarget) return;
+
+                        const row = deleteRowTarget;
+                        const id = row.getAttribute('data-id');
+                        if (!id) {
+                            alert('Error: Could not find entry ID');
+                            return;
+                        }
+
+                        doConfirmDeleteBtn.disabled = true;
+                        const fd = new FormData();
+                        fd.append('intake_id', id);
+
+                        try {
+                            const res = await fetch('handlers/delete_intake.php', { method: 'POST', body: fd });
+                            const data = await res.json();
+
+                            if (data.ok) {
+                                row.style.transition = 'opacity 0.3s, transform 0.3s';
+                                row.style.opacity = '0';
+                                row.style.transform = 'scale(0.95)';
+                                setTimeout(() => {
+                                    row.remove();
+                                    const idx = tableController.allRows.indexOf(row);
+                                    if (idx > -1) tableController.allRows.splice(idx, 1);
+                                    tableController.filterAndPaginate();
+                                    // Reload to update charts & progress widgets
+                                    location.reload();
+                                }, 300);
+                                closeIntakeDeleteConfirmModal();
+                            } else {
+                                alert(data.error || 'Failed to delete');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Connection error');
+                        } finally {
+                            doConfirmDeleteBtn.disabled = false;
+                        }
+                    });
+                }
+
+                // --- 3. EDIT SUBMIT ACTION ---
+                const editForm = document.getElementById('editIntakeForm');
+                let currentRow = null;
+
+                if (typeof IntakeRow !== 'undefined') {
+                    IntakeRow.bindCloseHandlers();
+                }
+
+                if (editForm) {
+                    editForm.addEventListener('submit', async function (e) {
+                        e.preventDefault();
+                        const fd = new FormData(editForm);
+                        try {
+                            const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
+                            const data = await res.json();
+                            if (!data.ok) {
+                                alert(data.error || 'Update failed');
+                                return;
+                            }
+                            if (currentRow && typeof IntakeRow !== 'undefined') {
+                                IntakeRow.updateRow(currentRow, data);
+                                tableController.filterAndPaginate();
+                            }
+                            if (typeof IntakeRow !== 'undefined') {
+                                IntakeRow.closeModal();
+                            }
+                            // Reload to update charts & progress widgets
+                            location.reload();
+                        } catch (err) {
+                            console.error(err);
+                            alert('Error connecting to server');
+                        }
+                    });
+                }
+
+                // --- 4. QUICK LOG ACTION ---
+                async function handleLogAgain(btn) {
+                    const row = btn.closest('tr');
+                    const id = row.getAttribute('data-id');
+                    if (!id) {
+                        alert('Error: Could not find entry ID');
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    const fd = new FormData();
+                    fd.append('intake_id', id);
+                    fd.append('show_date', '0'); // Do not render Date cell
+
+                    try {
+                        const res = await fetch('handlers/quick_log_from_history.php', { method: 'POST', body: fd });
+                        const data = await res.json();
+
+                        if (data.ok) {
+                            // Success toast
+                            if (typeof showLoggingToast === 'function') {
+                                showLoggingToast('Food logged!', data.food_item + ' • ' + data.calories + ' kcal');
+                            }
+                            // Reload to update charts & progress widgets
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        } else {
+                            alert(data.error || 'Failed to log entry');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Connection error');
+                    } finally {
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }
+                }
+            });
+        </script>
 
     <?php if ($isLoggedIn && $brokenStreak > 0): ?>
         <!-- STREAK RESCUE OVERLAY MODAL -->
@@ -1162,8 +1777,16 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             const pane = document.getElementById(`tabPane-${tabId}`);
             if (pane) pane.classList.add('active');
 
-            // Force Chart.js reflows immediately to correct zero-width layout issue
-            window.dispatchEvent(new Event('resize'));
+            // Charts created while their pane was display:none measure 0×0.
+            // Resize the now-visible tab's chart(s) once layout has settled.
+            const charts = {
+                intake: [window.historyChartInstance, window.macrosTrendChartInstance],
+                weight: [window.weightChartInstance],
+                meals: [window.mealDoughnutChartInstance]
+            };
+            requestAnimationFrame(() => {
+                (charts[tabId] || []).forEach(c => { if (c) c.resize(); });
+            });
         }
     </script>
 

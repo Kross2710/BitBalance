@@ -91,6 +91,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                                     <option value=""><?= t('calc.gender.select') ?></option>
                                     <option value="male" <?= $formGender === 'male' ? 'selected' : ''; ?>><?= t('calc.input.gender.male') ?></option>
                                     <option value="female" <?= $formGender === 'female' ? 'selected' : ''; ?>><?= t('calc.input.gender.female') ?></option>
+                                    <option value="other" <?= $formGender === 'other' ? 'selected' : ''; ?>><?= t('calc.input.gender.other') ?></option>
                                 </select>
                             </div>
                         </div>

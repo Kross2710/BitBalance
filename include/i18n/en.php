@@ -142,6 +142,9 @@ return [
     'dashboard.sidebar.wiki_short'     => 'Wiki',
     'dashboard.sidebar.friends'        => 'Friends',
     'dashboard.sidebar.friends_short'  => 'Friends',
+    'dashboard.sidebar.beats'          => 'Diet & Beats',
+    'dashboard.sidebar.beats_short'    => 'Beats',
+
 
     // ── Dashboard right sidebar ─────────────────────────────────────────────
     'dashboard.right.hello'            => 'Hello,',
@@ -320,6 +323,7 @@ return [
     'calc.input.gender'                => 'Gender',
     'calc.input.gender.male'           => 'Male',
     'calc.input.gender.female'         => 'Female',
+    'calc.input.gender.other'          => 'Other',
     'calc.input.weight'                => 'Weight (kg)',
     'calc.input.height'                => 'Height (cm)',
     'calc.input.activity'              => 'Activity level',
@@ -791,6 +795,7 @@ return [
     'profile.body.gender.select'       => 'Select…',
     'profile.body.gender.male'         => 'Male',
     'profile.body.gender.female'       => 'Female',
+    'profile.body.gender.other'        => 'Other',
     'profile.body.weight'              => 'Weight (kg)',
     'profile.body.height'              => 'Height (cm)',
     'profile.body.save'                => 'Update Stats',
@@ -850,4 +855,48 @@ return [
     'aic.decode_failed'                => 'Could not decode image',
     'aic.empty_image'                  => 'Empty image',
     'aic.encode_failed'                => 'Encode failed',
+
+    // ── Terms & Conditions ────────────────────────────────────────────────────
+    'terms.title'                      => 'Terms & Conditions',
+    'terms.subtitle'                   => 'Transparency, Privacy, and Trust',
+    'terms.intro'                      => '<strong>Important:</strong> Even though BitBalance is a student project, we take user trust seriously. This page outlines how we handle your data responsibly.',
+
+    'terms.privacy.heading'            => 'Data Privacy & Security',
+    'terms.privacy.p1'                 => 'All user information (such as log-in details, height, and weight) is stored securely in our project database. We do not share this data with third parties—it is strictly used to maintain the site\'s functionality and help you track your goals.',
+    'terms.privacy.p2'                 => 'You have full control over your data. You can delete, archive, or modify your account details at any time through your profile settings.',
+
+    'terms.cookies.heading'            => 'Cookies Policy',
+    'terms.cookies.intro'              => 'Cookies are small text files stored on your device. We use them to enhance your experience by remembering your preferences.',
+    'terms.cookies.types_heading'      => 'Types of Cookies We Use',
+
+    'terms.cookies.essential.title'    => 'Essential Cookies',
+    'terms.cookies.essential.desc'     => 'Necessary for the website to function properly. Cannot be disabled.',
+    'terms.cookies.essential.item1'    => 'User authentication (keeping you logged in)',
+    'terms.cookies.essential.item2'    => 'Shopping cart items',
+    'terms.cookies.essential.item3'    => 'Security and fraud prevention',
+
+    'terms.cookies.preference.title'   => 'Preference Cookies',
+    'terms.cookies.preference.desc'    => 'Remember your settings for a personalized experience.',
+    'terms.cookies.preference.item1'   => 'Theme preference (Dark/Light mode)',
+    'terms.cookies.preference.item2'   => 'Dashboard layout settings',
+
+    'terms.cookies.analytics.title'    => 'Analytics Cookies',
+    'terms.cookies.analytics.desc'     => 'Help us understand how visitors interact with our site (anonymously).',
+    'terms.cookies.analytics.item1'    => 'Page visit counts',
+    'terms.cookies.analytics.item2'    => 'Traffic sources',
+
+    'terms.community.heading'          => 'Community Guidelines',
+    'terms.community.intro'            => 'Our forum is a space for support and sharing. By using it, you agree to:',
+    'terms.community.item1'            => 'Be respectful to other members.',
+    'terms.community.item2'            => 'Avoid posting harmful or offensive content.',
+    'terms.community.item3'            => 'Keep discussions relevant to health and nutrition.',
+
+    'terms.rmit.heading'               => 'RMIT Compliance',
+    'terms.rmit.body'                  => 'BitBalance is hosted on RMIT\'s teaching servers. We strictly follow the university\'s technical and ethical guidelines, including acceptable use policies and security standards.',
+
+    'terms.dev.title'                  => 'Developer Tools',
+    'terms.dev.show_banner'            => 'Show Cookie Banner',
+    'terms.dev.clear_cookies'          => 'Clear Cookie Data',
+
+    'terms.last_updated'               => 'Last updated: {date}',
 ];

@@ -7,14 +7,15 @@ require_once __DIR__ . '/include/handlers/log_attempt.php';
 // }
 
 $activeHeader = 'about';
+$isAdmin = $isLoggedIn && (($_SESSION['user']['role'] ?? '') === 'admin');
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
+<html lang="<?= html_lang_attr() ?>" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms & Conditions | BitBalance</title>
+    <title><?= t('terms.title') ?> | <?= t('common.app_name') ?></title>
     
     <?php
     $pageCss = ['css/pages/terms.css'];
@@ -28,72 +29,74 @@ $activeHeader = 'about';
 
     <div class="terms-wrapper">
         <header class="terms-header-card">
-            <h1>Terms & Conditions</h1>
-            <p>Transparency, Privacy, and Trust</p>
+            <h1><?= t('terms.title') ?></h1>
+            <p><?= t('terms.subtitle') ?></p>
         </header>
 
         <main class="terms-content-card">
             <div class="highlight-box">
-                <p><i class="fas fa-info-circle"></i> <strong>Important:</strong> Even though BitBalance is a student project, we take user trust seriously. This page outlines how we handle your data responsibly.</p>
+                <p><i class="fas fa-info-circle"></i> <?= t_raw('terms.intro') ?></p>
             </div>
 
-            <h2><i class="fas fa-shield-alt"></i> Data Privacy & Security</h2>
-            <p>All user information (such as log-in details, height, and weight) is stored securely in our project database. We do not share this data with third parties—it is strictly used to maintain the site's functionality and help you track your goals.</p>
-            <p>You have full control over your data. You can delete, archive, or modify your account details at any time through your profile settings.</p>
+            <h2><i class="fas fa-shield-alt"></i> <?= t('terms.privacy.heading') ?></h2>
+            <p><?= t('terms.privacy.p1') ?></p>
+            <p><?= t('terms.privacy.p2') ?></p>
 
-            <h2 id="cookies-policy"><i class="fas fa-cookie-bite"></i> Cookies Policy</h2>
-            <p>Cookies are small text files stored on your device. We use them to enhance your experience by remembering your preferences.</p>
+            <h2 id="cookies-policy"><i class="fas fa-cookie-bite"></i> <?= t('terms.cookies.heading') ?></h2>
+            <p><?= t('terms.cookies.intro') ?></p>
 
-            <h3>Types of Cookies We Use</h3>
+            <h3><?= t('terms.cookies.types_heading') ?></h3>
 
             <div class="cookie-card">
-                <h4>Essential Cookies <span class="cookie-tag tag-essential">Required</span></h4>
-                <p>Necessary for the website to function properly. Cannot be disabled.</p>
+                <h4><?= t('terms.cookies.essential.title') ?> <span class="cookie-tag tag-essential"><?= t('common.required') ?></span></h4>
+                <p><?= t('terms.cookies.essential.desc') ?></p>
                 <ul>
-                    <li>User authentication (keeping you logged in)</li>
-                    <li>Shopping cart items</li>
-                    <li>Security and fraud prevention</li>
+                    <li><?= t('terms.cookies.essential.item1') ?></li>
+                    <li><?= t('terms.cookies.essential.item2') ?></li>
+                    <li><?= t('terms.cookies.essential.item3') ?></li>
                 </ul>
             </div>
 
             <div class="cookie-card">
-                <h4>Preference Cookies <span class="cookie-tag tag-preference">Optional</span></h4>
-                <p>Remember your settings for a personalized experience.</p>
+                <h4><?= t('terms.cookies.preference.title') ?> <span class="cookie-tag tag-preference"><?= t('common.optional') ?></span></h4>
+                <p><?= t('terms.cookies.preference.desc') ?></p>
                 <ul>
-                    <li>Theme preference (Dark/Light mode)</li>
-                    <li>Dashboard layout settings</li>
+                    <li><?= t('terms.cookies.preference.item1') ?></li>
+                    <li><?= t('terms.cookies.preference.item2') ?></li>
                 </ul>
             </div>
 
             <div class="cookie-card">
-                <h4>Analytics Cookies <span class="cookie-tag tag-analytics">Optional</span></h4>
-                <p>Help us understand how visitors interact with our site (anonymously).</p>
+                <h4><?= t('terms.cookies.analytics.title') ?> <span class="cookie-tag tag-analytics"><?= t('common.optional') ?></span></h4>
+                <p><?= t('terms.cookies.analytics.desc') ?></p>
                 <ul>
-                    <li>Page visit counts</li>
-                    <li>Traffic sources</li>
+                    <li><?= t('terms.cookies.analytics.item1') ?></li>
+                    <li><?= t('terms.cookies.analytics.item2') ?></li>
                 </ul>
             </div>
 
-            <h2><i class="fas fa-users"></i> Community Guidelines</h2>
-            <p>Our forum is a space for support and sharing. By using it, you agree to:</p>
+            <h2><i class="fas fa-users"></i> <?= t('terms.community.heading') ?></h2>
+            <p><?= t('terms.community.intro') ?></p>
             <ul>
-                <li>Be respectful to other members.</li>
-                <li>Avoid posting harmful or offensive content.</li>
-                <li>Keep discussions relevant to health and nutrition.</li>
+                <li><?= t('terms.community.item1') ?></li>
+                <li><?= t('terms.community.item2') ?></li>
+                <li><?= t('terms.community.item3') ?></li>
             </ul>
 
-            <h2><i class="fas fa-university"></i> RMIT Compliance</h2>
-            <p>BitBalance is hosted on RMIT's teaching servers. We strictly follow the university's technical and ethical guidelines, including acceptable use policies and security standards.</p>
+            <h2><i class="fas fa-university"></i> <?= t('terms.rmit.heading') ?></h2>
+            <p><?= t('terms.rmit.body') ?></p>
 
+            <?php if ($isAdmin): ?>
             <div class="dev-controls">
-                <h4 style="margin-top:0; color:var(--text-secondary); font-size:0.9rem; text-transform:uppercase;">Developer Tools</h4>
-                <button id="test-show-banner" class="btn-test"><i class="fas fa-eye"></i> Show Cookie Banner</button>
-                <button id="test-clear-cookies" class="btn-test"><i class="fas fa-trash"></i> Clear Cookie Data</button>
-                <p id="cookie-test-status" style="margin-top:10px; font-size:0.85rem; color:var(--primary-color); min-height:1.2em;"></p>
+                <h4 class="dev-controls-title"><?= t('terms.dev.title') ?></h4>
+                <button id="test-show-banner" class="btn-test"><i class="fas fa-eye"></i> <?= t('terms.dev.show_banner') ?></button>
+                <button id="test-clear-cookies" class="btn-test"><i class="fas fa-trash"></i> <?= t('terms.dev.clear_cookies') ?></button>
+                <p id="cookie-test-status" class="cookie-test-status"></p>
             </div>
+            <?php endif; ?>
 
             <div class="last-updated">
-                Last updated: <?= date('F j, Y') ?>
+                <?= t('terms.last_updated', ['date' => date('F j, Y')]) ?>
             </div>
         </main>
     </div>

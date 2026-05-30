@@ -360,7 +360,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         </div>
 
                         <div class="table-responsive">
-                            <table class="modern-table">
+                            <table class="modern-table modern-table--today">
                                 <thead>
                                     <tr>
                                         <th><?= t('intake.col.food_item') ?></th>

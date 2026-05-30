@@ -58,10 +58,49 @@ function plan_goal_modes(): array
     ];
 }
 
+function plan_goal_adjustments(): array
+{
+    return [
+        'lose' => -350,
+        'maintain' => 0,
+        'gain' => 300,
+    ];
+}
+
+function plan_weekly_rate_from_goal_mode(string $goalMode): float
+{
+    $adjustments = plan_goal_adjustments();
+    $dailyAdjustment = abs((int) ($adjustments[$goalMode] ?? 0));
+    if ($dailyAdjustment <= 0) {
+        return 0.0;
+    }
+
+    return round(($dailyAdjustment * 7) / 7700, 2);
+}
+
+function plan_daily_adjustment_from_weekly_rate(string $goalMode, float $weeklyRate): int
+{
+    if ($goalMode === 'maintain') {
+        return 0;
+    }
+
+    $weeklyRate = max(0.0, min(1.5, $weeklyRate));
+    $dailyAdjustment = (int) round(($weeklyRate * 7700) / 7);
+
+    return $goalMode === 'lose' ? -$dailyAdjustment : $dailyAdjustment;
+}
+
 function plan_calculate_bmr(int $age, string $gender, float $weightKg, float $heightCm): float
 {
     $base = 10 * $weightKg + 6.25 * $heightCm - 5 * $age;
-    return $gender === 'female' ? $base - 161 : $base + 5;
+    if ($gender === 'female') {
+        return $base - 161;
+    }
+    if ($gender === 'other') {
+        return $base - 78;
+    }
+
+    return $base + 5;
 }
 
 function plan_calculate_tdee(float $bmr, string $activityLevel): float
@@ -74,6 +113,44 @@ function plan_calculate_tdee(float $bmr, string $activityLevel): float
 function plan_clamp_goal(int $goal): int
 {
     return max(800, min(10000, $goal));
+}
+
+function plan_build_personal_plan(
+    int $age,
+    string $gender,
+    float $weightKg,
+    float $heightCm,
+    string $activityLevel,
+    string $goalMode,
+    ?float $weeklyRate = null
+): array {
+    $goalModes = plan_goal_modes();
+    $activityOptions = plan_activity_options();
+
+    if (!isset($goalModes[$goalMode])) {
+        $goalMode = 'maintain';
+    }
+    if (!isset($activityOptions[$activityLevel])) {
+        $activityLevel = 'moderately_active';
+    }
+
+    $bmr = plan_calculate_bmr($age, $gender, $weightKg, $heightCm);
+    $tdee = plan_calculate_tdee($bmr, $activityLevel);
+    if ($weeklyRate === null) {
+        $weeklyRate = plan_weekly_rate_from_goal_mode($goalMode);
+    }
+    $dailyAdjustment = plan_daily_adjustment_from_weekly_rate($goalMode, $weeklyRate);
+    $calorieGoal = plan_clamp_goal((int) round($tdee + $dailyAdjustment));
+    $macros = getMacroGoalsFromCalorieGoal($calorieGoal);
+
+    return [
+        'bmr' => $bmr,
+        'tdee' => $tdee,
+        'daily_adjustment' => $dailyAdjustment,
+        'calorie_goal' => $calorieGoal,
+        'macros' => $macros,
+        'hydration_ml' => (int) (round(($weightKg * 35) / 250) * 250),
+    ];
 }
 
 function plan_recent_intake_summary(PDO $pdo, int $userId, int $days = 7): array

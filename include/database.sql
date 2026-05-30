@@ -260,7 +260,7 @@ CREATE TABLE `userPhysicalInfo` (
   `userPhysicalStat_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `age` int(3) DEFAULT NULL,
-  `gender` enum('male','female') DEFAULT NULL,
+  `gender` enum('male','female','other') DEFAULT NULL,
   `weight` decimal(5,2) DEFAULT NULL,
   `height` decimal(5,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
