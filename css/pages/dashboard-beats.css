@@ -1,9 +1,12 @@
 /* dashboard-beats.css - Premium, gamified layout for Diet & Beats integration */
 
 .beats-container {
+    width: 100%;
     max-width: 1180px;
     margin: 0 auto;
     padding: 24px 20px 90px;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 /* =========================================================================
@@ -11,6 +14,9 @@
    ========================================================================= */
 .beats-hero,
 .beats-promo-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     background: var(--color-surface);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -67,10 +73,19 @@
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
+    min-width: 0;
+}
+
+.beats-hero__actions > a {
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
 }
 
 .beats-status-card {
-    flex: 0 0 300px;
+    flex: 1 1 260px;
+    min-width: 0;
     background: var(--color-surface-alt);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -174,12 +189,21 @@
    ========================================================================= */
 .beats-dashboard-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: 30px;
     align-items: start;
+    min-width: 0;
+}
+
+.beats-left-col,
+.beats-right-col {
+    min-width: 0;
 }
 
 .beats-section {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     background: var(--color-surface);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -195,6 +219,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .beats-section h2 i {
@@ -233,6 +259,8 @@
 .vibe-sparkle-badge {
     display: inline-flex;
     align-items: center;
+    max-width: 100%;
+    min-width: 0;
     gap: 8px;
     background: linear-gradient(135deg, rgba(88, 204, 2, 0.15) 0%, rgba(28, 176, 246, 0.15) 100%);
     border: 2px solid var(--color-primary);
@@ -242,6 +270,8 @@
     padding: 8px 18px;
     border-radius: var(--radius-pill);
     box-shadow: 0 4px 0 var(--color-primary-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .vibe-sparkle-badge i {
@@ -258,6 +288,8 @@
 
 /* Concept match visual row */
 .concept-match-box {
+    min-width: 0;
+    box-sizing: border-box;
     background: var(--color-surface-alt);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -282,6 +314,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    min-width: 0;
 }
 
 .concept-music-side,
@@ -396,6 +429,8 @@
     padding: 10px 14px;
     box-shadow: 0 3px 0 var(--color-border-subtle);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .beats-list-item:hover {
@@ -485,9 +520,13 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
 }
 
 .recommend-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: 16px 20px;
@@ -510,6 +549,7 @@
     text-transform: uppercase;
     margin: 0 0 6px 0;
     letter-spacing: 0.03em;
+    overflow-wrap: anywhere;
 }
 
 .recommend-card p {
@@ -517,6 +557,7 @@
     font-weight: 600;
     margin: 0;
     line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 /* Estimated-calorie chip on AI fuel suggestions */
