@@ -298,7 +298,7 @@ if ($isLoggedIn) {
                                     <div class="concept-match-row">
                                         <div class="concept-music-side">
                                             <div class="concept-disc-art">
-                                                <img id="matched-track-art" src="<?= BASE_URL ?>images/default-album.png" alt="Track Art">
+                                                <img id="matched-track-art" src="<?= BASE_URL ?>images/default-album.svg" alt="Track Art">
                                                 <div class="vinyl-disc"></div>
                                             </div>
                                             <strong id="matched-track-name">Track</strong>

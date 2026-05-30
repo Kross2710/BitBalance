@@ -13,6 +13,24 @@ require_once __DIR__ . '/functions.php';
 
 header('Content-Type: application/json');
 
+function beats_utf8_substr($text, $start, $length)
+{
+    $text = (string) $text;
+    if ($text === '') {
+        return '';
+    }
+    if (function_exists('iconv_substr')) {
+        $slice = @iconv_substr($text, $start, $length, 'UTF-8');
+        if ($slice !== false) {
+            return $slice;
+        }
+    }
+    if (preg_match_all('/./us', $text, $chars)) {
+        return implode('', array_slice($chars[0], (int) $start, (int) $length));
+    }
+    return substr($text, (int) $start, (int) $length);
+}
+
 if (!isset($_SESSION['user'])) {
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;
@@ -29,7 +47,7 @@ if (is_array($rawTracks)) {
         $name = trim((string) ($t['track'] ?? ''));
         $artist = trim((string) ($t['artist'] ?? ''));
         if ($name !== '') {
-            $tracks[] = ['track' => mb_substr($name, 0, 120), 'artist' => mb_substr($artist, 0, 120)];
+            $tracks[] = ['track' => beats_utf8_substr($name, 0, 120), 'artist' => beats_utf8_substr($artist, 0, 120)];
         }
         if (count($tracks) >= 8) break;
     }
@@ -131,9 +149,9 @@ try {
                 $mood = strtolower(trim((string) ($s['mood'] ?? '')));
                 $suggestions[] = [
                     'mood'   => in_array($mood, $allowedMoods, true) ? $mood : 'chill',
-                    'vibe'   => mb_substr(trim((string) ($s['vibe'] ?? '')), 0, 60),
-                    'food'   => mb_substr(trim((string) ($s['food'] ?? '')), 0, 80),
-                    'reason' => mb_substr(trim((string) ($s['reason'] ?? '')), 0, 160),
+                    'vibe'   => beats_utf8_substr(trim((string) ($s['vibe'] ?? '')), 0, 60),
+                    'food'   => beats_utf8_substr(trim((string) ($s['food'] ?? '')), 0, 80),
+                    'reason' => beats_utf8_substr(trim((string) ($s['reason'] ?? '')), 0, 160),
                     'kcal'   => max(0, (int) ($s['kcal'] ?? 0)),
                 ];
                 if (count($suggestions) >= 3) break;
