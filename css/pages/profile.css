@@ -545,3 +545,369 @@ textarea {
         grid-column: span 1;
     }
 }
+
+/* ==================== TABBED PANES (sidebar switches sections) ==================== */
+.menu-link.active {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+/* Only the active settings card is shown; JS toggles .is-active */
+.profile-content .settings-card {
+    display: none;
+}
+
+.profile-content .settings-card.is-active {
+    display: block;
+}
+
+/* ==================== COACHING (become-PT onboarding / PT profile) ==================== */
+.coaching-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.coaching-subtitle--spaced {
+    margin-top: 24px;
+}
+
+.coaching-hint {
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.coaching-block--divider {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 2px dashed var(--color-border);
+}
+
+.coaching-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.coaching-terms input {
+    /* Override the global `input { width:100% }` that otherwise stretches the
+       checkbox to full width and squeezes the label text into one column. */
+    width: auto;
+    flex: 0 0 auto;
+    margin-top: 2px;
+}
+
+.coaching-note {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.coaching-note--warn {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-accent);
+    color: var(--color-text);
+}
+
+.coaching-note--warn i {
+    color: var(--color-accent);
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.coaching-revert-btn {
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ==================== PT DIRECTORY (find a trainer) ==================== */
+.pt-dir-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.pt-dir-head .coaching-subtitle {
+    margin-bottom: 0;
+}
+
+.pt-dir-search {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 14px;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.pt-dir-search:focus {
+    border-color: var(--color-primary);
+}
+
+.pt-dir-grid {
+    display: grid;
+    /* min(240px, 100%) keeps the min track from exceeding a narrow viewport,
+       which otherwise forces horizontal overflow on mobile. */
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    gap: 16px;
+}
+
+.pt-dir-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    background: var(--color-surface-alt);
+}
+
+.pt-dir-card__top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pt-dir-card__avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pt-dir-card__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pt-dir-card__avatar i {
+    font-size: 18px;
+    color: var(--color-primary);
+}
+
+.pt-dir-card__id {
+    min-width: 0;
+}
+
+.pt-dir-card__id h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.pt-dir-card__id span {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.pt-dir-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pt-dir-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+}
+
+.pt-dir-card__bio {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.pt-dir-card__meta {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin-top: auto;
+}
+
+.pt-dir-card__meta .is-full {
+    color: var(--color-accent);
+}
+
+.pt-dir-card__action {
+    margin: 0;
+}
+
+.pt-dir-connect {
+    width: 100%;
+}
+
+.pt-dir-connect:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.pt-dir-noresult {
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    padding: 16px 0;
+}
+
+.pt-dir-handle {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--color-border);
+}
+
+.pt-dir-handle summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
+.pt-dir-handle__form {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    max-width: 480px;
+}
+
+.pt-dir-handle__form input {
+    flex: 1;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-size: 14px;
+    outline: none;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+}
+
+/* ==================== MY TRAINER (client-side connection card) ==================== */
+.trainer-conn-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: var(--color-surface-alt);
+}
+
+.trainer-conn-card__main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.trainer-conn-card__avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trainer-conn-card__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trainer-conn-card__avatar i {
+    font-size: 20px;
+    color: var(--color-text-secondary);
+}
+
+.trainer-conn-card__name {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.trainer-conn-card__handle {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.trainer-conn-card__status {
+    margin-top: 4px;
+}
+
+.trainer-conn-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+}
+
+.trainer-conn-badge--ok {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+}
+
+.trainer-conn-card__form {
+    margin: 0;
+}

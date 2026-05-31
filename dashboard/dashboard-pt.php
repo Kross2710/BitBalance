@@ -49,6 +49,14 @@ try {
     error_log("PT Load Clients Error: " . $e->getMessage());
 }
 
+// "Needs attention" tally for the hero: how many clients have logged nothing today.
+$clientsNeedLog = 0;
+foreach ($clients as $c) {
+    if ((int) $c['calories_today'] <= 0) {
+        $clientsNeedLog++;
+    }
+}
+
 // 2. Fetch pending requests
 $requests = [];
 try {
@@ -202,6 +210,10 @@ $csrfToken = csrf_token();
                         <span class="pt-metric__label"><?= ($lang === 'vi') ? 'Yêu cầu chờ' : 'Pending requests' ?></span>
                         <strong id="pending-badge-hero"><?= count($requests) ?></strong>
                     </div>
+                    <div class="pt-metric <?= $clientsNeedLog > 0 ? 'pt-metric--alert' : '' ?>">
+                        <span class="pt-metric__label"><?= ($lang === 'vi') ? 'Chưa ghi hôm nay' : 'No log today' ?></span>
+                        <strong><?= $clientsNeedLog ?></strong>
+                    </div>
                 </div>
             </section>
 
@@ -256,8 +268,15 @@ $csrfToken = csrf_token();
                                     $cToday = (float) $c['carbs_today'];
                                     $fToday = (float) $c['fat_today'];
                                     $pGoal  = $calGoal > 0 ? round(($calGoal * 0.3) / 4) : 0; // standard estimation
+
+                                    // "Needs attention" status: nothing logged today (streak at risk if
+                                    // they had one), or meaningfully over the calorie goal.
+                                    $rawPct   = $calGoal > 0 ? round(($calToday / $calGoal) * 100) : 0;
+                                    $needsLog = ($calToday <= 0);
+                                    $over     = (!$needsLog && $calGoal > 0 && $rawPct >= 110);
+                                    $cardMod  = $needsLog ? ' client-card--alert' : ($over ? ' client-card--warn' : '');
                                 ?>
-                                    <article class="client-card" data-user-id="<?= $cid ?>" data-name="<?= strtolower($name) ?>">
+                                    <article class="client-card<?= $cardMod ?>" data-user-id="<?= $cid ?>" data-name="<?= strtolower($name) ?>">
                                         <div class="client-card__header">
                                             <div class="client-card__avatar">
                                                 <?php if ($avatar): ?>
@@ -295,6 +314,20 @@ $csrfToken = csrf_token();
                                                 <strong><?= $weight ? $weight . ' kg' : '—' ?></strong>
                                             </div>
                                         </div>
+
+                                        <?php if ($needsLog): ?>
+                                            <div class="client-card__flag client-card__flag--alert">
+                                                <i class="fas fa-bell"></i>
+                                                <?= $streak > 0
+                                                    ? (($lang === 'vi') ? 'Chưa ghi — streak sắp đứt' : 'No log — streak at risk')
+                                                    : (($lang === 'vi') ? 'Chưa ghi hôm nay' : 'No log today') ?>
+                                            </div>
+                                        <?php elseif ($over): ?>
+                                            <div class="client-card__flag client-card__flag--warn">
+                                                <i class="fas fa-triangle-exclamation"></i>
+                                                <?= ($lang === 'vi') ? 'Vượt calo (' . $rawPct . '%)' : 'Over calories (' . $rawPct . '%)' ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </article>
                                 <?php endforeach; ?>
                             </div>
@@ -306,30 +339,35 @@ $csrfToken = csrf_token();
                         <div class="pt-details-card" id="clientDetailsCard" style="display: none;">
                             <button class="close-side-details" onclick="closeClientDetails()"><i class="fas fa-times"></i></button>
                             
-                            <div class="details-header" style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--color-border);">
-                                <div class="details-avatar" id="det-avatar" style="width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: var(--color-surface-alt); display: flex; align-items: center; justify-content: center; border: 2px solid var(--color-border);"></div>
+                            <div class="details-header">
+                                <div class="details-avatar" id="det-avatar"></div>
                                 <div>
-                                    <h2 id="det-name" style="font-size: 20px; font-weight: 700; margin: 0; color: var(--color-text);"></h2>
-                                    <span id="det-handle" style="font-size: 13px; color: var(--color-text-secondary);"></span>
+                                    <h2 class="details-name" id="det-name"></h2>
+                                    <span class="details-handle" id="det-handle"></span>
                                 </div>
                             </div>
 
                             <!-- 7-Day Trend Section (Task #2) -->
-                            <div class="details-trend-section" style="margin-bottom: 24px;">
-                                <h4 style="font-weight: 700; color: var(--color-text); margin-bottom: 12px; font-size: 15px;"><i class="fas fa-chart-line" style="color: var(--color-accent); margin-right: 8px;"></i> <?= ($lang === 'vi') ? 'Xu hướng 7 ngày' : '7-Day Trend' ?></h4>
-                                <div id="det-trend-summary" style="display: flex; gap: 8px; margin-bottom: 12px;"></div>
-                                <div id="det-trend-chart" style="position: relative; display: flex; align-items: flex-end; gap: 6px; height: 100px; padding-top: 4px;"></div>
+                            <div class="details-trend-section">
+                                <h4 class="details-section-title"><i class="fas fa-chart-line ic-accent"></i> <?= ($lang === 'vi') ? 'Xu hướng 7 ngày' : '7-Day Trend' ?></h4>
+                                <div class="details-trend-summary" id="det-trend-summary"></div>
+                                <div class="details-trend-chart" id="det-trend-chart"></div>
+                            </div>
+
+                            <!-- Internal tabs: keep header + trend fixed, swap the rest to cut scrolling -->
+                            <div class="details-tabs" role="tablist">
+                                <button type="button" class="details-tab active" data-pane="diary"><i class="fas fa-utensils"></i> <?= ($lang === 'vi') ? 'Nhật ký' : 'Diary' ?></button>
+                                <button type="button" class="details-tab" data-pane="chat"><i class="fas fa-comments"></i> <?= ($lang === 'vi') ? 'Chat' : 'Chat' ?></button>
+                                <button type="button" class="details-tab" data-pane="feedback"><i class="fas fa-comment-medical"></i> <?= ($lang === 'vi') ? 'Góp ý' : 'Feedback' ?></button>
                             </div>
 
                             <!-- Meal Logs & Photos Section -->
-                            <div class="details-logs-section">
-                                <h4 style="font-weight: 700; color: var(--color-text); margin-bottom: 12px; font-size: 15px;"><i class="fas fa-utensils" style="color: var(--color-primary); margin-right: 8px;"></i> <?= ($lang === 'vi') ? 'Nhật ký bữa ăn hôm nay' : "Today's Meal Diary" ?></h4>
-                                <div id="det-logs-container" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; max-height: 320px; overflow-y: auto; padding-right: 4px;"></div>
+                            <div class="details-tabpane details-logs-section" data-pane="diary">
+                                <div class="details-logs" id="det-logs-container"></div>
                             </div>
 
                             <!-- Two-way Chat with Client (Task #3) -->
-                            <div class="details-chat-section" style="padding-top: 16px; margin-bottom: 24px; border-top: 2px dashed var(--color-border);">
-                                <h4 style="font-weight: 700; color: var(--color-text); margin-bottom: 12px; font-size: 15px;"><i class="fas fa-comments" style="color: var(--color-secondary); margin-right: 8px;"></i> <?= ($lang === 'vi') ? 'Trò chuyện với học viên' : 'Chat with Client' ?></h4>
+                            <div class="details-tabpane details-chat-section" data-pane="chat" hidden>
                                 <div class="pt-chat" id="ptClientChat"
                                      data-endpoint="<?= BASE_URL ?>dashboard/handlers/pt_chat.php"
                                      data-csrf="<?= htmlspecialchars($csrfToken, ENT_QUOTES) ?>"
@@ -344,31 +382,31 @@ $csrfToken = csrf_token();
                             </div>
 
                             <!-- PT Feedback / Nutrition Advice Form -->
-                            <div class="details-feedback-section" style="padding-top: 16px; border-top: 2px dashed var(--color-border);">
-                                <h4 style="font-weight: 700; color: var(--color-text); margin-bottom: 12px; font-size: 15px;"><i class="fas fa-comment-medical" style="color: var(--color-secondary); margin-right: 8px;"></i> <?= ($lang === 'vi') ? 'Góp ý dinh dưỡng của PT' : 'Nutritionist Feedback' ?></h4>
+                            <div class="details-tabpane details-feedback-section" data-pane="feedback" hidden>
+                                <h4 class="details-section-title"><i class="fas fa-comment-medical ic-secondary"></i> <?= ($lang === 'vi') ? 'Góp ý dinh dưỡng của PT' : 'Nutritionist Feedback' ?></h4>
                                 <form id="feedbackForm" onsubmit="saveClientFeedback(event)">
                                     <input type="hidden" name="client_id" id="det-client-id">
 
                                     <!-- Day selector: write/review advice for any past day (max = today) -->
-                                    <label for="det-date-for" style="display: block; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 6px;"><i class="fas fa-calendar-day"></i> <?= ($lang === 'vi') ? 'Góp ý cho ngày' : 'Feedback for day' ?></label>
-                                    <input type="date" name="date_for" id="det-date-for" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" style="width: 100%; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 14px; background: var(--color-surface-alt); color: var(--color-text); outline: none; margin-bottom: 12px; font-family: inherit;">
+                                    <label class="feedback-label" for="det-date-for"><i class="fas fa-calendar-day"></i> <?= ($lang === 'vi') ? 'Góp ý cho ngày' : 'Feedback for day' ?></label>
+                                    <input type="date" class="feedback-input" name="date_for" id="det-date-for" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>">
 
                                     <!-- History of days this PT has already left advice for this client -->
-                                    <div id="det-feedback-history" style="display: none; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;"></div>
+                                    <div class="feedback-history" id="det-feedback-history"></div>
 
-                                    <textarea name="content" id="det-feedback-content" rows="4" placeholder="<?= ($lang === 'vi') ? 'Viết lời động viên hoặc nhận xét về bữa ăn ngày đã chọn (ví dụ: cần tăng đạm, hạn chế béo)...' : 'Write comments, advice or motivational words about the selected day (e.g. increase protein, reduce fats)...' ?>" style="width: 100%; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; font-size: 14px; background: var(--color-surface-alt); color: var(--color-text); resize: none; outline: none; transition: all var(--transition-base); margin-bottom: 12px;"></textarea>
-                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                                        <button type="button" class="btn-tactile btn-tactile--ghost" style="border: 2px solid var(--color-border); padding: 10px 16px; border-radius: var(--radius-md); font-weight: 700; background: var(--color-surface); color: var(--color-text); cursor: pointer;" onclick="disconnectClient()"><i class="fas fa-unlink"></i> <?= ($lang === 'vi') ? 'Hủy liên kết' : 'Disconnect' ?></button>
-                                        <button type="submit" class="btn-tactile btn-tactile--primary" style="background: var(--color-primary); color: #ffffff; border: none; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--color-primary-hover);"><i class="fas fa-save"></i> <?= ($lang === 'vi') ? 'Lưu góp ý' : 'Save Feedback' ?></button>
+                                    <textarea class="feedback-textarea" name="content" id="det-feedback-content" rows="4" placeholder="<?= ($lang === 'vi') ? 'Viết lời động viên hoặc nhận xét về bữa ăn ngày đã chọn (ví dụ: cần tăng đạm, hạn chế béo)...' : 'Write comments, advice or motivational words about the selected day (e.g. increase protein, reduce fats)...' ?>"></textarea>
+                                    <div class="feedback-actions">
+                                        <button type="button" class="feedback-btn feedback-btn--ghost" onclick="disconnectClient()"><i class="fas fa-unlink"></i> <?= ($lang === 'vi') ? 'Hủy liên kết' : 'Disconnect' ?></button>
+                                        <button type="submit" class="feedback-btn feedback-btn--primary"><i class="fas fa-save"></i> <?= ($lang === 'vi') ? 'Lưu góp ý' : 'Save Feedback' ?></button>
                                     </div>
                                 </form>
                             </div>
                         </div>
 
-                        <div class="pt-details-placeholder" id="detailsPlaceholder" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; color: var(--color-text-secondary); background: var(--color-surface);">
-                            <i class="fas fa-user-check" style="font-size: 40px; margin-bottom: 16px;"></i>
-                            <h3 style="font-size: 16px; font-weight: 700; color: var(--color-text);"><?= ($lang === 'vi') ? 'Chi tiết học viên' : 'Client Profile Details' ?></h3>
-                            <p style="font-size: 13px; max-width: 240px; margin: 8px auto 0;"><?= ($lang === 'vi') ? 'Hãy chọn một học viên để kiểm tra chi tiết các món ăn, ảnh chụp và gửi nhận xét dinh dưỡng.' : 'Select a client from the list to review their meal logs, photos, and write nutrition feedback.' ?></p>
+                        <div class="pt-details-placeholder" id="detailsPlaceholder">
+                            <i class="fas fa-user-check pt-details-placeholder__icon"></i>
+                            <h3><?= ($lang === 'vi') ? 'Chi tiết học viên' : 'Client Profile Details' ?></h3>
+                            <p><?= ($lang === 'vi') ? 'Hãy chọn một học viên để kiểm tra chi tiết các món ăn, ảnh chụp và gửi nhận xét dinh dưỡng.' : 'Select a client from the list to review their meal logs, photos, and write nutrition feedback.' ?></p>
                         </div>
                     </div>
                 </div>
@@ -465,6 +503,9 @@ $csrfToken = csrf_token();
     <!-- View Photo Modal inside PT Dashboard too -->
     <?php include PROJECT_ROOT . 'dashboard/views/_view-photo-modal.php'; ?>
 
+    <!-- Toast for non-blocking success/error feedback (replaces alert()) -->
+    <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
+
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
     <script src="<?= BASE_URL ?>js/pt-chat.js"></script>
@@ -480,6 +521,20 @@ $csrfToken = csrf_token();
             const clientTrends = <?= json_encode($clientTrends) ?>;
             const TODAY = <?= json_encode(date('Y-m-d')) ?>;
             const TODAY_LABEL = <?= json_encode($lang === 'vi' ? 'Hôm nay' : 'Today') ?>;
+            const MSG = <?= json_encode($lang === 'vi' ? [
+                'saved' => 'Đã lưu góp ý', 'saveErr' => 'Lưu góp ý thất bại',
+                'conn' => 'Lỗi kết nối', 'actionErr' => 'Thao tác thất bại',
+                'disconnected' => 'Đã hủy liên kết học viên', 'disconnectErr' => 'Hủy liên kết thất bại',
+            ] : [
+                'saved' => 'Feedback saved', 'saveErr' => 'Failed to save feedback',
+                'conn' => 'Connection error', 'actionErr' => 'Action failed',
+                'disconnected' => 'Client disconnected', 'disconnectErr' => 'Failed to disconnect',
+            ]) ?>;
+            // Toast helper with graceful fallback if the component isn't present.
+            function notify(message, type) {
+                if (window.showLoggingToast) { window.showLoggingToast(message, '', type || 'success'); }
+                else { alert(message); }
+            }
             const TREND_LABELS = <?= json_encode($lang === 'vi'
                 ? ['avgCal' => 'TB calo/ngày', 'avgPro' => 'TB đạm/ngày', 'logged' => 'Ngày có ghi', 'goal' => 'Mục tiêu', 'noData' => 'Chưa có dữ liệu 7 ngày qua']
                 : ['avgCal' => 'Avg kcal/day', 'avgPro' => 'Avg protein/day', 'logged' => 'Days logged', 'goal' => 'Goal', 'noData' => 'No data in the last 7 days']) ?>;
@@ -597,6 +652,22 @@ $csrfToken = csrf_token();
             // ---- Two-way chat (Task #3): one widget, re-pointed per client ----
             const chatEl = document.getElementById('ptClientChat');
             const clientChat = chatEl ? new PTChat(chatEl) : null;
+
+            // ---- Internal tabs inside the details card (Diary / Chat / Feedback) ----
+            const detailTabs = clientDetailsCard ? clientDetailsCard.querySelectorAll('.details-tab') : [];
+            const detailPanes = clientDetailsCard ? clientDetailsCard.querySelectorAll('.details-tabpane') : [];
+            function showDetailPane(name) {
+                detailTabs.forEach(t => t.classList.toggle('active', t.dataset.pane === name));
+                detailPanes.forEach(p => {
+                    if (p.dataset.pane === name) { p.removeAttribute('hidden'); }
+                    else { p.setAttribute('hidden', ''); }
+                });
+                // Messages render while hidden (display:none) → scroll once visible.
+                if (name === 'chat' && clientChat && clientChat.messagesEl) {
+                    clientChat.messagesEl.scrollTop = clientChat.messagesEl.scrollHeight;
+                }
+            }
+            detailTabs.forEach(tab => tab.addEventListener('click', () => showDetailPane(tab.dataset.pane)));
 
             // ---- 7-day trend helpers (Task #2) ----
             const detTrendChart = document.getElementById('det-trend-chart');
@@ -733,6 +804,9 @@ $csrfToken = csrf_token();
                     });
                 }
                 
+                // Each new selection starts on the Diary tab for consistency
+                showDetailPane('diary');
+
                 // 7-day trend snapshot
                 renderClientTrend(c);
 
@@ -806,11 +880,11 @@ $csrfToken = csrf_token();
                             }
                         }, 300);
                     } else {
-                        alert(data.error || 'Action failed');
+                        notify(data.error || MSG.actionErr, 'error');
                         btn.disabled = false;
                     }
                 } catch (err) {
-                    alert('Connection error');
+                    notify(MSG.conn, 'error');
                     btn.disabled = false;
                 }
             };
@@ -848,12 +922,12 @@ $csrfToken = csrf_token();
                             clientFeedback[cid][dateFor] = content;
                         }
                         renderFeedbackHistory();
-                        alert('Góp ý của PT đã được lưu thành công! Học viên sẽ nhìn thấy nhận xét này ngay lập tức.');
+                        notify(MSG.saved, 'success');
                     } else {
-                        alert(data.error || 'Failed to save feedback');
+                        notify(data.error || MSG.saveErr, 'error');
                     }
                 } catch (err) {
-                    alert('Connection error');
+                    notify(MSG.conn, 'error');
                 } finally {
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
@@ -879,13 +953,13 @@ $csrfToken = csrf_token();
                     const data = await res.json();
                     
                     if (data.ok) {
-                        alert('Hủy liên kết học viên thành công.');
-                        window.location.reload();
+                        notify(MSG.disconnected, 'success');
+                        setTimeout(() => window.location.reload(), 800);
                     } else {
-                        alert(data.error || 'Failed to disconnect');
+                        notify(data.error || MSG.disconnectErr, 'error');
                     }
                 } catch (err) {
-                    alert('Connection error');
+                    notify(MSG.conn, 'error');
                 }
             };
 

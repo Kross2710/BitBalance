@@ -25,6 +25,11 @@
         return d.innerHTML;
     }
 
+    function notify(msg, type) {
+        if (window.showLoggingToast) { window.showLoggingToast(msg, '', type || 'error'); }
+        else { alert(msg); }
+    }
+
     function fmtTime(iso) {
         if (!iso) return '';
         const d = new Date(String(iso).replace(' ', 'T'));
@@ -131,11 +136,11 @@
                     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
                 } else {
                     this.input.value = content; // restore so the user can retry
-                    alert(data.error || 'Failed to send');
+                    notify(data.error || 'Failed to send', 'error');
                 }
             } catch (e) {
                 this.input.value = content; // restore on network error
-                alert('Connection error');
+                notify('Connection error', 'error');
             } finally {
                 this.sending = false;
                 if (btn) btn.disabled = false;

@@ -12,6 +12,7 @@ if ($isLoggedIn) {
 }
 
 $user_id = $_SESSION['user']['user_id'];
+$lang = current_locale();
 $error_message = '';
 $success_message = '';
 
@@ -331,29 +332,79 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 error_log("Archive error: " . $e->getMessage());
             }
         }
-    } elseif (isset($_POST['change_role'])) {
-        $new_role = $_POST['role'] ?? 'regular';
-        if (in_array($new_role, ['regular', 'pt'], true)) {
+    } elseif (isset($_POST['become_pt']) || isset($_POST['update_pt_profile'])) {
+        // Self-serve onboarding: a user becomes a PT only after filling a real
+        // profile (bio + specialties + accepting terms). Same form edits it later.
+        $bio         = trim($_POST['pt_bio'] ?? '');
+        $specialties = trim($_POST['pt_specialties'] ?? '');
+        $expYears    = max(0, (int) ($_POST['pt_experience'] ?? 0));
+        $maxClients  = max(1, (int) ($_POST['pt_max_clients'] ?? 10));
+        $acceptTerms = !empty($_POST['pt_terms']);
+        $isBecoming  = isset($_POST['become_pt']);
+
+        if ($bio === '' || $specialties === '') {
+            $error_message = ($lang === 'vi') ? "Vui lòng điền giới thiệu và chuyên môn." : "Please fill in your bio and specialties.";
+        } elseif ($isBecoming && !$acceptTerms) {
+            $error_message = ($lang === 'vi') ? "Bạn cần đồng ý điều khoản huấn luyện viên." : "You must accept the trainer terms.";
+        } else {
             try {
-                $stmt = $pdo->prepare("UPDATE user SET role = ? WHERE user_id = ?");
-                $stmt->execute([$new_role, $user_id]);
-                $_SESSION['user']['role'] = $new_role;
-                $success_message = "Account role updated successfully!";
-                
+                $stmt = $pdo->prepare("
+                    INSERT INTO pt_profile (user_id, bio, specialties, experience_years, max_clients, accepted_terms)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE bio = VALUES(bio), specialties = VALUES(specialties),
+                        experience_years = VALUES(experience_years), max_clients = VALUES(max_clients),
+                        accepted_terms = GREATEST(accepted_terms, VALUES(accepted_terms))
+                ");
+                $stmt->execute([$user_id, $bio, $specialties, $expYears, $maxClients, $acceptTerms ? 1 : 0]);
+
+                if ($isBecoming) {
+                    $pdo->prepare("UPDATE user SET role = 'pt' WHERE user_id = ?")->execute([$user_id]);
+                    $_SESSION['user']['role'] = 'pt';
+                    $success_message = ($lang === 'vi') ? "Chúc mừng! Bạn đã trở thành Huấn luyện viên." : "Congrats! You're now a Personal Trainer.";
+                } else {
+                    $success_message = ($lang === 'vi') ? "Đã cập nhật hồ sơ huấn luyện viên." : "Trainer profile updated.";
+                }
+
                 // Refresh profile data immediately
                 $stmt = $pdo->prepare("
-                    SELECT u.*, us.theme_preference, us.profile_bio, us.status 
-                    FROM user u 
-                    JOIN userStatus us ON u.user_id = us.user_id 
+                    SELECT u.*, us.theme_preference, us.profile_bio, us.status
+                    FROM user u
+                    JOIN userStatus us ON u.user_id = us.user_id
                     WHERE u.user_id = ?
                 ");
                 $stmt->execute([$user_id]);
                 $profile = $stmt->fetch();
             } catch (PDOException $e) {
-                $error_message = "Error updating account role: " . $e->getMessage();
+                $error_message = "Error saving trainer profile: " . $e->getMessage();
             }
+        }
+    } elseif (isset($_POST['revert_regular'])) {
+        // Guard: don't strip the PT role out from under active clients.
+        try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM trainer_client WHERE trainer_id = ? AND status = 'accepted'");
+            $stmt->execute([$user_id]);
+            $activeClients = (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            $activeClients = 0;
+        }
+        if ($activeClients > 0) {
+            $error_message = ($lang === 'vi')
+                ? "Bạn còn $activeClients học viên đang liên kết. Hãy hủy liên kết tất cả trước khi quay lại tài khoản thường."
+                : "You still have $activeClients linked client(s). Disconnect them all before switching back.";
         } else {
-            $error_message = "Invalid account role selected.";
+            try {
+                $pdo->prepare("UPDATE user SET role = 'regular' WHERE user_id = ?")->execute([$user_id]);
+                $_SESSION['user']['role'] = 'regular';
+                $success_message = ($lang === 'vi') ? "Đã quay lại tài khoản thường." : "Switched back to a regular account.";
+                $stmt = $pdo->prepare("
+                    SELECT u.*, us.theme_preference, us.profile_bio, us.status
+                    FROM user u JOIN userStatus us ON u.user_id = us.user_id WHERE u.user_id = ?
+                ");
+                $stmt->execute([$user_id]);
+                $profile = $stmt->fetch();
+            } catch (PDOException $e) {
+                $error_message = "Error switching role: " . $e->getMessage();
+            }
         }
     } elseif (isset($_POST['send_trainer_request'])) {
         $trainer_handle = trim($_POST['trainer_handle'] ?? '');
@@ -435,6 +486,49 @@ if (($profile['role'] ?? 'regular') === 'regular') {
         // Table/columns may not exist yet
     }
 }
+
+// PT onboarding profile + active-client count (for the Coaching pane)
+$pt_profile = null;
+$pt_active_clients = 0;
+try {
+    $stmt = $pdo->prepare("SELECT * FROM pt_profile WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    $pt_profile = $stmt->fetch();
+} catch (PDOException $e) {
+    // Table may not exist yet
+}
+if (($profile['role'] ?? 'regular') === 'pt') {
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM trainer_client WHERE trainer_id = ? AND status = 'accepted'");
+        $stmt->execute([$user_id]);
+        $pt_active_clients = (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        $pt_active_clients = 0;
+    }
+}
+
+// PT directory: onboarded trainers a regular, unattached user can browse + connect
+// to (no need to know the exact handle). Only loaded when relevant.
+$pt_directory = [];
+if (($profile['role'] ?? 'regular') === 'regular' && empty($trainer_connection)) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
+                   p.bio, p.specialties, p.experience_years, p.max_clients,
+                   (SELECT COUNT(*) FROM trainer_client tc
+                    WHERE tc.trainer_id = u.user_id AND tc.status = 'accepted') AS client_count
+            FROM user u
+            JOIN pt_profile p ON p.user_id = u.user_id
+            WHERE u.role = 'pt' AND u.user_id != ?
+            ORDER BY client_count ASC, u.first_name ASC
+            LIMIT 60
+        ");
+        $stmt->execute([$user_id]);
+        $pt_directory = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        // pt_profile table may not exist yet
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -450,6 +544,10 @@ if (($profile['role'] ?? 'regular') === 'regular') {
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
+    <!-- Without JS the pane switcher can't run, so reveal every section -->
+    <noscript>
+        <style>.profile-content .settings-card { display: block !important; }</style>
+    </noscript>
 </head>
 
 <body>
@@ -511,7 +609,7 @@ if (($profile['role'] ?? 'regular') === 'regular') {
                 </div>
             <?php endif; ?>
 
-            <section id="basic-info" class="settings-card">
+            <section id="basic-info" class="settings-card is-active">
                 <div class="card-header">
                     <div class="header-icon icon-blue"><i class="fas fa-user"></i></div>
                     <div>
@@ -659,90 +757,193 @@ if (($profile['role'] ?? 'regular') === 'regular') {
 
             <section id="trainer-settings" class="settings-card">
                 <div class="card-header">
-                    <div class="header-icon icon-green" style="background-color: var(--color-primary-soft); color: var(--color-primary);"><i class="fas fa-dumbbell"></i></div>
+                    <div class="header-icon icon-green"><i class="fas fa-dumbbell"></i></div>
                     <div>
                         <h2><?= t('profile.trainer.title') ?></h2>
                         <p><?= t('profile.trainer.sub') ?></p>
                     </div>
                 </div>
 
-                <!-- 1. Cấu hình vai trò tài khoản (Role Setup) -->
-                <form method="POST" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 2px dashed var(--color-border);">
-                    <div class="form-group full-width">
-                        <label><?= t('profile.trainer.role_label') ?></label>
-                        <div class="theme-options" style="margin-top: 8px;">
-                            <div class="theme-option <?= (($profile['role'] ?? 'regular') === 'regular') ? 'active' : '' ?>"
-                                onclick="selectRole('regular')">
-                                <i class="fas fa-user"></i>
-                                <div><?= t('profile.trainer.role_regular') ?></div>
-                                <small style="display: block; font-size: 11px; margin-top: 4px; color: var(--color-text-secondary);"><?= t('profile.trainer.role_regular_sub') ?></small>
+                <!-- Coaching role: self-serve onboarding (regular) or manage profile (pt) -->
+                <?php $ptp = $pt_profile ?: []; ?>
+                <?php if (($profile['role'] ?? 'regular') === 'pt'): ?>
+                    <h4 class="coaching-subtitle"><i class="fas fa-id-card"></i> <?= ($lang === 'vi') ? 'Hồ sơ Huấn luyện viên' : 'Trainer profile' ?></h4>
+                    <p class="coaching-hint"><?= ($lang === 'vi') ? 'Thông tin này hiển thị cho học viên khi họ kết nối với bạn.' : 'This is shown to clients when they connect with you.' ?></p>
+                    <form method="POST" class="coaching-block">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="pt_specialties"><?= ($lang === 'vi') ? 'Chuyên môn' : 'Specialties' ?></label>
+                                <input type="text" name="pt_specialties" id="pt_specialties" maxlength="255" required value="<?= htmlspecialchars($ptp['specialties'] ?? '', ENT_QUOTES) ?>" placeholder="<?= ($lang === 'vi') ? 'VD: Giảm cân, tăng cơ, dinh dưỡng thể thao' : 'e.g. Weight loss, hypertrophy, sports nutrition' ?>">
                             </div>
-                            <div class="theme-option <?= (($profile['role'] ?? 'regular') === 'pt') ? 'active' : '' ?>"
-                                onclick="selectRole('pt')">
-                                <i class="fas fa-dumbbell"></i>
-                                <div><?= t('profile.trainer.role_pt') ?></div>
-                                <small style="display: block; font-size: 11px; margin-top: 4px; color: var(--color-text-secondary);"><?= t('profile.trainer.role_pt_sub') ?></small>
+                            <div class="form-group">
+                                <label for="pt_experience"><?= ($lang === 'vi') ? 'Số năm kinh nghiệm' : 'Years of experience' ?></label>
+                                <input type="number" name="pt_experience" id="pt_experience" min="0" max="60" value="<?= (int) ($ptp['experience_years'] ?? 0) ?>">
+                            </div>
+                            <div class="form-group">
+                                <label for="pt_max_clients"><?= ($lang === 'vi') ? 'Số học viên tối đa' : 'Max clients' ?></label>
+                                <input type="number" name="pt_max_clients" id="pt_max_clients" min="1" max="500" value="<?= (int) ($ptp['max_clients'] ?? 10) ?>">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="pt_bio"><?= ($lang === 'vi') ? 'Giới thiệu' : 'Bio' ?></label>
+                                <textarea name="pt_bio" id="pt_bio" rows="4" required placeholder="<?= ($lang === 'vi') ? 'Kinh nghiệm, phong cách huấn luyện, thành tích...' : 'Experience, coaching style, achievements...' ?>"><?= htmlspecialchars($ptp['bio'] ?? '', ENT_QUOTES) ?></textarea>
                             </div>
                         </div>
-                        <input type="hidden" name="role" id="selectedRole" value="<?= htmlspecialchars($profile['role'] ?? 'regular') ?>">
-                    </div>
-                    <button type="submit" name="change_role" class="btn-save" style="margin-top: 12px;"><?= t('profile.trainer.role_save') ?></button>
-                </form>
+                        <button type="submit" name="update_pt_profile" class="btn-save"><?= ($lang === 'vi') ? 'Lưu hồ sơ' : 'Save profile' ?></button>
+                    </form>
+
+                    <h4 class="coaching-subtitle coaching-subtitle--spaced"><i class="fas fa-rotate-left"></i> <?= ($lang === 'vi') ? 'Quay lại tài khoản thường' : 'Switch back to regular' ?></h4>
+                    <?php if ($pt_active_clients > 0): ?>
+                        <div class="coaching-note coaching-note--warn">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <span><?= ($lang === 'vi') ? "Bạn đang có <strong>$pt_active_clients</strong> học viên liên kết. Hãy hủy liên kết tất cả ở PT Dashboard trước khi quay lại." : "You have <strong>$pt_active_clients</strong> linked client(s). Disconnect them all in the PT Dashboard first." ?></span>
+                        </div>
+                    <?php else: ?>
+                        <form method="POST">
+                            <button type="submit" name="revert_regular" class="btn-tactile btn-tactile--ghost coaching-revert-btn" onclick="return confirm('<?= ($lang === 'vi') ? 'Quay lại tài khoản thường? Hồ sơ HLV vẫn được lưu lại.' : 'Switch back to a regular account? Your trainer profile is kept.' ?>');">
+                                <i class="fas fa-user"></i> <?= ($lang === 'vi') ? 'Quay lại tài khoản thường' : 'Switch back to regular' ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <h4 class="coaching-subtitle"><i class="fas fa-dumbbell"></i> <?= ($lang === 'vi') ? 'Trở thành Huấn luyện viên' : 'Become a Personal Trainer' ?></h4>
+                    <p class="coaching-hint"><?= ($lang === 'vi') ? 'Điền hồ sơ bên dưới để mở tài khoản HLV và bắt đầu nhận học viên.' : 'Fill in the profile below to unlock a trainer account and start taking clients.' ?></p>
+                    <form method="POST" class="coaching-block coaching-block--divider">
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="pt_specialties"><?= ($lang === 'vi') ? 'Chuyên môn' : 'Specialties' ?></label>
+                                <input type="text" name="pt_specialties" id="pt_specialties" maxlength="255" required value="<?= htmlspecialchars($ptp['specialties'] ?? '', ENT_QUOTES) ?>" placeholder="<?= ($lang === 'vi') ? 'VD: Giảm cân, tăng cơ, dinh dưỡng thể thao' : 'e.g. Weight loss, hypertrophy, sports nutrition' ?>">
+                            </div>
+                            <div class="form-group">
+                                <label for="pt_experience"><?= ($lang === 'vi') ? 'Số năm kinh nghiệm' : 'Years of experience' ?></label>
+                                <input type="number" name="pt_experience" id="pt_experience" min="0" max="60" value="<?= (int) ($ptp['experience_years'] ?? 0) ?>">
+                            </div>
+                            <div class="form-group">
+                                <label for="pt_max_clients"><?= ($lang === 'vi') ? 'Số học viên tối đa' : 'Max clients' ?></label>
+                                <input type="number" name="pt_max_clients" id="pt_max_clients" min="1" max="500" value="<?= (int) ($ptp['max_clients'] ?? 10) ?>">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="pt_bio"><?= ($lang === 'vi') ? 'Giới thiệu' : 'Bio' ?></label>
+                                <textarea name="pt_bio" id="pt_bio" rows="4" required placeholder="<?= ($lang === 'vi') ? 'Kinh nghiệm, phong cách huấn luyện, thành tích...' : 'Experience, coaching style, achievements...' ?>"><?= htmlspecialchars($ptp['bio'] ?? '', ENT_QUOTES) ?></textarea>
+                            </div>
+                        </div>
+                        <label class="coaching-terms">
+                            <input type="checkbox" name="pt_terms" value="1" required>
+                            <span><?= ($lang === 'vi') ? 'Tôi cam kết hướng dẫn dinh dưỡng có trách nhiệm và đồng ý điều khoản huấn luyện viên.' : 'I commit to responsible nutrition guidance and accept the trainer terms.' ?></span>
+                        </label>
+                        <button type="submit" name="become_pt" class="btn-save"><i class="fas fa-dumbbell"></i> <?= ($lang === 'vi') ? 'Trở thành Huấn luyện viên' : 'Become a Trainer' ?></button>
+                    </form>
+                <?php endif; ?>
 
                 <!-- 2. Quản lý liên kết Trainer (Chỉ dành cho regular user) -->
                 <?php if (($profile['role'] ?? 'regular') === 'regular'): ?>
-                    <h4 style="margin-bottom: 12px; font-weight: 700; color: var(--color-text);"><?= t('profile.trainer.connection_title') ?></h4>
-                    
+                    <h4 class="coaching-subtitle"><?= t('profile.trainer.connection_title') ?></h4>
+
                     <?php if ($trainer_connection): ?>
-                        <div class="friend-card" style="display: flex; align-items: center; justify-content: space-between; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; background: var(--color-surface-alt); margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div class="friend-card__avatar" style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--color-surface); display: flex; align-items: center; justify-content: center; border: 2px solid var(--color-border); position: relative;">
+                        <div class="trainer-conn-card">
+                            <div class="trainer-conn-card__main">
+                                <div class="trainer-conn-card__avatar">
                                     <?php if (!empty($trainer_connection['profile_image'])): ?>
-                                        <img src="<?= BASE_URL . htmlspecialchars($trainer_connection['profile_image'], ENT_QUOTES) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                        <img src="<?= BASE_URL . htmlspecialchars($trainer_connection['profile_image'], ENT_QUOTES) ?>" alt="">
                                     <?php else: ?>
-                                        <i class="fas fa-user" style="font-size: 20px; color: var(--color-text-secondary);"></i>
+                                        <i class="fas fa-user"></i>
                                     <?php endif; ?>
                                 </div>
                                 <div>
-                                    <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--color-text);"><?= htmlspecialchars($trainer_connection['first_name'] . ' ' . $trainer_connection['last_name'], ENT_QUOTES) ?></h3>
-                                    <span style="font-size: 13px; color: var(--color-text-secondary);"><?= htmlspecialchars($trainer_connection['trainer_name'], ENT_QUOTES) ?></span>
-                                    <div style="margin-top: 4px;">
+                                    <h3 class="trainer-conn-card__name"><?= htmlspecialchars($trainer_connection['first_name'] . ' ' . $trainer_connection['last_name'], ENT_QUOTES) ?></h3>
+                                    <span class="trainer-conn-card__handle"><?= htmlspecialchars($trainer_connection['trainer_name'], ENT_QUOTES) ?></span>
+                                    <div class="trainer-conn-card__status">
                                         <?php if ($trainer_connection['status'] === 'pending'): ?>
-                                            <span class="friend-card__hint" style="background: var(--color-surface); color: var(--color-text-secondary); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 2px solid var(--color-border);"><?= t('profile.trainer.status_pending') ?></span>
+                                            <span class="trainer-conn-badge"><?= t('profile.trainer.status_pending') ?></span>
                                         <?php else: ?>
-                                            <span class="friend-card__hint friend-card__hint--ok" style="background: var(--color-primary-soft); color: var(--color-primary); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 2px solid var(--color-primary);"><i class="fas fa-check"></i> <?= t('profile.trainer.status_connected') ?></span>
+                                            <span class="trainer-conn-badge trainer-conn-badge--ok"><i class="fas fa-check"></i> <?= t('profile.trainer.status_connected') ?></span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
-                            <form method="POST" style="margin: 0;">
-                                <button type="submit" name="disconnect_trainer" class="btn-tactile btn-tactile--ghost" style="border: 2px solid var(--color-border); padding: 8px 16px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; background: var(--color-surface); color: var(--color-text);" onclick="return confirm('<?= t_raw('profile.trainer.disconnect_confirm') ?>');">
+                            <form method="POST" class="trainer-conn-card__form">
+                                <button type="submit" name="disconnect_trainer" class="coaching-revert-btn" onclick="return confirm('<?= t_raw('profile.trainer.disconnect_confirm') ?>');">
                                     <i class="fas fa-unlink"></i> <?= t('profile.trainer.btn_disconnect') ?>
                                 </button>
                             </form>
                         </div>
                     <?php else: ?>
-                        <div class="friends-empty" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 24px; text-align: center; background: var(--color-surface); margin-bottom: 16px;">
-                            <div class="friends-empty__icon" style="font-size: 32px; color: var(--color-text-secondary); margin-bottom: 12px;"><i class="fas fa-user-plus"></i></div>
-                            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--color-text);"><?= t('profile.trainer.no_trainer_title') ?></h3>
-                            <p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px;"><?= t('profile.trainer.no_trainer_body') ?></p>
-                            
-                            <form method="POST" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto;">
-                                <input type="text" name="trainer_handle" placeholder="e.g. TrainerHung#1234" required style="flex: 1; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 16px; font-size: 14px; outline: none; background: var(--color-surface-alt); color: var(--color-text);">
-                                <button type="submit" name="send_trainer_request" class="btn-tactile btn-tactile--primary" style="background: var(--color-primary); color: #ffffff; border: none; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--color-primary-hover);">
-                                    <?= t('profile.trainer.btn_connect') ?>
-                                </button>
-                            </form>
+                        <!-- PT Directory: browse onboarded trainers + connect without the handle -->
+                        <div class="pt-directory">
+                            <?php if (empty($pt_directory)): ?>
+                                <div class="friends-empty pt-dir-empty">
+                                    <div class="friends-empty__icon"><i class="fas fa-user-plus"></i></div>
+                                    <h3><?= t('profile.trainer.no_trainer_title') ?></h3>
+                                    <p><?= ($lang === 'vi') ? 'Hiện chưa có huấn luyện viên nào trong hệ thống. Bạn vẫn có thể kết nối bằng handle nếu biết.' : 'No trainers are available yet. You can still connect by handle if you know one.' ?></p>
+                                </div>
+                            <?php else: ?>
+                                <div class="pt-dir-head">
+                                    <h4 class="coaching-subtitle"><i class="fas fa-people-arrows"></i> <?= ($lang === 'vi') ? 'Tìm huấn luyện viên' : 'Find a trainer' ?></h4>
+                                    <input type="search" id="ptDirSearch" class="pt-dir-search" placeholder="<?= ($lang === 'vi') ? 'Tìm theo tên hoặc chuyên môn...' : 'Search by name or specialty...' ?>">
+                                </div>
+                                <div class="pt-dir-grid" id="ptDirGrid">
+                                    <?php foreach ($pt_directory as $pt):
+                                        $ptName   = htmlspecialchars(trim($pt['first_name'] . ' ' . $pt['last_name']), ENT_QUOTES);
+                                        $ptHandle = htmlspecialchars($pt['user_name'], ENT_QUOTES);
+                                        $ptSpec   = trim($pt['specialties'] ?? '');
+                                        $ptBio    = trim($pt['bio'] ?? '');
+                                        $cap      = max(1, (int) $pt['max_clients']);
+                                        $cnt      = (int) $pt['client_count'];
+                                        $isFull   = ($cnt >= $cap);
+                                        $searchKey = strtolower($ptName . ' ' . $ptHandle . ' ' . $ptSpec);
+                                        $tags = array_slice(array_filter(array_map('trim', preg_split('/[,;]+/', $ptSpec))), 0, 4);
+                                    ?>
+                                        <article class="pt-dir-card" data-search="<?= htmlspecialchars($searchKey, ENT_QUOTES) ?>">
+                                            <div class="pt-dir-card__top">
+                                                <div class="pt-dir-card__avatar">
+                                                    <?php if (!empty($pt['profile_image'])): ?>
+                                                        <img src="<?= BASE_URL . htmlspecialchars($pt['profile_image'], ENT_QUOTES) ?>" alt="">
+                                                    <?php else: ?>
+                                                        <i class="fas fa-dumbbell"></i>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="pt-dir-card__id">
+                                                    <h3><?= $ptName ?></h3>
+                                                    <span><?= $ptHandle ?></span>
+                                                </div>
+                                            </div>
+                                            <?php if (!empty($tags)): ?>
+                                                <div class="pt-dir-card__tags">
+                                                    <?php foreach ($tags as $tag): ?>
+                                                        <span class="pt-dir-tag"><?= htmlspecialchars($tag, ENT_QUOTES) ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <?php if ($ptBio !== ''): ?>
+                                                <p class="pt-dir-card__bio"><?= htmlspecialchars($ptBio, ENT_QUOTES) ?></p>
+                                            <?php endif; ?>
+                                            <div class="pt-dir-card__meta">
+                                                <span><i class="fas fa-medal"></i> <?= (int) $pt['experience_years'] ?> <?= ($lang === 'vi') ? 'năm KN' : 'yrs' ?></span>
+                                                <span class="<?= $isFull ? 'is-full' : '' ?>"><i class="fas fa-users"></i> <?= $cnt ?>/<?= $cap ?></span>
+                                            </div>
+                                            <form method="POST" class="pt-dir-card__action">
+                                                <input type="hidden" name="trainer_handle" value="<?= $ptHandle ?>">
+                                                <?php if ($isFull): ?>
+                                                    <button type="button" class="btn-save pt-dir-connect" disabled><?= ($lang === 'vi') ? 'Đã đầy chỗ' : 'Full' ?></button>
+                                                <?php else: ?>
+                                                    <button type="submit" name="send_trainer_request" class="btn-save pt-dir-connect"><i class="fas fa-link"></i> <?= t('profile.trainer.btn_connect') ?></button>
+                                                <?php endif; ?>
+                                            </form>
+                                        </article>
+                                    <?php endforeach; ?>
+                                </div>
+                                <p class="pt-dir-noresult" id="ptDirNoResult" hidden><?= ($lang === 'vi') ? 'Không tìm thấy HLV phù hợp.' : 'No matching trainers.' ?></p>
+                            <?php endif; ?>
+
+                            <!-- Fallback: connect by exact handle -->
+                            <details class="pt-dir-handle">
+                                <summary><?= ($lang === 'vi') ? 'Hoặc kết nối bằng handle' : 'Or connect by handle' ?></summary>
+                                <form method="POST" class="pt-dir-handle__form">
+                                    <input type="text" name="trainer_handle" placeholder="e.g. TrainerHung#1234" required>
+                                    <button type="submit" name="send_trainer_request" class="btn-save"><?= t('profile.trainer.btn_connect') ?></button>
+                                </form>
+                            </details>
                         </div>
                     <?php endif; ?>
-                <?php else: ?>
-                    <div style="background: var(--color-primary-soft); color: var(--color-text); border: 2px solid var(--color-primary); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 12px;">
-                        <i class="fas fa-info-circle" style="font-size: 20px; color: var(--color-primary);"></i>
-                        <div>
-                            <strong style="display: block; font-weight: 700; margin-bottom: 4px; color: var(--color-text);"><?= t('profile.trainer.is_pt_title') ?></strong>
-                            <span style="font-size: 13px; color: var(--color-text-secondary);"><?= t('profile.trainer.is_pt_body') ?></span>
-                        </div>
-                    </div>
                 <?php endif; ?>
             </section>
 
@@ -809,13 +1010,61 @@ if (($profile['role'] ?? 'regular') === 'regular') {
             parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
             tile.classList.add('active');
         }
-        function selectRole(role) {
-            document.getElementById('selectedRole').value = role;
-            const tile = event.currentTarget;
-            const parent = tile.closest('.theme-options') || document;
-            parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
-            tile.classList.add('active');
-        }
+        // Tabbed panes: the sidebar menu shows one settings card at a time
+        // instead of anchor-scrolling a long page. Pane is preserved across the
+        // POST reloads that saving a form triggers (sessionStorage).
+        (function () {
+            const links = Array.from(document.querySelectorAll('.profile-sidebar .menu-link'));
+            const sections = Array.from(document.querySelectorAll('.profile-content .settings-card'));
+            if (!links.length || !sections.length) return;
+            const ids = sections.map(s => s.id);
+
+            function activate(id, save) {
+                if (!ids.includes(id)) id = ids[0];
+                sections.forEach(s => s.classList.toggle('is-active', s.id === id));
+                links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+                if (save) { try { sessionStorage.setItem('profilePane', id); } catch (e) {} }
+            }
+
+            links.forEach(l => l.addEventListener('click', e => {
+                e.preventDefault();
+                activate(l.getAttribute('href').slice(1), true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }));
+
+            // Keep the user on the same pane after a form save reloads the page
+            document.querySelectorAll('.profile-content form').forEach(f => {
+                f.addEventListener('submit', () => {
+                    const sec = f.closest('.settings-card');
+                    if (sec) { try { sessionStorage.setItem('profilePane', sec.id); } catch (e) {} }
+                });
+            });
+
+            let initial = (location.hash || '').slice(1);
+            if (!ids.includes(initial)) {
+                try { initial = sessionStorage.getItem('profilePane') || ids[0]; } catch (e) { initial = ids[0]; }
+            }
+            activate(initial, false);
+        })();
+
+        // PT directory: live filter cards by name / handle / specialty
+        (function () {
+            const search = document.getElementById('ptDirSearch');
+            const grid = document.getElementById('ptDirGrid');
+            if (!search || !grid) return;
+            const cards = Array.from(grid.querySelectorAll('.pt-dir-card'));
+            const noResult = document.getElementById('ptDirNoResult');
+            search.addEventListener('input', () => {
+                const q = search.value.toLowerCase().trim();
+                let visible = 0;
+                cards.forEach(c => {
+                    const match = !q || (c.dataset.search || '').includes(q);
+                    c.style.display = match ? '' : 'none';
+                    if (match) visible++;
+                });
+                if (noResult) noResult.hidden = visible !== 0;
+            });
+        })();
     </script>
 </body>
 

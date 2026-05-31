@@ -86,6 +86,15 @@
     color: var(--color-text);
 }
 
+/* "Needs attention" tally turns amber when clients haven't logged today */
+.pt-metric--alert {
+    border-color: var(--color-accent);
+}
+
+.pt-metric--alert strong {
+    color: var(--color-accent);
+}
+
 /* ==================== TABS SWAPPER ==================== */
 .pt-tabs {
     display: flex;
@@ -189,6 +198,36 @@
 .client-card.active {
     border-color: var(--color-primary);
     box-shadow: 0 8px 0 var(--color-primary-soft), var(--shadow-md);
+}
+
+/* "Needs attention" accents — keep .active (primary) winning when selected */
+.client-card--alert {
+    border-color: var(--color-accent);
+}
+
+.client-card--warn {
+    border-color: var(--color-secondary);
+}
+
+.client-card__flag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.client-card__flag--alert {
+    color: var(--color-accent);
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.client-card__flag--warn {
+    color: var(--color-secondary);
+    box-shadow: inset 3px 0 0 var(--color-secondary);
 }
 
 .client-card__header {
@@ -363,6 +402,221 @@
     color: var(--color-text);
 }
 
+/* Internal tabs inside the details card (Diary / Chat / Feedback) */
+.details-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--color-border);
+}
+
+.details-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    padding: 10px 6px;
+    margin-bottom: -2px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color var(--transition-base), border-color var(--transition-base);
+}
+
+.details-tab:hover {
+    color: var(--color-text);
+}
+
+.details-tab.active {
+    color: var(--color-secondary);
+    border-bottom-color: var(--color-secondary);
+}
+
+.details-tabpane[hidden] {
+    display: none;
+}
+
+/* ---- Details card internals (migrated from inline styles) ---- */
+.details-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--color-border);
+}
+
+.details-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.details-avatar i {
+    font-size: 24px;
+    color: var(--color-text-secondary);
+}
+
+.details-name {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.details-handle {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.details-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.details-section-title .ic-accent { color: var(--color-accent); }
+.details-section-title .ic-secondary { color: var(--color-secondary); }
+
+.details-trend-section { margin-bottom: 20px; }
+
+.details-trend-summary {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.details-trend-chart {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 100px;
+    padding-top: 4px;
+}
+
+.details-logs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Feedback form */
+.feedback-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
+.feedback-input,
+.feedback-textarea {
+    width: 100%;
+    margin-bottom: 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color var(--transition-base);
+}
+
+.feedback-input { padding: 10px 12px; }
+.feedback-textarea { padding: 12px; resize: none; }
+
+.feedback-input:focus,
+.feedback-textarea:focus { border-color: var(--color-secondary); }
+
+.feedback-history {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.feedback-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.feedback-btn {
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.feedback-btn--ghost {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.feedback-btn--primary {
+    background: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 4px 0 var(--color-primary-hover);
+}
+
+.pt-details-placeholder {
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    background: var(--color-surface);
+}
+
+.pt-details-placeholder__icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+}
+
+.pt-details-placeholder h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.pt-details-placeholder p {
+    font-size: 13px;
+    max-width: 240px;
+    margin: 8px auto 0;
+}
+
 /* Empty placeholder details */
 .pt-details-placeholder {
     display: flex;
@@ -411,5 +665,85 @@
 @media (max-width: 480px) {
     .requests-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== COMPACT (mobile) ==================== */
+@media (max-width: 600px) {
+    .pt-container {
+        padding: 16px 12px;
+        gap: 18px;
+    }
+
+    .pt-hero {
+        padding: 20px 18px;
+        gap: 14px;
+    }
+
+    .pt-hero__copy {
+        min-width: 0;
+    }
+
+    .pt-hero__copy h1 {
+        font-size: 22px;
+    }
+
+    .pt-hero__copy p {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* Metrics become an equal-width row under the copy */
+    .pt-hero__metrics {
+        width: 100%;
+        gap: 10px;
+    }
+
+    .pt-metric {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 8px;
+    }
+
+    .pt-metric__label {
+        font-size: 10px;
+    }
+
+    .pt-metric strong {
+        font-size: 20px;
+    }
+
+    /* Stack icon over a short centered label so long VN tab names don't sprawl */
+    .pt-tabs {
+        gap: 4px;
+    }
+
+    .pt-tab {
+        flex: 1;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 10px 4px;
+        font-size: 12px;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .pt-bento-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .client-card {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .pt-details-card {
+        padding: 18px 16px;
+    }
+
+    .pt-details-placeholder {
+        padding: 36px 20px;
     }
 }
