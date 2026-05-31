@@ -9,10 +9,10 @@ $__redirectBack = $_SERVER['REQUEST_URI'] ?? '';
         <p><?= t('footer.copyright', ['year' => date('Y')]) ?></p>
         <div class="footer-links">
             <a href="<?= BASE_URL ?>terms.php" target="_blank"><?= t('footer.terms') ?></a>
-            <i class="fas fa-external-link-alt link-icon" style="margin-right: 10px;"></i>
-            <span style="color: var(--color-text-muted); opacity: 0.5;">|</span>
-            <a href="javascript:void(0)" id="footer-cookie-settings" style="margin-left: 10px;">
-                <i class="fas fa-cookie-bite" style="margin-right: 4px;"></i><?= t('footer.cookie_settings') ?>
+            <i class="fas fa-external-link-alt link-icon footer-link-external"></i>
+            <span class="footer-link-separator">|</span>
+            <a href="javascript:void(0)" id="footer-cookie-settings" class="footer-cookie-link">
+                <i class="fas fa-cookie-bite footer-cookie-icon"></i><?= t('footer.cookie_settings') ?>
             </a>
         </div>
 

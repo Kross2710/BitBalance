@@ -2,24 +2,53 @@
 require_once __DIR__ . '/../include/init.php';
 require_once __DIR__ . '/handlers/dashboard_data.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';
+require_once __DIR__ . '/../include/csrf.php';
 
 if ($isLoggedIn) {
     log_attempt($pdo, $user['user_id'], 'view', 'User ' . $user['user_id'] . ' clicked on dashboard food', 'dashboard', null);
 
-    // Fetch today's PT feedback
-    $todayFeedback = null;
+    // Fetch the PT feedback for the day currently being viewed. $selectedDate is
+    // set + clamped (never the future) by dashboard_data.php, required above — so
+    // browsing a past day via ?date= surfaces that day's advice, not just today's.
+    $ptFeedback = null;
     try {
         $stmt = $pdo->prepare("
-            SELECT pf.content, u.first_name, u.last_name, u.profile_image 
+            SELECT pf.content, pf.date_for, u.first_name, u.last_name, u.profile_image
             FROM pt_feedback pf
             JOIN user u ON pf.trainer_id = u.user_id
-            WHERE pf.client_id = ? AND pf.date_for = CURDATE()
+            WHERE pf.client_id = ? AND pf.date_for = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$user['user_id'], $selectedDate]);
+        $ptFeedback = $stmt->fetch();
+
+        // Viewing the day clears its "new advice" notification (Task #4).
+        if ($ptFeedback) {
+            $pdo->prepare("
+                UPDATE pt_feedback SET seen_at = NOW()
+                WHERE client_id = ? AND date_for = ? AND seen_at IS NULL
+            ")->execute([$user['user_id'], $selectedDate]);
+        }
+    } catch (PDOException $e) {
+        // Table/columns may not exist yet
+    }
+
+    // The client's linked trainer — drives the two-way chat (Task #3). A client
+    // may technically link multiple trainers; we surface the most recent one.
+    $myTrainer = null;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT u.user_id, u.first_name, u.last_name, u.profile_image
+            FROM trainer_client tc
+            JOIN user u ON tc.trainer_id = u.user_id
+            WHERE tc.client_id = ? AND tc.status = 'accepted'
+            ORDER BY tc.responded_at DESC
             LIMIT 1
         ");
         $stmt->execute([$user['user_id']]);
-        $todayFeedback = $stmt->fetch();
+        $myTrainer = $stmt->fetch();
     } catch (PDOException $e) {
-        // Table/columns may not exist yet
+        // Table may not exist yet
     }
 }
 
@@ -92,7 +121,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <?php
     // Intake IS the logging UI itself, so no quick-log FAB on this page.
     $pageComponents = ['sidebar'];
-    $pageCss = ['css/dashboard.css', 'css/components/intake-list.css', 'css/pages/dashboard-intake.css'];
+    $pageCss = ['css/dashboard.css', 'css/components/intake-list.css', 'css/pages/dashboard-intake.css', 'css/components/pt-chat.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
 
@@ -116,18 +145,49 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     <?php include PROJECT_ROOT . 'dashboard/views/_past-date-banner.php'; ?>
                 <?php endif; ?>
 
-                <?php if (!empty($todayFeedback)): ?>
+                <?php if (!empty($ptFeedback)):
+                    $fbForToday = ($ptFeedback['date_for'] === date('Y-m-d'));
+                    $fbDateLabel = date('j/n', strtotime($ptFeedback['date_for']));
+                ?>
                     <section class="dashboard-card pt-feedback-card" style="display: flex; align-items: center; gap: 16px; border: 2px solid var(--color-secondary); background: var(--color-surface); padding: 20px; border-radius: var(--radius-lg); box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm); margin-bottom: 24px;">
                         <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--color-surface-alt); border: 2px solid var(--color-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <?php if (!empty($todayFeedback['profile_image'])): ?>
-                                <img src="<?= BASE_URL . htmlspecialchars($todayFeedback['profile_image'], ENT_QUOTES) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php if (!empty($ptFeedback['profile_image'])): ?>
+                                <img src="<?= BASE_URL . htmlspecialchars($ptFeedback['profile_image'], ENT_QUOTES) ?>" style="width: 100%; height: 100%; object-fit: cover;">
                             <?php else: ?>
                                 <i class="fas fa-dumbbell" style="font-size: 20px; color: var(--color-secondary);"></i>
                             <?php endif; ?>
                         </div>
                         <div style="flex: 1;">
-                            <h4 style="margin: 0 0 4px 0; font-weight: 700; color: var(--color-secondary); font-size: 14px;"><i class="fas fa-comment-medical"></i> <?= ($lang === 'vi') ? 'Lời khuyên từ Huấn luyện viên ' : 'Advice from Trainer ' ?><?= htmlspecialchars($todayFeedback['first_name'] . ' ' . $todayFeedback['last_name'], ENT_QUOTES) ?></h4>
-                            <p style="margin: 0; font-size: 13px; color: var(--color-text); line-height: 1.5; font-style: italic;">"<?= htmlspecialchars($todayFeedback['content'], ENT_QUOTES) ?>"</p>
+                            <h4 style="margin: 0 0 4px 0; font-weight: 700; color: var(--color-secondary); font-size: 14px;">
+                                <i class="fas fa-comment-medical"></i> <?= ($lang === 'vi') ? 'Lời khuyên từ Huấn luyện viên ' : 'Advice from Trainer ' ?><?= htmlspecialchars($ptFeedback['first_name'] . ' ' . $ptFeedback['last_name'], ENT_QUOTES) ?>
+                                <?php if (!$fbForToday): ?>
+                                    <span style="font-weight: 600; color: var(--color-text-secondary); font-size: 12px;">· <?= ($lang === 'vi') ? 'cho ngày' : 'for' ?> <?= $fbDateLabel ?></span>
+                                <?php endif; ?>
+                            </h4>
+                            <p style="margin: 0; font-size: 13px; color: var(--color-text); line-height: 1.5; font-style: italic;">"<?= htmlspecialchars($ptFeedback['content'], ENT_QUOTES) ?>"</p>
+                        </div>
+                    </section>
+                <?php endif; ?>
+
+                <?php if ($isLoggedIn && !empty($myTrainer)):
+                    $trainerName = htmlspecialchars($myTrainer['first_name'] . ' ' . $myTrainer['last_name'], ENT_QUOTES);
+                ?>
+                    <!-- Two-way chat with the linked trainer (Task #3) -->
+                    <section class="dashboard-card" style="margin-bottom: 24px; padding: 20px; border-radius: var(--radius-lg); box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);">
+                        <h4 style="margin: 0 0 12px 0; font-weight: 700; color: var(--color-secondary); font-size: 14px;">
+                            <i class="fas fa-comments"></i> <?= ($lang === 'vi') ? 'Trò chuyện với HLV ' : 'Chat with Trainer ' ?><?= $trainerName ?>
+                        </h4>
+                        <div class="pt-chat" id="trainerChat" data-auto-init
+                             data-endpoint="<?= BASE_URL ?>dashboard/handlers/pt_chat.php"
+                             data-csrf="<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>"
+                             data-self-role="client"
+                             data-counterpart-id="<?= (int) $myTrainer['user_id'] ?>"
+                             data-empty-text="<?= ($lang === 'vi') ? 'Chưa có tin nhắn. Hãy hỏi HLV của bạn!' : 'No messages yet. Ask your trainer!' ?>">
+                            <div class="pt-chat__messages"></div>
+                            <form class="pt-chat__form">
+                                <textarea class="pt-chat__input" rows="1" placeholder="<?= ($lang === 'vi') ? 'Nhắn cho HLV của bạn...' : 'Message your trainer...' ?>"></textarea>
+                                <button type="submit"><i class="fas fa-paper-plane"></i></button>
+                            </form>
                         </div>
                     </section>
                 <?php endif; ?>
@@ -1565,6 +1625,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
         <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
         <?php include PROJECT_ROOT . 'dashboard/views/local-time-script.php'; ?>
+        <?php if (!empty($myTrainer)): ?>
+            <script src="<?= BASE_URL ?>js/pt-chat.js"></script>
+        <?php endif; ?>
     <?php endif; ?>
 </body>
 

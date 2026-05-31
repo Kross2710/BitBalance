@@ -9,6 +9,15 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         $sidebarPendingFriends = 0;
     }
 }
+// PT <-> client unread badge (Task #4): PTs see it on the PT Dashboard link,
+// clients on the Intake link. Cheap COUNTs, safe before migrations have run.
+$sidebarPtBadge = 0;
+$sidebarIsPt = false;
+if (!empty($_SESSION['user']) && isset($pdo)) {
+    require_once __DIR__ . '/../../include/handlers/pt_notify.php';
+    $sidebarIsPt = (($_SESSION['user']['role'] ?? 'regular') === 'pt');
+    $sidebarPtBadge = pt_sidebar_badge_count($pdo, (int) $_SESSION['user']['user_id'], $sidebarIsPt);
+}
 // Carry the currently-viewed day across the Overview <-> Intake flow, so
 // reviewing a past day on one page lands on the same day on the other. Empty
 // for today or on pages that don't set $selectedDate (no change there).
@@ -25,12 +34,18 @@ $__navDateQ = (!empty($selectedDate) && $selectedDate !== date('Y-m-d'))
         <a href="dashboard-pt.php" class="nav-link <?php echo ($activePage == 'pt_dashboard') ? 'active' : ''; ?>"
             data-short="PT">
             <i class="fas fa-dumbbell"></i> PT Dashboard
+            <?php if ($sidebarPtBadge > 0): ?>
+                <span class="nav-link__badge"><?= $sidebarPtBadge ?></span>
+            <?php endif; ?>
         </a>
     <?php endif; ?>
 
     <a href="dashboard-intake.php<?= $__navDateQ ?>" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.intake_short') ?>">
         <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>
+        <?php if (!$sidebarIsPt && $sidebarPtBadge > 0): ?>
+            <span class="nav-link__badge"><?= $sidebarPtBadge ?></span>
+        <?php endif; ?>
     </a>
 
     <a href="dashboard-plan.php" class="nav-link <?php echo ($activePage == 'plan') ? 'active' : ''; ?>"

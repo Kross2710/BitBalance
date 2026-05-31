@@ -4,6 +4,16 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../include/init.php';
+
+$selectedDate = date('Y-m-d');
+if (isset($_GET['date'])) {
+    $dateInput = trim((string) $_GET['date']);
+    $dateObject = DateTime::createFromFormat('Y-m-d', $dateInput);
+    if ($dateObject && $dateObject->format('Y-m-d') === $dateInput) {
+        $selectedDate = ($dateInput > date('Y-m-d')) ? date('Y-m-d') : $dateInput;
+    }
+}
+
 require_once __DIR__ . '/handlers/dashboard_data.php';
 require_once __DIR__ . '/handlers/functions.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';

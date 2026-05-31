@@ -23,4 +23,9 @@ return [
         'english' => 'Vietnamese',
         'html_lang' => 'vi',
     ],
+    'fr' => [
+        'native' => 'Français',
+        'english' => 'French',
+        'html_lang' => 'fr',
+    ],
 ];

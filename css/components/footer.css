@@ -26,6 +26,8 @@
     display: flex;
     align-items: center;
     gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .dashboard-footer a {
@@ -62,10 +64,29 @@
     opacity: 0.8;
 }
 
+.footer-link-external {
+    margin-right: 10px;
+}
+
+.footer-link-separator {
+    color: var(--color-text-muted);
+    opacity: 0.5;
+}
+
+.footer-cookie-link {
+    margin-left: 10px;
+}
+
+.footer-cookie-icon {
+    margin-right: 4px;
+}
+
 .footer-lang-switcher {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
     margin: 0;
     padding: 0;
     background: none;
