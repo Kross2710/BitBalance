@@ -6,11 +6,22 @@ final class SessionStore: ObservableObject {
     @Published private(set) var user: UserSession?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isGuest = false
+    @Published var needsOnboarding = false
 
     private let api: APIClient
 
     init(api: APIClient) {
         self.api = api
+    }
+
+    func continueAsGuest() {
+        isGuest = true
+        user = nil
+    }
+
+    func exitGuestMode() {
+        isGuest = false
     }
 
     func signIn(email: String, password: String) async {
@@ -38,11 +49,18 @@ final class SessionStore: ObservableObject {
                 password: password,
                 confirmPassword: confirmPassword
             )
+            // New accounts always go through onboarding wizard
+            needsOnboarding = true
         } catch {
             errorMessage = error.localizedDescription
         }
 
         isLoading = false
+    }
+
+    func saveOnboarding(_ payload: OnboardingPayload) async throws {
+        _ = try await api.saveOnboarding(payload)
+        needsOnboarding = false
     }
 
     func restoreSession() async {

@@ -282,4 +282,25 @@ struct SearchUsersPayload: Codable {
     let results: [SearchUserResult]
 }
 
+// MARK: - Onboarding
+
+struct OnboardingPayload {
+    let gender: String
+    let age: Int
+    let height: Int
+    let weight: Int
+    let activityLevel: String
+    let goalMode: String
+    let weeklyRate: Double
+    let targetWeight: Double?
+}
+
+struct OnboardingResult: Codable {
+    let calorieGoal: Int
+    let bmr: Int
+    let tdee: Int
+    let macros: MacroTotals
+    let hydrationMl: Int
+}
+
 

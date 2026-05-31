@@ -2,40 +2,92 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var session: SessionStore
+    @State private var showAuthFromGuest = false
 
     var body: some View {
-        TabView {
-            DashboardView()
-                .tabItem {
-                    Label("Dashboard", systemImage: "chart.bar.fill")
-                }
+        ZStack(alignment: .top) {
+            TabView {
+                DashboardView()
+                    .tabItem { Label("Dashboard", systemImage: "chart.bar.fill") }
 
-            LogFoodView()
-                .tabItem {
-                    Label("Log", systemImage: "plus.circle.fill")
-                }
+                LogFoodView()
+                    .tabItem { Label("Log", systemImage: "plus.circle.fill") }
 
-            IntakeHistoryView()
-                .tabItem {
-                    Label("History", systemImage: "clock.fill")
-                }
+                IntakeHistoryView()
+                    .tabItem { Label("History", systemImage: "clock.fill") }
 
-            AIChatView()
-                .tabItem {
-                    Label("AI Coach", systemImage: "brain.head.profile")
-                }
+                AIChatView()
+                    .tabItem { Label("AI Coach", systemImage: "brain.head.profile") }
 
-            SocialView()
-                .tabItem {
-                    Label("Social", systemImage: "person.3.fill")
-                }
+                SocialView()
+                    .tabItem { Label("Social", systemImage: "person.3.fill") }
 
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.crop.circle.fill")
+                ProfileView()
+                    .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
+            }
+            .tint(BBColors.primary)
+
+            // Guest mode notice banner
+            if session.isGuest {
+                GuestBanner {
+                    showAuthFromGuest = true
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(1)
+            }
+        }
+        .sheet(isPresented: $showAuthFromGuest) {
+            AuthEntryView()
+                .onDisappear {
+                    // If user signed in from guest prompt, exit guest mode
+                    if session.user != nil {
+                        session.exitGuestMode()
+                    }
                 }
         }
-        .tint(BBColors.primary)
+        .animation(.easeInOut(duration: 0.25), value: session.isGuest)
+    }
+}
+
+// MARK: - Guest banner
+
+private struct GuestBanner: View {
+    let onSignUp: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(BBColors.accent)
+
+            Text("Browsing as guest — data won't be saved")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(BBColors.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Spacer()
+
+            Button(action: onSignUp) {
+                Text("Sign Up")
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(BBColors.primary)
+                    .cornerRadius(BBRadius.pill)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(
+            BBColors.surface
+                .overlay(
+                    RoundedRectangle(cornerRadius: 0)
+                        .stroke(BBColors.accent.opacity(0.3), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
     }
 }
 

@@ -58,6 +58,31 @@ final class APIClient {
         throw APIError.serverMessage(response.message ?? "Registration failed.")
     }
 
+    // MARK: - Onboarding
+
+    func saveOnboarding(_ payload: OnboardingPayload) async throws -> OnboardingResult {
+        var fields: [String: String] = [
+            "gender":         payload.gender,
+            "age":            String(payload.age),
+            "height":         String(payload.height),
+            "weight":         String(payload.weight),
+            "activity_level": payload.activityLevel,
+            "goal_mode":      payload.goalMode,
+            "weekly_rate":    String(payload.weeklyRate)
+        ]
+        if let tw = payload.targetWeight {
+            fields["target_weight"] = String(tw)
+        }
+        let response: APIEnvelope<OnboardingResult> = try await postForm(
+            path: "api/onboarding/save.php",
+            fields: fields
+        )
+        if response.ok, let data = response.data {
+            return data
+        }
+        throw APIError.serverMessage(response.message ?? "Could not save your plan.")
+    }
+
     func loadCurrentUser() async throws -> UserSession {
         let response: APIEnvelope<UserSession> = try await get(path: "api/me.php")
         if response.ok, let user = response.data {
