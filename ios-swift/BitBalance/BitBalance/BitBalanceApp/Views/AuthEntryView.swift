@@ -7,8 +7,14 @@ import SwiftUI
 struct AuthEntryView: View {
     @EnvironmentObject private var session: SessionStore
 
-    @State private var showLogin  = false
-    @State private var showSignUp = false
+    // Single sheet driven by an enum — two separate `.sheet` modifiers on the
+    // same view conflict (SwiftUI only honors the last one), which made
+    // "Sign In" unresponsive.
+    enum Sheet: Identifiable {
+        case login, signUp
+        var id: Int { hashValue }
+    }
+    @State private var activeSheet: Sheet?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,11 +23,11 @@ struct AuthEntryView: View {
         }
         .ignoresSafeArea(edges: .top)   // photo extends under the status bar
         .background(BBColors.surface.ignoresSafeArea())   // surface fills under home indicator too
-        .sheet(isPresented: $showLogin) {
-            LoginView()
-        }
-        .sheet(isPresented: $showSignUp) {
-            SignUpView()
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .login:  LoginView()
+            case .signUp: SignUpView()
+            }
         }
     }
 
@@ -86,7 +92,7 @@ struct AuthEntryView: View {
         VStack(spacing: 12) {
             // ── Primary email CTAs ───────────────────────────────────
             Button {
-                showSignUp = true
+                activeSheet = .signUp
             } label: {
                 Text("Create Account")
                     .frame(maxWidth: .infinity)
@@ -97,7 +103,7 @@ struct AuthEntryView: View {
             ))
 
             Button {
-                showLogin = true
+                activeSheet = .login
             } label: {
                 Text("Sign In")
                     .frame(maxWidth: .infinity)
