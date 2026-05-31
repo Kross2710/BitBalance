@@ -4,6 +4,10 @@ require_once __DIR__ . '/handlers/dashboard_data.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';
 require_once __DIR__ . '/../include/csrf.php';
 
+// Locale for the handful of inline VI/EN strings on this page (PT feedback card,
+// trainer chat). Most copy uses t(); these few predate that, so expose $lang.
+$lang = current_locale();
+
 if ($isLoggedIn) {
     log_attempt($pdo, $user['user_id'], 'view', 'User ' . $user['user_id'] . ' clicked on dashboard food', 'dashboard', null);
 
