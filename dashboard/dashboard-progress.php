@@ -188,7 +188,7 @@ function bb_progress_render_achievement(array $achievement): void
                         <i class="fa-solid fa-wand-magic-sparkles"></i> <?= t('progress.hero.weekly_wrapped') ?>
                     </button>
 
-                    <?php if ($spotifyConnected): ?>
+                    <!-- <?php if ($spotifyConnected): ?>
                         <span class="spotify-badge-connected" title="Spotify linked successfully! Diet & Beats slide unlocked in your story.">
                             <i class="fa-brands fa-spotify"></i> Spotify Connected
                         </span>
@@ -196,7 +196,7 @@ function bb_progress_render_achievement(array $achievement): void
                         <a href="handlers/spotify_auth.php" class="spotify-badge-connect" title="Link Spotify account to unlock the special 'Diet & Beats' slide!">
                             <i class="fa-brands fa-spotify"></i> Connect Spotify
                         </a>
-                    <?php endif; ?>
+                    <?php endif; ?> -->
                 </div>
                 <div class="progress-level-card">
                     <div class="progress-level-card__ring">

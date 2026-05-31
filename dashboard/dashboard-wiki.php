@@ -10,8 +10,7 @@ if ($isLoggedIn) {
     log_attempt($pdo, $user['user_id'], 'view', 'User ' . $user['user_id'] . ' clicked on nutrition wiki', 'dashboard', null);
 }
 
-$activePage = 'wiki';
-$activeHeader = 'dashboard';
+$activeHeader = 'wiki';
 $bodyClass = 'page-wiki';
 $displayUser = $isLoggedIn ? $user['user_name'] : 'Guest';
 

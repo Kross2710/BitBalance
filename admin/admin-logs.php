@@ -6,61 +6,110 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../include/init.php';
 require_once __DIR__ . '/handlers/admin_data.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';
+require_once __DIR__ . '/../include/csrf.php';
 
-if ($isLoggedIn) {
-    if ($_SESSION['user']['role'] === 'admin') {
-        $admin_id = $_SESSION['user']['user_id'] ?? null;
-        if ($admin_id) {
-            log_attempt($pdo, $admin_id, 'view', 'admin dashboard', 'admin');
-        }
-    }
+// Check if user is logged in and is an admin
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header('Location: admin-login.php');
+    exit;
+}
+
+$admin_id = $_SESSION['user']['user_id'] ?? null;
+if ($admin_id) {
+    log_attempt($pdo, $admin_id, 'view', 'admin dashboard - logs', 'admin');
 }
 
 $activePage = 'logs'; // Set the active page for the sidebar
 
-$logs = getActivityLogs(); // Fetch all activity logs
+// Get filters and pagination parameters from GET
+$search = trim($_GET['search'] ?? '');
+$actionFilter = trim($_GET['action'] ?? '');
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = 20; // 20 logs per page
+
+// Fetch paginated logs
+$paginated = getActivityLogsPaginated($page, $limit, $search, $actionFilter);
+$logs = $paginated['logs'];
+$totalPages = $paginated['totalPages'];
+$totalLogs = $paginated['total'];
+
 // Define the actions to filter by
-$actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'remove','delete', 'intake'];
+$actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'remove','delete', 'intake', 'pruning'];
+
+$success_message = $_GET['success'] ?? '';
+$error_message = $_GET['error'] ?? '';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="<?php echo isset($_SESSION['user']) ? ($_SESSION['user']['theme_preference'] ?? 'system') : 'system'; ?>">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BitBalance Administrator</title>
+    <title>BitBalance Administrator - Logs</title>
+    <?php include __DIR__ . '/../views/theme-init.php'; ?>
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/admin.css?v=<?php echo @filemtime(__DIR__ . '/../css/admin.css'); ?>">
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
     <?php
-    // Include the header file
+    // Include the header and sidebar files
     include 'views/admin-header.php';
     include 'views/admin-sidebar.php';
-    // Include admin-login.php if user is not logged in or not an admin
-    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
-        include 'admin-login.php';
-        exit;
-    }
     ?>
     <main>
         <div class="main-content">
-            <div class="search-filter-bar">
-                <input id="searchInput" type="text" placeholder="Search logs...">
-                <select id="actionFilter">
+            <div class="toolbar">
+                <h1 class="page-title"><i class="fa-solid fa-clipboard-list"></i> System Logs</h1>
+                
+                <form method="post" action="prune-logs-action.php" class="inline-form" 
+                      onsubmit="return confirm('Prune all logs older than 30 days? This action cannot be undone.');">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES); ?>">
+                    <input type="hidden" name="days" value="30">
+                    <button class="btn-primary" style="background-color: var(--color-danger, #ef4444); color: white; border: none; padding: 10px 16px; border-radius: var(--radius-md, 14px); cursor: pointer; font-weight: 600;" type="submit">
+                        <i class="fa-solid fa-trash-can"></i> Prune > 30 Days
+                    </button>
+                </form>
+            </div>
+
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="alert-body"><?php echo htmlspecialchars($error_message); ?></div>
+                    <button type="button" class="alert-close" onclick="this.parentNode.style.display='none'">&times;</button>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="alert-body"><?php echo htmlspecialchars($success_message); ?></div>
+                    <button type="button" class="alert-close" onclick="this.parentNode.style.display='none'">&times;</button>
+                </div>
+            <?php endif; ?>
+
+            <form method="GET" action="admin-logs.php" class="search-filter-bar">
+                <input name="search" type="text" placeholder="Search by name, email, action, description, target..." value="<?php echo htmlspecialchars($search); ?>">
+                
+                <select name="action" onchange="this.form.submit()">
                     <option value="">All Actions</option>
-                    <?php foreach ($actions as $action): ?>
-                        <option value="<?= htmlspecialchars($action); ?>"><?= htmlspecialchars(ucfirst($action)); ?>
+                    <?php foreach ($actions as $act): ?>
+                        <option value="<?= htmlspecialchars($act); ?>" <?php echo $actionFilter === $act ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars(ucfirst($act)); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-            </div>
+                
+                <button type="submit" class="btn-primary" style="padding: 12px 20px; border-radius: 10px;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Filter
+                </button>
+                
+                <?php if (!empty($search) || !empty($actionFilter)): ?>
+                    <a href="admin-logs.php" class="btn-secondary" style="border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; height: 44px; text-decoration: none; padding: 0 16px;">Clear</a>
+                <?php endif; ?>
+            </form>
+
             <table id="logs-table" class="user-table">
                 <thead>
                     <tr>
@@ -79,11 +128,20 @@ $actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'rem
                         foreach ($logs as $log): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($log['user_name']); ?></td>
-                                <td><?php echo htmlspecialchars(ucfirst($log['role'])); ?></td>
-                                <td><?php echo htmlspecialchars(ucfirst($log['action_type'])); ?></td>
-                                <td><?php echo htmlspecialchars($log['description']); ?></td>
-                                <td><?php echo $log['target_table'] !== null ? htmlspecialchars($log['target_table']) : ''; ?>
+                                <td>
+                                    <?php $r = $log['role']; ?>
+                                    <span class="badge badge-<?php echo htmlspecialchars($r); ?>">
+                                        <i class="fa-solid fa-<?php echo $r === 'admin' ? 'crown' : 'user'; ?>"></i>
+                                        <?php echo htmlspecialchars(ucfirst($r)); ?>
+                                    </span>
                                 </td>
+                                <td>
+                                    <span style="font-weight: 600; font-family: monospace; color: var(--color-primary); background: var(--color-primary-soft); padding: 4px 8px; border-radius: 6px;">
+                                        <?php echo htmlspecialchars($log['action_type']); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo htmlspecialchars($log['description']); ?></td>
+                                <td><?php echo $log['target_table'] !== null ? htmlspecialchars($log['target_table']) : ''; ?></td>
                                 <td><?php echo $log['target_id'] !== null ? htmlspecialchars($log['target_id']) : ''; ?></td>
                                 <td><?php echo date('d-m-Y H:i:s', strtotime($log['created_at'])); ?></td>
                             </tr>
@@ -95,27 +153,22 @@ $actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'rem
                     <?php endif; ?>
                 </tbody>
             </table>
-            <script>
-                $(function () {
-                    // init DataTable without its own search box
-                    const table = $('#logs-table').DataTable({
-                        dom: 'tip', // just table, info, pagination
-                        pagingType: 'simple_numbers',
-                        pageLength: 15
-                    });
 
-                    // tie external search box
-                    $('#searchInput').on('keyup', function () {
-                        table.search(this.value).draw();
-                    });
-
-                    // tie action filter dropdown (column index 2 => Action Type)
-                    $('#actionFilter').on('change', function () {
-                        const val = this.value;
-                        table.column(2).search(val).draw();
-                    });
-                });
-            </script>
+            <?php if ($totalPages > 1): ?>
+                <div class="pagination" style="display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 24px;">
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?php echo $page - 1; ?>&search=<?php echo urlencode($search); ?>&action=<?php echo urlencode($actionFilter); ?>" class="btn-secondary" style="padding: 8px 14px; border-radius: 8px; text-decoration: none;"><i class="fa-solid fa-chevron-left"></i> Prev</a>
+                    <?php endif; ?>
+                    
+                    <span style="color: var(--color-text-secondary); font-size: 0.95rem; font-weight: 600; padding: 0 10px;">
+                        Page <?php echo $page; ?> of <?php echo $totalPages; ?> (<?php echo $totalLogs; ?> total)
+                    </span>
+                    
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?php echo $page + 1; ?>&search=<?php echo urlencode($search); ?>&action=<?php echo urlencode($actionFilter); ?>" class="btn-secondary" style="padding: 8px 14px; border-radius: 8px; text-decoration: none;">Next <i class="fa-solid fa-chevron-right"></i></a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </main>
     <?php include '../views/footer.php'; ?>
@@ -126,7 +179,6 @@ $actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'rem
         padding: 20px;
     }
 
-    /* ---- Intake Table Responsive ---- */
     table {
         width: 100%;
         margin-top: 5px;
@@ -141,18 +193,17 @@ $actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'rem
         padding: 14px 16px;
         text-align: left;
         font-size: 1rem;
-        color: #333;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--color-border-subtle);
     }
 
     th {
-        background-color: #f8f9fb;
+        background-color: var(--color-surface-alt);
         font-weight: 600;
-        color: #555;
+        color: var(--color-text-secondary);
     }
 
     tr:hover {
-        background-color: #f1f7ff;
+        background-color: var(--color-surface-hover);
         transition: background-color 0.2s ease;
     }
 
@@ -161,81 +212,35 @@ $actions = ['login', 'signup' ,'logout', 'create', 'update', 'view', 'add', 'rem
     }
 
     /* Responsive */
-    @media (max-width: 700px) {
-        .intake-table {
+    @media (max-width: 900px) {
+        .main-content {
+            margin: 80px 12px 24px 12px;
+        }
+
+        .search-filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-filter-bar input[type="text"],
+        .search-filter-bar select {
             width: 100%;
-            font-size: 0.95em;
-            border-radius: 0;
-            box-shadow: none;
         }
 
-        th,
-        td {
+        th, td {
             padding: 10px 8px;
+            font-size: 0.95rem;
         }
 
-        .progress-value {
-            font-size: 1em;
+        /* Hide less important columns on mobile */
+        #logs-table th:nth-child(2),
+        #logs-table td:nth-child(2),
+        #logs-table th:nth-child(5),
+        #logs-table td:nth-child(5),
+        #logs-table th:nth-child(6),
+        #logs-table td:nth-child(6) {
+            display: none;
         }
     }
-
-    .search-filter-bar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
-
-    .search-filter-bar input[type="text"],
-    .search-filter-bar select {
-        padding: 10px 14px;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        background-color: #fff;
-        outline: none;
-        transition: border-color 0.2s ease;
-    }
-
-    .search-filter-bar select {
-        width: 150px;
-    }
-
-    .search-filter-bar input[type="text"]:focus,
-    .search-filter-bar select:focus {
-        border-color: #4a90e2;
-    }
-
-    @media (max-width: 900px) {
-    .main-content {
-        margin: 80px 12px 24px 12px;    /* space for toggle   */
-    }
-
-    /* Search / filter bar stacks vertically */
-    .search-filter-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .search-filter-bar input[type="text"],
-    .search-filter-bar select {
-        width: 100%;
-    }
-
-    /* Table font & paddings slightly smaller */
-    th, td { padding: 10px 8px; font-size: 0.95rem; }
-
-    /* Hide less-important columns on very small screens
-       (IDs & timestamps can be toggled back if needed) */
-    @media (max-width: 900px) {
-        #user-table th:nth-child(1),
-        #user-table td:nth-child(1),    /* User ID */
-        #user-table th:nth-child(8),
-        #user-table td:nth-child(8),    /* Created At */
-        #user-table th:nth-child(9),
-        #user-table td:nth-child(9)     /* Last Login */
-        { display: none; }
-    }
-}
 </style>
+</html>

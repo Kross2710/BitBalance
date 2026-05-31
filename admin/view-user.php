@@ -275,7 +275,15 @@ $adminActions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <td><?php echo date('d-m-Y', strtotime($c['date_posted'])); ?></td>
                                         <td>#<?php echo (int) $c['post_id']; ?></td>
-                                        <td><?php echo htmlspecialchars(mb_strimwidth($c['content'], 0, 70, '…')); ?></td>
+                                        <td>
+                                             <?php 
+                                             $excerpt = $c['content'];
+                                             if (strlen($excerpt) > 70) {
+                                                 $excerpt = substr($excerpt, 0, 70) . '…';
+                                             }
+                                             echo htmlspecialchars($excerpt);
+                                             ?>
+                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

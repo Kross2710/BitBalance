@@ -1,143 +1,39 @@
-    <header>
-        <a href="admin.php" class="logo">BitBalance <span>Administrator</span></a>
-        <nav>
-        <div class="menu">
+<header class="main-header">
+    <div class="header-container" style="max-width: 100%; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;">
+        <a href="admin.php" class="logo" style="text-decoration: none; font-size: 1.4rem; font-weight: 800; color: var(--color-text); display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px;">
+            <i class="fas fa-chart-pie logo-icon" style="background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.6rem;"></i> 
+            BitBalance <span style="color: var(--color-primary); font-weight: 700; font-size: 0.95rem; margin-left: 2px;">Admin</span>
+        </a>
 
-            <?php if (isset($_SESSION['user'])): // Check if user is logged in ?>
-            <a href="#" class="login-signup">Hi, <?= htmlspecialchars($_SESSION['user']['first_name']) ?></a>
-            <a href="admin-logout.php" class="login-signup">Logout</a>
-            <?php else: ?>
-                <a href="javascript:void(0);"
-                    id="openLoginModal"
-                   class="login-signup">Sign In</a>
-            <?php endif; ?>
-
-        </div>
-    
-            <!-- Hamberger menu to toggle nav links -->
-            <a href="javascript:void(0);" class="hamburger" onclick="toggleMenu()">
-                <i class="fa-solid fa-bars"></i>
-            </a>
+        <nav style="display: flex; gap: 20px; align-items: center;">
+            <div class="menu" id="navMenu" style="display: flex; align-items: center; gap: 30px;">
+                <div class="nav-links" style="display: flex; gap: 20px;">
+                    <a href="../dashboard/dashboard.php" class="nav-item" style="text-decoration: none; color: var(--color-text-secondary); font-weight: 600; font-size: 0.95rem; transition: color var(--transition-fast);">
+                        <i class="fa-solid fa-arrow-left"></i> User Dashboard
+                    </a>
+                </div>
+                <div class="user-actions" style="border-left: 2px solid var(--color-border-subtle); padding-left: 20px; display: flex; align-items: center; gap: 14px;">
+                    <?php if (isset($_SESSION['user'])): ?>
+                        <span class="user-greeting" style="color: var(--color-text-secondary); font-size: 0.9rem; font-weight: 700;">Hi, <?= htmlspecialchars($_SESSION['user']['first_name']) ?></span>
+                        <a href="admin-logout.php" class="btn-primary" style="padding: 10px 18px; border-radius: var(--radius-md, 14px); font-size: 0.85rem; text-decoration: none; font-weight: 700; background-color: var(--color-primary); color: white; box-shadow: 0 4px 0 var(--color-primary-hover); transition: all 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </a>
+                    <?php else: ?>
+                        <a href="admin-login.php" class="btn-primary" style="padding: 10px 18px; border-radius: var(--radius-md, 14px); font-size: 0.85rem; text-decoration: none; font-weight: 700; background-color: var(--color-primary); color: white; box-shadow: 0 4px 0 var(--color-primary-hover); transition: all 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            Sign In
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
             
+            <button class="hamburger" onclick="toggleMenu()" aria-label="Toggle Navigation" style="display: none; background: none; border: none; font-size: 1.5rem; color: var(--color-text); cursor: pointer;">
+                <i class="fa-solid fa-bars"></i>
+            </button>
         </nav>
-    </header>
-    <style>
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-        }
-
-        span {
-            color: red;
-        }
-
-        .logo {
-            text-decoration: none;
-            color: black;
-            font-weight: bold;
-            font-size: 20px;
-        }
-
-        nav {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .menu a {
-            text-decoration: none;
-            color: black;
-            transition: all 0.3s ease;
-        }
-
-        .menu a.active {
-            color: #4a7ee3;
-            font-weight: bold;
-        }
-
-        .menu a:hover {
-            color: #4a7ee3;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .icon .fa-cart-shopping {
-            font-size: 22px;
-        }
-
-        .login-signup {
-
-
-
-        }
-
-        .shopping-cart {
-
-
-        }
-
-        .menu .login-signup:hover {
-            background-color: #4a7ee3;
-            color: white;
-            transition: background-color 0.3s ease;
-            border: 1px solid #ccc;
-        }
-
-        .menu .shopping-cart:hover {
-            background-color: #4a7ee3;
-            color: white;
-            transition: background-color 0.3s ease;
-            border: 1px solid #ccc;
-        }
-
-        nav {
-            position: relative;
-            overflow: hidden;
-        }
-
-        nav .menu {
-            overflow: hidden;
-            transition: max-height 0.4s ease-out;
-        }
-
-        nav .menu.show {
-            max-height: 500px; /* Adjust as needed */
-        }
-
-        nav .menu a {
-            display: block;
-            padding: 12px 16px;
-            text-decoration: none;
-            color: black;
-            border-bottom: 1px solid #ccc;
-        }
-
-        /* Small screen layout */
-        @media (max-width: 768px) {
-            nav .menu {
-            max-height: 0;
-        }
-        }
-
-        /* Large screen layout */
-        @media (min-width: 768px) {
-            nav a.hamburger {
-                display: none;
-            }
-
-            nav .menu {
-                display: flex;
-            }
-
-            nav .menu a {
-                display: inline-block;
-            }
-        }
-    </style>
-    <script>
-        function toggleMenu() {
-            document.querySelector('.menu').classList.toggle('show');
-        }
-    </script>
+    </div>
+</header>
+<script>
+    function toggleMenu() {
+        document.getElementById('navMenu').classList.toggle('show');
+    }
+</script>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 17, 2026 at 01:30 AM
+-- Generation Time: May 31, 2026 at 01:48 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -36,6 +36,112 @@ CREATE TABLE `activity_log` (
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ai_conversation`
+--
+
+CREATE TABLE `ai_conversation` (
+  `conversation_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(120) NOT NULL DEFAULT 'New chat',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ai_message`
+--
+
+CREATE TABLE `ai_message` (
+  `message_id` int(11) NOT NULL,
+  `conversation_id` int(11) NOT NULL,
+  `role` enum('user','assistant') NOT NULL,
+  `content` text NOT NULL,
+  `image_path` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ai_usage_daily`
+--
+
+CREATE TABLE `ai_usage_daily` (
+  `usage_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `usage_date` date NOT NULL,
+  `message_count` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `barcode_products`
+--
+
+CREATE TABLE `barcode_products` (
+  `barcode` varchar(20) NOT NULL,
+  `product_name` varchar(255) DEFAULT NULL,
+  `brand` varchar(120) DEFAULT NULL,
+  `serving_size` varchar(60) DEFAULT NULL,
+  `kcal_per_serving` int(11) DEFAULT NULL,
+  `kcal_per_100g` decimal(7,2) DEFAULT NULL,
+  `protein_per_serving` decimal(6,2) DEFAULT NULL,
+  `carbs_per_serving` decimal(6,2) DEFAULT NULL,
+  `fat_per_serving` decimal(6,2) DEFAULT NULL,
+  `sugar_per_serving` decimal(6,2) DEFAULT NULL,
+  `image_url` varchar(500) DEFAULT NULL,
+  `source` enum('openfoodfacts','user_submitted') NOT NULL DEFAULT 'openfoodfacts',
+  `submitted_by_user_id` int(11) DEFAULT NULL,
+  `lookup_count` int(11) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `barcode_scan_log`
+--
+
+CREATE TABLE `barcode_scan_log` (
+  `scan_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `barcode` varchar(20) NOT NULL,
+  `result` enum('cache_hit','api_found','api_miss','api_error') NOT NULL,
+  `latency_ms` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `beats_mix_log`
+--
+
+CREATE TABLE `beats_mix_log` (
+  `mix_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `track_name` varchar(120) NOT NULL,
+  `artist_name` varchar(120) NOT NULL DEFAULT '',
+  `food_item` varchar(120) NOT NULL,
+  `calories` int(11) NOT NULL DEFAULT 0,
+  `archetype` varchar(80) NOT NULL DEFAULT '',
+  `detected_vibe` varchar(60) NOT NULL DEFAULT '',
+  `match_score` tinyint(4) NOT NULL DEFAULT 0,
+  `energy_sync` tinyint(4) NOT NULL DEFAULT 0,
+  `comfort` tinyint(4) NOT NULL DEFAULT 0,
+  `chaos` tinyint(4) NOT NULL DEFAULT 0,
+  `verdict` varchar(255) NOT NULL DEFAULT '',
+  `rarity` varchar(60) NOT NULL DEFAULT '',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -86,6 +192,34 @@ CREATE TABLE `forumPost` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `friend_block`
+--
+
+CREATE TABLE `friend_block` (
+  `block_id` int(11) NOT NULL,
+  `blocker_id` int(11) NOT NULL,
+  `blocked_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `friend_request`
+--
+
+CREATE TABLE `friend_request` (
+  `request_id` int(11) NOT NULL,
+  `requester_id` int(11) NOT NULL,
+  `addressee_id` int(11) NOT NULL,
+  `status` enum('pending','accepted','rejected','cancelled') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `responded_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `intakeLog`
 --
 
@@ -98,6 +232,7 @@ CREATE TABLE `intakeLog` (
   `protein` decimal(6,2) NOT NULL DEFAULT 0.00,
   `carbs` decimal(6,2) NOT NULL DEFAULT 0.00,
   `fat` decimal(6,2) NOT NULL DEFAULT 0.00,
+  `image_path` varchar(255) DEFAULT NULL,
   `date_intake` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -119,41 +254,6 @@ CREATE TABLE `login_attempts` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `order`
---
-
-CREATE TABLE `order` (
-  `order_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `cart_id` int(11) NOT NULL,
-  `order_status` enum('pending','paid','shipped','completed','cancelled') DEFAULT 'paid',
-  `subtotal` decimal(10,2) NOT NULL,
-  `discount` decimal(10,2) DEFAULT 0.00,
-  `shipping_cost` decimal(10,2) DEFAULT 0.00,
-  `tax` decimal(10,2) DEFAULT 0.00,
-  `grand_total` decimal(10,2) NOT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `order_item`
---
-
-CREATE TABLE `order_item` (
-  `order_item_id` int(11) NOT NULL,
-  `order_id` int(11) NOT NULL,
-  `product_id` int(11) NOT NULL,
-  `product_name` varchar(150) NOT NULL,
-  `price_each` decimal(10,2) NOT NULL,
-  `quantity` int(11) NOT NULL DEFAULT 1,
-  `line_total` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `password_resets`
 --
 
@@ -169,53 +269,33 @@ CREATE TABLE `password_resets` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `product`
+-- Table structure for table `pt_feedback`
 --
 
-CREATE TABLE `product` (
-  `product_id` int(11) NOT NULL,
-  `product_name` varchar(100) NOT NULL,
-  `product_price` decimal(10,2) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `productCart`
---
-
-CREATE TABLE `productCart` (
-  `cart_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `closed_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `productCart_item`
---
-
-CREATE TABLE `productCart_item` (
-  `cart_item_id` int(11) NOT NULL,
-  `cart_id` int(11) NOT NULL,
-  `product_id` int(11) NOT NULL,
-  `quantity` int(11) DEFAULT 1
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `site_fees`
---
-
-CREATE TABLE `site_fees` (
-  `id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `value` decimal(10,2) NOT NULL,
+CREATE TABLE `pt_feedback` (
+  `feedback_id` int(11) NOT NULL,
+  `trainer_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `date_for` date NOT NULL,
+  `content` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `trainer_client`
+--
+
+CREATE TABLE `trainer_client` (
+  `id` int(11) NOT NULL,
+  `trainer_id` int(11) NOT NULL,
+  `client_id` int(11) NOT NULL,
+  `status` enum('pending','accepted','rejected','terminated') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `responded_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -231,7 +311,7 @@ CREATE TABLE `user` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `timeCreated` timestamp NOT NULL DEFAULT current_timestamp(),
-  `role` enum('regular','admin') DEFAULT 'regular',
+  `role` enum('regular','admin','pt') NOT NULL DEFAULT 'regular',
   `profile_image` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_login` timestamp NULL DEFAULT NULL COMMENT 'Most recent login timestamp'
@@ -280,11 +360,44 @@ CREATE TABLE `userStatus` (
   `locked_until` timestamp NULL DEFAULT NULL,
   `archived_at` timestamp NULL DEFAULT NULL,
   `profile_bio` text DEFAULT NULL,
+  `profile_visibility` enum('private','friends','public') NOT NULL DEFAULT 'friends',
   `last_login_date` date DEFAULT NULL,
   `logging_streak` int(11) DEFAULT 0,
   `longest_logging_streak` int(11) DEFAULT 0,
-  `last_logging_date` date DEFAULT NULL
+  `last_logging_date` date DEFAULT NULL,
+  `streak_freezes` int(11) NOT NULL DEFAULT 0,
+  `broken_streak` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_plan_preferences`
+--
+
+CREATE TABLE `user_plan_preferences` (
+  `user_id` int(11) NOT NULL,
+  `goal_mode` enum('lose','maintain','gain') NOT NULL DEFAULT 'lose',
+  `weekly_rate` decimal(4,2) NOT NULL DEFAULT 0.25,
+  `activity_level` varchar(32) NOT NULL DEFAULT 'moderately_active',
+  `target_weight` decimal(5,1) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_spotify`
+--
+
+CREATE TABLE `user_spotify` (
+  `user_id` int(11) NOT NULL,
+  `access_token` text NOT NULL,
+  `refresh_token` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -306,6 +419,36 @@ CREATE TABLE `user_themes` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_xp`
+--
+
+CREATE TABLE `user_xp` (
+  `user_id` int(11) NOT NULL,
+  `total_xp` int(11) NOT NULL DEFAULT 0,
+  `current_level` int(11) NOT NULL DEFAULT 1,
+  `last_level_up_at` timestamp NULL DEFAULT NULL,
+  `last_finalized_date` date DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `weekly_wrapped_cache`
+--
+
+CREATE TABLE `weekly_wrapped_cache` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `week_year` varchar(10) NOT NULL,
+  `lang` varchar(5) NOT NULL,
+  `generated_json` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `weight_log`
 --
 
@@ -315,6 +458,22 @@ CREATE TABLE `weight_log` (
   `weight` decimal(5,2) NOT NULL,
   `date_logged` date NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `xp_event`
+--
+
+CREATE TABLE `xp_event` (
+  `event_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `source` varchar(40) NOT NULL,
+  `amount` int(11) NOT NULL,
+  `ref_table` varchar(40) DEFAULT NULL,
+  `ref_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
@@ -326,6 +485,51 @@ CREATE TABLE `weight_log` (
 ALTER TABLE `activity_log`
   ADD PRIMARY KEY (`log_id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `ai_conversation`
+--
+ALTER TABLE `ai_conversation`
+  ADD PRIMARY KEY (`conversation_id`),
+  ADD KEY `idx_user_updated` (`user_id`,`updated_at`);
+
+--
+-- Indexes for table `ai_message`
+--
+ALTER TABLE `ai_message`
+  ADD PRIMARY KEY (`message_id`),
+  ADD KEY `idx_conv_created` (`conversation_id`,`created_at`);
+
+--
+-- Indexes for table `ai_usage_daily`
+--
+ALTER TABLE `ai_usage_daily`
+  ADD PRIMARY KEY (`usage_id`),
+  ADD UNIQUE KEY `uk_user_date` (`user_id`,`usage_date`);
+
+--
+-- Indexes for table `barcode_products`
+--
+ALTER TABLE `barcode_products`
+  ADD PRIMARY KEY (`barcode`),
+  ADD KEY `idx_lookup_count` (`lookup_count`),
+  ADD KEY `fk_barcode_product_user` (`submitted_by_user_id`);
+
+--
+-- Indexes for table `barcode_scan_log`
+--
+ALTER TABLE `barcode_scan_log`
+  ADD PRIMARY KEY (`scan_id`),
+  ADD KEY `idx_user_created` (`user_id`,`created_at`),
+  ADD KEY `idx_barcode` (`barcode`),
+  ADD KEY `idx_result` (`result`);
+
+--
+-- Indexes for table `beats_mix_log`
+--
+ALTER TABLE `beats_mix_log`
+  ADD PRIMARY KEY (`mix_id`),
+  ADD KEY `user_created` (`user_id`,`created_at`);
 
 --
 -- Indexes for table `forumComment`
@@ -351,6 +555,23 @@ ALTER TABLE `forumPost`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indexes for table `friend_block`
+--
+ALTER TABLE `friend_block`
+  ADD PRIMARY KEY (`block_id`),
+  ADD UNIQUE KEY `uk_block_pair` (`blocker_id`,`blocked_id`),
+  ADD KEY `idx_blocked` (`blocked_id`);
+
+--
+-- Indexes for table `friend_request`
+--
+ALTER TABLE `friend_request`
+  ADD PRIMARY KEY (`request_id`),
+  ADD UNIQUE KEY `uk_pair` (`requester_id`,`addressee_id`),
+  ADD KEY `idx_addressee_status` (`addressee_id`,`status`),
+  ADD KEY `idx_requester_status` (`requester_id`,`status`);
+
+--
 -- Indexes for table `intakeLog`
 --
 ALTER TABLE `intakeLog`
@@ -366,22 +587,6 @@ ALTER TABLE `login_attempts`
   ADD KEY `idx_attempted` (`attempted_at`);
 
 --
--- Indexes for table `order`
---
-ALTER TABLE `order`
-  ADD PRIMARY KEY (`order_id`),
-  ADD KEY `fk_order_cart` (`cart_id`),
-  ADD KEY `fk_order_user` (`user_id`);
-
---
--- Indexes for table `order_item`
---
-ALTER TABLE `order_item`
-  ADD PRIMARY KEY (`order_item_id`),
-  ADD KEY `fk_oi_order` (`order_id`),
-  ADD KEY `fk_oi_product` (`product_id`);
-
---
 -- Indexes for table `password_resets`
 --
 ALTER TABLE `password_resets`
@@ -391,39 +596,28 @@ ALTER TABLE `password_resets`
   ADD KEY `idx_expires` (`expires_at`);
 
 --
--- Indexes for table `product`
+-- Indexes for table `pt_feedback`
 --
-ALTER TABLE `product`
-  ADD PRIMARY KEY (`product_id`);
+ALTER TABLE `pt_feedback`
+  ADD PRIMARY KEY (`feedback_id`),
+  ADD UNIQUE KEY `uk_trainer_client_date` (`trainer_id`,`client_id`,`date_for`),
+  ADD KEY `fk_pf_client` (`client_id`);
 
 --
--- Indexes for table `productCart`
+-- Indexes for table `trainer_client`
 --
-ALTER TABLE `productCart`
-  ADD PRIMARY KEY (`cart_id`),
-  ADD UNIQUE KEY `uk_user_cart` (`user_id`);
-
---
--- Indexes for table `productCart_item`
---
-ALTER TABLE `productCart_item`
-  ADD PRIMARY KEY (`cart_item_id`),
-  ADD KEY `fk_ci_cart` (`cart_id`),
-  ADD KEY `fk_ci_product` (`product_id`);
-
---
--- Indexes for table `site_fees`
---
-ALTER TABLE `site_fees`
+ALTER TABLE `trainer_client`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`);
+  ADD UNIQUE KEY `uk_trainer_client` (`trainer_id`,`client_id`),
+  ADD KEY `fk_tc_client` (`client_id`);
 
 --
 -- Indexes for table `user`
 --
 ALTER TABLE `user`
   ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `uk_user_name` (`user_name`);
 
 --
 -- Indexes for table `userGoal`
@@ -440,6 +634,18 @@ ALTER TABLE `userStatus`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indexes for table `user_plan_preferences`
+--
+ALTER TABLE `user_plan_preferences`
+  ADD PRIMARY KEY (`user_id`);
+
+--
+-- Indexes for table `user_spotify`
+--
+ALTER TABLE `user_spotify`
+  ADD PRIMARY KEY (`user_id`);
+
+--
 -- Indexes for table `user_themes`
 --
 ALTER TABLE `user_themes`
@@ -447,11 +653,32 @@ ALTER TABLE `user_themes`
   ADD UNIQUE KEY `theme_name` (`theme_name`);
 
 --
+-- Indexes for table `user_xp`
+--
+ALTER TABLE `user_xp`
+  ADD PRIMARY KEY (`user_id`);
+
+--
+-- Indexes for table `weekly_wrapped_cache`
+--
+ALTER TABLE `weekly_wrapped_cache`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_user_week_lang` (`user_id`,`week_year`,`lang`);
+
+--
 -- Indexes for table `weight_log`
 --
 ALTER TABLE `weight_log`
   ADD PRIMARY KEY (`weight_id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `xp_event`
+--
+ALTER TABLE `xp_event`
+  ADD PRIMARY KEY (`event_id`),
+  ADD KEY `idx_user_date` (`user_id`,`created_at`),
+  ADD KEY `idx_user_source_date` (`user_id`,`source`,`created_at`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -462,6 +689,36 @@ ALTER TABLE `weight_log`
 --
 ALTER TABLE `activity_log`
   MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ai_conversation`
+--
+ALTER TABLE `ai_conversation`
+  MODIFY `conversation_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ai_message`
+--
+ALTER TABLE `ai_message`
+  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ai_usage_daily`
+--
+ALTER TABLE `ai_usage_daily`
+  MODIFY `usage_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `barcode_scan_log`
+--
+ALTER TABLE `barcode_scan_log`
+  MODIFY `scan_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `beats_mix_log`
+--
+ALTER TABLE `beats_mix_log`
+  MODIFY `mix_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `forumComment`
@@ -482,6 +739,18 @@ ALTER TABLE `forumPost`
   MODIFY `post_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `friend_block`
+--
+ALTER TABLE `friend_block`
+  MODIFY `block_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `friend_request`
+--
+ALTER TABLE `friend_request`
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `intakeLog`
 --
 ALTER TABLE `intakeLog`
@@ -494,45 +763,21 @@ ALTER TABLE `login_attempts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `order`
---
-ALTER TABLE `order`
-  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `order_item`
---
-ALTER TABLE `order_item`
-  MODIFY `order_item_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `password_resets`
 --
 ALTER TABLE `password_resets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `product`
+-- AUTO_INCREMENT for table `pt_feedback`
 --
-ALTER TABLE `product`
-  MODIFY `product_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `pt_feedback`
+  MODIFY `feedback_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `productCart`
+-- AUTO_INCREMENT for table `trainer_client`
 --
-ALTER TABLE `productCart`
-  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `productCart_item`
---
-ALTER TABLE `productCart_item`
-  MODIFY `cart_item_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `site_fees`
---
-ALTER TABLE `site_fees`
+ALTER TABLE `trainer_client`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -560,10 +805,22 @@ ALTER TABLE `user_themes`
   MODIFY `theme_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `weekly_wrapped_cache`
+--
+ALTER TABLE `weekly_wrapped_cache`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `weight_log`
 --
 ALTER TABLE `weight_log`
   MODIFY `weight_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `xp_event`
+--
+ALTER TABLE `xp_event`
+  MODIFY `event_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -574,6 +831,36 @@ ALTER TABLE `weight_log`
 --
 ALTER TABLE `activity_log`
   ADD CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `ai_conversation`
+--
+ALTER TABLE `ai_conversation`
+  ADD CONSTRAINT `fk_ai_conv_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `ai_message`
+--
+ALTER TABLE `ai_message`
+  ADD CONSTRAINT `fk_ai_msg_conv` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversation` (`conversation_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `ai_usage_daily`
+--
+ALTER TABLE `ai_usage_daily`
+  ADD CONSTRAINT `fk_ai_usage_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `barcode_products`
+--
+ALTER TABLE `barcode_products`
+  ADD CONSTRAINT `fk_barcode_product_user` FOREIGN KEY (`submitted_by_user_id`) REFERENCES `user` (`user_id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `barcode_scan_log`
+--
+ALTER TABLE `barcode_scan_log`
+  ADD CONSTRAINT `fk_scan_log_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `forumComment`
@@ -595,18 +882,18 @@ ALTER TABLE `forumPost`
   ADD CONSTRAINT `forumPost_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `order`
+-- Constraints for table `friend_block`
 --
-ALTER TABLE `order`
-  ADD CONSTRAINT `fk_order_cart` FOREIGN KEY (`cart_id`) REFERENCES `productCart` (`cart_id`),
-  ADD CONSTRAINT `fk_order_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`);
+ALTER TABLE `friend_block`
+  ADD CONSTRAINT `fk_fb_blocked` FOREIGN KEY (`blocked_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_fb_blocker` FOREIGN KEY (`blocker_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `order_item`
+-- Constraints for table `friend_request`
 --
-ALTER TABLE `order_item`
-  ADD CONSTRAINT `fk_oi_order` FOREIGN KEY (`order_id`) REFERENCES `order` (`order_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_oi_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`);
+ALTER TABLE `friend_request`
+  ADD CONSTRAINT `fk_fr_addressee` FOREIGN KEY (`addressee_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_fr_requester` FOREIGN KEY (`requester_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `password_resets`
@@ -615,11 +902,18 @@ ALTER TABLE `password_resets`
   ADD CONSTRAINT `password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `productCart_item`
+-- Constraints for table `pt_feedback`
 --
-ALTER TABLE `productCart_item`
-  ADD CONSTRAINT `fk_ci_cart` FOREIGN KEY (`cart_id`) REFERENCES `productCart` (`cart_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_ci_product` FOREIGN KEY (`product_id`) REFERENCES `product` (`product_id`);
+ALTER TABLE `pt_feedback`
+  ADD CONSTRAINT `fk_pf_client` FOREIGN KEY (`client_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_pf_trainer` FOREIGN KEY (`trainer_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `trainer_client`
+--
+ALTER TABLE `trainer_client`
+  ADD CONSTRAINT `fk_tc_client` FOREIGN KEY (`client_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_tc_trainer` FOREIGN KEY (`trainer_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `userGoal`
@@ -634,39 +928,35 @@ ALTER TABLE `userStatus`
   ADD CONSTRAINT `userStatus_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`);
 
 --
+-- Constraints for table `user_plan_preferences`
+--
+ALTER TABLE `user_plan_preferences`
+  ADD CONSTRAINT `fk_plan_prefs_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_spotify`
+--
+ALTER TABLE `user_spotify`
+  ADD CONSTRAINT `user_spotify_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `user_xp`
+--
+ALTER TABLE `user_xp`
+  ADD CONSTRAINT `fk_user_xp_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `weight_log`
 --
 ALTER TABLE `weight_log`
   ADD CONSTRAINT `weight_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `xp_event`
+--
+ALTER TABLE `xp_event`
+  ADD CONSTRAINT `fk_xp_event_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 COMMIT;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `beats_mix_log`
--- Diet & Beats "AI DJ Mixer" — one row per fresh track+food mix.
--- Powers mix history and the archetype collection. Also created lazily at
--- runtime via bb_ensure_beats_mix_table() (dashboard/handlers/functions.php).
---
-CREATE TABLE IF NOT EXISTS `beats_mix_log` (
-  `mix_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `track_name` varchar(120) NOT NULL,
-  `artist_name` varchar(120) NOT NULL DEFAULT '',
-  `food_item` varchar(120) NOT NULL,
-  `calories` int(11) NOT NULL DEFAULT 0,
-  `archetype` varchar(80) NOT NULL DEFAULT '',
-  `detected_vibe` varchar(60) NOT NULL DEFAULT '',
-  `match_score` tinyint(4) NOT NULL DEFAULT 0,
-  `energy_sync` tinyint(4) NOT NULL DEFAULT 0,
-  `comfort` tinyint(4) NOT NULL DEFAULT 0,
-  `chaos` tinyint(4) NOT NULL DEFAULT 0,
-  `verdict` varchar(255) NOT NULL DEFAULT '',
-  `rarity` varchar(60) NOT NULL DEFAULT '',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`mix_id`),
-  KEY `user_created` (`user_id`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

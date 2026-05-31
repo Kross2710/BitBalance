@@ -5,10 +5,9 @@
     <a href="admin-users.php" class="nav-link <?php echo ($activePage == 'users') ? 'active' : ''; ?>">
         <i class="fa-solid fa-users"></i> Users
     </a>
-
-    <a href="admin-forums.php" class="nav-link <?php echo ($activePage == 'forums') ? 'active' : ''; ?>">
+    <!-- <a href="admin-forums.php" class="nav-link <?php echo ($activePage == 'forums') ? 'active' : ''; ?>">
         <i class="fa-solid fa-comments"></i> Forums
-    </a>
+    </a> -->
     <a href="admin-logs.php" class="nav-link <?php echo ($activePage == 'logs') ? 'active' : ''; ?>">
         <i class="fa-solid fa-clipboard-list"></i> Logs
     </a>

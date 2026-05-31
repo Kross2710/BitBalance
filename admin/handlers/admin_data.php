@@ -84,15 +84,6 @@ function getUsersBySearchAndFilter($searchTerm = '', $filterRole = '')
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getAllProducts()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("SELECT * FROM product");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 // Workin on this part
 function getActivityLogs($searchTerm = '', $filterAction = '', $filterRole = '')
 {
@@ -126,51 +117,60 @@ function getActivityLogs($searchTerm = '', $filterAction = '', $filterRole = '')
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-function getAllOrders()
+function getActivityLogsPaginated($page, $limit, $searchTerm = '', $filterAction = '', $filterRole = '')
 {
     global $pdo;
+    
+    $queryBase = "FROM activity_log as a 
+                  JOIN user as u ON a.user_id = u.user_id 
+                  WHERE 1=1";
+    $params = [];
 
-    $stmt = $pdo->prepare("SELECT o.order_id, u.email, o.user_id, o.cart_id, o.order_status, 
-                                  o.subtotal, o.discount, o.shipping_cost, o.tax, o.grand_total, o.created_at 
-                                  FROM `order` o
-                                  Join user u ON o.user_id = u.user_id
-                                  ORDER BY o.created_at DESC
-                                ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+    if ($searchTerm) {
+        $queryBase .= " AND (u.user_name LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR a.action_type LIKE ? OR a.target_table LIKE ? OR a.description LIKE ?)";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+        $params[] = "%$searchTerm%";
+    }
 
-function getTotalOrders()
-{
-    global $pdo;
+    if ($filterAction) {
+        $queryBase .= " AND a.action_type = ?";
+        $params[] = $filterAction;
+    }
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) AS total_orders 
-        FROM `order`
-    ");
-    $stmt->execute();
-    return $stmt->fetchColumn();
-}
+    if ($filterRole) {
+        $queryBase .= " AND u.role = ?";
+        $params[] = $filterRole;
+    }
 
-// Prepare data for the total orders chart
-$ordersData = [];
-$historyOrderLabels = [];
+    // 1. Get total count
+    $countQuery = "SELECT COUNT(*) " . $queryBase;
+    $countStmt = $pdo->prepare($countQuery);
+    $countStmt->execute($params);
+    $totalCount = (int)$countStmt->fetchColumn();
 
-// Get the past 6 months
-for ($i = 5; $i >= 0; $i--) {
-    $date = date('Y-m', strtotime("-$i months"));
-    $start = $date . '-01';
-    $end = date('Y-m-t', strtotime($start)); // Last day of the month
+    // 2. Get paginated results
+    $page = max(1, (int)$page);
+    $limit = max(1, (int)$limit);
+    $offset = ($page - 1) * $limit;
 
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as total 
-        FROM `order` 
-        WHERE DATE(created_at) BETWEEN ? AND ?
-    ");
-    $stmt->execute([$start, $end]);
-    $total = $stmt->fetchColumn();
-    $ordersData[] = (int) $total;
-    $historyOrderLabels[] = date('M', strtotime($date));
+    $dataQuery = "SELECT u.user_name, u.role, a.action_type, a.description, a.target_table, a.target_id, a.created_at " 
+                 . $queryBase 
+                 . " ORDER BY a.created_at DESC LIMIT " . $limit . " OFFSET " . $offset;
+                 
+    $dataStmt = $pdo->prepare($dataQuery);
+    $dataStmt->execute($params);
+    $logs = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return [
+        'logs' => $logs,
+        'total' => $totalCount,
+        'totalPages' => (int)ceil($totalCount / $limit)
+    ];
 }
 
 function getAllPosts()
@@ -228,21 +228,32 @@ function Last7DaysLogCount()
     return $stmt->fetchColumn();
 }
 
-// Prepare data for the last 7 days log count chart
-$logData = [];
+// Prepare data for the last 7 days log count chart (Optimized to a single query!)
+$logData = array_fill(0, 7, 0);
 $historyLogLabels = [];
+$logDateMap = [];
 
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as total 
-        FROM activity_log 
-        WHERE DATE(created_at) = ?
-    ");
-    $stmt->execute([$date]);
-    $total = $stmt->fetchColumn();
-    $logData[] = (int) $total;
+    $logDateMap[$date] = 6 - $i;
     $historyLogLabels[] = date('D', strtotime($date));
+}
+
+$startDate = date('Y-m-d 00:00:00', strtotime("-6 days"));
+$stmt = $pdo->prepare("
+    SELECT DATE(created_at) as log_date, COUNT(*) as total 
+    FROM activity_log 
+    WHERE created_at >= ?
+    GROUP BY DATE(created_at)
+");
+$stmt->execute([$startDate]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($rows as $row) {
+    $d = $row['log_date'];
+    if (isset($logDateMap[$d])) {
+        $logData[$logDateMap[$d]] = (int)$row['total'];
+    }
 }
 
 function getTotalPosts()
@@ -263,24 +274,50 @@ function getTotalComments()
     return $stmt->fetchColumn();
 }
 
-// Prepare data for the total posts and comments chart
-$postData = [];
-$commentData = [];
+// Prepare data for the total posts and comments chart (Optimized to single queries!)
+$postData = array_fill(0, 7, 0);
+$commentData = array_fill(0, 7, 0);
 $postCommentLabels = [];
+$postCommentDateMap = [];
 
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $stmt = $pdo->prepare("
-        SELECT 
-            (SELECT COUNT(*) FROM forumPost WHERE DATE(date_posted) = ?) AS total_posts,
-            (SELECT COUNT(*) FROM forumComment WHERE DATE(date_posted) = ?) AS total_comments
-    ");
-    $stmt->execute([$date, $date]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    $postData[] = (int) $result['total_posts'];
-    $commentData[] = (int) $result['total_comments'];
+    $postCommentDateMap[$date] = 6 - $i;
     $postCommentLabels[] = date('D', strtotime($date));
+}
+
+// Single high-performance query for posts
+$stmtPosts = $pdo->prepare("
+    SELECT DATE(date_posted) as post_date, COUNT(*) as total
+    FROM forumPost
+    WHERE date_posted >= ?
+    GROUP BY DATE(date_posted)
+");
+$stmtPosts->execute([$startDate]);
+$postRows = $stmtPosts->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($postRows as $row) {
+    $d = $row['post_date'];
+    if (isset($postCommentDateMap[$d])) {
+        $postData[$postCommentDateMap[$d]] = (int)$row['total'];
+    }
+}
+
+// Single high-performance query for comments
+$stmtComments = $pdo->prepare("
+    SELECT DATE(date_posted) as comment_date, COUNT(*) as total
+    FROM forumComment
+    WHERE date_posted >= ?
+    GROUP BY DATE(date_posted)
+");
+$stmtComments->execute([$startDate]);
+$commentRows = $stmtComments->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($commentRows as $row) {
+    $d = $row['comment_date'];
+    if (isset($postCommentDateMap[$d])) {
+        $commentData[$postCommentDateMap[$d]] = (int)$row['total'];
+    }
 }
 
 function getStreakUpdatedByUser()
@@ -297,44 +334,31 @@ function getStreakUpdatedByUser()
     return $stmt->fetchColumn();
 }
 
-// Prepare data for the streaks chart
-$streakData = [];
+// Prepare data for the streaks chart (Optimized to a single query!)
+$streakData = array_fill(0, 7, 0);
 $streakLabels = [];
+$streakDateMap = [];
+
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as total
-        FROM activity_log
-        WHERE action_type = 'streak_update' AND DATE(created_at) = ?
-    ");
-    $stmt->execute([$date]);
-    $total = $stmt->fetchColumn();
-    $streakData[] = (int) $total;
+    $streakDateMap[$date] = 6 - $i;
     $streakLabels[] = date('D', strtotime($date));
 }
 
-function getTotalRevenue()
-{
-    global $pdo;
-    $stmt = $pdo->prepare("
-        SELECT COALESCE(SUM(grand_total), 0) AS revenue
-        FROM `order`
-        WHERE order_status IN ('paid', 'shipped', 'completed')
-    ");
-    $stmt->execute();
-    return (float) $stmt->fetchColumn();
-}
+$stmt = $pdo->prepare("
+    SELECT DATE(created_at) as streak_date, COUNT(*) as total
+    FROM activity_log
+    WHERE action_type = 'streak_update' AND created_at >= ?
+    GROUP BY DATE(created_at)
+");
+$stmt->execute([$startDate]);
+$streakRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-function getAverageOrderValue()
-{
-    global $pdo;
-    $stmt = $pdo->prepare("
-        SELECT COALESCE(AVG(grand_total), 0) AS aov
-        FROM `order`
-        WHERE order_status IN ('paid', 'shipped', 'completed')
-    ");
-    $stmt->execute();
-    return (float) $stmt->fetchColumn();
+foreach ($streakRows as $row) {
+    $d = $row['streak_date'];
+    if (isset($streakDateMap[$d])) {
+        $streakData[$streakDateMap[$d]] = (int)$row['total'];
+    }
 }
 
 function getTodayNewUsers()
@@ -367,45 +391,6 @@ function getUserStatusBreakdown()
     ];
 }
 
-function getOrderStatusBreakdown()
-{
-    global $pdo;
-    $stmt = $pdo->prepare("
-        SELECT order_status, COUNT(*) AS total
-        FROM `order`
-        GROUP BY order_status
-    ");
-    $stmt->execute();
-    $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    $statuses = ['pending', 'paid', 'shipped', 'completed', 'cancelled'];
-    $out = [];
-    foreach ($statuses as $s) {
-        $out[$s] = (int) ($rows[$s] ?? 0);
-    }
-    return $out;
-}
-
-function getTopProducts($limit = 5)
-{
-    global $pdo;
-    $limit = max(1, min(50, (int) $limit));
-    $stmt = $pdo->prepare("
-        SELECT oi.product_id,
-               COALESCE(p.product_name, oi.product_name) AS product_name,
-               SUM(oi.quantity)   AS units_sold,
-               SUM(oi.line_total) AS revenue
-        FROM order_item oi
-        JOIN `order` o ON o.order_id = oi.order_id
-        LEFT JOIN product p ON p.product_id = oi.product_id
-        WHERE o.order_status IN ('paid', 'shipped', 'completed')
-        GROUP BY oi.product_id, product_name
-        ORDER BY units_sold DESC
-        LIMIT $limit
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 function getRecentActivity($limit = 10)
 {
     global $pdo;
@@ -420,5 +405,47 @@ function getRecentActivity($limit = 10)
     ");
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getAverageCaloriesByCategory()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT meal_category, ROUND(AVG(calories)) as avg_cal
+        FROM intakeLog
+        GROUP BY meal_category
+    ");
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    
+    $categories = ['breakfast', 'lunch', 'dinner', 'snack'];
+    $out = [];
+    foreach ($categories as $cat) {
+        $out[$cat] = (int)($rows[$cat] ?? 0);
+    }
+    return $out;
+}
+
+function getTopBeatsVibes()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT detected_vibe, COUNT(*) as total
+        FROM beats_mix_log
+        WHERE detected_vibe != ''
+        GROUP BY detected_vibe
+        ORDER BY total DESC
+        LIMIT 5
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getTotalFoodLogged()
+{
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM intakeLog");
+    $stmt->execute();
+    return (int)$stmt->fetchColumn();
 }
 ?>
