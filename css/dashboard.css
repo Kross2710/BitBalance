@@ -1142,173 +1142,96 @@ table.meals-table {
     margin-top: 20px;
 }
 
-/* --- TODAY'S FOCUS CARD --- */
-.focus-card {
-    background:
-        radial-gradient(circle at top right, rgba(28, 176, 246, 0.12), transparent 42%),
-        var(--color-surface);
+/* --- Merged "Today's Focus" strip (inside the top "Hôm nay" progress widget) ---
+   Replaces the standalone focus-card; keeps remaining kcal + macro nudge + goal
+   edit without the full-height card, trimming the dashboard on mobile. */
+.today-focus-row {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    min-height: 220px;
-}
-
-.flex>.focus-card:last-child {
-    flex-grow: 0;
-    justify-content: normal;
-}
-
-.focus-card-header,
-.focus-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.focus-actions {
-    margin-top: auto;
-}
-
-.focus-kicker {
-    display: inline-flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    color: var(--color-primary);
-    font-size: 0.82rem;
-    font-weight: 800;
-    text-transform: uppercase;
+    margin-top: 14px;
 }
 
-.focus-status {
+.today-focus-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
     border-radius: 999px;
-    padding: 5px 10px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
     background: var(--color-surface-alt);
-    color: var(--text-secondary);
+    border: 1px solid var(--color-border-subtle);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
-.focus-status.good {
-    background: var(--color-success-bg);
+.today-focus-chip i {
+    color: var(--color-primary);
+}
+
+.today-focus-chip.good i {
     color: var(--color-success);
 }
 
-.focus-status.alert {
-    background: var(--color-danger-bg);
+.today-focus-chip.alert i {
     color: var(--color-danger);
 }
 
-.focus-main strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 1.7rem;
-    line-height: 1.1;
-    margin-bottom: 6px;
+/* Inline macro icons: keep just the colour (no tinted box like the old card). */
+.today-focus-chip.macro-focus i {
+    background: transparent;
 }
 
-.focus-main p {
-    color: var(--text-secondary);
-    font-size: 0.92rem;
-    line-height: 1.45;
-    margin: 0;
+.today-focus-chip.macro-focus.protein i {
+    color: #ef4444;
 }
 
-.focus-insights {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+.today-focus-chip.macro-focus.carbs i {
+    color: #b7791f;
 }
 
-.focus-insight {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    padding: 11px 10px;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: 10px;
-    background: var(--color-surface-alt);
+.today-focus-chip.macro-focus.fat i {
+    color: #1c7ed6;
 }
 
-.focus-insight i {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
+.today-focus-edit {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 10px;
+    gap: 6px;
+    margin-left: auto;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: transparent;
     color: var(--color-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.today-focus-edit:hover {
     background: var(--color-primary-soft);
 }
 
-.focus-insight span {
-    display: block;
-    color: var(--text-secondary);
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-.focus-insight strong {
-    display: block;
-    color: var(--text-primary);
-    font-size: 0.98rem;
-    margin-top: 2px;
-    white-space: nowrap;
-}
-
-.macro-focus.protein i {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.12);
-}
-
-.macro-focus.carbs i {
-    color: #b7791f;
-    background: rgba(245, 158, 11, 0.15);
-}
-
-.macro-focus.fat i {
-    color: #1c7ed6;
-    background: rgba(28, 176, 246, 0.14);
-}
-
-.bmi-focus i {
-    color: #ec4899; /* Health vibrant pink */
-    background: rgba(236, 72, 153, 0.14);
-}
-
-.focus-btn {
-    flex: 1;
-    min-height: 42px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    font-weight: 800;
-    text-decoration: none;
-    cursor: pointer;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-}
-
-.focus-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-}
-
-.focus-btn.primary {
-    color: var(--color-text-on-primary);
+.today-focus-edit--primary {
+    margin-left: 0;
     background: var(--color-primary);
+    color: var(--color-text-on-primary);
+    border-color: var(--color-primary);
 }
 
-.focus-btn.ghost {
-    color: var(--color-primary);
-    border-color: var(--color-border-subtle);
-    background: var(--color-surface);
+@media (max-width: 600px) {
+    .today-focus-row {
+        gap: 6px;
+    }
+
+    .today-focus-edit {
+        margin-left: 0;
+    }
 }
 
 /* --- MACRO / NUTRITION TARGETS STYLING --- */
@@ -2660,10 +2583,6 @@ main.dashboard-content.dashboard-empty-state {
         grid-column: span 2;
     }
 
-    .flex:has(.streak-card)>.focus-card {
-        grid-column: span 2;
-    }
-
     /* (Trên 480px+ thì để 2 cột) */
 
     /* === COMPACT TODAY HERO (dashboard page only) ===
@@ -2681,10 +2600,17 @@ main.dashboard-content.dashboard-empty-state {
         grid-template-columns: auto 1fr auto;
         grid-template-areas:
             "title value goal"
-            "bar bar bar";
+            "bar bar bar"
+            "focus focus focus";
         align-items: center;
         column-gap: 12px;
         row-gap: 8px;
+    }
+
+    /* Full-width row of its own so the chips don't balloon a grid column and
+       squeeze the goal label into wrapping. */
+    main.dashboard .progress-widget .today-focus-row {
+        grid-area: focus;
     }
 
     main.dashboard .progress-widget h3 {
@@ -2724,10 +2650,6 @@ main.dashboard-content.dashboard-empty-state {
 
     .flex:has(.streak-card)>.weight-card {
         grid-column: span 1;
-    }
-
-    .flex:has(.streak-card)>.focus-card {
-        grid-column: span 2;
     }
 }
 

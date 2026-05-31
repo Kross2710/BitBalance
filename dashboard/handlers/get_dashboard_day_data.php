@@ -37,7 +37,6 @@ $response = [
     ],
     'rowsHtml' => '',
     'focusTitle' => '',
-    'focusCopy' => '',
     'focusTone' => 'neutral',
     'macroFocusText' => '',
     'macroFocusIcon' => 'fa-bullseye',
@@ -135,27 +134,23 @@ if ($isLoggedIn) {
     }
     $rowsHtml = ob_get_clean();
 
-    // 6. Focus Card Data
+    // 6. Today's-focus data (remaining kcal + macro nudge for the "Hôm nay" widget)
     $macroTotals = getMacroTotalsToday($userId, $selectedDate);
     $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal ? (int) $userGoal : null);
     $hasCalorieGoal = !empty($userGoal);
     $calorieDiff = $hasCalorieGoal ? ((int) $userGoal - (int) $totalCalories) : null;
-    
+
     if (!$hasCalorieGoal) {
         $focusTitle = t_raw('dashboard.focus.title.set_goal');
-        $focusCopy = t_raw('dashboard.focus.copy.set_goal');
         $focusTone = 'neutral';
     } elseif ($calorieDiff > 0) {
         $focusTitle = t_raw('dashboard.focus.title.left', ['n' => number_format($calorieDiff)]);
-        $focusCopy = t_raw('dashboard.focus.copy.left');
         $focusTone = 'good';
     } elseif ($calorieDiff === 0) {
         $focusTitle = t_raw('dashboard.focus.title.matched');
-        $focusCopy = t_raw('dashboard.focus.copy.matched');
         $focusTone = 'good';
     } else {
         $focusTitle = t_raw('dashboard.focus.title.over', ['n' => number_format(abs($calorieDiff))]);
-        $focusCopy = t_raw('dashboard.focus.copy.over');
         $focusTone = 'alert';
     }
 
@@ -251,7 +246,6 @@ if ($isLoggedIn) {
         ],
         'rowsHtml' => $rowsHtml,
         'focusTitle' => $focusTitle,
-        'focusCopy' => $focusCopy,
         'focusTone' => $focusTone,
         'macroFocusText' => $macroFocusText,
         'macroFocusIcon' => $macroFocusIcon,
@@ -328,7 +322,6 @@ if ($isLoggedIn) {
         'mealCategoryData' => $mealCategoryData,
         'rowsHtml' => $rowsHtml,
         'focusTitle' => t_raw('dashboard.focus.title.left', ['n' => number_format(max(0, $userGoal - $totalCalories))]),
-        'focusCopy' => t_raw('dashboard.focus.copy.left'),
         'focusTone' => 'good',
         'macroFocusText' => 'Protein +35g',
         'macroFocusIcon' => 'fa-drumstick-bite',

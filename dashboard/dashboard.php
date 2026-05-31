@@ -162,19 +162,15 @@ $calorieDiff = $hasCalorieGoal ? ((int) $userGoal - (int) $totalCalories) : null
 
 if (!$hasCalorieGoal) {
     $focusTitle = t_raw('dashboard.focus.title.set_goal');
-    $focusCopy = t_raw('dashboard.focus.copy.set_goal');
     $focusTone = 'neutral';
 } elseif ($calorieDiff > 0) {
     $focusTitle = t_raw('dashboard.focus.title.left', ['n' => number_format($calorieDiff)]);
-    $focusCopy = t_raw('dashboard.focus.copy.left');
     $focusTone = 'good';
 } elseif ($calorieDiff === 0) {
     $focusTitle = t_raw('dashboard.focus.title.matched');
-    $focusCopy = t_raw('dashboard.focus.copy.matched');
     $focusTone = 'good';
 } else {
     $focusTitle = t_raw('dashboard.focus.title.over', ['n' => number_format(abs($calorieDiff))]);
-    $focusCopy = t_raw('dashboard.focus.copy.over');
     $focusTone = 'alert';
 }
 
@@ -299,10 +295,12 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     <i class="fas fa-bullseye" style="color: #60a5fa;"></i>
                     <span><?= t('dashboard.welcome.goal_met', ['pct' => (int) $progressPercentage]) ?></span>
                 </div>
-                <div class="welcome-stat-chip">
-                    <i class="fas fa-trophy" style="color: #FFD700;"></i>
-                    <span><?= t('dashboard.welcome.level_active') ?></span>
-                </div>
+                <?php if ($bmi > 0): ?>
+                    <div class="welcome-stat-chip">
+                        <i class="fas fa-heart-pulse" style="color: #f472b6;"></i>
+                        <span>BMI <?= htmlspecialchars($bmi) ?> · <?= htmlspecialchars($bmiClass) ?></span>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -321,6 +319,28 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             <div class="progress-labels">
                                 <span><?= t('dashboard.today.goal') ?></span>
                                 <span><?php echo $userGoal; ?></span>
+                            </div>
+
+                            <?php /* Merged "Today's Focus" essentials: remaining kcal +
+                                     the macro to prioritise + a quick goal edit. */ ?>
+                            <div class="today-focus-row">
+                                <?php if ($hasCalorieGoal): ?>
+                                    <span class="today-focus-chip <?= htmlspecialchars($focusTone) ?>" id="todayFocusRemaining">
+                                        <i class="fas fa-compass"></i> <span class="tf-text"><?= htmlspecialchars($focusTitle) ?></span>
+                                    </span>
+                                    <span class="today-focus-chip macro-focus <?= htmlspecialchars($macroFocusKey ?? 'neutral') ?>" id="todayFocusMacro">
+                                        <i class="fas <?= htmlspecialchars($macroFocusIcon) ?>"></i> <span class="tf-text"><?= htmlspecialchars($macroFocusText) ?></span>
+                                    </span>
+                                    <button type="button" class="today-focus-edit"
+                                        onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
+                                        <i class="fas fa-bullseye"></i> <?= t('dashboard.focus.adjust_goal') ?>
+                                    </button>
+                                <?php else: ?>
+                                    <button type="button" class="today-focus-edit today-focus-edit--primary"
+                                        onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
+                                        <i class="fas fa-bullseye"></i> <?= t('dashboard.right.set_goal') ?>
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -930,57 +950,9 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         </div>
                     </section>
 
-                    <!-- TODAY'S FOCUS CARD -->
-                    <section class="dashboard-card focus-card">
-                        <div class="focus-card-header">
-                            <span class="focus-kicker"><i class="fas fa-compass"></i> <?= t('dashboard.focus.kicker') ?></span>
-                            <span class="focus-status <?= htmlspecialchars($focusTone) ?>">
-                                <?= $status === 'Overlimit' ? t('dashboard.focus.status.adjust') : ($hasCalorieGoal ? t('dashboard.focus.status.active') : t('dashboard.focus.status.setup')) ?>
-                            </span>
-                        </div>
-
-                        <div class="focus-main">
-                            <strong><?= htmlspecialchars($focusTitle) ?></strong>
-                            <p><?= htmlspecialchars($focusCopy) ?></p>
-                        </div>
-
-                        <div class="focus-insights">
-                            <div class="focus-insight macro-focus <?= htmlspecialchars($macroFocusKey ?? 'neutral') ?>">
-                                <i class="fas <?= htmlspecialchars($macroFocusIcon) ?>"></i>
-                                <div>
-                                    <span><?= t('dashboard.focus.macro_focus') ?></span>
-                                    <strong><?= htmlspecialchars($macroFocusText) ?></strong>
-                                </div>
-                            </div>
-                            <div class="focus-insight bmi-focus">
-                                <i class="fas fa-heart-pulse"></i>
-                                <div>
-                                    <span><?= t('dashboard.focus.bmi_status') ?></span>
-                                    <strong><?= $bmi > 0 ? htmlspecialchars($bmi) . ' (' . htmlspecialchars($bmiClass) . ')' : t('dashboard.focus.needs_info') ?></strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="focus-actions">
-                            <?php if ($hasCalorieGoal): ?>
-                                <a href="dashboard-plan.php" class="focus-btn primary">
-                                    <i class="fas fa-route"></i> <?= t('dashboard.focus.view_plan') ?>
-                                </a>
-                                <button type="button" class="focus-btn ghost"
-                                    onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
-                                    <i class="fas fa-bullseye"></i> <?= t('dashboard.focus.adjust_goal') ?>
-                                </button>
-                            <?php else: ?>
-                                <button type="button" class="focus-btn primary"
-                                    onclick="<?php echo $isLoggedIn ? 'openGoalModal()' : "window.location.href='" . BASE_URL . "login.php'"; ?>">
-                                    <i class="fas fa-bullseye"></i> <?= t('dashboard.right.set_goal') ?>
-                                </button>
-                                <a href="dashboard-plan.php" class="focus-btn ghost">
-                                    <i class="fas fa-route"></i> <?= t('dashboard.focus.view_plan') ?>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </section>
+                    <?php /* Today's Focus card removed — its unique bits were merged
+                             into the top "Hôm nay" widget (macro nudge + remaining +
+                             goal edit) and the welcome BMI chip to cut mobile length. */ ?>
                 </div>
             </div>
         </div>
@@ -1469,23 +1441,21 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         tableController.filterAndPaginate();
                     }
 
-                    const focusTitle = document.querySelector('.focus-main strong');
-                    if (focusTitle) focusTitle.textContent = data.focusTitle;
-                    const focusCopy = document.querySelector('.focus-main p');
-                    if (focusCopy) focusCopy.textContent = data.focusCopy;
-                    const focusStatus = document.querySelector('.focus-status');
-                    if (focusStatus) {
-                        focusStatus.className = 'focus-status ' + data.focusTone;
-                        focusStatus.textContent = (data.focusTone === 'alert') ? 'Needs Adjustment' : 'Active';
+                    // Today's focus strip merged into the "Hôm nay" widget.
+                    const tfRemaining = document.querySelector('#todayFocusRemaining');
+                    if (tfRemaining) {
+                        tfRemaining.className = 'today-focus-chip ' + (data.focusTone || '');
+                        const t = tfRemaining.querySelector('.tf-text');
+                        if (t) t.textContent = data.focusTitle;
                     }
-                    const macroFocusTitleVal = document.querySelector('.macro-focus strong');
-                    if (macroFocusTitleVal) macroFocusTitleVal.textContent = data.macroFocusText;
-                    const macroFocusIconVal = document.querySelector('.macro-focus i');
-                    if (macroFocusIconVal) macroFocusIconVal.className = 'fas ' + data.macroFocusIcon;
-                    const macroFocusDiv = document.querySelector('.macro-focus');
-                    if (macroFocusDiv) macroFocusDiv.className = 'focus-insight macro-focus ' + data.macroFocusKey;
-                    const bmiStrong = document.querySelector('.bmi-focus strong');
-                    if (bmiStrong) bmiStrong.textContent = data.bmi > 0 ? `${data.bmi} (${data.bmiClass})` : 'Needs Info';
+                    const tfMacro = document.querySelector('#todayFocusMacro');
+                    if (tfMacro) {
+                        tfMacro.className = 'today-focus-chip macro-focus ' + (data.macroFocusKey || 'neutral');
+                        const mi = tfMacro.querySelector('i');
+                        if (mi) mi.className = 'fas ' + data.macroFocusIcon;
+                        const mt = tfMacro.querySelector('.tf-text');
+                        if (mt) mt.textContent = data.macroFocusText;
+                    }
                 }
 
                 // Core loader. reRenderCalendar=true swaps the whole navbar
@@ -1493,8 +1463,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 async function loadDate(date, reRenderCalendar = false) {
                     const containersToFade = [
                         document.querySelector('.progress-widget'),
-                        document.querySelector('#statsHubCard'),
-                        document.querySelector('.focus-card')
+                        document.querySelector('#statsHubCard')
                     ];
                     containersToFade.forEach(c => { if (c) c.style.opacity = '0.5'; });
 

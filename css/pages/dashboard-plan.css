@@ -200,100 +200,6 @@
     color: var(--color-secondary);
 }
 
-.plan-goal-options {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 18px;
-}
-
-.goal-option {
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 14px 10px;
-    cursor: pointer;
-    background: var(--color-surface);
-    color: var(--text-primary);
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-.goal-option input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.goal-option i {
-    display: block;
-    color: var(--color-accent);
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-}
-
-.goal-option span {
-    display: block;
-    font-weight: 800;
-    margin-bottom: 4px;
-}
-
-.goal-option small {
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    line-height: 1.35;
-}
-
-.goal-option:hover,
-.goal-option.active {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-soft);
-    transform: translateY(-1px);
-}
-
-.plan-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-}
-
-.plan-field.full {
-    grid-column: span 2;
-}
-
-.plan-field label {
-    display: block;
-    color: var(--text-secondary);
-    font-size: 0.88rem;
-    font-weight: 800;
-    margin-bottom: 6px;
-}
-
-.plan-field label span {
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-.plan-field input,
-.plan-field select {
-    width: 100%;
-    min-width: 0;
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-alt);
-    color: var(--text-primary);
-    padding: 11px 12px;
-    font-size: 0.95rem;
-    text-overflow: ellipsis;
-}
-
-.plan-field input:focus,
-.plan-field select:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-soft);
-    outline: none;
-}
-
-.plan-primary-btn,
-.plan-apply-btn,
 .plan-secondary-btn {
     display: inline-flex;
     align-items: center;
@@ -307,18 +213,6 @@
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
-.plan-primary-btn,
-.plan-apply-btn {
-    width: 100%;
-    margin-top: 16px;
-    padding: 12px 16px;
-    color: var(--color-text-on-primary);
-    background: var(--color-primary);
-    box-shadow: 0 4px 0 var(--color-primary-hover);
-}
-
-.plan-primary-btn:hover,
-.plan-apply-btn:hover,
 .plan-secondary-btn:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
@@ -429,10 +323,6 @@
 .plan-chart-wrap {
     height: 280px;
     min-height: 280px;
-}
-
-.plan-setup-btn {
-    white-space: nowrap;
 }
 
 .calculator-readout {
@@ -589,28 +479,15 @@
     .plan-grid {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
-            "calculator result"
-            "form form";
+            "calculator result";
     }
 
     .plan-calculator-panel {
         grid-area: calculator;
     }
 
-    .plan-form-panel {
-        grid-area: form;
-    }
-
     .plan-result-panel {
         grid-area: result;
-    }
-
-    .plan-form-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .plan-field.full {
-        grid-column: span 1;
     }
 
     .calculator-profile-list {
@@ -629,10 +506,6 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .plan-setup-btn {
-        width: 100%;
-    }
-
     .plan-summary-strip .plan-hero-metrics {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -640,16 +513,7 @@
     .plan-grid {
         grid-template-areas:
             "calculator"
-            "form"
             "result";
-    }
-
-    .plan-form-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .plan-field.full {
-        grid-column: span 2;
     }
 }
 
@@ -664,11 +528,7 @@
     }
 
     .plan-hero-metrics,
-    .plan-goal-options,
-    .plan-grid,
-    .plan-stats-row,
-    .plan-macro-strip,
-    .calculator-mini-grid {
+    .plan-grid {
         grid-template-columns: 1fr;
     }
 
@@ -676,7 +536,11 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .calculator-mini-grid {
+    /* Keep the small 3-value rows as compact 3-up tiles instead of stacking
+       into tall single columns — matches the hero metrics + mini-grid. */
+    .calculator-mini-grid,
+    .plan-stats-row,
+    .plan-macro-strip {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
@@ -686,14 +550,6 @@
 
     .plan-summary-strip .plan-metric strong {
         font-size: 1.05rem;
-    }
-
-    .plan-form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .plan-field.full {
-        grid-column: span 1;
     }
 
     .plan-target strong {

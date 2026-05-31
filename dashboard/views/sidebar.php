@@ -13,10 +13,31 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
 // clients on the Intake link. Cheap COUNTs, safe before migrations have run.
 $sidebarPtBadge = 0;
 $sidebarIsPt = false;
+// Whether this (non-PT) user has an accepted trainer — drives the client-side
+// "My Trainer" nav link. Cached in session for 60s like the friends count.
+$sidebarHasTrainer = false;
 if (!empty($_SESSION['user']) && isset($pdo)) {
     require_once __DIR__ . '/../../include/handlers/pt_notify.php';
     $sidebarIsPt = (($_SESSION['user']['role'] ?? 'regular') === 'pt');
     $sidebarPtBadge = pt_sidebar_badge_count($pdo, (int) $_SESSION['user']['user_id'], $sidebarIsPt);
+
+    if (!$sidebarIsPt) {
+        $__uid = (int) $_SESSION['user']['user_id'];
+        if (isset($_SESSION['sidebar_has_trainer'], $_SESSION['sidebar_has_trainer_at'])
+            && (time() - (int) $_SESSION['sidebar_has_trainer_at']) < 60) {
+            $sidebarHasTrainer = (bool) $_SESSION['sidebar_has_trainer'];
+        } else {
+            try {
+                $stmt = $pdo->prepare("SELECT 1 FROM trainer_client WHERE client_id = ? AND status = 'accepted' LIMIT 1");
+                $stmt->execute([$__uid]);
+                $sidebarHasTrainer = (bool) $stmt->fetchColumn();
+            } catch (Throwable $e) {
+                $sidebarHasTrainer = false;
+            }
+            $_SESSION['sidebar_has_trainer'] = $sidebarHasTrainer;
+            $_SESSION['sidebar_has_trainer_at'] = time();
+        }
+    }
 }
 // Carry the currently-viewed day across the Overview <-> Intake flow, so
 // reviewing a past day on one page lands on the same day on the other. Empty
@@ -40,12 +61,19 @@ $__navDateQ = (!empty($selectedDate) && $selectedDate !== date('Y-m-d'))
         </a>
     <?php endif; ?>
 
+    <?php if ($sidebarHasTrainer): ?>
+        <a href="dashboard-coach.php" class="nav-link <?php echo ($activePage == 'coach') ? 'active' : ''; ?>"
+            data-short="<?= t('dashboard.sidebar.coach_short') ?>">
+            <i class="fas fa-dumbbell"></i> <?= t('dashboard.sidebar.coach') ?>
+            <?php if ($sidebarPtBadge > 0): ?>
+                <span class="nav-link__badge"><?= $sidebarPtBadge ?></span>
+            <?php endif; ?>
+        </a>
+    <?php endif; ?>
+
     <a href="dashboard-intake.php<?= $__navDateQ ?>" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.intake_short') ?>">
         <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>
-        <?php if (!$sidebarIsPt && $sidebarPtBadge > 0): ?>
-            <span class="nav-link__badge"><?= $sidebarPtBadge ?></span>
-        <?php endif; ?>
     </a>
 
     <a href="dashboard-plan.php" class="nav-link <?php echo ($activePage == 'plan') ? 'active' : ''; ?>"

@@ -49,6 +49,14 @@
 }
 
 /* --- Menu / Nav --- */
+/* nav lays out the collapsible menu, the always-visible user actions, and the
+   hamburger in one row. */
+.main-header nav {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
 .main-header nav .menu {
     display: flex;
     align-items: center;
@@ -231,11 +239,17 @@
         border-left: 4px solid var(--color-primary);
     }
 
+    /* nav now holds only the user-actions + hamburger in the bar (the menu is
+       the absolute dropdown), so keep them tightly spaced. */
+    .main-header nav {
+        gap: 12px;
+    }
+
+    /* user-actions sits in the header bar (no longer inside the dropdown), so
+       drop the full-width dropdown styling and the divider. */
     .user-actions {
-        width: 100%;
-        padding: 15px 24px;
-        justify-content: space-between;
+        padding-left: 0;
         border-left: none;
-        background: var(--color-surface-alt);
+        gap: 12px;
     }
 }

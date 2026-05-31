@@ -496,10 +496,82 @@
         text-align: center;
     }
 
+    /* Keep stats 2×2 and records 2-up instead of collapsing into one tall
+       column — only the achievement list goes full width (now as compact
+       horizontal cards), which is what actually trims the page length. */
     .progress-stat-grid,
-    .record-grid,
+    .record-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .achievement-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Compact horizontal achievement card: icon on the left, name + level on
+       top, 1-line description, progress bar across the bottom (~75px tall vs
+       ~160px). display:contents dissolves __top so its icon + level badge
+       join the card's own grid without touching the markup. */
+    .achievement-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "icon name  level"
+            "icon desc  desc"
+            "prog prog  prog";
+        column-gap: 12px;
+        row-gap: 4px;
+        align-items: center;
+        padding: 14px;
+    }
+
+    .achievement-card__top {
+        display: contents;
+    }
+
+    .achievement-card__icon {
+        grid-area: icon;
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .achievement-card__level {
+        grid-area: level;
+        white-space: nowrap;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+
+    .achievement-card h3 {
+        grid-area: name;
+        margin: 0;
+        font-size: 15px;
+    }
+
+    .achievement-card p {
+        grid-area: desc;
+        min-height: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: 13px;
+    }
+
+    .achievement-card__progress {
+        grid-area: prog;
+        margin-top: 4px;
+    }
+
+    .achievement-card__numbers {
+        margin-bottom: 4px;
+    }
+
+    /* Slimmer bar inside the compact card (the level/section bars keep 18px). */
+    .achievement-card progress {
+        height: 12px;
     }
 
     .progress-section__header {

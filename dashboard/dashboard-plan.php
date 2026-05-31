@@ -38,49 +38,27 @@ if (!isset($activityOptions[$defaultActivity])) {
     $defaultActivity = 'moderately_active';
 }
 
-$isPlanPost = $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['goal_mode']);
+// Goal-mode selection + saving lives in set-goal.php; this page is read-only and
+// just loads the saved preferences to display the recommendation.
 $savedPrefs = $isLoggedIn ? plan_load_preferences($pdo, (int) $user['user_id']) : null;
 
-$goalMode = $_POST['goal_mode'] ?? $savedPrefs['goal_mode'] ?? 'lose';
+$goalMode = $savedPrefs['goal_mode'] ?? 'lose';
 if (!isset($goalModes[$goalMode])) {
     $goalMode = 'lose';
 }
 
-$activityLevel = $_POST['activity_level'] ?? $savedPrefs['activity_level'] ?? $defaultActivity;
+$activityLevel = $savedPrefs['activity_level'] ?? $defaultActivity;
 if (!isset($activityOptions[$activityLevel])) {
     $activityLevel = $defaultActivity;
 }
 
-if (isset($_POST['weekly_rate']) && is_numeric($_POST['weekly_rate'])) {
-    $weeklyRate = (float) $_POST['weekly_rate'];
-} elseif ($savedPrefs && isset($savedPrefs['weekly_rate'])) {
-    $weeklyRate = (float) $savedPrefs['weekly_rate'];
-} else {
-    $weeklyRate = 0.25;
-}
+$weeklyRate = ($savedPrefs && isset($savedPrefs['weekly_rate'])) ? (float) $savedPrefs['weekly_rate'] : 0.25;
 $weeklyRate = max(0.0, min(1.5, $weeklyRate));
 if ($goalMode === 'maintain') {
     $weeklyRate = 0.0;
 }
 
-$targetWeight = null;
-if (isset($_POST['target_weight']) && $_POST['target_weight'] !== '' && is_numeric($_POST['target_weight'])) {
-    $tw = (float) $_POST['target_weight'];
-    if ($tw > 0 && $tw <= 500) {
-        $targetWeight = $tw;
-    }
-} elseif ($savedPrefs && $savedPrefs['target_weight'] !== null) {
-    $targetWeight = $savedPrefs['target_weight'];
-}
-
-if ($isPlanPost && $isLoggedIn) {
-    plan_save_preferences($pdo, (int) $user['user_id'], [
-        'goal_mode'      => $goalMode,
-        'weekly_rate'    => $weeklyRate,
-        'activity_level' => $activityLevel,
-        'target_weight'  => $targetWeight,
-    ]);
-}
+$targetWeight = ($savedPrefs && $savedPrefs['target_weight'] !== null) ? $savedPrefs['target_weight'] : null;
 
 $currentGoal = !empty($userGoal) ? (int) $userGoal : null;
 $fallbackWeight = is_numeric($userWeight) && (float) $userWeight > 0 ? (float) $userWeight : null;
@@ -422,31 +400,6 @@ if ($physicalReady) {
     <?php if ($isLoggedIn): include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; endif; ?>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
-
-    <script>
-        (function () {
-            const form = document.getElementById('planForm');
-            const rate = document.getElementById('weekly_rate');
-            const options = Array.from(document.querySelectorAll('.goal-option'));
-
-            function syncGoalMode() {
-                const selected = form?.querySelector('input[name="goal_mode"]:checked')?.value || 'lose';
-                options.forEach(option => {
-                    option.classList.toggle('active', option.querySelector('input')?.value === selected);
-                });
-                if (rate) {
-                    rate.disabled = selected === 'maintain';
-                }
-            }
-
-            options.forEach(option => {
-                option.addEventListener('click', syncGoalMode);
-                option.querySelector('input')?.addEventListener('change', syncGoalMode);
-            });
-            syncGoalMode();
-
-        })();
-    </script>
 </body>
 
 </html>

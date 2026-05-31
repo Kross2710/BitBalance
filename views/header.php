@@ -40,8 +40,12 @@ if ($isLoggedIn) {
                     <a href="<?= BASE_URL ?>about.php"
                         class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>"><?= t('header.nav.about') ?></a>
                 </div>
+            </div>
 
-                <div class="user-actions">
+            <?php /* User actions (XP chip + profile avatar / login) live OUTSIDE
+                     #navMenu so they stay visible in the bar on mobile instead of
+                     being hidden inside the hamburger dropdown. */ ?>
+            <div class="user-actions">
 
                     <?php if (isset($_SESSION['user']) && $xpChip): ?>
                         <a href="<?= BASE_URL ?>dashboard/dashboard-progress.php" id="headerXpChip" class="xp-chip"
@@ -75,7 +79,6 @@ if ($isLoggedIn) {
                     <?php else: ?>
                         <a href="<?php echo BASE_URL; ?>login.php" class="btn-login"><?= t('header.sign_in') ?></a>
                     <?php endif; ?>
-                </div>
             </div>
 
             <button class="hamburger" onclick="toggleMenu()" aria-label="<?= t('header.toggle_menu') ?>">
