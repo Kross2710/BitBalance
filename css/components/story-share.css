@@ -52,6 +52,14 @@
     height: 1920px;
     transform: scale(0.35);
     transform-origin: top left;
+    /* Promote to a composited layer so the whole frame (content + the hard
+       `0 16px 0` tactile shadows) is rasterised once and scaled as a single
+       bitmap. Without this, each hard shadow rounds to sub-pixels on its own
+       under the non-integer scale and appears slightly offset (most visible
+       in Chrome's responsive/device view). */
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     background: var(--color-bg);
     color: var(--color-text);
     padding: 82px 72px;

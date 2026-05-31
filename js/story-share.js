@@ -36,7 +36,8 @@ const BitBalanceStory = {
             downloading: "Generating PNG...",
             download_btn: "Download Story",
             share_btn: "Share Story",
-            sharing_err: "Sharing not supported, downloading instead!"
+            share_title: "My BitBalance Wrapped",
+            share_text: "Check out my weekly nutrition wrapped! 🔥"
         },
         vi: {
             brand: "BitBalance",
@@ -55,7 +56,8 @@ const BitBalanceStory = {
             downloading: "Đang vẽ ảnh PNG...",
             download_btn: "Tải Story Về",
             share_btn: "Chia Sẻ Story",
-            sharing_err: "Trình duyệt không hỗ trợ chia sẻ trực tiếp, đang tải về máy!"
+            share_title: "Tổng Kết Tuần BitBalance của tôi",
+            share_text: "Xem tổng kết dinh dưỡng tuần này của mình nè! 🔥"
         }
     },
 
@@ -678,58 +680,100 @@ const BitBalanceStory = {
         // Target the standard 1080x1920 export root container
         const storyElement = document.getElementById('storyExportRoot');
 
-        // Capture canvas at high resolution
-        html2canvas(storyElement, {
+        // iOS Safari renders transparent (`backgroundColor: null`) PNGs as a
+        // black/broken box once saved or sent through the share sheet. Capture
+        // onto the export root's own solid base colour instead so the file is
+        // always fully opaque.
+        const exportBg = getComputedStyle(storyElement).backgroundColor || '#ffffff';
+
+        // The live export root is CSS-scaled (`transform: scale(.35)`) inside a
+        // small, `overflow:hidden` preview viewport. html2canvas measures that
+        // scaled/clipped geometry, so on iOS WebKit the capture comes out tiny
+        // in a corner of the frame (resetting the transform in `onclone` is not
+        // honoured reliably there). Instead, render a full-size, unscaled,
+        // off-screen *clone* — its geometry is a clean 1080×1920 with no clip.
+        const captureWrap = document.createElement('div');
+        captureWrap.style.cssText =
+            'position:fixed; left:-10000px; top:0; width:1080px; height:1920px;' +
+            'margin:0; padding:0; z-index:-1; pointer-events:none; background:' + exportBg + ';';
+
+        const clone = storyElement.cloneNode(true);
+        clone.style.transform = 'none';
+        clone.style.transformOrigin = 'top left';
+        clone.style.willChange = 'auto';
+        clone.style.position = 'relative';
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.width = '1080px';
+        clone.style.height = '1920px';
+        clone.style.margin = '0';
+
+        // Show only the currently active slide in the clone.
+        const activeSlides = this.getActiveSlides();
+        const activeSlideId = activeSlides[this.currentSlide].id;
+        clone.querySelectorAll('.story-slide').forEach(slide => {
+            const on = slide.id === activeSlideId;
+            slide.style.opacity = on ? '1' : '0';
+            slide.style.visibility = on ? 'visible' : 'hidden';
+            slide.style.zIndex = on ? '10' : '1';
+        });
+
+        captureWrap.appendChild(clone);
+        document.body.appendChild(captureWrap);
+
+        const cleanupCapture = () => {
+            if (captureWrap.parentNode) captureWrap.parentNode.removeChild(captureWrap);
+        };
+
+        // Capture the off-screen clone at exact 1080x1920 dimensions
+        html2canvas(clone, {
             width: 1080,
             height: 1920,
             scale: 1, // Capture standard exact dimensions
-            backgroundColor: null,
+            backgroundColor: exportBg,
             useCORS: true,
-            logging: false,
-            // Ensure proper font and symbol rendering
-            onclone: (clonedDoc) => {
-                const clonedEl = clonedDoc.getElementById('storyExportRoot');
-                // Ensure correct visibility of the active slide in the clone
-                const activeSlides = this.getActiveSlides();
-                const activeSlideId = activeSlides[this.currentSlide].id;
-                clonedEl.querySelectorAll('.story-slide').forEach(slide => {
-                    if (slide.id === activeSlideId) {
-                        slide.style.opacity = '1';
-                        slide.style.visibility = 'visible';
-                        slide.style.zIndex = '10';
-                    } else {
-                        slide.style.opacity = '0';
-                        slide.style.visibility = 'hidden';
-                        slide.style.zIndex = '1';
-                    }
-                });
-                
-                // Keep scaled 1:1 in capturing stage
-                clonedEl.style.transform = 'none';
-                clonedEl.style.width = '1080px';
-                clonedEl.style.height = '1920px';
-            }
+            logging: false
         }).then(canvas => {
+            cleanupCapture();
             canvas.toBlob(blob => {
+                // A null blob means the canvas was tainted (typically the
+                // cross-origin Spotify album art) or iOS ran out of canvas
+                // memory. Fail loudly instead of downloading a broken file.
+                if (!blob) {
+                    console.error('toBlob returned null — canvas tainted or too large for this browser.');
+                    alert('Failed to generate image.');
+                    this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
+                    return;
+                }
+
                 const fileName = `bitbalance-${this.currentLang}-story-${Date.now()}.png`;
 
                 if (triggerShare && navigator.canShare) {
                     const file = new File([blob], fileName, { type: 'image/png' });
-                    
+
                     if (navigator.canShare({ files: [file] })) {
+                        const t = this.translations[this.currentLang];
                         navigator.share({
                             files: [file],
-                            title: 'My BitBalance Wrapped Story',
-                            text: 'Check out my weekly nutrition wrapped!'
+                            title: t.share_title,
+                            text: t.share_text
                         }).then(() => {
                             this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
                         }).catch(err => {
+                            // Dismissing the native share sheet rejects with
+                            // AbortError. That's an intentional cancel, not a
+                            // failure — don't dump an unwanted file on the user.
+                            if (err && err.name === 'AbortError') {
+                                this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
+                                return;
+                            }
                             console.error('Sharing failed:', err);
                             this.fallbackDownload(blob, fileName);
                             this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
                         });
                     } else {
-                        alert(this.translations[this.currentLang].sharing_err);
+                        // Browser can't share files (most desktops) — quietly
+                        // fall back to a download instead of alerting.
                         this.fallbackDownload(blob, fileName);
                         this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
                     }
@@ -739,6 +783,7 @@ const BitBalanceStory = {
                 }
             }, 'image/png');
         }).catch(err => {
+            cleanupCapture();
             console.error('Rendering failed:', err);
             alert('Failed to generate image.');
             this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);

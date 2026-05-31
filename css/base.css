@@ -82,6 +82,34 @@ button {
     cursor: pointer;
 }
 
+/* -----------------------------------------------------------------------
+   Keyboard focus ring.
+   Only shows for keyboard / assistive-tech navigation (`:focus-visible`),
+   never on mouse click, so it stays invisible for pointer users.
+   Form fields (input/select/textarea) are intentionally excluded — they
+   already get their own focus ring via box-shadow in components/forms.css.
+   ----------------------------------------------------------------------- */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 3px solid var(--color-secondary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Drop the legacy default outline only when NOT keyboard-focused, so mouse
+   users don't see it but the rule above can still paint on keyboard focus. */
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible),
+summary:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+    outline: none;
+}
+
 /* --- Utility classes --- */
 .text-center { text-align: center; }
 .text-right { text-align: right; }

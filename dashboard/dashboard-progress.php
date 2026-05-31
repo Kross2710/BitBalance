@@ -280,6 +280,6 @@ function bb_progress_render_achievement(array $achievement): void
     </main>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
-    <script src="<?= BASE_URL ?>js/story-share.js" defer></script>
+    <script src="<?= BASE_URL ?>js/story-share.js?v=<?= @filemtime(PROJECT_ROOT . 'js/story-share.js') ?: '1' ?>" defer></script>
 </body>
 </html>
