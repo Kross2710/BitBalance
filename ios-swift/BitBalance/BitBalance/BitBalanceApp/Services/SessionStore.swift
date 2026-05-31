@@ -26,6 +26,25 @@ final class SessionStore: ObservableObject {
         isLoading = false
     }
 
+    func signUp(firstName: String, lastName: String, email: String, password: String, confirmPassword: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            user = try await api.register(
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password,
+                confirmPassword: confirmPassword
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+
     func restoreSession() async {
         isLoading = true
         errorMessage = nil
@@ -129,6 +148,35 @@ final class SessionStore: ObservableObject {
 
     func unfriend(targetId: Int) async throws {
         try await api.unfriend(targetId: targetId)
+    }
+}
+
+// MARK: - Preview helper
+extension SessionStore {
+    static var preview: SessionStore {
+        SessionStore(api: APIClient(baseURL: AppConfig.baseURL))
+    }
+
+    static func previewLoggedIn() -> SessionStore {
+        let store = preview
+        store.user = UserSession(
+            userId: 1,
+            handle: "hung2710",
+            userName: "hung2710",
+            firstName: "Hung",
+            lastName: "Vu",
+            email: "hung@example.com",
+            role: "regular",
+            profileImage: nil,
+            themePreference: "system"
+        )
+        return store
+    }
+
+    static func previewWithError(_ message: String) -> SessionStore {
+        let store = preview
+        store.errorMessage = message
+        return store
     }
 }
 

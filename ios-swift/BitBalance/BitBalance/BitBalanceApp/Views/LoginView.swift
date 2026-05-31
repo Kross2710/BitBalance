@@ -3,11 +3,11 @@ import SwiftUI
 struct LoginView: View {
     @EnvironmentObject private var session: SessionStore
     @Environment(\.openURL) private var openURL
-    
+
     @State private var email = ""
     @State private var password = ""
-    @State private var showPassword = false
-    
+    @State private var showSignUp = false
+
     @FocusState private var focusedField: Field?
     enum Field {
         case email
@@ -17,172 +17,226 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Vibrant background gradient matching tokens.css
                 BBColors.backgroundGradient
                     .ignoresSafeArea()
-                
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        Spacer()
-                            .frame(height: 30)
-                        
-                        // Smaller Mascot Logo Badge
-                        ZStack {
-                            Circle()
-                                .fill(BBColors.surface)
-                                .frame(width: 80, height: 80)
-                                .overlay(
-                                    Circle()
-                                        .stroke(BBColors.primary, lineWidth: 2)
-                                )
-                                .background(
-                                    Circle()
-                                        .fill(BBColors.primaryHover)
-                                        .offset(y: 4)
-                                )
-                                .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
-                            
-                            Text("🥗")
-                                .font(.system(size: 42))
+                    VStack {
+                        Spacer(minLength: 24)
+
+                        // Split-panel auth card — mirrors css/login.css .container.
+                        // On mobile the branded image is a banner on top (order:-1).
+                        VStack(spacing: 0) {
+                            AuthHeroBanner(
+                                title: "Track. Earn XP. Level up.",
+                                subtitle: "Your wellness journey, gamified."
+                            )
+                            formSection
                         }
-                        .padding(.bottom, 8)
-                        
-                        // 3D tactile card with radius-xl (28px), matching web
-                        VStack(spacing: 24) {
-                            VStack(spacing: 8) {
-                                Text("Welcome back! 👋")
-                                    .font(.system(size: 26, weight: .black))
-                                    .foregroundColor(BBColors.text)
-                                    .multilineTextAlignment(.center)
-                                
-                                Text("Log in to continue your health journey")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(BBColors.textSecondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            
-                            // Form fields
-                            VStack(spacing: 16) {
-                                // Email field with envelope icon prefix
-                                HStack(spacing: 12) {
-                                    Image(systemName: "envelope.fill")
-                                        .foregroundColor(focusedField == .email ? BBColors.primary : BBColors.textSecondary)
-                                        .font(.system(size: 16))
-                                        .frame(width: 24)
-                                    
-                                    TextField("Email", text: $email)
-                                        .textContentType(.emailAddress)
-                                        .keyboardType(.emailAddress)
-                                        .textInputAutocapitalization(.never)
-                                        .autocorrectionDisabled()
-                                        .focused($focusedField, equals: .email)
-                                }
-                                .bbInput(isFocused: focusedField == .email)
-                                
-                                // Password field with lock prefix + eye toggle show/hide
-                                HStack(spacing: 12) {
-                                    Image(systemName: "lock.fill")
-                                        .foregroundColor(focusedField == .password ? BBColors.primary : BBColors.textSecondary)
-                                        .font(.system(size: 16))
-                                        .frame(width: 24)
-                                    
-                                    if showPassword {
-                                        TextField("Password", text: $password)
-                                            .textContentType(.password)
-                                            .focused($focusedField, equals: .password)
-                                    } else {
-                                        SecureField("Password", text: $password)
-                                            .textContentType(.password)
-                                            .focused($focusedField, equals: .password)
-                                    }
-                                    
-                                    Button {
-                                        showPassword.toggle()
-                                    } label: {
-                                        Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
-                                            .foregroundColor(BBColors.textSecondary)
-                                            .font(.system(size: 16))
-                                    }
-                                }
-                                .bbInput(isFocused: focusedField == .password)
-                            }
-                            
-                            // Forgot password link
-                            HStack {
-                                Spacer()
-                                Button {
-                                    if let url = URL(string: "https://titan.csit.rmit.edu.au/~s3974781/bitbalance/reset-password.php") {
-                                        openURL(url)
-                                    }
-                                } label: {
-                                    Text("Forgot password?")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.primary)
-                                }
-                            }
-                            .padding(.top, -8)
-                            
-                            // Styled dynamic error message
-                            if let errorMessage = session.errorMessage {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 16, weight: .bold))
-                                    Text(errorMessage)
-                                        .font(.system(size: 13, weight: .bold))
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .bbAlert(isSuccess: false)
-                                .transition(.opacity.combined(with: .scale))
-                            }
-                            
-                            // Bouncy 3D Login Button
-                            Button {
-                                focusedField = nil
-                                Task {
-                                    await session.signIn(email: email, password: password)
-                                }
-                            } label: {
-                                if session.isLoading {
-                                    ProgressView()
-                                        .tint(.white)
-                                        .frame(maxWidth: .infinity)
-                                } else {
-                                    Text("Log In")
-                                        .fontWeight(.bold)
-                                        .frame(maxWidth: .infinity)
-                                }
-                            }
-                            .buttonStyle(BBButtonStyle(
-                                backgroundColor: BBColors.primary,
-                                shadowColor: BBColors.primaryHover,
-                                isEnabled: !email.isEmpty && !password.isEmpty && !session.isLoading
-                            ))
-                            .disabled(session.isLoading || email.isEmpty || password.isEmpty)
-                            
-                            // Signup redirect link below button
-                            HStack(spacing: 4) {
-                                Text("Don't have an account?")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(BBColors.textSecondary)
-                                Button {
-                                    if let url = URL(string: "https://titan.csit.rmit.edu.au/~s3974781/bitbalance/") {
-                                        openURL(url)
-                                    }
-                                } label: {
-                                    Text("Sign up")
-                                        .font(.system(size: 13, weight: .black))
-                                        .foregroundColor(BBColors.primary)
-                                }
-                            }
-                            .padding(.top, 4)
-                        }
-                        .bbCard(radius: BBRadius.xl, padding: 24)
-                        
-                        Spacer()
+                        .authCard()
+
+                        Spacer(minLength: 24)
                     }
-                    .padding(20)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
                 }
+            }
+            .sheet(isPresented: $showSignUp) {
+                SignUpView()
             }
         }
     }
+
+    // MARK: - Form (css/login.css .form-section)
+
+    private var formSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Welcome back")
+                    .font(.system(size: 30, weight: .heavy))
+                    .foregroundColor(BBColors.text)
+                Text("Sign in to keep your streak alive.")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(BBColors.textSecondary)
+            }
+            .padding(.bottom, 6)
+
+            TextField("Email", text: $email)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($focusedField, equals: .email)
+                .bbInput(isFocused: focusedField == .email)
+
+            SecureField("Password", text: $password)
+                .textContentType(.password)
+                .focused($focusedField, equals: .password)
+                .bbInput(isFocused: focusedField == .password)
+
+            if let errorMessage = session.errorMessage {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 16, weight: .bold))
+                    Text(errorMessage)
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .bbAlert(isSuccess: false)
+                .transition(.opacity.combined(with: .scale))
+            }
+
+            Button {
+                focusedField = nil
+                Task {
+                    await session.signIn(email: email, password: password)
+                }
+            } label: {
+                if session.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Text("Sign In")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(BBButtonStyle(
+                backgroundColor: BBColors.primary,
+                shadowColor: BBColors.primaryHover,
+                isEnabled: !email.isEmpty && !password.isEmpty && !session.isLoading
+            ))
+            .disabled(session.isLoading || email.isEmpty || password.isEmpty)
+            .padding(.top, 2)
+
+            Button {
+                if let url = URL(string: "https://titan.csit.rmit.edu.au/~s3974781/bitbalance/reset_password.php") {
+                    openURL(url)
+                }
+            } label: {
+                Text("Forgot password?")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(BBColors.primary)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.top, 2)
+
+            HStack(spacing: 4) {
+                Text("Don't have an account?")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(BBColors.textSecondary)
+                Button {
+                    session.errorMessage = nil
+                    showSignUp = true
+                } label: {
+                    Text("Sign Up")
+                        .font(.system(size: 14, weight: .heavy))
+                        .foregroundColor(BBColors.primary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 32)
+    }
+}
+
+// MARK: - Shared auth chrome (used by LoginView & SignUpView)
+
+/// Branded food-photo banner with brand tint + bottom scrim + tagline.
+/// Mirrors css/login.css .side-section (which becomes a top banner on mobile).
+struct AuthHeroBanner: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Image("food")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity)
+                .frame(height: 190)
+
+            // Brand tint (green → blue), matches .side-section::before
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "58CC02").opacity(0.30),
+                    Color(hex: "1CB0F6").opacity(0.28)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            // Dark scrim rising from the bottom, matches .side-section::after
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.black.opacity(0.80), location: 0.0),
+                    .init(color: Color.black.opacity(0.35), location: 0.30),
+                    .init(color: Color.clear, location: 0.58)
+                ]),
+                startPoint: .bottom,
+                endPoint: .top
+            )
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundColor(.white)
+                Text(subtitle)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white.opacity(0.92))
+            }
+            .shadow(color: Color.black.opacity(0.45), radius: 6, x: 0, y: 1)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 22)
+        }
+        .frame(height: 190)
+        .frame(maxWidth: .infinity)
+        .clipped()
+    }
+}
+
+/// Card chrome shared by the auth screens: surface fill, 2px border,
+/// a 10px tactile block underneath (box-shadow: 0 10px 0 border-subtle) + soft md shadow.
+struct AuthCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(BBColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: BBRadius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: BBRadius.lg)
+                    .stroke(BBColors.border, lineWidth: 2)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: BBRadius.lg)
+                    .fill(BBColors.borderSubtle)
+                    .offset(y: 10)
+            )
+            .bbShadow(.md)
+            .frame(maxWidth: 480)
+    }
+}
+
+extension View {
+    func authCard() -> some View {
+        modifier(AuthCardModifier())
+    }
+}
+
+// MARK: - Previews
+#Preview("Mặc định") {
+    LoginView()
+        .environmentObject(SessionStore.preview)
+}
+
+#Preview("Có lỗi đăng nhập") {
+    LoginView()
+        .environmentObject(SessionStore.previewWithError("Email hoặc mật khẩu không chính xác!"))
+}
+
+#Preview("Dark mode") {
+    LoginView()
+        .environmentObject(SessionStore.preview)
+        .preferredColorScheme(.dark)
 }

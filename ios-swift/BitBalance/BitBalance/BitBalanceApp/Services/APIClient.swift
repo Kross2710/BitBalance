@@ -39,6 +39,25 @@ final class APIClient {
         throw APIError.serverMessage(response.message ?? "Login failed.")
     }
 
+    func register(firstName: String, lastName: String, email: String, password: String, confirmPassword: String) async throws -> UserSession {
+        let response: APIEnvelope<UserSession> = try await postForm(
+            path: "api/auth/register.php",
+            fields: [
+                "first_name": firstName,
+                "last_name": lastName,
+                "email": email,
+                "password": password,
+                "confirm_password": confirmPassword
+            ]
+        )
+
+        if response.ok, let user = response.data {
+            return user
+        }
+
+        throw APIError.serverMessage(response.message ?? "Registration failed.")
+    }
+
     func loadCurrentUser() async throws -> UserSession {
         let response: APIEnvelope<UserSession> = try await get(path: "api/me.php")
         if response.ok, let user = response.data {
