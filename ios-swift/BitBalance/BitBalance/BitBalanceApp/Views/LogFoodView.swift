@@ -51,9 +51,9 @@ struct LogFoodView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             HStack(spacing: 6) {
                                 Text("🍽️")
-                                    .font(.system(size: 16))
+                                    .font(BBFont.font(BBFont.base))
                                 Text("FOOD DETAILS")
-                                    .font(.system(size: 12, weight: .heavy))
+                                    .font(BBFont.font(BBFont.xs, .heavy))
                                     .foregroundColor(BBColors.textSecondary)
                             }
                             
@@ -63,9 +63,9 @@ struct LogFoodView: View {
                             } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "barcode.viewfinder")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(BBFont.font(BBFont.base, .bold))
                                     Text("Scan Food Barcode")
-                                        .font(.system(size: 14, weight: .black))
+                                        .font(BBFont.font(BBFont.sm, .black))
                                 }
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -83,7 +83,7 @@ struct LogFoodView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Food Name")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("e.g. Avocado Toast", text: $foodItem)
                                     .textInputAutocapitalization(.words)
@@ -93,7 +93,7 @@ struct LogFoodView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Calories (kcal)")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("e.g. 350", text: $calories)
                                     .keyboardType(.numberPad)
@@ -103,7 +103,7 @@ struct LogFoodView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Meal Category")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                     .padding(.bottom, 2)
                                 
@@ -127,16 +127,16 @@ struct LogFoodView: View {
                         VStack(alignment: .leading, spacing: 18) {
                             HStack(spacing: 6) {
                                 Text("📊")
-                                    .font(.system(size: 16))
+                                    .font(BBFont.font(BBFont.base))
                                 Text("NUTRITION MACROS (OPTIONAL)")
-                                    .font(.system(size: 12, weight: .heavy))
+                                    .font(BBFont.font(BBFont.xs, .heavy))
                                     .foregroundColor(BBColors.textSecondary)
                             }
                             
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Protein (g)")
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(BBFont.font(BBFont.sm, .bold))
                                         .foregroundColor(BBColors.textSecondary)
                                     TextField("Protein", text: $protein)
                                         .keyboardType(.decimalPad)
@@ -146,7 +146,7 @@ struct LogFoodView: View {
                                 
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Carbs (g)")
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(BBFont.font(BBFont.sm, .bold))
                                         .foregroundColor(BBColors.textSecondary)
                                     TextField("Carbs", text: $carbs)
                                         .keyboardType(.decimalPad)
@@ -157,7 +157,7 @@ struct LogFoodView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Fat (g)")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("Fat", text: $fat)
                                     .keyboardType(.decimalPad)
@@ -171,9 +171,9 @@ struct LogFoodView: View {
                         if let message {
                             HStack(spacing: 10) {
                                 Image(systemName: messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(BBFont.font(BBFont.base, .bold))
                                 Text(message)
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .bbAlert(isSuccess: !messageIsError)
@@ -215,7 +215,7 @@ struct LogFoodView: View {
                         Button("Done") {
                             focusedField = nil
                         }
-                        .font(.system(size: 14, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                         .foregroundColor(BBColors.primary)
                     }
                 }
@@ -343,7 +343,7 @@ private struct CategoryButton: View {
             HStack(spacing: 6) {
                 Text(cat.emoji)
                 Text(cat.name)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BBFont.font(BBFont.sm, .bold))
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 16)

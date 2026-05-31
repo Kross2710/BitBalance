@@ -164,13 +164,18 @@ Web khai báo token ở [`css/tokens.css`](../css/tokens.css). Swift đã **port
 
 ### Giai đoạn 0 — Dọn nền + chốt design system (1 buổi)
 - [x] Chốt **một** thư mục nguồn Swift, xóa bản trùng để tránh sửa nhầm. ✅ Đã gộp về `ios-swift/BitBalance/BitBalance/BitBalanceApp/`.
-- [ ] Quét file Swift rỗng (`BarcodeScannerView`, `ImagePicker`) để biết rõ phần stub.
+- [x] Quét file Swift "rỗng" (`BarcodeScannerView`, `ImagePicker`). ✅ Thực ra chúng **đã được implement đầy đủ** trong `BitBalanceApp.swift`; 2 file trong `Views/` chỉ là comment placeholder, không xung đột.
 - [ ] Xác nhận `AppConfig.baseURL` trỏ đúng (localhost cho simulator / LAN IP cho iPhone thật / `titan.csit.rmit.edu.au` cho prod).
-- [ ] **Design (xem Phần 2.5)**: thêm `BBFont`/`BBText` token (thay size chữ hard-code), `BBShadow` scale, và các token màu còn thiếu (`overlay`, `info`, `surfaceHover`) — làm **trước** khi nhân bản nhiều màn hình mới để khỏi phải sửa lại sau.
+- [x] **Design (xem Phần 2.5)**: thêm `BBFont`, `BBShadow`, token màu còn thiếu. ✅ Xong (token đã có trong `BitBalanceApp.swift`).
 
 ### Giai đoạn 1 — Lấp tính năng đã có API (nhanh)
-- [ ] **Barcode**: code `BarcodeScannerView` dùng `AVCaptureSession` → gọi `intake/lookup_barcode` → đổ vào `LogFoodView`.
-- [ ] **Camera/ảnh**: hoàn thiện `ImagePicker` (đã dùng trong AI Coach gửi ảnh).
+- [x] **Barcode**: ✅ **Đã có sẵn** — `LogFoodView` có nút "Scan Food Barcode" → `.sheet(BarcodeScannerView)` (AVCaptureSession) → `lookupBarcode` → điền form.
+- [x] **Camera/ảnh**: ✅ `ImagePicker` đã implement (dùng trong AI Coach gửi ảnh).
+
+#### Áp `BBFont` vào view — quy ước (KHÔNG sweep mù)
+- [x] `LogFoodView` refactor sang `BBFont` làm **bản mẫu** (16 chỗ).
+- [ ] Các view khác: áp **dần khi đụng vào**, chỉ cho **text thông thường** (label/caption/body/heading) map vào thang `xs/sm/base/lg/xl`.
+- ⚠️ **Giữ nguyên** các size đặc biệt (số calo lớn 38–56pt, icon, badge 8–11pt) — chúng cố ý nằm ngoài thang token; ép vào thang sẽ phá thiết kế. App hiện có ~150 chỗ `.system(size:)`, phần lớn là size bespoke → **không** find-replace hàng loạt.
 
 ### Giai đoạn 2 — Thêm API còn thiếu (PHP) + màn hình iOS
 Ưu tiên theo giá trị người dùng:
