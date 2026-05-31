@@ -103,8 +103,14 @@
 
         async onSubmit(e) {
             if (e && e.preventDefault) e.preventDefault();
+            // In-flight guard: a slow request must not let a second Enter/click
+            // fire the same message again (the cause of duplicate sends).
+            if (this.sending) return;
             const content = (this.input.value || '').trim();
             if (!content || !this.counterpart) return;
+
+            this.sending = true;
+            this.input.value = ''; // clear up front so a repeat submit has nothing to send
             const btn = this.form.querySelector('button[type="submit"]');
             if (btn) btn.disabled = true;
             try {
@@ -116,7 +122,6 @@
                 const res = await fetch(this.endpoint, { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: fd });
                 const data = await res.json();
                 if (data.ok) {
-                    this.input.value = '';
                     // Optimistically append, clearing the empty hint if present.
                     if (!this.loaded || this.messagesEl.querySelector('.pt-chat__hint')) {
                         this.messagesEl.innerHTML = '';
@@ -125,11 +130,14 @@
                     this.appendMessage(data.message);
                     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
                 } else {
+                    this.input.value = content; // restore so the user can retry
                     alert(data.error || 'Failed to send');
                 }
             } catch (e) {
+                this.input.value = content; // restore on network error
                 alert('Connection error');
             } finally {
+                this.sending = false;
                 if (btn) btn.disabled = false;
             }
         }
@@ -139,6 +147,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.pt-chat[data-auto-init]').forEach((root) => {
+            if (root._ptChat) return; // never double-bind the same widget
             const c = new PTChat(root);
             root._ptChat = c;
             c.load();
