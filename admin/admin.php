@@ -19,15 +19,9 @@ if ($isLoggedIn) {
 $activePage = 'dashboard'; // Set the active page for the sidebar
 
 $totalUsers = getTotalUsers(); // Fetch total users count
-$totalOrders = getTotalOrders(); // Fetch total orders count
 $last7DaysLogCount = Last7DaysLogCount();
-
-$totalRevenue = getTotalRevenue();
-$avgOrderValue = getAverageOrderValue();
 $todayNewUsers = getTodayNewUsers();
 $userStatusBreakdown = getUserStatusBreakdown();
-$orderStatusBreakdown = getOrderStatusBreakdown();
-$topProducts = getTopProducts(5);
 $recentActivity = getRecentActivity(10);
 ?>
 
@@ -63,17 +57,10 @@ $recentActivity = getRecentActivity(10);
 
         <div class="kpi-row">
             <div class="kpi-card">
-                <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
+                <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="kpi-body">
-                    <span class="kpi-label">Total Revenue</span>
-                    <span class="kpi-value">$<?php echo number_format($totalRevenue, 2); ?></span>
-                </div>
-            </div>
-            <div class="kpi-card kpi-orange">
-                <div class="kpi-icon"><i class="fa-solid fa-receipt"></i></div>
-                <div class="kpi-body">
-                    <span class="kpi-label">Avg. Order Value</span>
-                    <span class="kpi-value">$<?php echo number_format($avgOrderValue, 2); ?></span>
+                    <span class="kpi-label">Total Users</span>
+                    <span class="kpi-value"><?php echo $totalUsers; ?></span>
                 </div>
             </div>
             <div class="kpi-card kpi-blue">
@@ -84,10 +71,10 @@ $recentActivity = getRecentActivity(10);
                 </div>
             </div>
             <div class="kpi-card kpi-purple">
-                <div class="kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+                <div class="kpi-icon"><i class="fa-solid fa-clipboard-list"></i></div>
                 <div class="kpi-body">
-                    <span class="kpi-label">Total Orders</span>
-                    <span class="kpi-value"><?php echo $totalOrders; ?></span>
+                    <span class="kpi-label">Logs (Last 7 Days)</span>
+                    <span class="kpi-value"><?php echo $last7DaysLogCount; ?></span>
                 </div>
             </div>
         </div>
@@ -101,54 +88,12 @@ $recentActivity = getRecentActivity(10);
             </div>
             <div class="flex">
                 <div class="box chart">
-                    <h3><i class="fa-solid fa-cart-shopping"></i> Total Orders</h3>
-                    <p class="big-number"><?php echo $totalOrders; ?></p>
-                    <canvas id="orderChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="flex-row">
-            <div class="flex">
-                <div class="box chart">
                     <h3><i class="fa-solid fa-circle-half-stroke"></i> User Status Breakdown</h3>
                     <canvas id="userStatusChart"></canvas>
                 </div>
             </div>
-            <div class="flex">
-                <div class="box chart">
-                    <h3><i class="fa-solid fa-circle-half-stroke"></i> Order Status Breakdown</h3>
-                    <canvas id="orderStatusChart"></canvas>
-                </div>
-            </div>
         </div>
-        <div class="flex-row">
-            <div class="flex">
-                <div class="box info">
-                    <h3><i class="fa-solid fa-trophy"></i> Top 5 Best-Selling Products</h3>
-                    <?php if (empty($topProducts)): ?>
-                        <p>No sales yet.</p>
-                    <?php else: ?>
-                        <table class="mini-table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Units sold</th>
-                                    <th>Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($topProducts as $p): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($p['product_name']); ?></td>
-                                        <td><?php echo (int) $p['units_sold']; ?></td>
-                                        <td>$<?php echo number_format((float) $p['revenue'], 2); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
-            </div>
+        <div class="flex-row" style="grid-template-columns: 1fr;">
             <div class="flex">
                 <div class="box info">
                     <h3><i class="fa-solid fa-bolt"></i> Recent Activity</h3>
@@ -253,25 +198,6 @@ $recentActivity = getRecentActivity(10);
         options: chartDefaults
     });
 
-    const ordersData = <?php echo json_encode($ordersData); ?>;
-    const historyOrderLabels = <?php echo json_encode($historyOrderLabels); ?>;
-
-    const orderCtx = document.getElementById('orderChart').getContext('2d');
-    new Chart(orderCtx, {
-        type: 'bar',
-        data: {
-            labels: historyOrderLabels,
-            datasets: [{
-                label: 'Total Orders',
-                data: ordersData,
-                backgroundColor: 'rgba(28, 176, 246, 0.75)',
-                borderColor: 'rgba(28, 176, 246, 1)',
-                borderRadius: 6,
-                borderWidth: 0
-            }]
-        },
-        options: chartDefaults
-    });
 
     const logData = <?php echo json_encode($logData); ?>;
     const historyLogLabels = <?php echo json_encode($historyLogLabels); ?>;
@@ -347,20 +273,6 @@ $recentActivity = getRecentActivity(10);
         options: doughnutOpts
     });
 
-    const orderStatusBreakdown = <?php echo json_encode($orderStatusBreakdown); ?>;
-    const orderStatusCtx = document.getElementById('orderStatusChart').getContext('2d');
-    new Chart(orderStatusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(orderStatusBreakdown).map(s => s.charAt(0).toUpperCase() + s.slice(1)),
-            datasets: [{
-                data: Object.values(orderStatusBreakdown),
-                backgroundColor: ['#FF9600', '#1CB0F6', '#6366f1', '#58CC02', '#ef4444'],
-                borderWidth: 0
-            }]
-        },
-        options: doughnutOpts
-    });
 
     const streakData = <?php echo json_encode($streakData); ?>;
     const streakLabels = <?php echo json_encode($streakLabels); ?>;

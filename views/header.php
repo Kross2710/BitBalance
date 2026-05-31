@@ -1,22 +1,6 @@
 <?php
 require_once __DIR__ . '/../include/init.php';
 
-// Xử lý đếm giỏ hàng
-$cart_count = 0;
-if ($isLoggedIn) {
-    $cartIdStmt = $pdo->prepare("SELECT cart_id FROM productCart WHERE user_id = ?");
-    $cartIdStmt->execute([$_SESSION['user']['user_id']]);
-    $cartId = $cartIdStmt->fetchColumn();
-    if ($cartId) {
-        $qtyStmt = $pdo->prepare("SELECT COALESCE(SUM(quantity),0) FROM productCart_item WHERE cart_id = ?");
-        $qtyStmt->execute([$cartId]);
-        $cart_count = (int) $qtyStmt->fetchColumn();
-    }
-} else {
-    // Nếu chưa login thì đếm từ session
-    $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
-}
-
 // XP chip in header (always read-only — XP awarding happens in handlers)
 $xpChip = null;
 if ($isLoggedIn) {
@@ -41,46 +25,41 @@ if ($isLoggedIn) {
                 <div class="nav-links">
                     <a href="<?= BASE_URL ?>dashboard/dashboard.php"
                         class="nav-item <?php echo ($activeHeader == 'dashboard') ? 'active' : ''; ?>"><?= t('header.nav.dashboard') ?></a>
+                    <a href="<?= BASE_URL ?>/dashboard/dashboard-wiki.php"
+                        class="nav-item <?php echo ($activeHeader == 'wiki') ? 'active' : ''; ?>">
+                        <?= t('Wiki') ?>
+                    </a>
                     <?php if ($isLoggedIn): ?>
                         <a href="<?= BASE_URL ?>ai-coach.php"
                             class="nav-item <?php echo ($activeHeader == 'ai-coach') ? 'active' : ''; ?>">
                             <i class="fas fa-sparkles"></i> <?= t('header.nav.ai_coach') ?>
                         </a>
                     <?php endif; ?>
-                    <!-- <a href="<?= BASE_URL ?>products.php"
-                        class="nav-item <?php echo ($activeHeader == 'products') ? 'active' : ''; ?>"><?= t('header.nav.products') ?></a>
-                    <a href="<?= BASE_URL ?>forum.php"
+                    <!-- <a href="<?= BASE_URL ?>forum.php"
                         class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>"><?= t('header.nav.forum') ?></a> -->
                     <a href="<?= BASE_URL ?>about.php"
                         class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>"><?= t('header.nav.about') ?></a>
                 </div>
 
                 <div class="user-actions">
-                    <!-- <a href="<?= BASE_URL ?>cart.php" class="cart-btn" title="<?= t('header.cart_title') ?>">
-                        <i class="fas fa-shopping-bag"></i>
-                        <?php if ($cart_count > 0): ?>
-                            <span id="cart-count" class="badge-pulse"><?= $cart_count ?></span>
-                        <?php endif; ?>
-                    </a> -->
 
                     <?php if (isset($_SESSION['user']) && $xpChip): ?>
-                        <a href="<?= BASE_URL ?>dashboard/dashboard-progress.php"
-                           id="headerXpChip"
-                           class="xp-chip"
-                           data-xp-numbers="<?= number_format($xpChip['xp_into_level']) ?>/<?= number_format($xpChip['xp_for_next']) ?>"
-                           style="--xp-pct: <?= (int) $xpChip['progress_pct'] ?>;"
-                           title="<?= t('header.xp_tooltip', ['into' => number_format($xpChip['xp_into_level']), 'ceil' => number_format($xpChip['xp_for_next']), 'level' => (int) $xpChip['current_level'] + 1]) ?>">
+                        <a href="<?= BASE_URL ?>dashboard/dashboard-progress.php" id="headerXpChip" class="xp-chip"
+                            data-xp-numbers="<?= number_format($xpChip['xp_into_level']) ?>/<?= number_format($xpChip['xp_for_next']) ?>"
+                            style="--xp-pct: <?= (int) $xpChip['progress_pct'] ?>;"
+                            title="<?= t('header.xp_tooltip', ['into' => number_format($xpChip['xp_into_level']), 'ceil' => number_format($xpChip['xp_for_next']), 'level' => (int) $xpChip['current_level'] + 1]) ?>">
                             <span class="xp-chip__level-wrap">
                                 <svg class="xp-chip__ring" viewBox="0 0 44 44" aria-hidden="true">
                                     <circle class="xp-chip__ring-track" cx="22" cy="22" r="19" pathLength="100"></circle>
-                                    <circle class="xp-chip__ring-fill"  cx="22" cy="22" r="19" pathLength="100"></circle>
+                                    <circle class="xp-chip__ring-fill" cx="22" cy="22" r="19" pathLength="100"></circle>
                                 </svg>
                                 <span class="xp-chip__level">Lv <?= (int) $xpChip['current_level'] ?></span>
                             </span>
                             <span class="xp-chip__bar">
                                 <span class="xp-chip__fill" style="width: <?= (int) $xpChip['progress_pct'] ?>%;"></span>
                             </span>
-                            <span class="xp-chip__numbers"><?= number_format($xpChip['xp_into_level']) ?>/<?= number_format($xpChip['xp_for_next']) ?></span>
+                            <span
+                                class="xp-chip__numbers"><?= number_format($xpChip['xp_into_level']) ?>/<?= number_format($xpChip['xp_for_next']) ?></span>
                         </a>
                     <?php endif; ?>
 
@@ -111,14 +90,6 @@ if ($isLoggedIn) {
     <?php include PROJECT_ROOT . 'views/level-up-toast.php'; ?>
 <?php endif; ?>
 
-<?php if ($isLoggedIn): ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const badge = document.getElementById('cart-count');
-            if (badge) badge.textContent = <?php echo $cart_count; ?>;
-        });
-    </script>
-<?php endif; ?>
 
 <script>
     function toggleMenu() {
@@ -130,13 +101,13 @@ if ($isLoggedIn) {
         const chip = document.getElementById('headerXpChip');
         if (!chip || !summary) return;
         const levelEl = chip.querySelector('.xp-chip__level');
-        const fillEl  = chip.querySelector('.xp-chip__fill');
-        const numsEl  = chip.querySelector('.xp-chip__numbers');
+        const fillEl = chip.querySelector('.xp-chip__fill');
+        const numsEl = chip.querySelector('.xp-chip__numbers');
         const into = (summary.xp_into_level || 0).toLocaleString();
-        const ceil = (summary.xp_for_next   || 0).toLocaleString();
+        const ceil = (summary.xp_for_next || 0).toLocaleString();
         if (levelEl) levelEl.textContent = 'Lv ' + summary.current_level;
-        if (fillEl)  fillEl.style.width  = summary.progress_pct + '%';
-        if (numsEl)  numsEl.textContent  = into + '/' + ceil;
+        if (fillEl) fillEl.style.width = summary.progress_pct + '%';
+        if (numsEl) numsEl.textContent = into + '/' + ceil;
         chip.style.setProperty('--xp-pct', summary.progress_pct);
         chip.setAttribute('data-xp-numbers', into + '/' + ceil);
         chip.title = into + ' / ' + ceil + ' XP toward Lv ' + (summary.current_level + 1);
@@ -170,7 +141,7 @@ if ($isLoggedIn) {
         pop.className = 'xp-popup';
         pop.innerHTML = '<i class="fas fa-bolt xp-popup__icon"></i>+' + amount + ' XP';
         pop.style.left = x + 'px';
-        pop.style.top  = y + 'px';
+        pop.style.top = y + 'px';
         document.body.appendChild(pop);
         pop.addEventListener('animationend', () => pop.remove(), { once: true });
         // Safety net in case animationend doesn't fire

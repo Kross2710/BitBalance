@@ -38,10 +38,10 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <i class="fas fa-bolt"></i> <?= t('dashboard.sidebar.progress') ?>
     </a>
 
-    <a href="dashboard-wiki.php" class="nav-link <?php echo ($activePage == 'wiki') ? 'active' : ''; ?>"
+    <!-- <a href="dashboard-wiki.php" class="nav-link <?php echo ($activePage == 'wiki') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.wiki_short') ?>">
         <i class="fas fa-book-medical"></i> <?= t('dashboard.sidebar.wiki') ?>
-    </a>
+    </a> -->
 
     <a href="dashboard-friends.php" class="nav-link <?php echo ($activePage == 'friends') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.friends_short') ?>">
@@ -51,10 +51,10 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <?php endif; ?>
     </a>
 
-    <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
+    <!-- <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.beats_short') ?>">
         <i class="fa-solid fa-music"></i> <?= t('dashboard.sidebar.beats') ?>
-    </a>
+    </a> -->
 
 
     <!-- <a href="promo-video.php" class="nav-link <?php echo ($activePage == 'promo-video') ? 'active' : ''; ?>"
