@@ -114,7 +114,17 @@ struct BBColors {
     
     static let warning = dynamicColor(light: "F59E0B", dark: "FBBF24")
     static let warningBg = dynamicColor(light: "FEF3C7", dark: "78350F")
-    
+
+    static let info = dynamicColor(light: "3B82F6", dark: "60A5FA")
+    static let infoBg = dynamicColor(light: "DBEAFE", dark: "1E3A8A")
+
+    // Extra tokens mirrored from css/tokens.css
+    static let surfaceHover = dynamicColor(light: "E0F2FE", dark: "475569")
+    static let accentHover = dynamicColor(light: "E67E00", dark: "EA580C")
+    static let primarySoft = primary.opacity(0.12)          // --color-primary-soft
+    // Modal/sheet scrim — ARGB hex (0x80 ≈ 0.5 alpha, 0xB3 ≈ 0.7 alpha)
+    static let overlay = dynamicColor(light: "80000000", dark: "B3000000")
+
     // Common Gradients
     static let primaryGradient = LinearGradient(
         gradient: Gradient(colors: [primary, primaryHover]),
@@ -141,6 +151,71 @@ struct BBRadius {
     static let lg: CGFloat = 20
     static let xl: CGFloat = 28
     static let pill: CGFloat = 9999
+}
+
+// MARK: - Typography
+// Scale mirrors css/tokens.css --font-size-* (1rem = 16pt). Uses the system
+// font (.default) to match the web's -apple-system stack.
+struct BBFont {
+    // Size scale
+    static let xs: CGFloat = 12      // 0.75rem
+    static let sm: CGFloat = 14      // 0.875rem
+    static let base: CGFloat = 16    // 1rem
+    static let lg: CGFloat = 18      // 1.125rem
+    static let xl: CGFloat = 20      // 1.25rem
+    static let title: CGFloat = 24
+    static let display: CGFloat = 32
+
+    static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight)
+    }
+
+    // Ready-made styles
+    static let caption = font(xs)
+    static let captionBold = font(xs, .semibold)
+    static let small = font(sm)
+    static let body = font(base)
+    static let bodyBold = font(base, .bold)
+    static let subheading = font(lg, .semibold)
+    static let heading = font(xl, .bold)
+    static let titleBold = font(title, .heavy)
+    static let displayBold = font(display, .heavy)
+}
+
+// MARK: - Shadow scale (mirrors css/tokens.css --shadow-*)
+// CSS blur radius is roughly halved for SwiftUI's blur-sigma radius.
+enum BBShadow {
+    case xs, sm, md, lg, xl
+
+    var color: Color {
+        switch self {
+        case .xs: return Color.black.opacity(0.05)
+        case .sm: return Color.black.opacity(0.06)
+        case .md: return Color.black.opacity(0.08)
+        case .lg: return Color(hex: "0F172A").opacity(0.08)
+        case .xl: return Color(hex: "0F172A").opacity(0.12)
+        }
+    }
+
+    var radius: CGFloat {
+        switch self {
+        case .xs: return 1
+        case .sm: return 4
+        case .md: return 8
+        case .lg: return 15
+        case .xl: return 25
+        }
+    }
+
+    var y: CGFloat {
+        switch self {
+        case .xs: return 1
+        case .sm: return 2
+        case .md: return 4
+        case .lg: return 10
+        case .xl: return 20
+        }
+    }
 }
 
 // MARK: - Reusable View Modifiers
@@ -263,6 +338,11 @@ extension View {
     
     func bbAlert(isSuccess: Bool, radius: CGFloat = BBRadius.md) -> some View {
         modifier(BBAlertModifier(isSuccess: isSuccess, radius: radius))
+    }
+
+    /// Soft drop shadow matching css/tokens.css --shadow-* scale.
+    func bbShadow(_ level: BBShadow) -> some View {
+        shadow(color: level.color, radius: level.radius, x: 0, y: level.y)
     }
 }
 
