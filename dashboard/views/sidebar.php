@@ -16,6 +16,13 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <i class="fas fa-th-large"></i> <?= t('dashboard.sidebar.overview') ?>
     </a>
 
+    <?php if (!empty($_SESSION['user']) && ($_SESSION['user']['role'] ?? 'regular') === 'pt'): ?>
+        <a href="dashboard-pt.php" class="nav-link <?php echo ($activePage == 'pt_dashboard') ? 'active' : ''; ?>"
+            data-short="PT">
+            <i class="fas fa-dumbbell"></i> PT Dashboard
+        </a>
+    <?php endif; ?>
+
     <a href="dashboard-intake.php" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.intake_short') ?>">
         <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>

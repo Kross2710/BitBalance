@@ -640,6 +640,34 @@ ALTER TABLE `weight_log`
   ADD CONSTRAINT `weight_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE;
 COMMIT;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `beats_mix_log`
+-- Diet & Beats "AI DJ Mixer" — one row per fresh track+food mix.
+-- Powers mix history and the archetype collection. Also created lazily at
+-- runtime via bb_ensure_beats_mix_table() (dashboard/handlers/functions.php).
+--
+CREATE TABLE IF NOT EXISTS `beats_mix_log` (
+  `mix_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `track_name` varchar(120) NOT NULL,
+  `artist_name` varchar(120) NOT NULL DEFAULT '',
+  `food_item` varchar(120) NOT NULL,
+  `calories` int(11) NOT NULL DEFAULT 0,
+  `archetype` varchar(80) NOT NULL DEFAULT '',
+  `detected_vibe` varchar(60) NOT NULL DEFAULT '',
+  `match_score` tinyint(4) NOT NULL DEFAULT 0,
+  `energy_sync` tinyint(4) NOT NULL DEFAULT 0,
+  `comfort` tinyint(4) NOT NULL DEFAULT 0,
+  `chaos` tinyint(4) NOT NULL DEFAULT 0,
+  `verdict` varchar(255) NOT NULL DEFAULT '',
+  `rarity` varchar(60) NOT NULL DEFAULT '',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`mix_id`),
+  KEY `user_created` (`user_id`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

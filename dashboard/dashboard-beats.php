@@ -4,6 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../include/init.php';
+require_once __DIR__ . '/handlers/functions.php';
 
 $activePage = 'beats';
 $activeHeader = 'dashboard';
@@ -51,7 +52,32 @@ $texts = [
         'rec_sad' => 'Sad Indie / Ballad 🌧️',
         'rec_sad_food' => 'Một tô súp ấm hoặc chocolate đắng để xoa dịu tâm hồn',
         'loading_vibe' => 'Đang phân tích cá tính âm nhạc và ẩm thực của bạn...',
-        'matched_concept' => 'Cặp đôi Vibe tiêu biểu'
+        'matched_concept' => 'Cặp đôi Vibe tiêu biểu',
+        
+        // DJ Mixer localization
+        'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
+        'dj_subtitle' => 'Mix bài hát vừa nghe cùng thực đơn để xem điểm "hợp cạ" từ AI!',
+        'dj_deck_track' => 'Mâm Xoay Nhạc',
+        'dj_deck_food' => 'Đĩa Thức Ăn',
+        'dj_empty_track' => 'Bấm + ở danh sách bài hát...',
+        'dj_empty_food' => 'Bấm + ở danh sách món ăn...',
+        'dj_crossfader_title' => 'Chọn Vibe Tâm Trạng',
+        'dj_mix_btn' => 'Bấm Mix Ngay! 🎚️',
+        'dj_result_title' => 'KẾT QUẢ PHỐI TRỘN AI',
+        'dj_match_lbl' => 'ĐỘ HỢP CẠ',
+        'dj_reset_btn' => 'Mix Bản Khác 🔁',
+        'dj_mixing_active' => 'Đang xoay đĩa & mix nhạc...',
+        'dj_score_energy' => 'Độ bốc',
+        'dj_score_comfort' => 'Độ an ủi',
+        'dj_score_chaos' => 'Độ bất ngờ',
+        'dj_ai_offline' => 'AI tạm offline — vẫn lên đồ bằng dữ liệu thật của bạn',
+        'history_title' => 'Bộ sưu tập & Lịch sử Mix',
+        'collection_label' => 'Archetype đã mở khoá',
+        'history_empty' => 'Chưa có bản mix nào — thử mix một bài hát với món ăn ở trên nhé!',
+        'mix_just_now' => 'Vừa xong',
+        'dj_keep_btn' => 'Giữ lại',
+        'dj_discard_btn' => 'Bỏ qua',
+        'dj_kept_toast' => 'Đã lưu vào bộ sưu tập! 🎉'
     ],
     'en' => [
         'title' => 'Diet & Beats | BitBalance',
@@ -84,7 +110,32 @@ $texts = [
         'rec_sad' => 'Sad Indie / Ballad 🌧️',
         'rec_sad_food' => 'A warm bowl of soup or dark chocolate to soothe the soul',
         'loading_vibe' => 'Analyzing your music and culinary vibes...',
-        'matched_concept' => 'Featured Vibe Pair'
+        'matched_concept' => 'Featured Vibe Pair',
+        
+        // DJ Mixer localization
+        'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
+        'dj_subtitle' => 'Mix your recent tracks with weekly meals to rate AI vibe compatibility!',
+        'dj_deck_track' => 'Music Vinyl',
+        'dj_deck_food' => 'Fuel Plate',
+        'dj_empty_track' => 'Click + on a song to load...',
+        'dj_empty_food' => 'Click + on a food to load...',
+        'dj_crossfader_title' => 'Crossfade Mood Vibe',
+        'dj_mix_btn' => 'MIX IT UP! 🎚️',
+        'dj_result_title' => 'AI MIXER RESULT',
+        'dj_match_lbl' => 'COMPATIBILITY',
+        'dj_reset_btn' => 'Mix Another 🔁',
+        'dj_mixing_active' => 'Spinning & mixing vibes...',
+        'dj_score_energy' => 'Energy Sync',
+        'dj_score_comfort' => 'Comfort',
+        'dj_score_chaos' => 'Chaos',
+        'dj_ai_offline' => 'AI offline — still styled from your real data',
+        'history_title' => 'Collection & Mix History',
+        'collection_label' => 'Archetypes unlocked',
+        'history_empty' => 'No mixes yet — mix a song with a food above to start your collection!',
+        'mix_just_now' => 'Just now',
+        'dj_keep_btn' => 'Keep',
+        'dj_discard_btn' => 'Discard',
+        'dj_kept_toast' => 'Saved to your collection! 🎉'
     ]
 ];
 
@@ -219,6 +270,10 @@ if ($isLoggedIn) {
     $foodStmt->execute([$userId]);
     $topFoods = $foodStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 }
+
+// DJ Mixer history + archetype collection (Diet & Beats)
+$mixHistory = $spotifyConnected ? bb_get_beats_mix_history($pdo, $userId, 12) : [];
+$mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : [];
 ?>
 <!DOCTYPE html>
 <html lang="<?= html_lang_attr() ?>" data-theme="<?= htmlspecialchars($_SESSION['user']['theme_preference'] ?? 'system', ENT_QUOTES) ?>">
@@ -273,6 +328,121 @@ if ($isLoggedIn) {
                         <div class="beats-spotify-logo"><i class="fa-brands fa-spotify"></i></div>
                         <h3><?= htmlspecialchars($t['connected_title'], ENT_QUOTES) ?></h3>
                         <p><?= htmlspecialchars($t['connected_subtitle'], ENT_QUOTES) ?></p>
+                    </div>
+                </section>
+
+                <!-- AI MOOD-FOOD DJ MIXER -->
+                <section class="dj-mixer-board" id="djMixerBoard">
+                    <!-- Particle Floating Notes Canvas -->
+                    <canvas class="dj-canvas" id="djCanvas"></canvas>
+                    
+                    <div class="dj-mixer-header">
+                        <div>
+                            <h2><i class="fa-solid fa-compact-disc" id="djTitleIcon"></i> <?= htmlspecialchars($t['dj_title'], ENT_QUOTES) ?></h2>
+                            <p><?= htmlspecialchars($t['dj_subtitle'], ENT_QUOTES) ?></p>
+                        </div>
+                    </div>
+
+                    <div class="dj-mixer-decks">
+                        <!-- LEFT DECK: SONG VINYL -->
+                        <div class="dj-deck" id="djTrackDeck">
+                            <span class="dj-deck-title"><i class="fa-solid fa-music"></i> <?= htmlspecialchars($t['dj_deck_track'], ENT_QUOTES) ?></span>
+                            <div class="dj-turntable-wrapper">
+                                <div class="dj-turntable" id="djTrackPlate">
+                                    <div class="dj-turntable-grooves"></div>
+                                    <div class="dj-album-art-slot" id="djTrackArtSlot">
+                                        <i class="fa-solid fa-compact-disc"></i>
+                                    </div>
+                                </div>
+                                <div class="dj-tonearm" id="djTonearm">
+                                    <div class="dj-tonearm-base"></div>
+                                    <div class="dj-tonearm-stick"></div>
+                                    <div class="dj-tonearm-head"></div>
+                                </div>
+                            </div>
+                            <div class="dj-deck-info" id="djTrackInfo">
+                                <span class="dj-slot-empty-text"><i class="fa-solid fa-plus"></i> <?= htmlspecialchars($t['dj_empty_track'], ENT_QUOTES) ?></span>
+                            </div>
+                        </div>
+
+                        <!-- CENTER CONTROLS: WAVEFORM & MIX BUTTON -->
+                        <div class="dj-center-controls">
+                            <span class="dj-slider-title" style="margin-bottom: 12px;"><?= ($lang === 'vi') ? 'AI Tự Động Phân Tích Vibe 🧠' : 'AI Auto-Vibe Analyzer 🧠' ?></span>
+                            
+                            <!-- 3D Neon Waveform visualizer container -->
+                            <div class="dj-waveform-container" id="djWaveformContainer">
+                                <div class="dj-wave-bar"></div>
+                                <div class="dj-wave-bar"></div>
+                                <div class="dj-wave-bar"></div>
+                                <div class="dj-wave-bar"></div>
+                                <div class="dj-wave-bar"></div>
+                                <div class="dj-wave-bar"></div>
+                            </div>
+                            
+                            <div class="dj-mood-indicator" id="djMoodIndicator" style="margin-top: 12px; margin-bottom: 20px; font-size: 13px; font-weight: 800; color: var(--color-text-secondary); width: 100%; text-align: center; border: none; box-shadow: none; background: transparent; padding: 0;">
+                                <?= ($lang === 'vi') ? 'Chờ nạp nhạc & thực đơn...' : 'Awaiting track & food selection...' ?>
+                            </div>
+
+                            <button class="btn-dj-mix" id="djMixBtn" disabled>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span><?= htmlspecialchars($t['dj_mix_btn'], ENT_QUOTES) ?></span>
+                            </button>
+                        </div>
+
+                        <!-- RIGHT DECK: FOOD PLATE -->
+                        <div class="dj-deck" id="djFoodDeck">
+                            <span class="dj-deck-title"><i class="fa-solid fa-bowl-food"></i> <?= htmlspecialchars($t['dj_deck_food'], ENT_QUOTES) ?></span>
+                            <div class="dj-turntable-wrapper">
+                                <div class="dj-turntable" id="djFoodPlate" style="background: var(--color-surface);">
+                                    <div class="dj-album-art-slot" id="djFoodArtSlot" style="border-radius: var(--radius-md); width: 80px; height: 80px; border: 2px solid var(--color-border); background: var(--color-surface); box-shadow: 0 4px 0 var(--color-border-subtle);">
+                                        <i class="fa-solid fa-utensils" style="font-size: 32px;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dj-deck-info" id="djFoodInfo">
+                                <span class="dj-slot-empty-text"><i class="fa-solid fa-plus"></i> <?= htmlspecialchars($t['dj_empty_food'], ENT_QUOTES) ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D FLIP RESULT OVERLAY -->
+                    <div class="dj-result-overlay" id="djResultOverlay">
+                        <div class="dj-result-card" id="djResultCard">
+                            <h3><i class="fa-solid fa-sparkles" style="color: var(--color-accent);"></i> <?= htmlspecialchars($t['dj_result_title'], ENT_QUOTES) ?></h3>
+
+                            <div class="dj-score-ring">
+                                <div class="dj-score-val" id="djScoreVal">0<span class="dj-score-pct">%</span></div>
+                            </div>
+
+                            <span class="dj-result-vibe-chip" id="djResultVibe" hidden></span>
+                            <h4 class="dj-result-archetype" id="djResultArchetype">-</h4>
+                            <p class="dj-result-tagline" id="djResultTagline" hidden></p>
+
+                            <div class="dj-score-bars" id="djScoreBars">
+                                <div class="dj-score-bar">
+                                    <div class="dj-score-bar-head"><span><i class="fa-solid fa-bolt"></i> <?= htmlspecialchars($t['dj_score_energy'], ENT_QUOTES) ?></span><span class="dj-score-bar-val" id="djBarEnergyVal">0%</span></div>
+                                    <div class="dj-score-bar-track"><div class="dj-score-bar-fill energy" id="djBarEnergy"></div></div>
+                                </div>
+                                <div class="dj-score-bar">
+                                    <div class="dj-score-bar-head"><span><i class="fa-solid fa-mug-hot"></i> <?= htmlspecialchars($t['dj_score_comfort'], ENT_QUOTES) ?></span><span class="dj-score-bar-val" id="djBarComfortVal">0%</span></div>
+                                    <div class="dj-score-bar-track"><div class="dj-score-bar-fill comfort" id="djBarComfort"></div></div>
+                                </div>
+                                <div class="dj-score-bar">
+                                    <div class="dj-score-bar-head"><span><i class="fa-solid fa-bolt-lightning"></i> <?= htmlspecialchars($t['dj_score_chaos'], ENT_QUOTES) ?></span><span class="dj-score-bar-val" id="djBarChaosVal">0%</span></div>
+                                    <div class="dj-score-bar-track"><div class="dj-score-bar-fill chaos" id="djBarChaos"></div></div>
+                                </div>
+                            </div>
+
+                            <p class="dj-result-comment" id="djResultComment">-</p>
+                            <p class="dj-result-funfact" id="djResultFunFact" hidden><i class="fa-solid fa-lightbulb"></i> <span id="djResultFunFactText"></span></p>
+                            <span class="dj-result-rarity" id="djResultRarity" hidden></span>
+                            <span class="dj-result-aihint" id="djResultAiHint" hidden><i class="fa-solid fa-plug-circle-xmark"></i> <?= htmlspecialchars($t['dj_ai_offline'], ENT_QUOTES) ?></span>
+
+                            <div class="dj-result-actions">
+                                <button class="btn-dj-keep" id="djResultKeepBtn"><i class="fa-solid fa-bookmark"></i> <?= htmlspecialchars($t['dj_keep_btn'], ENT_QUOTES) ?></button>
+                                <button class="btn-dj-reset" id="djResultDiscardBtn"><?= htmlspecialchars($t['dj_discard_btn'], ENT_QUOTES) ?></button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -366,6 +536,9 @@ if ($isLoggedIn) {
                                                 <strong><?= htmlspecialchars($track['track'], ENT_QUOTES) ?></strong>
                                                 <span><?= htmlspecialchars($track['artist'], ENT_QUOTES) ?></span>
                                             </div>
+                                            <button class="dj-load-btn load-track-btn" data-track="<?= htmlspecialchars($track['track'], ENT_QUOTES) ?>" data-artist="<?= htmlspecialchars($track['artist'], ENT_QUOTES) ?>" data-image="<?= htmlspecialchars($track['image'] ?? '', ENT_QUOTES) ?>" title="<?= ($lang === 'vi') ? 'Nạp vào DJ Mixer' : 'Load to DJ Mixer' ?>">
+                                                <i class="fa-solid fa-plus"></i>
+                                            </button>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -391,6 +564,9 @@ if ($isLoggedIn) {
                                             <div class="item-calories">
                                                 <?= number_format($food['total_cal'] / $food['count_logged']) ?> kcal
                                             </div>
+                                            <button class="dj-load-btn load-food-btn" data-food="<?= htmlspecialchars($food['food_item'], ENT_QUOTES) ?>" data-calories="<?= (int)($food['total_cal'] / $food['count_logged']) ?>" title="<?= ($lang === 'vi') ? 'Nạp vào DJ Mixer' : 'Load to DJ Mixer' ?>">
+                                                <i class="fa-solid fa-plus"></i>
+                                            </button>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
@@ -398,6 +574,53 @@ if ($isLoggedIn) {
                         </section>
                     </div>
                 </div>
+
+                <!-- MIX HISTORY + ARCHETYPE COLLECTION -->
+                <section class="beats-section mix-history-section">
+                    <h2><i class="fa-solid fa-record-vinyl"></i> <?= htmlspecialchars($t['history_title'], ENT_QUOTES) ?></h2>
+
+                    <div class="mix-collection">
+                        <div class="mix-collection-stat">
+                            <strong id="mixCollectionCount"><?= count($mixCollection) ?></strong>
+                            <span><?= htmlspecialchars($t['collection_label'], ENT_QUOTES) ?></span>
+                        </div>
+                        <div class="mix-collection-chips" id="mixCollectionChips">
+                            <?php foreach ($mixCollection as $col): ?>
+                                <span class="archetype-chip" data-arch="<?= htmlspecialchars($col['archetype'], ENT_QUOTES) ?>"
+                                    title="<?= (int) $col['best_score'] ?>% · x<?= (int) $col['hits'] ?>">
+                                    <?= htmlspecialchars($col['archetype'], ENT_QUOTES) ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <ul class="mix-history-list" id="mixHistoryList">
+                        <?php if (empty($mixHistory)): ?>
+                            <li class="mix-history-empty" id="mixHistoryEmpty"><?= htmlspecialchars($t['history_empty'], ENT_QUOTES) ?></li>
+                        <?php else: ?>
+                            <?php foreach ($mixHistory as $m): ?>
+                                <?php $band = $m['match_score'] >= 80 ? 'high' : ($m['match_score'] >= 50 ? 'mid' : 'low'); ?>
+                                <li class="mhi-row" data-mix-id="<?= (int) $m['mix_id'] ?>" data-arch="<?= htmlspecialchars($m['archetype'] ?: $m['detected_vibe'], ENT_QUOTES) ?>">
+                                    <div class="mhi-delete-layer"><i class="fa-solid fa-trash"></i></div>
+                                    <div class="mix-history-item">
+                                        <span class="mhi-score <?= $band ?>"><?= (int) $m['match_score'] ?><small>%</small></span>
+                                        <div class="mhi-body">
+                                            <div class="mhi-arch"><?= htmlspecialchars($m['archetype'] ?: $m['detected_vibe'], ENT_QUOTES) ?></div>
+                                            <div class="mhi-combo">
+                                                <i class="fa-solid fa-music"></i> <?= htmlspecialchars($m['track_name'], ENT_QUOTES) ?>
+                                                <i class="fa-solid fa-arrows-left-right mhi-x"></i>
+                                                <i class="fa-solid fa-utensils"></i> <?= htmlspecialchars($m['food_item'], ENT_QUOTES) ?>
+                                            </div>
+                                        </div>
+                                        <?php if (!empty($m['rarity'])): ?>
+                                            <span class="mhi-rarity"><?= htmlspecialchars($m['rarity'], ENT_QUOTES) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </section>
 
             <?php else: ?>
                 <!-- PROMO STATE (DISCONNECTED) -->
@@ -438,7 +661,9 @@ if ($isLoggedIn) {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const lang = '<?= $lang ?>';
-            
+            const KEEP_LABEL = <?= json_encode($t['dj_keep_btn']) ?>;
+            const KEPT_TOAST = <?= json_encode($t['dj_kept_toast']) ?>;
+
             // Check if user is connected to load the dynamic AI vibe card
             const vibeLoading = document.getElementById('vibe-loading');
             const vibeContent = document.getElementById('vibe-content');
@@ -515,6 +740,462 @@ if ($isLoggedIn) {
                         })
                         .catch(err => console.error('Error loading fuel suggestions:', err));
                 }
+            }
+            // =========================================================================
+            // VANILLA JS DJ MIXER CONTROLLER
+            // =========================================================================
+            const djMixerBoard = document.getElementById('djMixerBoard');
+            if (djMixerBoard) {
+                const djTrackPlate = document.getElementById('djTrackPlate');
+                const djTrackArtSlot = document.getElementById('djTrackArtSlot');
+                const djTrackInfo = document.getElementById('djTrackInfo');
+                const djTrackDeck = document.getElementById('djTrackDeck');
+                const djTonearm = document.getElementById('djTonearm');
+                
+                const djFoodPlate = document.getElementById('djFoodPlate');
+                const djFoodArtSlot = document.getElementById('djFoodArtSlot');
+                const djFoodInfo = document.getElementById('djFoodInfo');
+                const djFoodDeck = document.getElementById('djFoodDeck');
+                
+                const djMoodIndicator = document.getElementById('djMoodIndicator');
+                const djMixBtn = document.getElementById('djMixBtn');
+                const djTitleIcon = document.getElementById('djTitleIcon');
+                
+                const djResultOverlay = document.getElementById('djResultOverlay');
+                const djResultCard = document.getElementById('djResultCard');
+                const djScoreVal = document.getElementById('djScoreVal');
+                const djResultArchetype = document.getElementById('djResultArchetype');
+                const djResultComment = document.getElementById('djResultComment');
+                const djResultVibe = document.getElementById('djResultVibe');
+                const djResultTagline = document.getElementById('djResultTagline');
+                const djResultRarity = document.getElementById('djResultRarity');
+                const djResultAiHint = document.getElementById('djResultAiHint');
+
+                // --- Reveal helpers (Wrapped-style) ---
+                // Show an element only when there's content; optionally write into a child.
+                const setOptional = (el, value, target) => {
+                    if (!el) return;
+                    const v = (value || '').toString().trim();
+                    el.hidden = (v === '');
+                    if (v !== '') (target || el).textContent = v;
+                };
+                // Count a number up to `to` over ~700ms.
+                const countUp = (el, to) => {
+                    if (!el) return;
+                    const start = performance.now(), dur = 700;
+                    const step = (now) => {
+                        const k = Math.min(1, (now - start) / dur);
+                        const val = Math.round(to * (1 - Math.pow(1 - k, 3))); // easeOutCubic
+                        el.innerHTML = `${val}<span class="dj-score-pct">%</span>`;
+                        if (k < 1) requestAnimationFrame(step);
+                    };
+                    requestAnimationFrame(step);
+                };
+                // Grow a score bar to `pct`% and show its value.
+                const animateBar = (barId, valId, pct) => {
+                    const bar = document.getElementById(barId), val = document.getElementById(valId);
+                    const n = Math.max(0, Math.min(100, parseInt(pct, 10) || 0));
+                    if (bar) bar.style.width = n + '%';
+                    if (val) val.textContent = n + '%';
+                };
+                // Prepend a freshly created mix to the history list + grow the
+                // collection when its archetype is newly unlocked (no reload).
+                const escHtml = (s) => (s || '').toString().replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+                const addMixToHistory = (item) => {
+                    const list = document.getElementById('mixHistoryList');
+                    if (!list) return;
+                    const empty = document.getElementById('mixHistoryEmpty');
+                    if (empty) empty.remove();
+
+                    const score = parseInt(item.match_score, 10) || 0;
+                    const band = score >= 80 ? 'high' : (score >= 50 ? 'mid' : 'low');
+                    const arch = item.archetype || item.detected_vibe || '';
+                    const track = item.track_name || (loadedTrack && loadedTrack.track) || '';
+                    const food = item.food_item || (loadedFood && loadedFood.food) || '';
+                    const li = document.createElement('li');
+                    li.className = 'mix-history-item is-new';
+                    li.innerHTML =
+                        `<span class="mhi-score ${band}">${score}<small>%</small></span>` +
+                        `<div class="mhi-body"><div class="mhi-arch">${escHtml(arch)}</div>` +
+                        `<div class="mhi-combo"><i class="fa-solid fa-music"></i> ${escHtml(track)}` +
+                        ` <i class="fa-solid fa-arrows-left-right mhi-x"></i> <i class="fa-solid fa-utensils"></i> ${escHtml(food)}</div></div>` +
+                        (item.rarity ? `<span class="mhi-rarity">${escHtml(item.rarity)}</span>` : '');
+                    list.prepend(li);
+                    while (list.children.length > 12) list.lastElementChild.remove();
+
+                    // Collection: add a chip + bump count if this archetype is new
+                    const chips = document.getElementById('mixCollectionChips');
+                    if (chips && arch) {
+                        const exists = [...chips.children].some(c => c.dataset.arch === arch);
+                        if (!exists) {
+                            const chip = document.createElement('span');
+                            chip.className = 'archetype-chip is-new';
+                            chip.dataset.arch = arch;
+                            chip.title = score + '%';
+                            chip.textContent = arch;
+                            chips.prepend(chip);
+                            const countEl = document.getElementById('mixCollectionCount');
+                            if (countEl) countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + 1;
+                        }
+                    }
+                };
+                const djResultKeepBtn = document.getElementById('djResultKeepBtn');
+                const djResultDiscardBtn = document.getElementById('djResultDiscardBtn');
+                
+                const loadTrackBtns = document.querySelectorAll('.load-track-btn');
+                const loadFoodBtns = document.querySelectorAll('.load-food-btn');
+                
+                let loadedTrack = null; // { name, artist, image }
+                let loadedFood = null;  // { name, calories }
+                
+                // Sound synthesizer via Web Audio API (Very high fidelity gamified boop)
+                const playSynthesizerSound = (type) => {
+                    try {
+                        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                        if (!AudioContextClass) return;
+                        const ctx = new AudioContextClass();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        
+                        if (type === 'load') {
+                            // Upward cheerful slide
+                            osc.type = 'sine';
+                            osc.frequency.setValueAtTime(320, ctx.currentTime);
+                            osc.frequency.exponentialRampToValueAtTime(640, ctx.currentTime + 0.12);
+                            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                            osc.start();
+                            osc.stop(ctx.currentTime + 0.15);
+                        } else if (type === 'mix') {
+                            // DJ scratch-like sweep
+                            osc.type = 'sawtooth';
+                            osc.frequency.setValueAtTime(150, ctx.currentTime);
+                            osc.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.1);
+                            osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.3);
+                            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                            osc.start();
+                            osc.stop(ctx.currentTime + 0.35);
+                        } else if (type === 'success') {
+                            // Double ding chime
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                            osc.start();
+                            
+                            const osc2 = ctx.createOscillator();
+                            const gain2 = ctx.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(ctx.destination);
+                            osc2.type = 'triangle';
+                            osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                            gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.1);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                            osc2.start(ctx.currentTime + 0.1);
+                            
+                            osc.stop(ctx.currentTime + 0.15);
+                            osc2.stop(ctx.currentTime + 0.35);
+                        }
+                    } catch (e) {
+                        // Safe ignore if audio blocked/unsupported
+                    }
+                };
+                
+                const checkReadyToMix = () => {
+                    if (loadedTrack && loadedFood) {
+                        djMixBtn.removeAttribute('disabled');
+                        djMixBtn.classList.add('glowing');
+                        djMixerBoard.classList.add('ready');
+                        djMoodIndicator.textContent = lang === 'vi' ? 'Bản mix đã sẵn sàng! 🎚️' : 'Mix ready to spin! 🎚️';
+                    } else {
+                        djMixBtn.setAttribute('disabled', 'true');
+                        djMixBtn.classList.remove('glowing');
+                        djMixerBoard.classList.remove('ready');
+                        djMoodIndicator.textContent = lang === 'vi' ? 'Chờ nạp nhạc & thực đơn...' : 'Awaiting track & food selection...';
+                    }
+                };
+                
+                // Load song into the turntable
+                loadTrackBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        loadTrackBtns.forEach(b => b.classList.remove('loaded'));
+                        btn.classList.add('loaded');
+                        
+                        loadedTrack = {
+                            track: btn.dataset.track,
+                            artist: btn.dataset.artist,
+                            image: btn.dataset.image
+                        };
+                        
+                        // Update UI Turntable
+                        djTrackArtSlot.innerHTML = loadedTrack.image 
+                            ? `<img src="${loadedTrack.image}" alt="Album Art">`
+                            : `<i class="fa-solid fa-compact-disc"></i>`;
+                            
+                        djTrackInfo.innerHTML = `
+                            <strong>${loadedTrack.track}</strong>
+                            <span>${loadedTrack.artist}</span>
+                        `;
+                        
+                        djTrackDeck.classList.add('loaded-track');
+                        playSynthesizerSound('load');
+                        
+                        // Flash background color to indicate drop
+                        djTrackPlate.style.transform = 'scale(0.95)';
+                        setTimeout(() => { djTrackPlate.style.transform = ''; }, 150);
+                        
+                        checkReadyToMix();
+                    });
+                });
+                
+                // Load food into the plate
+                loadFoodBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        loadFoodBtns.forEach(b => b.classList.remove('loaded'));
+                        btn.classList.add('loaded');
+                        
+                        loadedFood = {
+                            food: btn.dataset.food,
+                            calories: parseInt(btn.dataset.calories, 10)
+                        };
+                        
+                        // Update UI Plate
+                        djFoodArtSlot.innerHTML = `<i class="fa-solid fa-bowl-food" style="font-size: 34px; color: var(--color-primary);"></i>`;
+                        djFoodInfo.innerHTML = `
+                            <strong>${loadedFood.food}</strong>
+                            <span>~${loadedFood.calories} kcal</span>
+                        `;
+                        
+                        djFoodDeck.classList.add('loaded-food');
+                        playSynthesizerSound('load');
+                        
+                        // Flash plate drop
+                        djFoodPlate.style.transform = 'scale(0.95)';
+                        setTimeout(() => { djFoodPlate.style.transform = ''; }, 150);
+                        
+                        checkReadyToMix();
+                    });
+                });
+                
+                // Canvas particle floating system (HTML5 floating music notes)
+                const canvas = document.getElementById('djCanvas');
+                const ctx = canvas.getContext('2d');
+                let animationId = null;
+                let particles = [];
+                
+                const resizeCanvas = () => {
+                    canvas.width = djMixerBoard.offsetWidth;
+                    canvas.height = djMixerBoard.offsetHeight;
+                };
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+                
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * canvas.width;
+                        this.y = canvas.height + 20;
+                        this.size = Math.random() * 12 + 8;
+                        this.speedY = -(Math.random() * 2 + 1);
+                        this.speedX = Math.random() * 2 - 1;
+                        this.opacity = 1;
+                        this.fade = Math.random() * 0.015 + 0.005;
+                        this.char = ['♫', '♪', '♬', '♩', '✨', '🎵'][Math.floor(Math.random() * 6)];
+                        // Colors corresponding to moods
+                        const colors = ['#1cb0f6', '#58cc02', '#ff9600', '#a855f7'];
+                        this.color = colors[Math.floor(Math.random() * colors.length)];
+                    }
+                    update() {
+                        this.y += this.speedY;
+                        this.x += this.speedX;
+                        this.opacity -= this.fade;
+                    }
+                    draw() {
+                        ctx.save();
+                        ctx.globalAlpha = this.opacity;
+                        ctx.fillStyle = this.color;
+                        ctx.font = `${this.size}px Outfit, Inter, sans-serif`;
+                        ctx.fillText(this.char, this.x, this.y);
+                        ctx.restore();
+                    }
+                }
+                
+                const animateParticles = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    if (Math.random() < 0.25) {
+                        particles.push(new Particle());
+                    }
+                    
+                    particles.forEach((p, idx) => {
+                        p.update();
+                        p.draw();
+                        if (p.opacity <= 0 || p.y < -20) {
+                            particles.splice(idx, 1);
+                        }
+                    });
+                    
+                    animationId = requestAnimationFrame(animateParticles);
+                };
+                
+                const startVisualEffects = () => {
+                    djTrackDeck.classList.add('playing');
+                    djFoodDeck.classList.add('playing');
+                    djMixerBoard.classList.add('mixing');
+                    djTitleIcon.classList.add('fa-spin');
+                    djTitleIcon.style.animationDuration = '1s';
+                    djMoodIndicator.textContent = lang === 'vi' ? 'Đang phân tích vibe nhạc... 🧠' : 'Analyzing track vibe... 🧠';
+                    particles = [];
+                    animateParticles();
+                };
+
+                const stopVisualEffects = () => {
+                    djTrackDeck.classList.remove('playing');
+                    djFoodDeck.classList.remove('playing');
+                    djMixerBoard.classList.remove('mixing');
+                    djTitleIcon.classList.remove('fa-spin');
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                };
+                
+                // Mix Button Click Trigger
+                djMixBtn.addEventListener('click', () => {
+                    if (!loadedTrack || !loadedFood) return;
+                    
+                    // Disable triggers during mixing
+                    djMixBtn.setAttribute('disabled', 'true');
+                    loadTrackBtns.forEach(b => b.setAttribute('disabled', 'true'));
+                    loadFoodBtns.forEach(b => b.setAttribute('disabled', 'true'));
+                    
+                    playSynthesizerSound('mix');
+                    startVisualEffects();
+                    
+                    // Prepare POST payload
+                    const fd = new FormData();
+                    fd.append('track_name', loadedTrack.track);
+                    fd.append('artist_name', loadedTrack.artist);
+                    fd.append('food_item', loadedFood.food);
+                    fd.append('calories', loadedFood.calories);
+                    
+                    const startTime = Date.now();
+                    
+                    fetch('handlers/beats_mixer.php', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(data => {
+                            // Ensure the turntable spins for at least 1.8 seconds for suspense!
+                            const elapsedTime = Date.now() - startTime;
+                            const delay = Math.max(0, 1800 - elapsedTime);
+                            
+                            setTimeout(() => {
+                                stopVisualEffects();
+                                
+                                if (data.ok) {
+                                    // Headline score & styling (ring = average of the 3 dimensions)
+                                    const score = parseInt(data.match_score, 10) || 0;
+
+                                    djResultCard.classList.remove('score-high', 'score-mid', 'score-low');
+                                    if (score >= 80) {
+                                        djResultCard.classList.add('score-high');
+                                    } else if (score >= 50) {
+                                        djResultCard.classList.add('score-mid');
+                                    } else {
+                                        djResultCard.classList.add('score-low');
+                                    }
+
+                                    // Persona + vibe chip + tagline
+                                    djResultArchetype.textContent = data.archetype || data.detected_vibe || '';
+                                    setOptional(djResultVibe, data.detected_vibe);
+                                    setOptional(djResultTagline, data.tagline);
+
+                                    // Verdict + fun fact + rarity
+                                    djResultComment.textContent = data.verdict || data.comment || '';
+                                    setOptional(document.getElementById('djResultFunFact'), data.fun_fact, document.getElementById('djResultFunFactText'));
+                                    setOptional(djResultRarity, data.rarity);
+
+                                    // Subtle hint when the witty copy came from the offline fallback
+                                    djResultAiHint.hidden = (data.ai !== false);
+
+                                    // Reset the Keep control for this new result (not saved yet)
+                                    if (djResultKeepBtn) {
+                                        djResultKeepBtn.disabled = false;
+                                        djResultKeepBtn.classList.remove('kept');
+                                        djResultKeepBtn.innerHTML = `<i class="fa-solid fa-bookmark"></i> ${KEEP_LABEL}`;
+                                    }
+
+                                    // Open overlay, then animate the reveal (Wrapped-style)
+                                    djResultOverlay.classList.add('active');
+                                    playSynthesizerSound('success');
+
+                                    const scores = data.scores || {};
+                                    countUp(djScoreVal, score);
+                                    setTimeout(() => animateBar('djBarEnergy', 'djBarEnergyVal', scores.energy_sync), 250);
+                                    setTimeout(() => animateBar('djBarComfort', 'djBarComfortVal', scores.comfort), 450);
+                                    setTimeout(() => animateBar('djBarChaos', 'djBarChaosVal', scores.chaos), 650);
+                                    // Note: mixes are saved only when the user taps "Keep".
+                                } else {
+                                    alert(data.error || 'Mixing failed');
+                                    djMixBtn.removeAttribute('disabled');
+                                }
+                                
+                                // Re-enable selector controls
+                                loadTrackBtns.forEach(b => b.removeAttribute('disabled'));
+                                loadFoodBtns.forEach(b => b.removeAttribute('disabled'));
+                            }, delay);
+                        })
+                        .catch(err => {
+                            console.error('Mix API error:', err);
+                            stopVisualEffects();
+                            alert(lang === 'vi' ? 'Không thể kết nối máy chủ AI.' : 'Failed to reach AI mixer server.');
+                            djMixBtn.removeAttribute('disabled');
+                            loadTrackBtns.forEach(b => b.removeAttribute('disabled'));
+                            loadFoodBtns.forEach(b => b.removeAttribute('disabled'));
+                        });
+                });
+                
+                const closeResult = () => {
+                    djResultOverlay.classList.remove('active');
+                    playSynthesizerSound('load');
+                    checkReadyToMix();
+                };
+
+                // KEEP: persist the pending mix server-side, then add it live.
+                djResultKeepBtn.addEventListener('click', () => {
+                    djResultKeepBtn.disabled = true;
+                    fetch('handlers/beats_mix_save.php', { method: 'POST' })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.ok && res.saved && res.item) {
+                                addMixToHistory(res.item);
+                                showBeatsToast(KEPT_TOAST);
+                                playSynthesizerSound('success');
+                            }
+                            closeResult();
+                        })
+                        .catch(() => { djResultKeepBtn.disabled = false; });
+                });
+
+                // DISCARD: close without saving (the pending mix is simply dropped).
+                djResultDiscardBtn.addEventListener('click', closeResult);
+            }
+
+            // Lightweight toast for "kept" confirmation.
+            function showBeatsToast(msg) {
+                let el = document.getElementById('beatsToast');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = 'beatsToast';
+                    el.className = 'beats-toast';
+                    document.body.appendChild(el);
+                }
+                el.textContent = msg;
+                el.classList.add('show');
+                clearTimeout(el._t);
+                el._t = setTimeout(() => el.classList.remove('show'), 2600);
             }
         });
     </script>

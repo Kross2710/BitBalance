@@ -447,6 +447,12 @@ if ($isLoggedIn) {
             }
 
             // --- 4. QUICK LOG ACTION ---
+            function parseIntakeRowMarkup(markup) {
+                const template = document.createElement('template');
+                template.innerHTML = '<table><tbody>' + String(markup || '').trim() + '</tbody></table>';
+                return template.content.querySelector('tr');
+            }
+
             async function handleLogAgain(btn) {
                 const row = btn.closest('tr');
                 const id = row.getAttribute('data-id');
@@ -473,10 +479,9 @@ if ($isLoggedIn) {
                             showLoggingToast('Food logged!', data.food_item + ' • ' + data.calories + ' kcal');
                         }
 
-                        // Parse the compiled row markup
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(data.new_row, 'text/html');
-                        const newRow = doc.querySelector('tr');
+                        // Parse the compiled row markup. Wrap it in a tbody so
+                        // browsers preserve the <tr> instead of dropping it.
+                        const newRow = parseIntakeRowMarkup(data.new_row);
 
                         if (newRow) {
                             // Prepend to tbody

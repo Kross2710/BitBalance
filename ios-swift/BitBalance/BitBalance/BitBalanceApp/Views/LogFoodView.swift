@@ -208,7 +208,7 @@ struct LogFoodView: View {
                     .padding(20)
                 }
             }
-            .navigationTitle("Log Food")
+//            .navigationTitle("Log Food")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if focusedField != nil {

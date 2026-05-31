@@ -3,310 +3,133 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var session: SessionStore
 
-    @State private var firstName = ""
-    @State private var lastName = ""
-    @State private var handle = ""
-    @State private var email = ""
-    @State private var bio = ""
-    @State private var themePreference = "system"
-    @State private var calorieGoal = ""
-    @State private var age = ""
-    @State private var gender = ""
-    @State private var weight = ""
-    @State private var height = ""
+    @State private var profile: ProfilePayload?
+    @State private var selectedTheme = "system"
     @State private var isLoading = false
-    @State private var isSaving = false
+    @State private var isSavingTheme = false
+    @State private var showAuth = false
     @State private var message: String?
     @State private var messageIsError = false
 
-    @FocusState private var focusedField: Field?
-    enum Field {
-        case firstName, lastName, handle, email, bio, calorieGoal, age, weight, height
-    }
-
-    private let themes = [
-        ("system", "System"),
-        ("light", "Light"),
-        ("dark", "Dark")
-    ]
-
-    private let genders = [
-        ("", "Not set"),
-        ("male", "Male"),
-        ("female", "Female")
-    ]
+    private let themeOptions = ["system", "light", "dark"]
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // Brand background gradient
                 BBColors.backgroundGradient
                     .ignoresSafeArea()
-                
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        
-                        // 1. Conic Gradient Avatar Header
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(BBColors.surface)
-                                    .frame(width: 120, height: 120)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(
-                                                AngularGradient(
-                                                    colors: [BBColors.primary, BBColors.secondary, BBColors.primary],
-                                                    center: .center
-                                                ),
-                                                lineWidth: 4
-                                            )
-                                    )
-                                    .background(
-                                        Circle()
-                                            .fill(BBColors.primaryHover)
-                                            .offset(y: 6)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
-                                
-                                Text(avatarInitials)
-                                    .font(.system(size: 38, weight: .black))
-                                    .foregroundColor(BBColors.primary)
-                            }
-                            
-                            VStack(spacing: 2) {
-                                Text(handle.isEmpty ? "@username" : "@\(handle)")
-                                    .font(.system(size: 16, weight: .heavy))
-                                    .foregroundColor(BBColors.textSecondary)
-                                
-                                if !email.isEmpty {
-                                    Text(email)
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(BBColors.textMuted)
-                                }
+                    VStack(alignment: .leading, spacing: 22) {
+                        profileHero
+                        syncCard
+//                        PremiumBanner()
+
+                        sectionTitle("Goals")
+                        SettingsGroup {
+                            SettingsRow(
+                                icon: "flame.fill",
+                                iconColor: BBColors.danger,
+                                title: "Calories",
+                                value: calorieGoalText,
+                                showsDivider: true,
+                                action: openPlanSetup
+                            )
+                            SettingsRow(
+                                icon: "chart.pie.fill",
+                                iconColor: BBColors.primary,
+                                title: "Macros",
+                                value: macroGoalText,
+                                showsDivider: true,
+                                action: openPlanSetup
+                            )
+                            SettingsRow(
+                                icon: "drop.fill",
+                                iconColor: BBColors.secondary,
+                                title: "Water",
+                                value: waterGoalText,
+                                showsDivider: true,
+                                action: openPlanSetup
+                            )
+                            SettingsRow(
+                                icon: "scalemass.fill",
+                                iconColor: BBColors.accent,
+                                title: "Weight",
+                                value: weightText,
+                                showsDivider: true,
+                                action: openPlanSetup
+                            )
+                            SettingsRow(
+                                icon: "arrow.counterclockwise",
+                                iconColor: BBColors.textSecondary,
+                                title: "Recalculate plan",
+                                value: nil,
+                                action: openPlanSetup
+                            )
+                        }
+
+                        sectionTitle("Customize")
+                        SettingsGroup {
+                            SettingsRow(
+                                icon: "paintpalette.fill",
+                                iconColor: BBColors.primary,
+                                title: "Appearance",
+                                value: themeLabel,
+                                showsDivider: true,
+                                isLoading: isSavingTheme,
+                                action: cycleTheme
+                            )
+//                            SettingsRow(
+//                                icon: "globe",
+//                                iconColor: BBColors.secondary,
+//                                title: "Language",
+//                                value: "English",
+//                                action: { show("Language settings are coming soon.", isError: false) }
+//                            )
+                        }
+
+                        sectionTitle("Support")
+                        SettingsGroup {
+                            SettingsRow(
+                                icon: "star.fill",
+                                iconColor: BBColors.warning,
+                                title: "Rate on App Store",
+                                value: nil,
+                                showsDivider: true,
+                                action: { show("App Store rating will be enabled after release.", isError: false) }
+                            )
+                            SettingsRow(
+                                icon: "lock.shield.fill",
+                                iconColor: BBColors.info,
+                                title: "Privacy and terms",
+                                value: nil,
+                                action: { show("Privacy and terms are available on the web app.", isError: false) }
+                            )
+                        }
+
+                        sectionTitle("Account")
+                        SettingsGroup {
+                            SettingsRow(
+                                icon: "person.crop.circle.fill",
+                                iconColor: BBColors.primary,
+                                title: accountRowTitle,
+                                value: accountRowValue,
+                                showsDivider: !isGuestUser,
+                                action: accountAction
+                            )
+
+                            if !isGuestUser {
+                                SettingsRow(
+                                    icon: "rectangle.portrait.and.arrow.right",
+                                    iconColor: BBColors.danger,
+                                    title: "Sign Out",
+                                    value: nil,
+                                    isDestructive: true,
+                                    action: signOut
+                                )
                             }
                         }
-                        .padding(.top, 16)
-                        .padding(.bottom, 8)
-                        
-                        if isLoading && firstName.isEmpty {
-                            ProgressView()
-                                .padding()
-                        } else {
-                            // 2. Account Details Card
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(
-                                    emoji: "👤",
-                                    title: "Personal Information",
-                                    subtitle: "Manage your display name and credentials",
-                                    color: BBColors.secondary
-                                )
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("First Name")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.textSecondary)
-                                    TextField("First name", text: $firstName)
-                                        .textInputAutocapitalization(.words)
-                                        .focused($focusedField, equals: .firstName)
-                                        .bbInput(isFocused: focusedField == .firstName)
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Last Name")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.textSecondary)
-                                    TextField("Last name", text: $lastName)
-                                        .textInputAutocapitalization(.words)
-                                        .focused($focusedField, equals: .lastName)
-                                        .bbInput(isFocused: focusedField == .lastName)
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Username Handle")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.textSecondary)
-                                    TextField("Handle", text: $handle)
-                                        .textInputAutocapitalization(.never)
-                                        .autocorrectionDisabled()
-                                        .focused($focusedField, equals: .handle)
-                                        .bbInput(isFocused: focusedField == .handle)
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Bio")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.textSecondary)
-                                    TextField("Tell us about yourself", text: $bio, axis: .vertical)
-                                        .lineLimit(2...4)
-                                        .focused($focusedField, equals: .bio)
-                                        .bbInput(isFocused: focusedField == .bio)
-                                }
-                            }
-                            .bbCard()
-                            
-                            // 3. Goal Card
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(
-                                    emoji: "🎯",
-                                    title: "Nutrition Goal",
-                                    subtitle: "Customize your daily caloric requirements",
-                                    color: BBColors.primary
-                                )
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Daily Calorie Target (kcal)")
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundColor(BBColors.textSecondary)
-                                    TextField("Daily calories", text: $calorieGoal)
-                                        .keyboardType(.numberPad)
-                                        .focused($focusedField, equals: .calorieGoal)
-                                        .bbInput(isFocused: focusedField == .calorieGoal)
-                                }
-                            }
-                            .bbCard()
-                            
-                            // 4. Physical Info Card (2x2 grid layout)
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(
-                                    emoji: "📏",
-                                    title: "Physical Stats",
-                                    subtitle: "Update your height, weight, and age metrics",
-                                    color: BBColors.accent
-                                )
-                                
-                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Age (years)")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(BBColors.textSecondary)
-                                        TextField("Age", text: $age)
-                                            .keyboardType(.numberPad)
-                                            .focused($focusedField, equals: .age)
-                                            .bbInput(isFocused: focusedField == .age)
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Gender")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(BBColors.textSecondary)
-                                        
-                                        Picker("Gender", selection: $gender) {
-                                            ForEach(genders, id: \.0) { option in
-                                                Text(option.1).tag(option.0)
-                                            }
-                                        }
-                                        .pickerStyle(.menu)
-                                        .frame(maxWidth: .infinity, minHeight: 46)
-                                        .background(BBColors.surfaceAlt)
-                                        .cornerRadius(BBRadius.md)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: BBRadius.md)
-                                                .stroke(BBColors.border, lineWidth: 2)
-                                                .allowsHitTesting(false)
-                                        )
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Weight (kg)")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(BBColors.textSecondary)
-                                        TextField("Weight", text: $weight)
-                                            .keyboardType(.decimalPad)
-                                            .focused($focusedField, equals: .weight)
-                                            .bbInput(isFocused: focusedField == .weight)
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Height (cm)")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(BBColors.textSecondary)
-                                        TextField("Height", text: $height)
-                                            .keyboardType(.decimalPad)
-                                            .focused($focusedField, equals: .height)
-                                            .bbInput(isFocused: focusedField == .height)
-                                    }
-                                }
-                            }
-                            .bbCard()
-                            
-                            // 5. Appearance Card (custom visual card selection)
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(
-                                    emoji: "🎨",
-                                    title: "Appearance",
-                                    subtitle: "Toggle your mobile theme preference",
-                                    color: Color(hex: "A855F7")
-                                )
-                                
-                                HStack(spacing: 12) {
-                                    ForEach(themes, id: \.0) { opt in
-                                        let isSelected = themePreference == opt.0
-                                        let icon = opt.0 == "light" ? "sun.max.fill" : opt.0 == "dark" ? "moon.fill" : "desktopcomputer"
-                                        Button {
-                                            themePreference = opt.0
-                                        } label: {
-                                            VStack(spacing: 8) {
-                                                Image(systemName: icon)
-                                                    .font(.system(size: 18))
-                                                Text(opt.1)
-                                                    .font(.system(size: 13, weight: .bold))
-                                            }
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                            .background(isSelected ? BBColors.primary.opacity(0.12) : BBColors.surfaceAlt)
-                                            .foregroundColor(isSelected ? BBColors.primary : BBColors.text)
-                                            .cornerRadius(BBRadius.md)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: BBRadius.md)
-                                                    .stroke(isSelected ? BBColors.primary : BBColors.border, lineWidth: 2)
-                                                    .allowsHitTesting(false)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            .bbCard()
-                            
-                            // 6. 3D Danger Zone Section Card
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(
-                                    emoji: "⚠️",
-                                    title: "Danger Zone",
-                                    subtitle: "Permanent actions that cannot be undone",
-                                    color: BBColors.danger
-                                )
-                                
-                                Button {
-                                    // Inform user this action is native RMIT scoped
-                                } label: {
-                                    Text("Delete Account")
-                                        .frame(maxWidth: .infinity)
-                                }
-                                .buttonStyle(BBButtonStyle(
-                                    backgroundColor: BBColors.danger,
-                                    shadowColor: Color(hex: "B91C1C"),
-                                    isEnabled: true
-                                ))
-                            }
-                            .padding(16)
-                            .background(BBColors.dangerBg.opacity(0.4))
-                            .cornerRadius(BBRadius.lg)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: BBRadius.lg)
-                                    .stroke(BBColors.dangerBorder, lineWidth: 2)
-                                    .allowsHitTesting(false)
-                            )
-                            .background(
-                                RoundedRectangle(cornerRadius: BBRadius.lg)
-                                    .fill(BBColors.dangerBorder.opacity(0.8))
-                                    .offset(y: 8)
-                            )
-                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
-                            .padding(.bottom, 8)
-                        }
-                        
-                        // Status alert/saved banner
+
                         if let message {
                             HStack(spacing: 10) {
                                 Image(systemName: messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
@@ -318,88 +141,304 @@ struct ProfileView: View {
                             .bbAlert(isSuccess: !messageIsError)
                             .transition(.opacity.combined(with: .scale))
                         }
-                        
-                        // Save Button
-                        Button {
-                            focusedField = nil
-                            Task {
-                                await save()
-                            }
-                        } label: {
-                            if isSaving {
-                                ProgressView()
-                                    .tint(.white)
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Text("Save Profile")
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                        .buttonStyle(BBButtonStyle(
-                            backgroundColor: BBColors.primary,
-                            shadowColor: BBColors.primaryHover,
-                            isEnabled: isValid && !isSaving
-                        ))
-                        .disabled(isSaving || !isValid)
-                        .padding(.top, 4)
-                        .padding(.bottom, 24)
                     }
-                    .padding(20)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 44)
                 }
-            }
-            .navigationTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if focusedField != nil {
-                        Button("Done") {
-                            focusedField = nil
-                        }
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(BBColors.primary)
-                    } else {
-                        Button {
-                            Task {
-                                await load()
-                            }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(BBColors.primary)
-                        }
-                    }
-                }
-            }
-            .task {
-                if firstName.isEmpty {
+                .refreshable {
                     await load()
                 }
             }
-            .refreshable {
-                await load()
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task { await load() }
+                    } label: {
+                        if isLoading {
+                            ProgressView()
+                                .tint(BBColors.primary)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 15, weight: .black))
+                                .foregroundColor(BBColors.primary)
+                        }
+                    }
+                    .disabled(isLoading)
+                }
+            }
+            .task {
+                if profile == nil {
+                    await load()
+                }
+            }
+            .sheet(isPresented: $showAuth) {
+                AuthEntryView()
+                    .onDisappear {
+                        if session.user != nil {
+                            session.exitGuestMode()
+                            Task { await load() }
+                        }
+                    }
             }
         }
     }
 
-    private var avatarInitials: String {
-        let f = firstName.first.map { String($0) } ?? ""
-        let l = lastName.first.map { String($0) } ?? ""
-        let initials = f + l
-        return initials.isEmpty ? "U" : initials.uppercased()
+    private var profileHero: some View {
+        Button(action: accountAction) {
+            HStack(spacing: 16) {
+                ZStack(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [BBColors.primary, BBColors.secondary],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 82, height: 82)
+                        .overlay(
+                            Circle()
+                                .stroke(BBColors.primary.opacity(0.75), lineWidth: 4)
+                                .allowsHitTesting(false)
+                        )
+
+//                    Text(avatarInitials)
+//                        .font(.system(size: 28, weight: .black))
+//                        .foregroundColor(.white)
+
+                    Text("FREE")
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundColor(BBColors.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(BBColors.background)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(BBColors.border, lineWidth: 1)
+                                .allowsHitTesting(false)
+                        )
+                        .offset(x: 10, y: 8)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(displayName)
+                        .font(.system(size: 28, weight: .black))
+                        .foregroundColor(BBColors.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: goalStatusIcon)
+                            .font(.system(size: 13, weight: .black))
+                            .foregroundColor(BBColors.textSecondary)
+
+                        Text(goalStatusText)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(BBColors.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundColor(BBColors.textMuted)
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .bbCard(radius: BBRadius.xl, padding: 0)
     }
 
-    private var isValid: Bool {
-        !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !handle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private var syncCard: some View {
+        Button {
+            if isGuestUser {
+                showAuth = true
+            } else {
+                show("Your BitBalance data is synced.", isError: false)
+            }
+        } label: {
+            HStack(spacing: 16) {
+                SettingsIconBox(
+                    icon: isGuestUser ? "arrow.right.circle.fill" : "checkmark.circle.fill",
+                    color: BBColors.primary,
+                    size: 56
+                )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(isGuestUser ? "Sign In" : "Signed in")
+                        .font(.system(size: 24, weight: .black))
+                        .foregroundColor(BBColors.primary)
+
+                    Text(isGuestUser ? "Sign in to sync your data across devices" : currentEmail)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(BBColors.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundColor(BBColors.textMuted)
+            }
+            .padding(18)
+        }
+        .buttonStyle(.plain)
+        .bbCard(radius: BBRadius.xl, padding: 0)
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 22, weight: .black))
+            .foregroundColor(BBColors.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.top, 4)
+    }
+
+    private var currentUser: UserSession? {
+        profile?.user ?? session.user
+    }
+
+    private var isGuestUser: Bool {
+        session.isGuest || currentUser == nil
+    }
+
+    private var displayName: String {
+        guard let user = currentUser else { return "Guest" }
+        let fullName = [user.firstName, user.lastName ?? ""]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return fullName.isEmpty ? user.handle : fullName
+    }
+
+    private var currentEmail: String {
+        currentUser?.email ?? "Not signed in"
+    }
+
+    private var accountRowTitle: String {
+        isGuestUser ? "Create account" : "Account"
+    }
+
+    private var accountRowValue: String? {
+        isGuestUser ? "Required to sync" : currentUser?.handle
+    }
+
+    private var goalStatusIcon: String {
+        bmiValue == nil ? "minus.circle.fill" : "equal.circle.fill"
+    }
+
+    private var goalStatusText: String {
+        if let bmiValue {
+            return "Maintain - BMI \(formatOneDecimal(bmiValue))"
+        }
+        return isGuestUser ? "Guest mode" : "Plan not set"
+    }
+
+    private var bmiValue: Double? {
+        guard let weight = profile?.physical.weight,
+              let height = profile?.physical.height,
+              height > 0 else {
+            return nil
+        }
+        let meters = height / 100
+        return weight / (meters * meters)
+    }
+
+    private var calorieGoalText: String {
+        guard let calories = profile?.goal?.calorieGoal else { return "Set up" }
+        return "\(calories) kcal"
+    }
+
+    private var macroGoalText: String {
+        guard let calories = profile?.goal?.calorieGoal else { return "Set up" }
+        let protein = Int(round(Double(calories) * 0.30 / 4))
+        let carbs = Int(round(Double(calories) * 0.45 / 4))
+        let fat = Int(round(Double(calories) * 0.25 / 9))
+        return "\(protein)/\(carbs)/\(fat) g"
+    }
+
+    private var waterGoalText: String {
+        guard let weight = profile?.physical.weight else { return "2,000 ml" }
+        return "\(Int(round(weight * 35))) ml"
+    }
+
+    private var weightText: String {
+        guard let weight = profile?.physical.weight else { return "Set up" }
+        return "\(formatOneDecimal(weight)) kg"
+    }
+
+    private var themeLabel: String {
+        switch selectedTheme {
+        case "light":
+            return "Light"
+        case "dark":
+            return "Dark"
+        default:
+            return "System"
+        }
+    }
+
+    private func accountAction() {
+        if isGuestUser {
+            showAuth = true
+        } else {
+            show("Account details are managed from the web profile for now.", isError: false)
+        }
+    }
+
+    private func openPlanSetup() {
+        guard !isGuestUser else {
+            showAuth = true
+            return
+        }
+        session.needsOnboarding = true
+    }
+
+    private func cycleTheme() {
+        guard !isSavingTheme else { return }
+        let currentIndex = themeOptions.firstIndex(of: selectedTheme) ?? 0
+        let nextTheme = themeOptions[(currentIndex + 1) % themeOptions.count]
+
+        guard let profile else {
+            selectedTheme = nextTheme
+            return
+        }
+
+        Task {
+            await saveTheme(nextTheme, using: profile)
+        }
+    }
+
+    private func signOut() {
+        Task {
+            await session.signOut()
+            profile = nil
+        }
     }
 
     private func load() async {
+        guard !isGuestUser else {
+            profile = nil
+            selectedTheme = currentUser?.themePreference ?? "system"
+            return
+        }
+
         isLoading = true
         message = nil
 
         do {
-            apply(try await session.loadProfile())
+            let payload = try await session.loadProfile()
+            profile = payload
+            selectedTheme = payload.user.themePreference ?? "system"
         } catch {
             show(error.localizedDescription, isError: true)
         }
@@ -407,55 +446,42 @@ struct ProfileView: View {
         isLoading = false
     }
 
-    private func save() async {
-        isSaving = true
+    private func saveTheme(_ theme: String, using profile: ProfilePayload) async {
+        isSavingTheme = true
         message = nil
 
         let payload = ProfileUpdatePayload(
-            firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
-            lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
-            userName: handle.trimmingCharacters(in: .whitespacesAndNewlines),
-            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-            bio: bio.trimmingCharacters(in: .whitespacesAndNewlines),
-            themePreference: themePreference,
-            calorieGoal: calorieGoal.trimmingCharacters(in: .whitespacesAndNewlines),
-            age: age.trimmingCharacters(in: .whitespacesAndNewlines),
-            gender: gender,
-            weight: weight.trimmingCharacters(in: .whitespacesAndNewlines),
-            height: height.trimmingCharacters(in: .whitespacesAndNewlines)
+            firstName: profile.user.firstName,
+            lastName: profile.user.lastName ?? "",
+            userName: profile.user.handle,
+            email: profile.user.email,
+            bio: profile.bio ?? "",
+            themePreference: theme,
+            calorieGoal: profile.goal.map { String($0.calorieGoal) } ?? "",
+            age: profile.physical.age.map { String($0) } ?? "",
+            gender: profile.physical.gender ?? "",
+            weight: profile.physical.weight.map { formatInputNumber($0) } ?? "",
+            height: profile.physical.height.map { formatInputNumber($0) } ?? ""
         )
 
         do {
-            apply(try await session.updateProfile(payload))
-            show("Profile saved successfully!", isError: false)
+            let updated = try await session.updateProfile(payload)
+            self.profile = updated
+            selectedTheme = updated.user.themePreference ?? theme
+            show("Appearance updated.", isError: false)
         } catch {
             show(error.localizedDescription, isError: true)
         }
 
-        isSaving = false
-    }
-
-    private func apply(_ payload: ProfilePayload) {
-        firstName = payload.user.firstName
-        lastName = payload.user.lastName ?? ""
-        handle = payload.user.handle
-        email = payload.user.email
-        bio = payload.bio ?? ""
-        themePreference = payload.user.themePreference ?? "system"
-        calorieGoal = payload.goal.map { String($0.calorieGoal) } ?? ""
-        age = payload.physical.age.map { String($0) } ?? ""
-        gender = payload.physical.gender ?? ""
-        weight = payload.physical.weight.map { format($0) } ?? ""
-        height = payload.physical.height.map { format($0) } ?? ""
+        isSavingTheme = false
     }
 
     private func show(_ text: String, isError: Bool) {
         message = text
         messageIsError = isError
-        
-        // Auto-dismiss after 4 seconds
+
         Task {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
             if message == text {
                 withAnimation {
                     message = nil
@@ -464,45 +490,190 @@ struct ProfileView: View {
         }
     }
 
-    private func format(_ value: Double) -> String {
+    private func formatOneDecimal(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%.1f", value)
+    }
+
+    private func formatInputNumber(_ value: Double) -> String {
         if value.rounded() == value {
             return String(Int(value))
         }
-
         return String(format: "%.1f", value)
     }
 }
 
-// MARK: - Reusable Profile Section Header
-private struct SectionHeader: View {
-    let emoji: String
-    let title: String
-    let subtitle: String
-    let color: Color
-    
+private struct PremiumBanner: View {
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon Badge
-            Text(emoji)
-                .font(.system(size: 20))
-                .frame(width: 44, height: 44)
-                .background(color.opacity(0.12))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(color.opacity(0.3), lineWidth: 1)
-                        .allowsHitTesting(false)
-                )
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 15, weight: .black))
-                    .foregroundColor(BBColors.text)
-                Text(subtitle)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(BBColors.textSecondary)
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(BBColors.accent.opacity(0.25))
+                    .frame(width: 76, height: 76)
+                Circle()
+                    .fill(BBColors.warning)
+                    .frame(width: 58, height: 58)
+                    .overlay(
+                        Circle()
+                            .stroke(BBColors.accentHover, lineWidth: 4)
+                            .allowsHitTesting(false)
+                    )
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 24, weight: .black))
+                    .foregroundColor(BBColors.primaryHover)
+                    .offset(x: 16, y: -22)
             }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Go Premium")
+                    .font(.system(size: 28, weight: .black))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+
+                Text("$4.17 / month")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white.opacity(0.85))
+            }
+
+            Spacer(minLength: 8)
+
+            VStack(spacing: 2) {
+                Text("SAVE")
+                    .font(.system(size: 13, weight: .black))
+                    .tracking(2)
+                Text("47%")
+                    .font(.system(size: 28, weight: .black))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 13)
+            .overlay(
+                RoundedRectangle(cornerRadius: BBRadius.lg)
+                    .stroke(.white.opacity(0.45), lineWidth: 2)
+                    .allowsHitTesting(false)
+            )
         }
-        .padding(.bottom, 4)
+        .padding(18)
+        .background(
+            LinearGradient(
+                colors: [BBColors.secondary, BBColors.primary.opacity(0.75)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: BBRadius.xl))
+        .shadow(color: BBColors.secondary.opacity(0.18), radius: 12, x: 0, y: 8)
     }
+}
+
+private struct SettingsGroup<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+        }
+        .background(BBColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: BBRadius.xl))
+        .overlay(
+            RoundedRectangle(cornerRadius: BBRadius.xl)
+                .stroke(BBColors.border, lineWidth: 2)
+                .allowsHitTesting(false)
+        )
+        .background(
+            RoundedRectangle(cornerRadius: BBRadius.xl)
+                .fill(BBColors.borderSubtle)
+                .offset(y: 8)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .padding(.bottom, 8)
+    }
+}
+
+private struct SettingsRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let value: String?
+    var showsDivider = false
+    var isDestructive = false
+    var isLoading = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 0) {
+                HStack(spacing: 16) {
+                    SettingsIconBox(icon: icon, color: iconColor)
+
+                    Text(title)
+                        .font(.system(size: 22, weight: .heavy))
+                        .foregroundColor(isDestructive ? BBColors.danger : BBColors.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+
+                    Spacer(minLength: 10)
+
+                    if isLoading {
+                        ProgressView()
+                            .tint(BBColors.primary)
+                    } else if let value {
+                        Text(value)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(BBColors.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 18, weight: .black))
+                        .foregroundColor(BBColors.textMuted)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 18)
+
+                if showsDivider {
+                    Rectangle()
+                        .fill(BBColors.border.opacity(0.8))
+                        .frame(height: 1)
+                        .padding(.leading, 78)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SettingsIconBox: View {
+    let icon: String
+    let color: Color
+    var size: CGFloat = 42
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: size * 0.44, weight: .black))
+            .foregroundColor(color)
+            .frame(width: size, height: size)
+            .background(color.opacity(0.16))
+            .clipShape(RoundedRectangle(cornerRadius: BBRadius.md))
+    }
+}
+
+#Preview("Default") {
+    ProfileView()
+        .environmentObject(SessionStore.preview)
+}
+
+#Preview("Dark Mode") {
+    ProfileView()
+        .environmentObject(SessionStore.preview)
+        .preferredColorScheme(.dark)
 }

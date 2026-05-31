@@ -220,4 +220,147 @@ function calculateCalorieAverage($array)
     $count = count($filteredArray);
     return $count > 0 ? round(array_sum($filteredArray) / $count, 0) : 0; // Avoid division by zero
 }
+
+/* =========================================================================
+   DIET & BEATS — DJ Mixer history + archetype collection
+   ========================================================================= */
+
+/**
+ * Lazily create the mix-log table. Guarded by a session flag so the DDL runs
+ * at most once per session (the DB is only reachable via Apache here, so a
+ * self-bootstrapping CREATE IF NOT EXISTS is the most reliable migration).
+ */
+function bb_ensure_beats_mix_table(PDO $pdo): void
+{
+    if (!empty($_SESSION['beats_mix_table_ok'])) {
+        return;
+    }
+    try {
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS `beats_mix_log` (
+                `mix_id` INT(11) NOT NULL AUTO_INCREMENT,
+                `user_id` INT(11) NOT NULL,
+                `track_name` VARCHAR(120) NOT NULL,
+                `artist_name` VARCHAR(120) NOT NULL DEFAULT '',
+                `food_item` VARCHAR(120) NOT NULL,
+                `calories` INT(11) NOT NULL DEFAULT 0,
+                `archetype` VARCHAR(80) NOT NULL DEFAULT '',
+                `detected_vibe` VARCHAR(60) NOT NULL DEFAULT '',
+                `match_score` TINYINT(4) NOT NULL DEFAULT 0,
+                `energy_sync` TINYINT(4) NOT NULL DEFAULT 0,
+                `comfort` TINYINT(4) NOT NULL DEFAULT 0,
+                `chaos` TINYINT(4) NOT NULL DEFAULT 0,
+                `verdict` VARCHAR(255) NOT NULL DEFAULT '',
+                `rarity` VARCHAR(60) NOT NULL DEFAULT '',
+                `created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (`mix_id`),
+                KEY `user_created` (`user_id`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $_SESSION['beats_mix_table_ok'] = true;
+    } catch (PDOException $e) {
+        // Leave the flag unset so we retry next time; callers handle absence.
+    }
+}
+
+/** Persist one freshly computed mix result. Returns the new row id (0 on failure). */
+function bb_log_beats_mix(PDO $pdo, int $userId, array $r): int
+{
+    bb_ensure_beats_mix_table($pdo);
+    try {
+        $scores = is_array($r['scores'] ?? null) ? $r['scores'] : [];
+        $stmt = $pdo->prepare(
+            "INSERT INTO `beats_mix_log`
+                (user_id, track_name, artist_name, food_item, calories, archetype,
+                 detected_vibe, match_score, energy_sync, comfort, chaos, verdict, rarity)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+        );
+        $stmt->execute([
+            $userId,
+            (string) ($r['track_name'] ?? ''),
+            (string) ($r['artist_name'] ?? ''),
+            (string) ($r['food_item'] ?? ''),
+            (int) ($r['calories'] ?? 0),
+            (string) ($r['archetype'] ?? ''),
+            (string) ($r['detected_vibe'] ?? ''),
+            (int) ($r['match_score'] ?? 0),
+            (int) ($scores['energy_sync'] ?? 0),
+            (int) ($scores['comfort'] ?? 0),
+            (int) ($scores['chaos'] ?? 0),
+            (string) ($r['verdict'] ?? ''),
+            (string) ($r['rarity'] ?? ''),
+        ]);
+        return (int) $pdo->lastInsertId();
+    } catch (PDOException $e) {
+        // Ignore — logging history must never break the mixer response.
+        return 0;
+    }
+}
+
+/** Delete one mix owned by the user. Returns true if a row was removed. */
+function bb_delete_beats_mix(PDO $pdo, int $userId, int $mixId): bool
+{
+    try {
+        $stmt = $pdo->prepare("DELETE FROM `beats_mix_log` WHERE mix_id = ? AND user_id = ?");
+        $stmt->execute([$mixId, $userId]);
+        return $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/** How many mixes a user still has for a given archetype (for live collection upkeep). */
+function bb_count_beats_archetype(PDO $pdo, int $userId, string $archetype): int
+{
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM `beats_mix_log` WHERE user_id = ? AND archetype = ?");
+        $stmt->execute([$userId, $archetype]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/** Most recent mixes for a user (newest first). */
+function bb_get_beats_mix_history(PDO $pdo, int $userId, int $limit = 12): array
+{
+    bb_ensure_beats_mix_table($pdo);
+    try {
+        $limit = max(1, min(50, $limit));
+        $stmt = $pdo->prepare(
+            "SELECT mix_id, track_name, artist_name, food_item, calories, archetype, detected_vibe,
+                    match_score, energy_sync, comfort, chaos, verdict, rarity, created_at
+             FROM `beats_mix_log`
+             WHERE user_id = ?
+             ORDER BY mix_id DESC
+             LIMIT {$limit}"
+        );
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Distinct archetypes a user has unlocked, each with its best score and how
+ * many times reached. Powers the "collection" strip.
+ */
+function bb_get_beats_collection(PDO $pdo, int $userId): array
+{
+    bb_ensure_beats_mix_table($pdo);
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT archetype, MAX(match_score) AS best_score, COUNT(*) AS hits, MAX(rarity) AS rarity
+             FROM `beats_mix_log`
+             WHERE user_id = ? AND archetype <> ''
+             GROUP BY archetype
+             ORDER BY best_score DESC, hits DESC"
+        );
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
 ?>

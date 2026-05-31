@@ -21,6 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $food_item = $_POST['food_item'];
     $calories = $_POST['calories'];
     $meal_category = $_POST['meal_category']; // Optional meal category
+    $image_path = isset($_POST['image_path']) && $_POST['image_path'] !== '' ? trim($_POST['image_path']) : null;
+    if ($image_path !== null && strpos($image_path, 'uploads/intake/') !== 0) {
+        $image_path = null;
+    }
 
     // Macros (optional, default 0). Clamp to a sane range to avoid garbage.
     $protein = isset($_POST['protein']) && $_POST['protein'] !== '' ? (float) $_POST['protein'] : 0;
@@ -68,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         // Prepare and execute the SQL statement
-        $stmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             $error_message = 'Database error: ' . implode(' ', $pdo->errorInfo());
             if ($isAjax) {
@@ -78,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Use array-style execute
-            if ($stmt->execute([$user_id, $food_item, $calories, $protein, $carbs, $fat, $meal_category])) {
+            if ($stmt->execute([$user_id, $food_item, $calories, $protein, $carbs, $fat, $meal_category, $image_path])) {
                 // Award XP (state-based, idempotent — log+delete spam can't farm).
                 $xpResult = ['xp_added' => 0, 'leveled_up' => false];
                 try {
@@ -143,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'carbs'         => $carbs,
                         'fat'           => $fat,
                         'meal_category' => $meal_category,
+                        'image_path'    => $image_path,
                         'date_intake'   => gmdate('Y-m-d\TH:i:s\Z'),
                     ];
                     $showDate  = false;

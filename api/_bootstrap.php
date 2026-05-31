@@ -73,7 +73,8 @@ function api_public_user(array $row)
         'email' => isset($row['email']) ? $row['email'] : '',
         'role' => isset($row['role']) ? $row['role'] : 'user',
         'profile_image' => isset($row['profile_image']) ? $row['profile_image'] : null,
-        'theme_preference' => isset($row['theme_preference']) ? $row['theme_preference'] : 'system'
+        'theme_preference' => isset($row['theme_preference']) ? $row['theme_preference'] : 'system',
+        'needs_onboarding' => !empty($row['needs_onboarding'])
     ];
 }
 
@@ -105,7 +106,12 @@ function api_current_user_row(PDO $pdo)
 
     $stmt = $pdo->prepare("
         SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
-               us.status, us.theme_preference
+               us.status, us.theme_preference,
+               CASE
+                   WHEN NOT EXISTS (SELECT 1 FROM userGoal ug WHERE ug.user_id = u.user_id LIMIT 1)
+                     OR NOT EXISTS (SELECT 1 FROM userPhysicalInfo upi WHERE upi.user_id = u.user_id LIMIT 1)
+                   THEN 1 ELSE 0
+               END AS needs_onboarding
         FROM user u
         JOIN userStatus us ON u.user_id = us.user_id
         WHERE u.user_id = ?

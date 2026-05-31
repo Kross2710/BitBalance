@@ -65,7 +65,14 @@ $_timeText   = $_timeLabel ?? date('H:i', $_ts);
     <?php endif; ?>
 
     <td data-label="<?= t('intake.row.food') ?>" class="fw-bold intake-food-cell">
-        <?= htmlspecialchars(ucfirst($_entry['food_item'] ?? '')) ?>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span><?= htmlspecialchars(ucfirst($_entry['food_item'] ?? '')) ?></span>
+            <?php if (!empty($_entry['image_path'])): ?>
+                <span class="meal-photo-trigger" data-img-src="<?= BASE_URL . htmlspecialchars($_entry['image_path'], ENT_QUOTES) ?>" style="cursor: pointer; color: var(--color-primary); font-size: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--color-primary-soft); padding: 4px 6px; border-radius: 6px; border: 1px solid var(--color-primary);" title="Xem ảnh món ăn">
+                    <i class="fas fa-camera" style="margin-right: 4px;"></i> Photo
+                </span>
+            <?php endif; ?>
+        </div>
     </td>
 
     <td data-label="<?= t('intake.row.calories') ?>" class="text-primary cal-cell intake-cal-cell">

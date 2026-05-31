@@ -573,24 +573,17 @@ if ($actualWeight > 0 && $actualHeight > 0) {
 
                     <!-- Pane 3: Meals (Bữa ăn) -->
                     <div class="chart-wrapper-tab" id="tabPane-meals">
-                        <section class="chart-section meals-card">
-                            <div class="card-header">
+                        <section class="chart-section meals-card bento-dashboard-section">
+                            <!-- <div class="card-header">
                                 <h4><i class="fas fa-utensils"></i> <?= t('dashboard.intake.heading') ?></h4>
-                            </div>
-                            <div class="doughnut-container">
-                                <canvas id="mealCategoriesChart"></canvas>
-                                <div class="doughnut-center-text">
-                                    <span class="center-val"><?php echo $totalCalories; ?></span>
-                                    <span class="center-label"><?= t('common.kcal') ?></span>
-                                </div>
-                            </div>
+                            </div> -->
 
                             <?php
                             $mealConfig = [
-                                'breakfast' => ['icon' => 'fa-mug-hot', 'color' => '#FF6384', 'label' => t_raw('dashboard.meal.breakfast')],
-                                'lunch' => ['icon' => 'fa-hamburger', 'color' => '#36A2EB', 'label' => t_raw('dashboard.meal.lunch')],
-                                'dinner' => ['icon' => 'fa-utensils', 'color' => '#FFCE56', 'label' => t_raw('dashboard.meal.dinner')],
-                                'snack' => ['icon' => 'fa-apple-alt', 'color' => '#4BC0C0', 'label' => t_raw('dashboard.meal.snack')]
+                                'breakfast' => ['icon' => 'fa-mug-hot', 'color' => '#FF3366', 'label' => t_raw('dashboard.meal.breakfast')],
+                                'lunch' => ['icon' => 'fa-hamburger', 'color' => '#1CB0F6', 'label' => t_raw('dashboard.meal.lunch')],
+                                'dinner' => ['icon' => 'fa-utensils', 'color' => '#FF9600', 'label' => t_raw('dashboard.meal.dinner')],
+                                'snack' => ['icon' => 'fa-apple-alt', 'color' => '#58CC02', 'label' => t_raw('dashboard.meal.snack')]
                             ];
                             // Normalize per-category kcal: keys are capitalized for real users
                             // but lowercase in the guest mock — accept either.
@@ -600,44 +593,138 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             }
                             ?>
 
-                            <script>
-                                document.addEventListener('DOMContentLoaded', () => {
-                                    const ctx = document.getElementById('mealCategoriesChart').getContext('2d');
-                                    window.mealDoughnutChartInstance = new Chart(ctx, {
-                                        type: 'doughnut',
-                                        data: {
-                                            labels: ['Breakfast', 'Lunch', 'Dinner', 'Snack'],
-                                            datasets: [{
-                                                data: [
-                                                    <?php echo $mealLegendData['breakfast']; ?>,
-                                                    <?php echo $mealLegendData['lunch']; ?>,
-                                                    <?php echo $mealLegendData['dinner']; ?>,
-                                                    <?php echo $mealLegendData['snack']; ?>
-                                                ],
-                                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
-                                                hoverOffset: 4,
-                                                borderWidth: 2,
-                                                borderColor: 'var(--color-surface)'
-                                            }]
-                                        },
-                                        options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
-                                    });
-                                });
-                            </script>
+                            <!-- BENTO NUTRITION PLATE -->
+                            <div class="bento-box-container" id="bentoBoxContainer">
+                                <div class="bento-plate" id="bentoPlate">
+                                    <div class="bento-dashboard-layout">
+                                        <!-- Left Column: Circular breakdown compartment -->
+                                        <div class="bento-breakdown-panel">
+                                            <div class="bento-slot slot-breakdown">
+                                                <div class="doughnut-container bento-concentric-container">
+                                                    <svg class="concentric-rings-svg" viewBox="0 0 200 200">
+                                                        <defs>
+                                                            <!-- Breakfast Gradient -->
+                                                            <linearGradient id="grad-breakfast" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                                <stop offset="0%" stop-color="#FF5470" />
+                                                                <stop offset="100%" stop-color="#FF3366" />
+                                                            </linearGradient>
+                                                            <!-- Lunch Gradient -->
+                                                            <linearGradient id="grad-lunch" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                                <stop offset="0%" stop-color="#1CB0F6" />
+                                                                <stop offset="100%" stop-color="#0077C8" />
+                                                            </linearGradient>
+                                                            <!-- Dinner Gradient -->
+                                                            <linearGradient id="grad-dinner" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                                <stop offset="0%" stop-color="#FF9600" />
+                                                                <stop offset="100%" stop-color="#E67E00" />
+                                                            </linearGradient>
+                                                            <!-- Snack Gradient -->
+                                                            <linearGradient id="grad-snack" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                                <stop offset="0%" stop-color="#58CC02" />
+                                                                <stop offset="100%" stop-color="#4CAF00" />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <!-- Breakfast Ring (Outer, Pink Gradient) -->
+                                                        <circle class="ring-bg" cx="100" cy="100" r="80" stroke="#FF3366" opacity="0.1" stroke-width="12" fill="none" />
+                                                        <circle class="ring-active" id="ring-breakfast" cx="100" cy="100" r="80" stroke="url(#grad-breakfast)" stroke-width="12" stroke-linecap="round" fill="none" transform="rotate(-90 100 100)" stroke-dasharray="503" stroke-dashoffset="503" />
 
-                            <!-- Per-category calorie legend for the doughnut -->
-                            <div class="meal-legend" id="mealLegend">
-                                <?php foreach ($mealConfig as $__cat => $__cfg): ?>
-                                    <div class="meal-legend-item" data-cat="<?= $__cat ?>">
-                                        <span class="legend-dot" style="background: <?= $__cfg['color'] ?>;"></span>
-                                        <span class="legend-label"><?= htmlspecialchars($__cfg['label']) ?></span>
-                                        <span class="legend-val"><?= $mealLegendData[$__cat] ?> <?= t('common.kcal') ?></span>
+                                                        <!-- Lunch Ring (Middle-Outer, Blue Gradient) -->
+                                                        <circle class="ring-bg" cx="100" cy="100" r="62" stroke="#1CB0F6" opacity="0.1" stroke-width="12" fill="none" />
+                                                        <circle class="ring-active" id="ring-lunch" cx="100" cy="100" r="62" stroke="url(#grad-lunch)" stroke-width="12" stroke-linecap="round" fill="none" transform="rotate(-90 100 100)" stroke-dasharray="390" stroke-dashoffset="390" />
+
+                                                        <!-- Dinner Ring (Middle-Inner, Yellow Gradient) -->
+                                                        <circle class="ring-bg" cx="100" cy="100" r="44" stroke="#FF9600" opacity="0.1" stroke-width="12" fill="none" />
+                                                        <circle class="ring-active" id="ring-dinner" cx="100" cy="100" r="44" stroke="url(#grad-dinner)" stroke-width="12" stroke-linecap="round" fill="none" transform="rotate(-90 100 100)" stroke-dasharray="276" stroke-dashoffset="276" />
+
+                                                        <!-- Snack Ring (Inner, Teal Gradient) -->
+                                                        <circle class="ring-bg" cx="100" cy="100" r="26" stroke="#58CC02" opacity="0.1" stroke-width="12" fill="none" />
+                                                        <circle class="ring-active" id="ring-snack" cx="100" cy="100" r="26" stroke="url(#grad-snack)" stroke-width="12" stroke-linecap="round" fill="none" transform="rotate(-90 100 100)" stroke-dasharray="163" stroke-dashoffset="163" />
+                                                    </svg>
+                                                    <div class="doughnut-center-text">
+                                                        <span class="center-val"><?php echo $totalCalories; ?></span>
+                                                        <!-- <span class="center-label"><?= t('common.kcal') ?></span> -->
+                                                    </div>
+                                                </div>
+                                                <div class="meal-legend" id="mealLegend">
+                                                    <?php foreach ($mealConfig as $__cat => $__cfg): ?>
+                                                        <div class="meal-legend-item" data-cat="<?= $__cat ?>">
+                                                            <div class="legend-dot-wrapper">
+                                                                <span class="legend-dot" style="background: <?= $__cfg['color'] ?>;"></span>
+                                                                <span class="legend-label"><?= htmlspecialchars($__cfg['label']) ?></span>
+                                                            </div>
+                                                            <span class="legend-val"><?= $mealLegendData[$__cat] ?> <?= t('common.kcal') ?></span>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right Column: Bento 2x2 grid of meal compartments -->
+                                        <div class="bento-grid">
+                                            <!-- Breakfast Slot -->
+                                            <div class="bento-slot slot-breakfast" id="bento-slot-breakfast" data-meal="Breakfast">
+                                                <div class="slot-header">
+                                                    <span class="slot-title">🌅 <?= t('dashboard.meal.breakfast') ?></span>
+                                                    <span class="slot-kcal" id="bento-kcal-breakfast">0 kcal</span>
+                                                </div>
+                                                <div class="slot-empty" id="bento-empty-breakfast">
+                                                    <i class="fas fa-mug-hot slot-icon"></i>
+                                                    <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
+                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                </div>
+                                                <div class="slot-list" id="bento-list-breakfast"></div>
+                                            </div>
+
+                                            <!-- Lunch Slot -->
+                                            <div class="bento-slot slot-lunch" id="bento-slot-lunch" data-meal="Lunch">
+                                                <div class="slot-header">
+                                                    <span class="slot-title">☀️ <?= t('dashboard.meal.lunch') ?></span>
+                                                    <span class="slot-kcal" id="bento-kcal-lunch">0 kcal</span>
+                                                </div>
+                                                <div class="slot-empty" id="bento-empty-lunch">
+                                                    <i class="fas fa-hamburger slot-icon"></i>
+                                                    <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
+                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                </div>
+                                                <div class="slot-list" id="bento-list-lunch"></div>
+                                            </div>
+
+                                            <!-- Dinner Slot -->
+                                            <div class="bento-slot slot-dinner" id="bento-slot-dinner" data-meal="Dinner">
+                                                <div class="slot-header">
+                                                    <span class="slot-title">🌙 <?= t('dashboard.meal.dinner') ?></span>
+                                                    <span class="slot-kcal" id="bento-kcal-dinner">0 kcal</span>
+                                                </div>
+                                                <div class="slot-empty" id="bento-empty-dinner">
+                                                    <i class="fas fa-utensils slot-icon"></i>
+                                                    <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
+                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                </div>
+                                                <div class="slot-list" id="bento-list-dinner"></div>
+                                            </div>
+
+                                            <!-- Snack Slot -->
+                                            <div class="bento-slot slot-snack" id="bento-slot-snack" data-meal="Snack">
+                                                <div class="slot-header">
+                                                    <span class="slot-title">🍪 <?= t('dashboard.meal.snack') ?></span>
+                                                    <span class="slot-kcal" id="bento-kcal-snack">0 kcal</span>
+                                                </div>
+                                                <div class="slot-empty" id="bento-empty-snack">
+                                                    <i class="fas fa-apple-alt slot-icon"></i>
+                                                    <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
+                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                </div>
+                                                <div class="slot-list" id="bento-list-snack"></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                <?php endforeach; ?>
+                                </div>
                             </div>
 
-                            <!-- Eaten food logs (no search/filter — this is the day's breakdown) -->
-                            <div class="table-responsive" style="margin-top: 16px;">
+
+
+                            <!-- Hidden Table for Data Sync -->
+                            <div class="table-responsive logs-sync-table" hidden aria-hidden="true">
                                 <table id="logs-table" class="modern-table">
                                     <thead>
                                         <tr>
@@ -665,7 +752,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 </table>
                             </div>
 
-                            <div id="custom-pagination" class="pagination-container"></div>
+                            <div id="custom-pagination" class="pagination-container logs-sync-pagination" hidden aria-hidden="true"></div>
                         </section>
                     </div>
                 </section>
@@ -674,6 +761,109 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             <!-- COLUMN 2: Habit (Streak) & Focus Bento Grid -->
             <div class="flex dashboard-bento-column">
                 <div class="bento-grid-mobile">
+                    <!-- AI MASCOT ROOM CARD -->
+                    <section class="mascot-room-card" id="mascotRoomCard" 
+                             data-calories="<?php echo (int) $totalCalories; ?>" 
+                             data-goal="<?php echo (int) $userGoal; ?>" 
+                             data-protein="<?php echo (float) ($macroTotals['protein'] ?? 0); ?>" 
+                             data-protein-goal="<?php echo (float) ($macroGoals['protein'] ?? 0); ?>" 
+                             data-streak="<?php echo (int) $streakDays; ?>">
+                        <div class="mascot-card-header">
+                            <h3><i class="fas fa-ghost"></i> <?= t('dashboard.mascot.heading') ?></h3>
+                        </div>
+
+                        <div class="mascot-stage" id="mascotStage" onclick="petMascot()">
+                            <!-- Speech bubble -->
+                            <div class="mascot-speech-bubble" id="mascotSpeechBubble">
+                                <span class="mascot-bubble-text" id="mascotBubbleText">...</span>
+                                <span class="typing-cursor" id="mascotTypingCursor"></span>
+                            </div>
+
+                            <!-- Inline Geometric Vector SVG Owl -->
+                            <svg viewBox="0 0 200 200" class="mascot-svg" id="mascotSvg">
+                                <!-- shadow under the owl -->
+                                <ellipse cx="100" cy="165" rx="55" ry="12" class="mascot-shadow" />
+                                
+                                <!-- Green aura glow (active in state-healthy) -->
+                                <circle cx="100" cy="100" r="75" class="health-aura" />
+                                
+                                <!-- Left Foot -->
+                                <path d="M75 160 Q80 170 85 162 T95 160" class="mascot-feet" />
+                                <!-- Right Foot -->
+                                <path d="M105 160 Q115 170 120 162 T125 160" class="mascot-feet" />
+
+                                <!-- Wings -->
+                                <!-- Left Wing -->
+                                <path d="M45 100 Q15 90 35 130 T52 115" class="mascot-wing left-wing" />
+                                <!-- Right Wing -->
+                                <path d="M155 100 Q185 90 165 130 T148 115" class="mascot-wing right-wing" />
+
+                                <!-- Main Body (rounded bell shape) -->
+                                <path d="M50 80 C50 40, 150 40, 150 80 C150 130, 50 130, 50 80 Z" class="mascot-body-outer" />
+                                <!-- Belly patch -->
+                                <path d="M65 95 C65 75, 135 75, 135 95 C135 130, 65 130, 65 95 Z" class="mascot-belly" />
+                                <path d="M75 110 L85 115 L95 110 M105 110 L115 115 L125 110" class="mascot-belly-feathers" />
+
+                                <!-- Eyes and Face -->
+                                <!-- Left Eye Outer -->
+                                <circle cx="78" cy="78" r="22" class="mascot-eye-outer" />
+                                <!-- Right Eye Outer -->
+                                <circle cx="122" cy="78" r="22" class="mascot-eye-outer" />
+
+                                <!-- Left Eye Inner (White) -->
+                                <circle cx="78" cy="78" r="16" class="mascot-eye-inner" />
+                                <!-- Right Eye Inner (White) -->
+                                <circle cx="122" cy="78" r="16" class="mascot-eye-inner" />
+
+                                <!-- Pupil Left -->
+                                <circle cx="78" cy="78" r="9" class="mascot-pupil left-pupil" />
+                                <!-- Pupil Right -->
+                                <circle cx="122" cy="78" r="9" class="mascot-pupil right-pupil" />
+
+                                <!-- Eye Shine Left -->
+                                <circle cx="81" cy="74" r="3.5" class="mascot-shine" />
+                                <!-- Eye Shine Right -->
+                                <circle cx="125" cy="74" r="3.5" class="mascot-shine" />
+
+                                <!-- Closed Sleepy Eyes (shown in state-overlimit) -->
+                                <path d="M62 78 Q78 94 94 78" class="mascot-eyes-closed left-closed" />
+                                <path d="M106 78 Q122 94 138 78" class="mascot-eyes-closed right-closed" />
+
+                                <!-- Beak (Orange Triangle) -->
+                                <polygon points="94,86 106,86 100,98" class="mascot-beak" />
+
+                                <!-- Accessories (deficit state) -->
+                                <!-- Sweatband (Headband for gym state-deficit) -->
+                                <g class="mascot-sweatband-group">
+                                    <rect x="52" y="44" width="96" height="12" rx="4" class="mascot-sweatband" />
+                                    <rect x="90" y="44" width="20" height="12" class="mascot-sweatband-stripe" />
+                                </g>
+
+                                <!-- Gym Weights (Dumbbells) -->
+                                <g class="mascot-dumbbell left-dumbbell">
+                                    <rect x="15" y="110" width="10" height="24" rx="2" class="db-plate" />
+                                    <rect x="23" y="120" width="16" height="4" class="db-bar" />
+                                    <rect x="37" y="110" width="10" height="24" rx="2" class="db-plate" />
+                                </g>
+                                <g class="mascot-dumbbell right-dumbbell">
+                                    <rect x="153" y="110" width="10" height="24" rx="2" class="db-plate" />
+                                    <rect x="161" y="120" width="16" height="4" class="db-bar" />
+                                    <rect x="175" y="110" width="10" height="24" rx="2" class="db-plate" />
+                                </g>
+
+                                <!-- Sleeping Zzz (Floating letters, shown in state-overlimit) -->
+                                <g class="mascot-zzz-group">
+                                    <text x="145" y="55" class="zzz-text zzz-1">Z</text>
+                                    <text x="160" y="40" class="zzz-text zzz-2">z</text>
+                                    <text x="172" y="28" class="zzz-text zzz-3">z</text>
+                                </g>
+                            </svg>
+                        </div>
+                        <div class="mascot-pet-prompt" id="mascotPetPrompt">
+                            <?= t('dashboard.mascot.pet_action') ?>
+                        </div>
+                    </section>
+
                     <!-- STREAK CARD -->
                     <section class="dashboard-card streak-card" id="streakCard">
                         <div class="streak-header">
@@ -1000,6 +1190,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     const fill = document.getElementById('progressFill');
                     if (fill) fill.style.width = '<?php echo $progressPercentage; ?>%';
                 }, 100);
+            });
         </script>
     <?php endif; ?>
 
@@ -1077,24 +1268,19 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             return true;
                         });
 
-                        const tableContainer = document.querySelector('.table-responsive');
+                        const tableContainer = document.getElementById('logs-table')?.closest('.logs-sync-table');
                         const paginationContainer = document.getElementById('custom-pagination');
                         let emptyState = document.querySelector('#tabPane-meals .empty-state');
+                        if (emptyState) emptyState.remove();
+                        if (tableContainer) tableContainer.style.display = 'none';
+                        if (paginationContainer) paginationContainer.style.display = 'none';
 
                         if (filteredRows.length === 0) {
-                            if (!emptyState && tableContainer) {
-                                emptyState = document.createElement('div');
-                                emptyState.className = 'empty-state';
-                                emptyState.innerHTML = `<i class="fas fa-folder-open"></i><p>${<?= json_encode(t_raw('history.empty_records')) ?>}</p>`;
-                                tableContainer.parentNode.insertBefore(emptyState, paginationContainer);
+                            this.allRows.forEach(row => row.style.display = 'none');
+                            if (typeof window.syncBentoFromTable === 'function') {
+                                window.syncBentoFromTable();
                             }
-                            if (tableContainer) tableContainer.style.display = 'none';
-                            if (paginationContainer) paginationContainer.style.display = 'none';
                             return;
-                        } else {
-                            if (emptyState) emptyState.remove();
-                            if (tableContainer) tableContainer.style.display = '';
-                            if (paginationContainer) paginationContainer.style.display = '';
                         }
 
                         const totalRows = filteredRows.length;
@@ -1109,12 +1295,19 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         filteredRows.slice(startIndex, endIndex).forEach(row => row.style.display = '');
 
                         this.renderPagination(totalPages);
+                        if (typeof window.syncBentoFromTable === 'function') {
+                            window.syncBentoFromTable();
+                        }
                     },
 
                     renderPagination(totalPages) {
                         const container = document.getElementById('custom-pagination');
                         if (!container) return;
                         container.innerHTML = '';
+                        if (container.classList.contains('logs-sync-pagination')) {
+                            container.style.display = 'none';
+                            return;
+                        }
 
                         if (totalPages <= 1) return;
 
@@ -1159,6 +1352,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 };
 
                 window.HistoryTable = HistoryTable;
+                window.tableController = HistoryTable;
 
                 // ============================================================
                 //  CALENDAR AJAX NAVIGATION (day click · month arrows · picker)
@@ -1236,15 +1430,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         window.macrosTrendChartInstance.data.datasets[2].data = data.historyFat;
                         window.macrosTrendChartInstance.update();
                     }
-                    if (window.mealDoughnutChartInstance) {
-                        window.mealDoughnutChartInstance.data.datasets[0].data = [
-                            data.mealCategoryData.Breakfast,
-                            data.mealCategoryData.Lunch,
-                            data.mealCategoryData.Dinner,
-                            data.mealCategoryData.Snack
-                        ];
-                        window.mealDoughnutChartInstance.update();
-                    }
+                    // window.mealDoughnutChartInstance is replaced by concentric SVG rings which auto-sync in syncBentoFromTable()
 
                     // Per-category legend values
                     const legendCap = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
@@ -1496,8 +1682,6 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                     const idx = tableController.allRows.indexOf(row);
                                     if (idx > -1) tableController.allRows.splice(idx, 1);
                                     tableController.filterAndPaginate();
-                                    // Reload to update charts & progress widgets
-                                    location.reload();
                                 }, 300);
                                 closeIntakeDeleteConfirmModal();
                             } else {
@@ -1548,21 +1732,38 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 }
 
                 // --- 4. QUICK LOG ACTION ---
+                function parseIntakeRowMarkup(markup) {
+                    const template = document.createElement('template');
+                    template.innerHTML = '<table><tbody>' + String(markup || '').trim() + '</tbody></table>';
+                    return template.content.querySelector('tr');
+                }
+
                 async function handleLogAgain(btn) {
                     const row = btn.closest('tr');
-                    const id = row.getAttribute('data-id');
+                    const id = row ? row.getAttribute('data-id') : '';
+                    await handleLogAgainById(id, btn);
+                }
+
+                async function handleLogAgainById(id, btn) {
                     if (!id) {
                         alert('Error: Could not find entry ID');
                         return;
                     }
 
-                    btn.disabled = true;
-                    const originalHtml = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    const originalHtml = btn ? btn.innerHTML : '';
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    }
+
+                    // Get the currently selected date from the calendar navbar day chips
+                    const activeDayChip = document.querySelector('.day-scroll .day-chip.active');
+                    const selectedDate = activeDayChip ? activeDayChip.dataset.date : new Date().toISOString().split('T')[0];
 
                     const fd = new FormData();
                     fd.append('intake_id', id);
                     fd.append('show_date', '0'); // Do not render Date cell
+                    fd.append('custom_date', selectedDate); // Pass the active calendar date!
 
                     try {
                         const res = await fetch('handlers/quick_log_from_history.php', { method: 'POST', body: fd });
@@ -1573,10 +1774,37 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             if (typeof showLoggingToast === 'function') {
                                 showLoggingToast('Food logged!', data.food_item + ' • ' + data.calories + ' kcal');
                             }
-                            // Reload to update charts & progress widgets
-                            setTimeout(() => {
-                                location.reload();
-                            }, 500);
+
+                            // Cute mascot boop sound
+                            if (typeof playMascotBoop === 'function') {
+                                playMascotBoop();
+                            }
+
+                            // Dynamic DOM update: prepend the new row into the hidden sync table
+                            const newRow = parseIntakeRowMarkup(data.new_row);
+                            if (newRow && tableController) {
+                                const tbody = document.querySelector('#logs-table tbody');
+                                if (tbody) {
+                                    tbody.insertBefore(newRow, tbody.firstChild);
+                                }
+                                tableController.allRows.unshift(newRow);
+                                tableController.filterAndPaginate();
+                            }
+
+                            // Level Up Celebration
+                            if (data.xp && data.xp.levelup && typeof window.showLevelUpToast === 'function') {
+                                window.showLevelUpToast({ to: data.xp.summary.current_level, xp_added: data.xp.added });
+                            }
+
+                            // Dynamic XP Chip Update in header
+                            if (data.xp && data.xp.summary && typeof window.updateXpChip === 'function') {
+                                window.updateXpChip(data.xp.summary);
+                            }
+
+                            // Floating +XP Text Popup
+                            if (btn && data.xp && data.xp.added && typeof window.showXpPopup === 'function') {
+                                window.showXpPopup(data.xp.added, btn);
+                            }
                         } else {
                             alert(data.error || 'Failed to log entry');
                         }
@@ -1584,10 +1812,14 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         console.error(err);
                         alert('Connection error');
                     } finally {
-                        btn.innerHTML = originalHtml;
-                        btn.disabled = false;
+                        if (btn) {
+                            btn.innerHTML = originalHtml;
+                            btn.disabled = false;
+                        }
                     }
                 }
+
+                window.handleDashboardLogAgainById = handleLogAgainById;
             });
         </script>
 
@@ -1782,12 +2014,365 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             const charts = {
                 intake: [window.historyChartInstance, window.macrosTrendChartInstance],
                 weight: [window.weightChartInstance],
-                meals: [window.mealDoughnutChartInstance]
+                meals: [] // Concentric SVG rings scale natively without Chart.js resize
             };
             requestAnimationFrame(() => {
                 (charts[tabId] || []).forEach(c => { if (c) c.resize(); });
             });
         }
+
+        // --- AI Mascot Room & Health Aura Controller ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const mascotCard = document.getElementById('mascotRoomCard');
+            if (!mascotCard) return;
+
+            const stage = document.getElementById('mascotStage');
+            const svg = document.getElementById('mascotSvg');
+            const bubble = document.getElementById('mascotSpeechBubble');
+            const bubbleText = document.getElementById('mascotBubbleText');
+            const cursor = document.getElementById('mascotTypingCursor');
+
+            // Retrieve today's metrics
+            const calories = parseInt(mascotCard.dataset.calories) || 0;
+            const goal = parseInt(mascotCard.dataset.goal) || 0;
+            const protein = parseFloat(mascotCard.dataset.protein) || 0;
+            const proteinGoal = parseFloat(mascotCard.dataset.proteinGoal) || 0;
+            const streak = parseInt(mascotCard.dataset.streak) || 0;
+
+            // Determine Vibe State
+            let vibeState = 'neutral';
+            if (goal > 0 && calories > goal) {
+                vibeState = 'overlimit';
+            } else if (proteinGoal > 0 && protein < 0.7 * proteinGoal && calories > 0) {
+                vibeState = 'deficit';
+            } else if (calories > 0) {
+                vibeState = 'healthy';
+            }
+
+            // Apply classes
+            stage.classList.remove('state-neutral', 'state-healthy', 'state-overlimit', 'state-deficit');
+            stage.classList.add('state-' + vibeState);
+
+            let isChatting = false;
+            let bubbleTimeout = null;
+
+            // Synthesis cute gamified synth chime
+            window.playMascotBoop = function() {
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    const ctx = new AudioCtx();
+                    
+                    // Note 1: Cheerful short beep
+                    let osc1 = ctx.createOscillator();
+                    let gain1 = ctx.createGain();
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc1.connect(gain1);
+                    gain1.connect(ctx.destination);
+                    osc1.start();
+                    osc1.stop(ctx.currentTime + 0.15);
+
+                    // Note 2: Sparkly chime slightly delayed
+                    setTimeout(() => {
+                        let osc2 = ctx.createOscillator();
+                        let gain2 = ctx.createGain();
+                        osc2.type = 'triangle';
+                        osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+                        gain2.gain.setValueAtTime(0.06, ctx.currentTime);
+                        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                        osc2.connect(gain2);
+                        gain2.connect(ctx.destination);
+                        osc2.start();
+                        osc2.stop(ctx.currentTime + 0.25);
+                    }, 80);
+                } catch(e) {}
+            };
+
+            // Pet mascot function
+            window.petMascot = async function() {
+                if (isChatting) return;
+                isChatting = true;
+
+                // Play synth sound
+                playMascotBoop();
+
+                // Trigger flap and bounce CSS animations
+                svg.classList.add('flap-wings', 'pet-bounce');
+                setTimeout(() => {
+                    svg.classList.remove('flap-wings', 'pet-bounce');
+                }, 600);
+
+                // Show speech bubble with loading indicator
+                if (bubbleTimeout) clearTimeout(bubbleTimeout);
+                bubble.classList.add('active');
+                bubbleText.textContent = "<?= t('dashboard.mascot.bubble_loading') ?>";
+                cursor.style.display = 'inline-block';
+
+                try {
+                    // Query mascot chat API
+                    const formData = new FormData();
+                    formData.append('calories', calories);
+                    formData.append('goal', goal);
+                    formData.append('protein', protein);
+                    formData.append('protein_goal', proteinGoal);
+                    formData.append('streak', streak);
+                    formData.append('vibe_state', vibeState);
+
+                    const res = await fetch('handlers/mascot_chat.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+
+                    if (data.ok && data.caption) {
+                        // Animate caption using typewrite effect
+                        typewriterEffect(bubbleText, data.caption, 22, () => {
+                            isChatting = false;
+                            cursor.style.display = 'none';
+                            // Automatically hide bubble after 8 seconds of idle
+                            bubbleTimeout = setTimeout(() => {
+                                bubble.classList.remove('active');
+                            }, 8000);
+                        });
+                    } else {
+                        throw new Error(data.error || 'Failed response');
+                    }
+                } catch (err) {
+                    console.error('Mascot room err:', err);
+                    bubbleText.textContent = "🦉 Hoot! Let's keep making healthy choices together today!";
+                    isChatting = false;
+                    cursor.style.display = 'none';
+                    bubbleTimeout = setTimeout(() => {
+                        bubble.classList.remove('active');
+                    }, 5000);
+                }
+            };
+
+            function typewriterEffect(element, text, speed, callback) {
+                element.textContent = "";
+                let i = 0;
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                        setTimeout(type, speed);
+                    } else if (callback) {
+                        callback();
+                    }
+                }
+                type();
+            }
+
+            // Click outside to close speech bubble
+            document.addEventListener('click', (e) => {
+                if (!mascotCard.contains(e.target)) {
+                    bubble.classList.remove('active');
+                }
+            });
+        });
+
+        // --- 3D Bento Box & Virtual Plate Controller ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const bentoContainer = document.getElementById('bentoBoxContainer');
+            if (!bentoContainer) return;
+
+            // 1. Sync Bento compartments with hidden logs table
+            window.syncBentoFromTable = function() {
+                const slots = {
+                    'breakfast': { kcal: 0, list: document.getElementById('bento-list-breakfast'), empty: document.getElementById('bento-empty-breakfast') },
+                    'lunch': { kcal: 0, list: document.getElementById('bento-list-lunch'), empty: document.getElementById('bento-empty-lunch') },
+                    'dinner': { kcal: 0, list: document.getElementById('bento-list-dinner'), empty: document.getElementById('bento-empty-dinner') },
+                    'snack': { kcal: 0, list: document.getElementById('bento-list-snack'), empty: document.getElementById('bento-empty-snack') }
+                };
+
+                // Clear lists
+                Object.keys(slots).forEach(k => {
+                    slots[k].list.innerHTML = '';
+                    slots[k].kcal = 0;
+                });
+
+                // Find all actual rows in hidden table
+                const sourceRows = (window.tableController && window.tableController.allRows) ? window.tableController.allRows : Array.from(document.querySelectorAll('#logs-table tbody tr'));
+
+                sourceRows.forEach(row => {
+                    const id = row.dataset.id;
+                    const foodName = (row.querySelector('td[data-label="<?= t('intake.row.food') ?>"]') || row.querySelector('.fw-bold'))?.textContent.trim() || '';
+                    const kcalText = (row.querySelector('td[data-label="<?= t('intake.row.calories') ?>"]') || row.querySelector('.intake-cal-cell .cal-val') || row.querySelector('.intake-cal-cell'))?.textContent.trim() || '0';
+                    const kcal = parseInt(kcalText) || 0;
+                    const timeText = (row.querySelector('td[data-label="<?= t('intake.row.time') ?>"]') || row.querySelector('.intake-time-cell'))?.textContent.trim() || '';
+                    
+                    // Determine category from badge classes
+                    const badge = row.querySelector('.cat-badge');
+                    let category = 'snack';
+                    if (badge) {
+                        badge.classList.forEach(cls => {
+                            if (cls.startsWith('cat-') && cls !== 'cat-badge') {
+                                category = cls.slice(4);
+                            }
+                        });
+                    }
+
+                    if (slots[category]) {
+                        slots[category].kcal += kcal;
+
+                        // Create custom 3D food item card inside slot list
+                        const item = document.createElement('div');
+                        item.className = 'bento-food-item';
+                        item.dataset.id = id;
+                        item.innerHTML = `
+                            <div class="bento-food-header">
+                                <span class="bento-food-name">${foodName}</span>
+                                <span class="bento-food-kcal">${kcal} kcal</span>
+                            </div>
+                            <div class="bento-food-footer">
+                                <span class="bento-food-time"><i class="far fa-clock"></i> ${timeText}</span>
+                                <div class="bento-food-actions">
+                                    <button type="button" class="bento-btn-clone" title="<?= t('intake.row.log_again_title') ?>"><i class="fas fa-plus"></i></button>
+                                    <button type="button" class="bento-btn-edit" title="<?= t('intake.row.edit_title') ?>"><i class="fas fa-edit"></i></button>
+                                    <button type="button" class="bento-btn-delete" title="<?= t('intake.row.delete_title') ?>"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                        `;
+
+                        // Bind custom actions that trigger hidden table elements
+                        item.querySelector('.bento-btn-clone').addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (typeof e.stopImmediatePropagation === 'function') {
+                                e.stopImmediatePropagation();
+                            }
+                            if (typeof window.handleDashboardLogAgainById === 'function') {
+                                window.handleDashboardLogAgainById(id, e.currentTarget);
+                            }
+                        });
+
+                        item.querySelector('.bento-btn-edit').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const tableRow = Array.from(document.querySelectorAll('#logs-table tbody tr')).find(r => r.dataset.id == id);
+                            if (tableRow) {
+                                const editBtn = tableRow.querySelector('.btn-edit');
+                                if (editBtn) editBtn.click();
+                            }
+                        });
+
+                        item.querySelector('.bento-btn-delete').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const tableRow = Array.from(document.querySelectorAll('#logs-table tbody tr')).find(r => r.dataset.id == id);
+                            if (tableRow) {
+                                const delBtn = tableRow.querySelector('.deleteBtn');
+                                if (delBtn) delBtn.click();
+                            }
+                        });
+
+                        slots[category].list.appendChild(item);
+                    }
+                });
+
+                // Get daily calorie goal to compute categories goals dynamically
+                const dailyGoal = parseInt(document.getElementById('mascotRoomCard')?.dataset.goal) || 2000;
+                const mealGoals = {
+                    breakfast: Math.round(dailyGoal * 0.30),
+                    lunch: Math.round(dailyGoal * 0.35),
+                    dinner: Math.round(dailyGoal * 0.25),
+                    snack: Math.round(dailyGoal * 0.10)
+                };
+
+                let computedTotalCal = 0;
+
+                // Toggle empty prompts vs lists
+                Object.keys(slots).forEach(k => {
+                    const slotEl = document.getElementById('bento-slot-' + k);
+                    const kcalEl = document.getElementById('bento-kcal-' + k);
+                    
+                    kcalEl.textContent = slots[k].kcal + ' kcal';
+                    computedTotalCal += slots[k].kcal;
+
+                    if (slots[k].list.children.length > 0) {
+                        slots[k].empty.style.display = 'none';
+                        slots[k].list.style.display = 'flex';
+                        if (slotEl) slotEl.classList.add('has-food');
+                    } else {
+                        slots[k].empty.style.display = 'flex';
+                        slots[k].list.style.display = 'none';
+                        if (slotEl) slotEl.classList.remove('has-food');
+                    }
+
+                    // Update legend values directly on the page
+                    const legendItem = document.querySelector(`.slot-breakdown .meal-legend-item[data-cat="${k}"]`);
+                    if (legendItem) {
+                        const valEl = legendItem.querySelector('.legend-val');
+                        if (valEl) valEl.textContent = slots[k].kcal + ' kcal';
+                    }
+                });
+
+                // Update center total calories display
+                const centerValEl = document.querySelector('.slot-breakdown .center-val');
+                if (centerValEl) {
+                    centerValEl.textContent = computedTotalCal;
+                }
+
+                // Update Concentric Circles SVG progress
+                const circumferences = { breakfast: 503, lunch: 390, dinner: 276, snack: 163 };
+                Object.keys(slots).forEach(k => {
+                    const el = document.getElementById('ring-' + k);
+                    if (el) {
+                        const goal = mealGoals[k] || 1;
+                        const percent = Math.min(100, Math.round((slots[k].kcal / goal) * 100));
+                        const circ = circumferences[k];
+                        const offset = circ - (percent / 100) * circ;
+                        el.style.strokeDashoffset = offset;
+                    }
+                });
+
+                // Update Calorie Progress Widget dynamically
+                const progressValEl = document.querySelector('.progress-widget .progress-value span');
+                if (progressValEl) {
+                    const lang = document.documentElement.lang || 'en';
+                    if (lang === 'vi') {
+                        progressValEl.textContent = computedTotalCal + ' calo';
+                    } else {
+                        progressValEl.textContent = computedTotalCal + ' calories';
+                    }
+                }
+                const progressFillEl = document.getElementById('progressFill');
+                if (progressFillEl) {
+                    const percent = Math.min(100, Math.round((computedTotalCal / dailyGoal) * 100));
+                    progressFillEl.style.width = percent + '%';
+                }
+
+                // Update Mascot Room datasets & state dynamically
+                const mascotCard = document.getElementById('mascotRoomCard');
+                if (mascotCard) {
+                    mascotCard.dataset.calories = computedTotalCal;
+                    const stage = document.getElementById('mascotStage');
+                    if (stage) {
+                        const goal = parseInt(mascotCard.dataset.goal) || 2000;
+                        const protein = parseFloat(mascotCard.dataset.protein) || 0;
+                        const proteinGoal = parseFloat(mascotCard.dataset.proteinGoal) || 0;
+                        
+                        let vibeState = 'neutral';
+                        if (goal > 0 && computedTotalCal > goal) {
+                            vibeState = 'overlimit';
+                        } else if (proteinGoal > 0 && protein < 0.7 * proteinGoal && computedTotalCal > 0) {
+                            vibeState = 'deficit';
+                        } else if (computedTotalCal > 0) {
+                            vibeState = 'healthy';
+                        }
+                        
+                        stage.classList.remove('state-neutral', 'state-healthy', 'state-overlimit', 'state-deficit');
+                        stage.classList.add('state-' + vibeState);
+                    }
+                }
+            };
+
+            // Trigger sync on boot
+            setTimeout(() => {
+                window.syncBentoFromTable();
+            }, 300);
+        });
     </script>
 
     <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
