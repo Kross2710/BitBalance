@@ -76,13 +76,21 @@ try {
         $pdo->prepare('UPDATE userPhysicalInfo SET age=?, gender=?, weight=?, height=? WHERE user_id=?')
             ->execute([$age, $gender, $weight, $height, $userId]);
     } else {
-        $pdo->prepare('INSERT INTO userPhysicalInfo (user_id, age, gender, weight, height) VALUES (?,?,?,?,?)')
-            ->execute([$userId, $age, $gender, $weight, $height]);
+        $pdo->prepare('INSERT INTO userPhysicalInfo (userPhysicalStat_id, user_id, age, gender, weight, height) VALUES (?,?,?,?,?,?)')
+            ->execute([$userId, $userId, $age, $gender, $weight, $height]);
     }
 
-    // Weight log
-    $pdo->prepare('INSERT INTO weightLog (user_id, weight, logged_at) VALUES (?, ?, NOW())')
-        ->execute([$userId, (float) $weight]);
+    // Weight log, same-day upsert behavior as dashboard/set-goal.php.
+    $stmt = $pdo->prepare('SELECT weight_id FROM weight_log WHERE user_id = ? AND date_logged = CURDATE() LIMIT 1');
+    $stmt->execute([$userId]);
+    $weightId = $stmt->fetchColumn();
+    if ($weightId) {
+        $pdo->prepare('UPDATE weight_log SET weight = ? WHERE weight_id = ? AND user_id = ?')
+            ->execute([(float) $weight, (int) $weightId, $userId]);
+    } else {
+        $pdo->prepare('INSERT INTO weight_log (user_id, weight, date_logged) VALUES (?, ?, CURDATE())')
+            ->execute([$userId, (float) $weight]);
+    }
 
     // Plan preferences
     try {

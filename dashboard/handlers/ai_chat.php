@@ -46,15 +46,32 @@ if (!empty($textInput)) {
 }
 
 // Xử lý ảnh
+$imagePath = null;
 if ($imageFile && $imageFile['error'] === UPLOAD_ERR_OK) {
-    $imageData = base64_encode(file_get_contents($imageFile['tmp_name']));
+    $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
     $mimeType = $imageFile['type'];
-    $parts[] = [
-        'inline_data' => [
-            'mime_type' => $mimeType,
-            'data' => $imageData
-        ]
-    ];
+    if (in_array($mimeType, $allowed_types, true)) {
+        $uploadDir = __DIR__ . '/../../uploads/intake/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        $ext = pathinfo($imageFile['name'], PATHINFO_EXTENSION);
+        if (empty($ext)) {
+            $ext = $mimeType === 'image/png' ? 'png' : ($mimeType === 'image/gif' ? 'gif' : 'jpg');
+        }
+        $filename = 'meal_' . $_SESSION['user']['user_id'] . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+        $fsPath = $uploadDir . $filename;
+        if (move_uploaded_file($imageFile['tmp_name'], $fsPath)) {
+            $imagePath = 'uploads/intake/' . $filename;
+            $imageData = base64_encode(file_get_contents($fsPath));
+            $parts[] = [
+                'inline_data' => [
+                    'mime_type' => $mimeType,
+                    'data' => $imageData
+                ]
+            ];
+        }
+    }
 }
 
 // Gửi Request
@@ -99,7 +116,11 @@ if ($httpCode === 200) {
     $nutritionData = json_decode($cleanText, true);
 
     if ($nutritionData) {
-        echo json_encode(['ok' => true, 'data' => $nutritionData]);
+        echo json_encode([
+            'ok' => true, 
+            'data' => $nutritionData,
+            'image_path' => $imagePath
+        ]);
     } else {
         // Trả về raw text để debug nếu AI không trả JSON đúng
         echo json_encode(['ok' => false, 'error' => 'AI format error. Raw: ' . $rawText]);

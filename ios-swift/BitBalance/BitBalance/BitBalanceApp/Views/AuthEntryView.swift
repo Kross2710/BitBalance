@@ -57,8 +57,6 @@ struct AuthEntryView: View {
             // logo + tagline — aligns to the framed hero, not the overflowing image
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
-                    Text("🥗")
-                        .font(.system(size: 32))
                     Text("BitBalance")
                         .font(.system(size: 28, weight: .heavy))
                         .foregroundColor(.white)

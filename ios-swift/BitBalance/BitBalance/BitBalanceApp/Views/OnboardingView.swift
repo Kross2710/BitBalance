@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Onboarding Wizard
-// Mirrors dashboard/set-goal.php (6 input steps + loading + overview).
+// Mirrors dashboard/set-goal.php (6-7 input steps + loading + overview).
 // TDEE calculation is done client-side using the same formulas as
 // dashboard/handlers/goal_plan.php so the overview renders instantly offline.
 // The final commit POSTs to api/onboarding/save.php to persist in DB.
@@ -31,15 +31,37 @@ struct OnboardingView: View {
     }
 
     private var progressFraction: Double {
+        if step == .loading {
+            return 0.99
+        }
+        if step == .overview {
+            return 1.0
+        }
         guard let idx = inputSteps.firstIndex(of: step) else { return 1.0 }
         return Double(idx + 1) / Double(inputSteps.count)
     }
 
     private var progressLabel: String {
+        if step == .loading {
+            return "99%"
+        }
+        if step == .overview {
+            return "100%"
+        }
         if let idx = inputSteps.firstIndex(of: step) {
             return "\(idx + 1)/\(inputSteps.count)"
         }
-        return step == .loading ? "99%" : "✓"
+        return "100%"
+    }
+
+    private var progressTitle: String {
+        if step == .loading {
+            return "Calculating"
+        }
+        if step == .overview {
+            return "Plan ready"
+        }
+        return "Personalize"
     }
 
     var body: some View {
@@ -47,9 +69,7 @@ struct OnboardingView: View {
             BBColors.backgroundGradient.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                if step != .loading && step != .overview {
-                    topBar
-                }
+                topBar
                 stepBody
             }
         }
@@ -73,12 +93,12 @@ struct OnboardingView: View {
                     .overlay(RoundedRectangle(cornerRadius: BBRadius.md).stroke(BBColors.border, lineWidth: 2))
                     .background(RoundedRectangle(cornerRadius: BBRadius.md).fill(BBColors.borderSubtle).offset(y: 4))
             }
-            .opacity(step == .gender ? 0 : 1)
-            .disabled(step == .gender)
+            .opacity((step == .gender || step == .loading) ? 0 : 1)
+            .disabled(step == .gender || step == .loading)
 
             VStack(spacing: 6) {
                 HStack {
-                    Text("Personalize")
+                    Text(progressTitle)
                         .font(.system(size: 13, weight: .heavy))
                         .foregroundColor(BBColors.textSecondary)
                     Spacer()
@@ -128,7 +148,7 @@ struct OnboardingView: View {
     // MARK: - Step: Gender
 
     private var genderStep: some View {
-        WizardCard(kicker: "Welcome 👋", title: "Who are you?",
+        WizardCard(kicker: "Welcome, \(session.user?.firstName ?? "there")", title: "Who are you?",
                    subtitle: "BitBalance uses this to estimate your daily energy burn.") {
             HStack(spacing: 12) {
                 ForEach(genderOptions, id: \.id) { opt in
@@ -139,7 +159,7 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 8)
         } footer: {
-            wizardPrimary("Continue") { advance() }
+            wizardPrimary(goalMode == "maintain" ? "Get my personal plan" : "Continue") { advance() }
         }
     }
 
@@ -275,11 +295,11 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 28)
 
-            Text("Building your plan...")
+            Text("AI is calculating...")
                 .font(.system(size: 26, weight: .heavy))
                 .foregroundColor(BBColors.text)
                 .padding(.bottom, 8)
-            Text("Personalizing your daily targets")
+            Text("Building a personalized plan for you...")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(BBColors.textSecondary)
                 .padding(.bottom, 32)

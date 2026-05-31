@@ -66,7 +66,8 @@ try {
         'email' => $email,
         'role' => 'regular',
         'profile_image' => null,
-        'theme_preference' => 'system'
+        'theme_preference' => 'system',
+        'needs_onboarding' => 1
     ];
 
     // Auto-login after successful registration (same as the web flow).

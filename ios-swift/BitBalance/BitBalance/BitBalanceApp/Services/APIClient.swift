@@ -99,6 +99,22 @@ final class APIClient {
         throw APIError.serverMessage(response.message ?? "Unable to load dashboard.")
     }
 
+    func loadDashboardDay(date: String? = nil) async throws -> DashboardDayPayload {
+        var queryItems: [URLQueryItem] = []
+        if let date = date, !date.isEmpty {
+            queryItems.append(URLQueryItem(name: "date", value: date))
+        }
+
+        let response: APIEnvelope<DashboardDayPayload> = try await get(
+            path: "api/dashboard/day.php",
+            queryItems: queryItems
+        )
+        if response.ok, let payload = response.data {
+            return payload
+        }
+        throw APIError.serverMessage(response.message ?? "Unable to load dashboard day.")
+    }
+
     func loadIntakeHistory(limit: Int = 50) async throws -> IntakeHistoryPayload {
         let response: APIEnvelope<IntakeHistoryPayload> = try await get(
             path: "api/intake/history.php",

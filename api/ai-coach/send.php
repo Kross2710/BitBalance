@@ -73,6 +73,10 @@ try {
     $stmt->bindValue(2, $historyLimit, PDO::PARAM_INT);
     $stmt->execute();
     $history = array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
+    foreach ($history as $idx => $historyRow) {
+        list($cleanHistoryContent) = unpack_food_log_suggestions(isset($historyRow['content']) ? $historyRow['content'] : '');
+        $history[$idx]['content'] = $cleanHistoryContent;
+    }
 
     // Build context and call Gemini
     $userContext = build_user_context($pdo, $userId);
@@ -91,11 +95,12 @@ try {
     list($assistantText, $foodLogSuggestions) = extract_food_log_block($result['text']);
 
     // Save assistant message
+    $assistantStoredText = pack_food_log_suggestions($assistantText, $foodLogSuggestions);
     $stmt = $pdo->prepare("
         INSERT INTO ai_message (conversation_id, role, content)
         VALUES (?, 'assistant', ?)
     ");
-    $stmt->execute([$conversationId, $assistantText]);
+    $stmt->execute([$conversationId, $assistantStoredText]);
     $assistantMessageId = (int)$pdo->lastInsertId();
 
     // Update conversation timestamp

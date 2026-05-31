@@ -143,6 +143,13 @@
         height: 160px !important;
     }
 
+    /* Overview uses this server-rendered table only as a data source for
+       bento syncing; JS must never expose it as a visible history table. */
+    body.page-dashboard .logs-sync-table,
+    body.page-dashboard .logs-sync-pagination {
+        display: none !important;
+    }
+
     /* Overview i18n overflow guards: Vietnamese labels are often longer than
        the original English strings, so fixed dashboard objects must be allowed
        to shrink and wrap instead of pushing outside their cards. */
@@ -758,6 +765,11 @@
         padding: 4px 0 12px 0;
         scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
+        /* Isolate the strip's intrinsic width: without layout containment the
+           full row of day chips (~1974px) leaks into the page's scrollable
+           width and drags the whole layout off to the right, even though
+           overflow-x:auto already clips it visually. */
+        contain: layout;
     }
 
     /* Hide scrollbars */
@@ -1034,3 +1046,825 @@
         white-space: nowrap;
     }
 
+/* ================================================
+   AI MASCOT ROOM & HEALTH AURA
+   ================================================ */
+.mascot-room-card {
+    position: relative;
+    overflow: visible; /* To allow speech bubble and particles to float outside */
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mascot-room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+}
+
+.mascot-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mascot-card-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 850;
+    color: var(--color-text);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mascot-card-header h3 i {
+    color: var(--color-primary);
+}
+
+/* Mascot stage container */
+.mascot-stage {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* SVG Owl Mascot base styling */
+.mascot-svg {
+    width: 140px;
+    height: 140px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom center;
+}
+
+/* Bobbing animation on standby */
+.mascot-stage:not(.state-overlimit) .mascot-svg {
+    animation: owlBob 3s infinite ease-in-out;
+}
+
+@keyframes owlBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* Click/pet feedback */
+.mascot-svg.pet-bounce {
+    animation: petBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+@keyframes petBounce {
+    0%, 100% { transform: scale(1) translateY(0); }
+    30% { transform: scale(1.15, 0.85) translateY(4px); }
+    60% { transform: scale(0.9, 1.1) translateY(-10px) rotate(3deg); }
+    80% { transform: scale(1.05, 0.95) translateY(2px) rotate(-1deg); }
+}
+
+/* SVG elements styling */
+.mascot-shadow {
+    fill: rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+[data-theme="dark"] .mascot-shadow {
+    fill: rgba(0, 0, 0, 0.25);
+}
+
+/* Aura Glow around the Owl */
+.health-aura {
+    fill: transparent;
+    transition: all 0.5s ease;
+    transform-origin: center;
+}
+
+.state-healthy .health-aura {
+    fill: var(--color-primary-soft);
+    animation: auraPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes auraPulse {
+    0%, 100% { transform: scale(0.85); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 0.85; filter: blur(4px); }
+}
+
+/* Mascot Body Parts Colors */
+.mascot-body-outer {
+    fill: var(--color-primary);
+    stroke: var(--color-primary-hover);
+    stroke-width: 3px;
+    transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.mascot-belly {
+    fill: var(--color-surface);
+    transition: fill 0.3s ease;
+}
+
+.mascot-belly-feathers {
+    stroke: var(--color-border);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    fill: none;
+}
+
+.mascot-feet {
+    fill: var(--color-accent);
+    stroke: var(--color-primary-hover);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+}
+
+.mascot-beak {
+    fill: var(--color-accent);
+    stroke: #e68200;
+    stroke-width: 1.5px;
+    transition: all 0.2s ease;
+}
+
+.mascot-wing {
+    fill: var(--color-primary);
+    stroke: var(--color-primary-hover);
+    stroke-width: 3px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: 30% 70%;
+}
+.right-wing {
+    transform-origin: 70% 70%;
+}
+
+.mascot-eye-outer {
+    fill: #ffffff;
+    stroke: var(--color-border);
+    stroke-width: 2px;
+}
+[data-theme="dark"] .mascot-eye-outer {
+    fill: var(--color-surface-alt);
+}
+
+.mascot-eye-inner {
+    fill: #ffffff;
+}
+
+.mascot-pupil {
+    fill: #1e2937;
+    transition: transform 0.2s ease;
+}
+
+.mascot-shine {
+    fill: #ffffff;
+}
+
+/* Closed/Sleepy Eyes (Hidden by default) */
+.mascot-eyes-closed {
+    display: none;
+    stroke: #475569;
+    stroke-width: 4px;
+    stroke-linecap: round;
+    fill: none;
+}
+
+/* --- STATE: HEALTHY (Green Aura, Glowing) --- */
+.state-healthy .mascot-body-outer {
+    /* Bright premium emerald/duolingo green */
+    fill: #58CC02;
+    stroke: #4CAF00;
+}
+.state-healthy .mascot-wing {
+    fill: #58CC02;
+    stroke: #4CAF00;
+}
+
+/* --- STATE: OVERLIMIT (Sleepy Owl, Closed eyes, snore Zzzs) --- */
+.state-overlimit .mascot-pupil,
+.state-overlimit .mascot-shine,
+.state-overlimit .mascot-eye-inner {
+    display: none; /* Hide open eyes components */
+}
+.state-overlimit .mascot-eyes-closed {
+    display: block; /* Show closed eyes arcs */
+}
+.state-overlimit .mascot-svg {
+    transform: translateY(2px) scale(0.98);
+}
+.state-overlimit .mascot-beak {
+    transform: translateY(1px);
+}
+
+/* Zzz Floating bubbles (only active in state-overlimit) */
+.mascot-zzz-group {
+    display: none;
+    pointer-events: none;
+}
+.state-overlimit .mascot-zzz-group {
+    display: block;
+}
+
+.zzz-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    fill: #1cb0f6;
+    opacity: 0;
+}
+
+.state-overlimit .zzz-1 {
+    animation: zzzFloat 3.5s infinite ease-in-out;
+}
+.state-overlimit .zzz-2 {
+    animation: zzzFloat 3.5s infinite ease-in-out;
+    animation-delay: 1.1s;
+}
+.state-overlimit .zzz-3 {
+    animation: zzzFloat 3.5s infinite ease-in-out;
+    animation-delay: 2.2s;
+}
+
+@keyframes zzzFloat {
+    0% { transform: translate(0, 5px) scale(0.7); opacity: 0; }
+    50% { opacity: 0.8; }
+    80% { transform: translate(-8px, -24px) scale(1.1); opacity: 0.3; }
+    100% { transform: translate(-12px, -36px) scale(0.6); opacity: 0; }
+}
+
+/* --- STATE: DEFICIT (Gym lifting dumbbells state) --- */
+/* Gym Accessories (Headband & weights) - hidden by default */
+.mascot-sweatband-group,
+.mascot-dumbbell {
+    display: none;
+}
+
+.state-deficit .mascot-sweatband-group,
+.state-deficit .mascot-dumbbell {
+    display: block;
+}
+
+.mascot-sweatband {
+    fill: var(--color-danger);
+    stroke: #b91c1c;
+    stroke-width: 2px;
+}
+.mascot-sweatband-stripe {
+    fill: #ffffff;
+}
+
+.db-plate {
+    fill: #334155;
+    stroke: #1e2937;
+    stroke-width: 1.5px;
+}
+.db-bar {
+    fill: #94a3b8;
+}
+
+/* Gym lifting weight animation */
+.state-deficit .left-wing {
+    animation: liftLeftWeight 2s infinite ease-in-out;
+}
+.state-deficit .right-wing {
+    animation: liftRightWeight 2s infinite ease-in-out;
+}
+.state-deficit .left-dumbbell {
+    animation: liftLeftDb 2s infinite ease-in-out;
+    transform-origin: 30% 70%;
+}
+.state-deficit .right-dumbbell {
+    animation: liftRightDb 2s infinite ease-in-out;
+    transform-origin: 70% 70%;
+}
+
+/* Click-triggered Flapping Wings animation */
+.mascot-svg.flap-wings .left-wing {
+    animation: flapLeft 0.25s 2 ease-in-out !important;
+}
+.mascot-svg.flap-wings .right-wing {
+    animation: flapRight 0.25s 2 ease-in-out !important;
+}
+
+@keyframes flapLeft {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-45deg) translateY(-5px) translateX(-2px); }
+}
+@keyframes flapRight {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(45deg) translateY(-5px) translateX(2px); }
+}
+
+/* --- Speech Bubble overlay --- */
+.mascot-speech-bubble {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    right: 15px;
+    background: #ffffff;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text);
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    z-index: 10;
+    display: none;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+[data-theme="dark"] .mascot-speech-bubble {
+    background: var(--color-surface);
+}
+
+.mascot-speech-bubble.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Small downward arrow for bubble pointing to the center owl */
+.mascot-speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 8px;
+    background: inherit;
+    border-left: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--color-border);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.mascot-bubble-text {
+    line-height: 1.4;
+}
+
+.mascot-pet-prompt {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--color-text-secondary);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+}
+.mascot-stage:hover + .mascot-pet-prompt {
+    color: var(--color-primary);
+}
+
+/* Speeches Typing Cursor Effect */
+.typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 12px;
+    background-color: var(--color-primary);
+    margin-left: 2px;
+    animation: blinkCursor 0.8s infinite;
+    vertical-align: middle;
+}
+
+@keyframes blinkCursor {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+    .mascot-stage {
+        height: 160px;
+    }
+    .mascot-svg {
+        width: 120px;
+        height: 120px;
+    }
+    .mascot-speech-bubble {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+}
+
+/* ================================================
+   AI MAGIC BENTO BOX & 3D VIRTUAL PLATE
+   ================================================ */
+.bento-box-container {
+    position: relative;
+    width: 100%;
+    margin-top: 24px;
+    box-sizing: border-box;
+}
+
+.bento-plate {
+    position: relative;
+    width: 100%;
+    background: linear-gradient(135deg, #3d1b13 0%, #1e0905 100%);
+    border: 4px solid #140604;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 12px 0 #120504, var(--shadow-lg);
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    min-height: 420px;
+}
+
+.bento-plate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 0 #120504, var(--shadow-xl);
+}
+
+[data-theme="dark"] .bento-plate {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-color: #334155;
+    box-shadow: 0 12px 0 #1e293b, var(--shadow-lg);
+}
+[data-theme="dark"] .bento-plate:hover {
+    box-shadow: 0 14px 0 #1e293b, var(--shadow-xl);
+}
+
+
+/* Bento compartments Grid */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.bento-slot {
+    position: relative;
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    min-height: 170px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,0.3);
+    transition: background-color 0.3s ease;
+}
+
+[data-theme="dark"] .bento-slot {
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Populated slot gets a nice slight glow */
+.bento-slot.has-food {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.slot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+}
+
+.slot-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.slot-kcal {
+    font-size: 0.8rem;
+    font-weight: 850;
+    color: var(--color-primary);
+}
+
+/* Empty State Slot styling */
+.slot-empty {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    padding: 10px;
+}
+
+.bento-slot:hover .slot-empty {
+    opacity: 0.75;
+}
+
+.slot-icon {
+    font-size: 1.6rem;
+    color: #ffffff;
+}
+
+.slot-prompt {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
+}
+
+.btn-add-bento {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.btn-add-bento:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+}
+
+/* Populated slot food list */
+.slot-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 130px;
+    padding-right: 4px;
+}
+
+.slot-list::-webkit-scrollbar {
+    width: 4px;
+}
+.slot-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 99px;
+}
+
+/* Custom 3D food tags */
+.bento-food-item {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    transition: all 0.15s ease;
+}
+
+.bento-food-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 var(--color-border-subtle);
+}
+
+.bento-food-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.bento-food-name {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.bento-food-kcal {
+    font-size: 0.75rem;
+    font-weight: 850;
+    color: var(--color-primary);
+    white-space: nowrap;
+}
+
+.bento-food-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--color-border);
+    padding-top: 4px;
+    margin-top: 2px;
+}
+
+.bento-food-time {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
+.bento-food-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.bento-food-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+.bento-food-actions button:hover {
+    color: var(--color-primary);
+    background: var(--color-surface-alt);
+}
+.bento-food-actions .bento-btn-clone:hover {
+    color: var(--color-secondary);
+}
+.bento-food-actions .bento-btn-delete:hover {
+    color: var(--color-danger);
+}
+/* Bento Dashboard Layout */
+.bento-dashboard-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bento-breakdown-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.slot-breakdown {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    min-height: 360px !important;
+}
+
+.slot-breakdown .doughnut-container {
+    width: 170px;
+    height: 170px;
+    position: relative;
+    margin: 8px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--transition-base);
+}
+
+.slot-breakdown .doughnut-container:hover {
+    transform: scale(1.03);
+}
+
+.concentric-rings-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible; /* Prevent shadow clipping */
+}
+
+.ring-bg {
+    stroke-width: 12px;
+    opacity: 0.12;
+    transition: opacity var(--transition-base);
+}
+
+[data-theme="dark"] .ring-bg {
+    opacity: 0.18;
+}
+
+.ring-active {
+    stroke-width: 12px;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.85s cubic-bezier(0.34, 1.56, 0.64, 1), stroke-width var(--transition-fast);
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5));
+}
+
+.slot-breakdown .doughnut-container:hover .ring-active {
+    filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.7));
+    stroke-width: 13.5px;
+}
+
+.slot-breakdown .doughnut-container:hover .ring-bg {
+    opacity: 0.22;
+}
+
+.slot-breakdown .doughnut-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
+.slot-breakdown .doughnut-center-text .center-val {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.1;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.slot-breakdown .doughnut-center-text .center-label {
+    font-size: 0.65rem;
+    font-weight: 850;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.slot-breakdown .meal-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
+}
+
+.slot-breakdown .meal-legend-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    padding: 8px 10px !important;
+    box-sizing: border-box;
+}
+
+.slot-breakdown .legend-dot-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.slot-breakdown .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.slot-breakdown .legend-label {
+    font-size: 0.72rem;
+    font-weight: 750;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.slot-breakdown .legend-val {
+    font-size: 0.75rem;
+    font-weight: 850;
+    color: #ffffff;
+}
+
+@media (max-width: 900px) {
+    .bento-dashboard-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .slot-breakdown {
+        min-height: auto !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .bento-plate {
+        min-height: auto;
+        padding: 16px;
+    }
+    .bento-slot {
+        min-height: 140px;
+    }
+}

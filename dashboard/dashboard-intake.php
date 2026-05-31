@@ -5,6 +5,22 @@ require_once __DIR__ . '/../include/handlers/log_attempt.php';
 
 if ($isLoggedIn) {
     log_attempt($pdo, $user['user_id'], 'view', 'User ' . $user['user_id'] . ' clicked on dashboard food', 'dashboard', null);
+
+    // Fetch today's PT feedback
+    $todayFeedback = null;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT pf.content, u.first_name, u.last_name, u.profile_image 
+            FROM pt_feedback pf
+            JOIN user u ON pf.trainer_id = u.user_id
+            WHERE pf.client_id = ? AND pf.date_for = CURDATE()
+            LIMIT 1
+        ");
+        $stmt->execute([$user['user_id']]);
+        $todayFeedback = $stmt->fetch();
+    } catch (PDOException $e) {
+        // Table/columns may not exist yet
+    }
 }
 
 $activePage = 'intake';
@@ -84,6 +100,22 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
         <main class="dashboard-content">
             <div class="intake-container">
+
+                <?php if (!empty($todayFeedback)): ?>
+                    <section class="dashboard-card pt-feedback-card" style="display: flex; align-items: center; gap: 16px; border: 2px solid var(--color-secondary); background: var(--color-surface); padding: 20px; border-radius: var(--radius-lg); box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm); margin-bottom: 24px;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--color-surface-alt); border: 2px solid var(--color-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <?php if (!empty($todayFeedback['profile_image'])): ?>
+                                <img src="<?= BASE_URL . htmlspecialchars($todayFeedback['profile_image'], ENT_QUOTES) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <i class="fas fa-dumbbell" style="font-size: 20px; color: var(--color-secondary);"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 4px 0; font-weight: 700; color: var(--color-secondary); font-size: 14px;"><i class="fas fa-comment-medical"></i> <?= ($lang === 'vi') ? 'Lời khuyên từ Huấn luyện viên ' : 'Advice from Trainer ' ?><?= htmlspecialchars($todayFeedback['first_name'] . ' ' . $todayFeedback['last_name'], ENT_QUOTES) ?></h4>
+                            <p style="margin: 0; font-size: 13px; color: var(--color-text); line-height: 1.5; font-style: italic;">"<?= htmlspecialchars($todayFeedback['content'], ENT_QUOTES) ?>"</p>
+                        </div>
+                    </section>
+                <?php endif; ?>
 
                 <?php if (!$isLoggedIn): ?>
                     <div class="demo-banner">
@@ -235,6 +267,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         </div>
 
                         <form id="intakeForm" action="handlers/process_intake.php" method="POST">
+                            <input type="hidden" name="image_path" id="image_path" value="">
                             <div class="form-group">
                                 <label for="food_item"><?= t('intake.food_name') ?></label>
                                 <div class="input-icon-wrapper food-name-wrapper">
@@ -945,9 +978,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <span class="macro f">F: ${info.fat}g</span>
                             </div>
                             <p class="nutri-advice">${info.short_advice}</p>
-                            <button class="btn-add-log" onclick="autoLogFood('${safeName}', ${info.calories}, ${info.protein}, ${info.carbs}, ${info.fat})">
-                                <i class="fas fa-plus"></i> Add to Log
-                            </button>
+                             <button class="btn-add-log" onclick="autoLogFood('${safeName}', ${info.calories}, ${info.protein}, ${info.carbs}, ${info.fat}, '${result.image_path || ''}')">
+                                 <i class="fas fa-plus"></i> Add to Log
+                             </button>
                         </div>`;
                             addMessage(cardHtml, 'bot');
                         }
@@ -974,12 +1007,17 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 return div.id;
             }
 
-            function autoLogFood(name, calories, protein, carbs, fat) {
+            function autoLogFood(name, calories, protein, carbs, fat, imagePath) {
                 document.getElementById('food_item').value = name;
                 document.getElementById('calories').value = calories;
                 if (protein !== undefined && protein !== null) document.getElementById('protein').value = protein;
                 if (carbs   !== undefined && carbs   !== null) document.getElementById('carbs').value   = carbs;
                 if (fat     !== undefined && fat     !== null) document.getElementById('fat').value     = fat;
+                if (imagePath !== undefined && imagePath !== null) {
+                    document.getElementById('image_path').value = imagePath;
+                } else {
+                    document.getElementById('image_path').value = '';
+                }
 
                 // Đóng chat để hiện form nếu trên mobile
                 if (window.innerWidth <= 480) {
@@ -1310,6 +1348,36 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 });
             }
 
+            // Meal photo modal trigger
+            const viewPhotoModal = document.getElementById('viewPhotoModal');
+            const viewPhotoImg = document.getElementById('viewPhotoImg');
+            const closePhotoBtn = document.getElementById('closeViewPhotoModal');
+            
+            if (viewPhotoModal && closePhotoBtn) {
+                closePhotoBtn.addEventListener('click', () => {
+                    viewPhotoModal.classList.remove('active');
+                });
+                viewPhotoModal.addEventListener('click', e => {
+                    if (e.target === viewPhotoModal) {
+                        viewPhotoModal.classList.remove('active');
+                    }
+                });
+            }
+
+            // Event delegation for meal photo trigger in table body
+            if (body) {
+                body.addEventListener('click', e => {
+                    const trigger = e.target.closest('.meal-photo-trigger');
+                    if (trigger) {
+                        const src = trigger.dataset.imgSrc;
+                        if (src && viewPhotoModal && viewPhotoImg) {
+                            viewPhotoImg.src = src;
+                            viewPhotoModal.classList.add('active');
+                        }
+                    }
+                });
+            }
+
             if (doConfirmDeleteBtn) {
                 doConfirmDeleteBtn.addEventListener('click', async () => {
                     if (!deleteRowTarget) return;
@@ -1394,6 +1462,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
     <?php if ($isLoggedIn): ?>
         <?php $modalTitle = 'Edit Intake Entry'; include PROJECT_ROOT . 'dashboard/views/_edit-intake-modal.php'; ?>
         <?php include PROJECT_ROOT . 'dashboard/views/_confirm-delete-modal.php'; ?>
+        <?php include PROJECT_ROOT . 'dashboard/views/_view-photo-modal.php'; ?>
         <?php include PROJECT_ROOT . 'dashboard/views/_intake-row-js.php'; ?>
         <script>
             // Intake page edit wiring — IntakeRow handles row reading + form filling

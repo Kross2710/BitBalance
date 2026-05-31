@@ -25,10 +25,16 @@ if (!$isLoggedIn) {
 
 $userId = $_SESSION['user']['user_id'];
 $intakeId = isset($_POST['intake_id']) ? (int) $_POST['intake_id'] : 0;
+$customDate = isset($_POST['custom_date']) ? $_POST['custom_date'] : null;
 
 if ($intakeId <= 0) {
     echo json_encode(['ok' => false, 'error' => 'Invalid entry ID.']);
     exit;
+}
+
+$targetDate = date('Y-m-d');
+if ($customDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $customDate)) {
+    $targetDate = $customDate;
 }
 
 try {
@@ -49,9 +55,10 @@ try {
     $fat      = (float) ($historyEntry['fat'] ?? 0);
     $mealCategory = $historyEntry['meal_category'];
 
-    // 2. Insert new record for today
-    $insertStmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    if (!$insertStmt->execute([$userId, $foodItem, $calories, $protein, $carbs, $fat, $mealCategory])) {
+    // 2. Insert new record for target date
+    $dateIntake = $targetDate . ' ' . date('H:i:s');
+    $insertStmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, date_intake) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$insertStmt->execute([$userId, $foodItem, $calories, $protein, $carbs, $fat, $mealCategory, $dateIntake])) {
         echo json_encode(['ok' => false, 'error' => 'Failed to clone entry in database.']);
         exit;
     }
@@ -79,10 +86,9 @@ try {
         error_log('streak update error: ' . $e->getMessage());
     }
 
-    // 5. Retrieve today's updated calorie progress & macros breakdown for UI sync
-    $today = date('Y-m-d');
+    // 5. Retrieve target date's updated calorie progress & macros breakdown for UI sync
     $caloriesRow = $pdo->prepare("SELECT SUM(calories) FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?");
-    $caloriesRow->execute([$userId, $today]);
+    $caloriesRow->execute([$userId, $targetDate]);
     $totalCalories = (int) $caloriesRow->fetchColumn();
 
     $goalStmt = $pdo->prepare("
@@ -100,7 +106,7 @@ try {
     if ($percentage > 100) $percentage = 100;
 
     // Macro breakdowns
-    $macros = getMacroTotalsToday($userId);
+    $macros = getMacroTotalsToday($userId, $targetDate);
     $macroGoals = getMacroGoalsFromCalorieGoal($userGoal);
 
     // 6. Render the new row markup via the shared view component
@@ -112,7 +118,7 @@ try {
         'carbs'         => $carbs,
         'fat'           => $fat,
         'meal_category' => $mealCategory,
-        'date_intake'   => gmdate('Y-m-d\TH:i:s\Z'),
+        'date_intake'   => $dateIntake,
     ];
     $showDate  = isset($_POST['show_date']) ? (bool)$_POST['show_date'] : false;
     $timeLabel = 'Just now';

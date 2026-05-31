@@ -30,6 +30,7 @@ final class SessionStore: ObservableObject {
 
         do {
             user = try await api.login(email: email, password: password)
+            needsOnboarding = user?.needsOnboarding ?? false
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -50,7 +51,7 @@ final class SessionStore: ObservableObject {
                 confirmPassword: confirmPassword
             )
             // New accounts always go through onboarding wizard
-            needsOnboarding = true
+            needsOnboarding = user?.needsOnboarding ?? true
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -69,8 +70,10 @@ final class SessionStore: ObservableObject {
 
         do {
             user = try await api.loadCurrentUser()
+            needsOnboarding = user?.needsOnboarding ?? false
         } catch {
             user = nil
+            needsOnboarding = false
         }
 
         isLoading = false
@@ -84,10 +87,15 @@ final class SessionStore: ObservableObject {
         }
 
         user = nil
+        needsOnboarding = false
     }
 
     func loadDashboardSummary() async throws -> DashboardSummary {
         try await api.loadDashboardSummary()
+    }
+
+    func loadDashboardDay(date: String? = nil) async throws -> DashboardDayPayload {
+        try await api.loadDashboardDay(date: date)
     }
 
     func loadIntakeHistory(limit: Int = 50) async throws -> IntakeHistoryPayload {
@@ -186,7 +194,8 @@ extension SessionStore {
             email: "hung@example.com",
             role: "regular",
             profileImage: nil,
-            themePreference: "system"
+            themePreference: "system",
+            needsOnboarding: false
         )
         return store
     }
@@ -197,4 +206,3 @@ extension SessionStore {
         return store
     }
 }
-

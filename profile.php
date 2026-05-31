@@ -331,6 +331,68 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 error_log("Archive error: " . $e->getMessage());
             }
         }
+    } elseif (isset($_POST['change_role'])) {
+        $new_role = $_POST['role'] ?? 'regular';
+        if (in_array($new_role, ['regular', 'pt'], true)) {
+            try {
+                $stmt = $pdo->prepare("UPDATE user SET role = ? WHERE user_id = ?");
+                $stmt->execute([$new_role, $user_id]);
+                $_SESSION['user']['role'] = $new_role;
+                $success_message = "Account role updated successfully!";
+                
+                // Refresh profile data immediately
+                $stmt = $pdo->prepare("
+                    SELECT u.*, us.theme_preference, us.profile_bio, us.status 
+                    FROM user u 
+                    JOIN userStatus us ON u.user_id = us.user_id 
+                    WHERE u.user_id = ?
+                ");
+                $stmt->execute([$user_id]);
+                $profile = $stmt->fetch();
+            } catch (PDOException $e) {
+                $error_message = "Error updating account role: " . $e->getMessage();
+            }
+        } else {
+            $error_message = "Invalid account role selected.";
+        }
+    } elseif (isset($_POST['send_trainer_request'])) {
+        $trainer_handle = trim($_POST['trainer_handle'] ?? '');
+        if (empty($trainer_handle)) {
+            $error_message = "Please enter a trainer username.";
+        } else {
+            try {
+                // Find the trainer user
+                $stmt = $pdo->prepare("SELECT user_id, role FROM user WHERE user_name = ?");
+                $stmt->execute([$trainer_handle]);
+                $trainer = $stmt->fetch();
+                if (!$trainer) {
+                    $error_message = "Trainer handle not found. Please double check (e.g. Name#1234).";
+                } elseif ($trainer['role'] !== 'pt') {
+                    $error_message = "This user is not registered as a Personal Trainer (PT).";
+                } elseif ((int)$trainer['user_id'] === $user_id) {
+                    $error_message = "You cannot link with yourself.";
+                } else {
+                    // Insert pending link request
+                    $stmt = $pdo->prepare("
+                        INSERT INTO trainer_client (trainer_id, client_id, status)
+                        VALUES (?, ?, 'pending')
+                        ON DUPLICATE KEY UPDATE status = 'pending'
+                    ");
+                    $stmt->execute([$trainer['user_id'], $user_id]);
+                    $success_message = "Trainer request sent successfully! Waiting for approval.";
+                }
+            } catch (PDOException $e) {
+                $error_message = "Error sending request: " . $e->getMessage();
+            }
+        }
+    } elseif (isset($_POST['disconnect_trainer'])) {
+        try {
+            $stmt = $pdo->prepare("DELETE FROM trainer_client WHERE client_id = ?");
+            $stmt->execute([$user_id]);
+            $success_message = "Trainer connection removed.";
+        } catch (PDOException $e) {
+            $error_message = "Error disconnecting trainer.";
+        }
     }
 }
 
@@ -355,6 +417,23 @@ try {
     $physical_info = $stmt->fetch();
 } catch (PDOException $e) {
     // Physical info doesn't exist yet
+}
+
+// Get trainer connection if role is regular
+$trainer_connection = null;
+if (($profile['role'] ?? 'regular') === 'regular') {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT tc.*, u.user_name AS trainer_name, u.first_name, u.last_name, u.profile_image 
+            FROM trainer_client tc
+            JOIN user u ON tc.trainer_id = u.user_id
+            WHERE tc.client_id = ? AND tc.status IN ('pending', 'accepted')
+        ");
+        $stmt->execute([$user_id]);
+        $trainer_connection = $stmt->fetch();
+    } catch (PDOException $e) {
+        // Table/columns may not exist yet
+    }
 }
 ?>
 
@@ -406,6 +485,7 @@ try {
                 <a href="#physical-stats" class="menu-link"><i class="fas fa-child"></i> <?= t('profile.nav.body') ?></a>
                 <a href="#appearance" class="menu-link"><i class="fas fa-paint-brush"></i> <?= t('profile.nav.appearance') ?></a>
                 <a href="#language" class="menu-link"><i class="fas fa-globe"></i> <?= t('profile.nav.language') ?></a>
+                <a href="#trainer-settings" class="menu-link"><i class="fas fa-dumbbell"></i> <?= t('profile.nav.trainer') ?></a>
                 <a href="#security" class="menu-link"><i class="fas fa-shield-alt"></i> <?= t('profile.nav.security') ?></a>
             </nav>
 
@@ -577,6 +657,94 @@ try {
                 </form>
             </section>
 
+            <section id="trainer-settings" class="settings-card">
+                <div class="card-header">
+                    <div class="header-icon icon-green" style="background-color: var(--color-primary-soft); color: var(--color-primary);"><i class="fas fa-dumbbell"></i></div>
+                    <div>
+                        <h2><?= t('profile.trainer.title') ?></h2>
+                        <p><?= t('profile.trainer.sub') ?></p>
+                    </div>
+                </div>
+
+                <!-- 1. Cấu hình vai trò tài khoản (Role Setup) -->
+                <form method="POST" style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 2px dashed var(--color-border);">
+                    <div class="form-group full-width">
+                        <label><?= t('profile.trainer.role_label') ?></label>
+                        <div class="theme-options" style="margin-top: 8px;">
+                            <div class="theme-option <?= (($profile['role'] ?? 'regular') === 'regular') ? 'active' : '' ?>"
+                                onclick="selectRole('regular')">
+                                <i class="fas fa-user"></i>
+                                <div><?= t('profile.trainer.role_regular') ?></div>
+                                <small style="display: block; font-size: 11px; margin-top: 4px; color: var(--color-text-secondary);"><?= t('profile.trainer.role_regular_sub') ?></small>
+                            </div>
+                            <div class="theme-option <?= (($profile['role'] ?? 'regular') === 'pt') ? 'active' : '' ?>"
+                                onclick="selectRole('pt')">
+                                <i class="fas fa-dumbbell"></i>
+                                <div><?= t('profile.trainer.role_pt') ?></div>
+                                <small style="display: block; font-size: 11px; margin-top: 4px; color: var(--color-text-secondary);"><?= t('profile.trainer.role_pt_sub') ?></small>
+                            </div>
+                        </div>
+                        <input type="hidden" name="role" id="selectedRole" value="<?= htmlspecialchars($profile['role'] ?? 'regular') ?>">
+                    </div>
+                    <button type="submit" name="change_role" class="btn-save" style="margin-top: 12px;"><?= t('profile.trainer.role_save') ?></button>
+                </form>
+
+                <!-- 2. Quản lý liên kết Trainer (Chỉ dành cho regular user) -->
+                <?php if (($profile['role'] ?? 'regular') === 'regular'): ?>
+                    <h4 style="margin-bottom: 12px; font-weight: 700; color: var(--color-text);"><?= t('profile.trainer.connection_title') ?></h4>
+                    
+                    <?php if ($trainer_connection): ?>
+                        <div class="friend-card" style="display: flex; align-items: center; justify-content: space-between; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 16px; background: var(--color-surface-alt); margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="friend-card__avatar" style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--color-surface); display: flex; align-items: center; justify-content: center; border: 2px solid var(--color-border); position: relative;">
+                                    <?php if (!empty($trainer_connection['profile_image'])): ?>
+                                        <img src="<?= BASE_URL . htmlspecialchars($trainer_connection['profile_image'], ENT_QUOTES) ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                                    <?php else: ?>
+                                        <i class="fas fa-user" style="font-size: 20px; color: var(--color-text-secondary);"></i>
+                                    <?php endif; ?>
+                                </div>
+                                <div>
+                                    <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--color-text);"><?= htmlspecialchars($trainer_connection['first_name'] . ' ' . $trainer_connection['last_name'], ENT_QUOTES) ?></h3>
+                                    <span style="font-size: 13px; color: var(--color-text-secondary);"><?= htmlspecialchars($trainer_connection['trainer_name'], ENT_QUOTES) ?></span>
+                                    <div style="margin-top: 4px;">
+                                        <?php if ($trainer_connection['status'] === 'pending'): ?>
+                                            <span class="friend-card__hint" style="background: var(--color-surface); color: var(--color-text-secondary); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 2px solid var(--color-border);"><?= t('profile.trainer.status_pending') ?></span>
+                                        <?php else: ?>
+                                            <span class="friend-card__hint friend-card__hint--ok" style="background: var(--color-primary-soft); color: var(--color-primary); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 2px solid var(--color-primary);"><i class="fas fa-check"></i> <?= t('profile.trainer.status_connected') ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <form method="POST" style="margin: 0;">
+                                <button type="submit" name="disconnect_trainer" class="btn-tactile btn-tactile--ghost" style="border: 2px solid var(--color-border); padding: 8px 16px; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; background: var(--color-surface); color: var(--color-text);" onclick="return confirm('<?= t_raw('profile.trainer.disconnect_confirm') ?>');">
+                                    <i class="fas fa-unlink"></i> <?= t('profile.trainer.btn_disconnect') ?>
+                                </button>
+                            </form>
+                        </div>
+                    <?php else: ?>
+                        <div class="friends-empty" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: 24px; text-align: center; background: var(--color-surface); margin-bottom: 16px;">
+                            <div class="friends-empty__icon" style="font-size: 32px; color: var(--color-text-secondary); margin-bottom: 12px;"><i class="fas fa-user-plus"></i></div>
+                            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--color-text);"><?= t('profile.trainer.no_trainer_title') ?></h3>
+                            <p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 16px;"><?= t('profile.trainer.no_trainer_body') ?></p>
+                            
+                            <form method="POST" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto;">
+                                <input type="text" name="trainer_handle" placeholder="e.g. TrainerHung#1234" required style="flex: 1; border: 2px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 16px; font-size: 14px; outline: none; background: var(--color-surface-alt); color: var(--color-text);">
+                                <button type="submit" name="send_trainer_request" class="btn-tactile btn-tactile--primary" style="background: var(--color-primary); color: #ffffff; border: none; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--color-primary-hover);">
+                                    <?= t('profile.trainer.btn_connect') ?>
+                                </button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div style="background: var(--color-primary-soft); color: var(--color-text); border: 2px solid var(--color-primary); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-info-circle" style="font-size: 20px; color: var(--color-primary);"></i>
+                        <div>
+                            <strong style="display: block; font-weight: 700; margin-bottom: 4px; color: var(--color-text);"><?= t('profile.trainer.is_pt_title') ?></strong>
+                            <span style="font-size: 13px; color: var(--color-text-secondary);"><?= t('profile.trainer.is_pt_body') ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </section>
 
             <section id="security" class="settings-card danger-zone">
                 <div class="card-header card-header--danger">
@@ -636,6 +804,13 @@ try {
         }
         function selectLanguage(code) {
             document.getElementById('selectedLanguage').value = code;
+            const tile = event.currentTarget;
+            const parent = tile.closest('.theme-options') || document;
+            parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+            tile.classList.add('active');
+        }
+        function selectRole(role) {
+            document.getElementById('selectedRole').value = role;
             const tile = event.currentTarget;
             const parent = tile.closest('.theme-options') || document;
             parent.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));

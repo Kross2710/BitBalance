@@ -1,0 +1,415 @@
+/* css/pages/dashboard-pt.css */
+
+.pt-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+/* ==================== HERO SECTION ==================== */
+.pt-hero {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.pt-hero__copy {
+    flex: 1;
+    min-width: 280px;
+}
+
+.pt-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    border: 1px solid var(--color-primary);
+}
+
+.pt-hero__copy h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--color-text);
+}
+
+.pt-hero__copy p {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.pt-hero__metrics {
+    display: flex;
+    gap: 16px;
+}
+
+.pt-metric {
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+
+.pt-metric__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.pt-metric strong {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+/* ==================== TABS SWAPPER ==================== */
+.pt-tabs {
+    display: flex;
+    gap: 12px;
+    border-bottom: 2px solid var(--color-border);
+    padding-bottom: 2px;
+}
+
+.pt-tab {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pt-tab:hover {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+}
+
+.pt-tab.active {
+    color: var(--color-primary);
+    background: var(--color-surface);
+    border-color: var(--color-border) var(--color-border) var(--color-surface);
+    box-shadow: 0 4px 0 var(--color-surface);
+}
+
+.pt-tab__badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.pt-tab__badge--muted {
+    background: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+}
+
+.pt-tab__badge--alert {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger-border);
+}
+
+/* ==================== PANEL LAYOUT ==================== */
+.pt-panel-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .pt-panel-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pt-panel-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.pt-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* ==================== CLIENT CARD ==================== */
+.client-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.client-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+}
+
+.client-card.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 8px 0 var(--color-primary-soft), var(--shadow-md);
+}
+
+.client-card__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.client-card__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.client-card__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.client-card__avatar i {
+    font-size: 18px;
+    color: var(--color-text-secondary);
+}
+
+.client-card__title {
+    flex: 1;
+}
+
+.client-card__title h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.client-card__title span {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.client-card__streak {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+/* Progress bar inside card */
+.client-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.client-progress__labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+.client-progress__labels span {
+    color: var(--color-text-secondary);
+}
+
+.client-progress__labels strong {
+    color: var(--color-text);
+    font-size: 14px;
+}
+
+.pct-chip {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--color-surface-alt);
+    color: var(--color-text-secondary);
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.pct-chip.over {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger-border);
+}
+
+.client-progress__bar {
+    width: 100%;
+    height: 8px;
+    background: var(--color-surface-alt);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.client-progress__fill {
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.client-progress__fill.over {
+    background: var(--color-danger);
+}
+
+/* Card metrics */
+.client-metrics-row {
+    display: flex;
+    gap: 8px;
+}
+
+.client-mini-metric {
+    flex: 1;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+}
+
+.client-mini-metric .label {
+    display: block;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    margin-bottom: 2px;
+}
+
+.client-mini-metric strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* ==================== CLIENT DETAILS PANEL ==================== */
+.pt-panel-side {
+    position: sticky;
+    top: 96px;
+}
+
+.pt-details-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    position: relative;
+}
+
+.close-side-details {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color var(--transition-base);
+}
+
+.close-side-details:hover {
+    color: var(--color-text);
+}
+
+/* Empty placeholder details */
+.pt-details-placeholder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Empty search result/general empty state */
+.pt-empty {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--color-surface);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.pt-empty__icon {
+    font-size: 40px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+}
+
+.pt-empty h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 8px;
+}
+
+.pt-empty p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    max-width: 380px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* ==================== REQUEST CARDS ==================== */
+.requests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 480px) {
+    .requests-grid {
+        grid-template-columns: 1fr;
+    }
+}

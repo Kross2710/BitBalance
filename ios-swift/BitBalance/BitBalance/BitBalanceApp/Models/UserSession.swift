@@ -10,6 +10,7 @@ struct UserSession: Codable, Equatable {
     let role: String?
     let profileImage: String?
     let themePreference: String?
+    let needsOnboarding: Bool?
 }
 
 struct APIEnvelope<T: Decodable>: Decodable {
@@ -27,15 +28,94 @@ struct DashboardSummary: Codable {
     let protein: Double
     let carbs: Double
     let fat: Double
+    let macroGoals: MacroTotals?
     let currentLevel: Int
     let totalXp: Int
+    let xpIntoLevel: Int?
+    let xpForNext: Int?
     let xpProgressPercentage: Int?
+    let streak: DashboardStreak?
+    let history: DashboardHistory?
+    let mealCategories: [String: Int]?
 }
 
 struct MacroTotals: Codable, Equatable {
     let protein: Double
     let carbs: Double
     let fat: Double
+}
+
+struct DashboardHistory: Codable, Equatable {
+    let labels: [String]
+    let calories: [Int]
+    let protein: [Double]
+    let carbs: [Double]
+    let fat: [Double]
+}
+
+struct DashboardStreak: Codable, Equatable {
+    let current: Int
+    let longest: Int
+    let freezes: Int
+    let broken: Int
+}
+
+struct DashboardMacroFocus: Codable, Equatable {
+    let key: String
+    let label: String
+    let gap: Double
+    let icon: String
+}
+
+struct DashboardFocusPayload: Codable, Equatable {
+    let tone: String
+    let status: String
+    let calorieRemaining: Int?
+    let calorieOverBy: Int?
+    let macroFocus: DashboardMacroFocus?
+}
+
+struct DashboardBMI: Codable, Equatable {
+    let value: Double?
+    let category: String?
+}
+
+struct DashboardPhysicalPayload: Codable, Equatable {
+    let age: Int?
+    let gender: String?
+    let weight: Double?
+    let height: Double?
+}
+
+struct DashboardWeightPoint: Codable, Identifiable, Equatable {
+    let id: Int
+    let weight: Double
+    let dateLogged: String
+    let label: String
+}
+
+struct DashboardDayPayload: Codable, Equatable {
+    let selectedDate: String
+    let totalCalories: Int
+    let calorieGoal: Int?
+    let progressPercentage: Double
+    let statusClass: String
+    let macros: MacroTotals
+    let macroGoals: MacroTotals
+    let history: DashboardHistory
+    let averageCalories: Int?
+    let mealCategories: [String: Int]
+    let entries: [IntakeEntry]
+    let currentLevel: Int
+    let totalXp: Int
+    let xpIntoLevel: Int
+    let xpForNext: Int
+    let xpProgressPercentage: Int
+    let streak: DashboardStreak
+    let focus: DashboardFocusPayload
+    let bmi: DashboardBMI
+    let physical: DashboardPhysicalPayload
+    let weightHistory: [DashboardWeightPoint]
 }
 
 struct DailySummary: Codable, Equatable {
@@ -125,12 +205,23 @@ struct Conversation: Codable, Identifiable {
     let updatedAt: String
 }
 
-struct ChatMessage: Codable, Identifiable {
+struct FoodLogSuggestion: Codable, Identifiable, Equatable {
+    var id: String { foodName + mealCategory + String(calories) }
+    let foodName: String
+    let mealCategory: String
+    let calories: Int
+    let protein: Double
+    let carbs: Double
+    let fat: Double
+}
+
+struct ChatMessage: Codable, Identifiable, Equatable {
     let id: Int
     let role: String
     let content: String
     let imagePath: String?
     let createdAt: String
+    var foodLogSuggestions: [FoodLogSuggestion]? = nil
 }
 
 struct ConversationMessagesPayload: Codable {
@@ -141,9 +232,10 @@ struct ConversationMessagesPayload: Codable {
 struct SendMessagePayload: Codable {
     let conversationId: Int
     let userMessage: ChatMessage
-    let assistantMessage: ChatMessage
+    var assistantMessage: ChatMessage
     let usageToday: Int
     let dailyLimit: Int
+    let foodLogSuggestions: [FoodLogSuggestion]?
 }
 
 struct DeleteConversationPayload: Codable {
@@ -302,5 +394,3 @@ struct OnboardingResult: Codable {
     let macros: MacroTotals
     let hydrationMl: Int
 }
-
-

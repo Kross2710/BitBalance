@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import UIKit
 
 // MARK: - Asymmetric Rounded Corner Shape
 struct AsymmetricCornerShape: Shape {
@@ -497,9 +498,20 @@ struct ChatDetailView: View {
 
                 // Replace temp user message with real one
                 if let idx = messages.firstIndex(where: { $0.id == tempUserMsg.id }) {
-                    messages[idx] = payload.userMessage
+                    messages[idx] = ChatMessage(
+                        id: tempUserMsg.id,
+                        role: payload.userMessage.role,
+                        content: payload.userMessage.content,
+                        imagePath: payload.userMessage.imagePath,
+                        createdAt: payload.userMessage.createdAt,
+                        foodLogSuggestions: payload.userMessage.foodLogSuggestions
+                    )
                 }
-                messages.append(payload.assistantMessage)
+                var assistantMessage = payload.assistantMessage
+                if assistantMessage.foodLogSuggestions == nil || assistantMessage.foodLogSuggestions?.isEmpty == true {
+                    assistantMessage.foodLogSuggestions = payload.foodLogSuggestions
+                }
+                messages.append(assistantMessage)
 
                 // Update conversation ID for new chats
                 if activeConversationId == nil {
@@ -541,7 +553,12 @@ private struct SuggestionRow: View {
 // MARK: - Message Bubble
 
 private struct MessageBubble: View {
+    @EnvironmentObject private var session: SessionStore
     let message: ChatMessage
+
+    @State private var loggedSuggestionIds: Set<String> = []
+    @State private var loggingSuggestionIds: Set<String> = []
+    @State private var logError: String?
 
     private var isUser: Bool { message.role == "user" }
 
@@ -638,6 +655,25 @@ private struct MessageBubble: View {
                 )
                 .padding(.bottom, 4)
 
+                if let suggestions = message.foodLogSuggestions, !suggestions.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(suggestions) { item in
+                            foodCard(item)
+                        }
+                    }
+                    .padding(.top, 4)
+                    .padding(.bottom, 8)
+                    .frame(width: 250) // Beautiful constrained width for food card inside thread
+                }
+
+                if let error = logError {
+                    Text(error)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(BBColors.danger)
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 4)
+                }
+
                 Text(formatTime(message.createdAt))
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(BBColors.textMuted)
@@ -685,6 +721,135 @@ private struct MessageBubble: View {
             return display.string(from: date)
         }
         return dateString
+    }
+
+    // MARK: - Food Suggestions Helpers
+    
+    private func foodCard(_ item: FoodLogSuggestion) -> some View {
+        let isLogged = loggedSuggestionIds.contains(item.id)
+        let isLogging = loggingSuggestionIds.contains(item.id)
+        
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(mealEmoji(item.mealCategory) + " " + item.mealCategory.capitalized)
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(BBColors.dynamicColor(light: "1CB0F6", dark: "60A5FA"))
+                Spacer()
+                Text("\(item.calories) kcal")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(BBColors.accent)
+            }
+            
+            Text(item.foodName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(BBColors.text)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            
+            HStack(spacing: 6) {
+                macroTag(label: "P", value: item.protein, color: .purple)
+                macroTag(label: "C", value: item.carbs, color: .orange)
+                macroTag(label: "F", value: item.fat, color: .red)
+            }
+            
+            Button {
+                logFood(item)
+            } label: {
+                HStack {
+                    if isLogging {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.8)
+                    } else if isLogged {
+                        Image(systemName: "checkmark.circle.fill")
+                    } else {
+                        Image(systemName: "plus")
+                    }
+                    
+                    Text(isLogging ? "Logging..." : (isLogged ? "Logged ✓" : "Add to Log"))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(BBButtonStyle(
+                backgroundColor: isLogged ? BBColors.success : BBColors.primary,
+                shadowColor: isLogged ? BBColors.successBorder : BBColors.primaryHover,
+                isEnabled: !isLogged && !isLogging
+            ))
+            .disabled(isLogged || isLogging)
+            .padding(.top, 4)
+        }
+        .bbCard(radius: BBRadius.md, padding: 12)
+    }
+    
+    private func mealEmoji(_ category: String) -> String {
+        switch category.lowercased() {
+        case "breakfast": return "🥐"
+        case "lunch": return "🍱"
+        case "dinner": return "🍽️"
+        default: return "🍎"
+        }
+    }
+    
+    private func macroTag(label: String, value: Double, color: Color) -> some View {
+        HStack(spacing: 2) {
+            Text(label)
+                .font(.system(size: 10, weight: .heavy))
+                .foregroundColor(color)
+            Text(String(format: "%.1fg", value))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(BBColors.textSecondary)
+        }
+        .padding(.vertical, 3)
+        .padding(.horizontal, 6)
+        .background(BBColors.surfaceAlt)
+        .cornerRadius(6)
+    }
+    
+    private func logFood(_ item: FoodLogSuggestion) {
+        guard !loggedSuggestionIds.contains(item.id), !loggingSuggestionIds.contains(item.id) else {
+            return
+        }
+
+        logError = nil
+        loggingSuggestionIds.insert(item.id)
+        
+        let payload = IntakeFormPayload(
+            foodItem: item.foodName,
+            calories: item.calories,
+            protein: item.protein,
+            carbs: item.carbs,
+            fat: item.fat,
+            mealCategory: normalizedMealCategory(item.mealCategory)
+        )
+        
+        Task { @MainActor in
+            do {
+                _ = try await session.createIntake(payload)
+
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+                
+                loggingSuggestionIds.remove(item.id)
+                loggedSuggestionIds.insert(item.id)
+                logError = nil
+            } catch {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.error)
+                
+                loggingSuggestionIds.remove(item.id)
+                logError = error.localizedDescription
+            }
+        }
+    }
+
+    private func normalizedMealCategory(_ rawValue: String) -> String {
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch value {
+        case "breakfast", "lunch", "dinner", "snack":
+            return value
+        default:
+            return "snack"
+        }
     }
 }
 

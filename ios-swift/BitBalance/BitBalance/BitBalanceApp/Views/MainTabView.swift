@@ -23,7 +23,7 @@ struct MainTabView: View {
                     .tabItem { Label("Social", systemImage: "person.3.fill") }
 
                 ProfileView()
-                    .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
+                    .tabItem { Label("Settings", systemImage: "gearshape.fill") }
             }
             .tint(BBColors.primary)
 
