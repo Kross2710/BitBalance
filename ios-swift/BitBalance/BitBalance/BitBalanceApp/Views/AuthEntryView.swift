@@ -11,18 +11,12 @@ struct AuthEntryView: View {
     @State private var showSignUp = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // ── Hero (top ~55%) ─────────────────────────────────────────────
-            VStack(spacing: 0) {
-                heroSection
-                Spacer()
-            }
-
-            // ── Auth card (bottom sheet style) ───────────────────────────
-            authCard
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+        VStack(spacing: 0) {
+            heroSection           // flexible — fills the space above the card
+            authCard              // natural height, sits below the hero
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(edges: .top)   // photo extends under the status bar
+        .background(BBColors.surface.ignoresSafeArea())   // surface fills under home indicator too
         .sheet(isPresented: $showLogin) {
             LoginView()
         }
@@ -35,14 +29,7 @@ struct AuthEntryView: View {
 
     private var heroSection: some View {
         ZStack(alignment: .bottomLeading) {
-            Image("food")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(maxWidth: .infinity)
-                .frame(height: UIScreen.main.bounds.height * 0.58)
-                .clipped()
-
-            // brand tint
+            // Brand tint (fills the hero — does not dictate layout size)
             LinearGradient(
                 gradient: Gradient(colors: [
                     Color(hex: "58CC02").opacity(0.30),
@@ -55,120 +42,115 @@ struct AuthEntryView: View {
             LinearGradient(
                 gradient: Gradient(stops: [
                     .init(color: Color.black.opacity(0.85), location: 0.00),
-                    .init(color: Color.black.opacity(0.45), location: 0.30),
-                    .init(color: Color.clear,               location: 0.60)
+                    .init(color: Color.black.opacity(0.45), location: 0.35),
+                    .init(color: Color.clear,               location: 0.65)
                 ]),
                 startPoint: .bottom, endPoint: .top
             )
 
-            // logo + tagline
-            VStack(alignment: .leading, spacing: 10) {
+            // logo + tagline — aligns to the framed hero, not the overflowing image
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
                     Text("🥗")
-                        .font(.system(size: 36))
+                        .font(.system(size: 32))
                     Text("BitBalance")
-                        .font(.system(size: 30, weight: .heavy))
+                        .font(.system(size: 28, weight: .heavy))
                         .foregroundColor(.white)
                 }
                 Text("Track. Earn XP. Level up.")
-                    .font(.system(size: 18, weight: .heavy))
+                    .font(.system(size: 17, weight: .heavy))
                     .foregroundColor(.white)
                 Text("Your wellness journey, gamified.")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.88))
             }
             .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 1)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 28)
-            .padding(.bottom, 110) // keep above the card
+            .padding(.bottom, 44)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: UIScreen.main.bounds.height * 0.58)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Photo lives in the background so scaledToFill overflow is clipped here
+        // without affecting the ZStack's layout bounds (which kept the text left-cut).
+        .background(
+            Image("food")
+                .resizable()
+                .scaledToFill()
+        )
+        .clipped()
     }
 
     // MARK: - Auth card
 
     private var authCard: some View {
-        VStack(spacing: 0) {
-            // drag handle
-            Capsule()
-                .fill(BBColors.border)
-                .frame(width: 40, height: 4)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-
-            VStack(spacing: 14) {
-                // ── Primary email CTAs ───────────────────────────────────
-                Button {
-                    showSignUp = true
-                } label: {
-                    Text("Create Account")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(BBButtonStyle(
-                    backgroundColor: BBColors.primary,
-                    shadowColor: BBColors.primaryHover
-                ))
-
-                Button {
-                    showLogin = true
-                } label: {
-                    Text("Sign In")
-                        .frame(maxWidth: .infinity)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(BBColors.text)
-                        .padding(.vertical, 14)
-                        .background(BBColors.surfaceAlt)
-                        .cornerRadius(BBRadius.md)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: BBRadius.md)
-                                .stroke(BBColors.border, lineWidth: 2)
-                        )
-                        .background(
-                            RoundedRectangle(cornerRadius: BBRadius.md)
-                                .fill(BBColors.borderSubtle)
-                                .offset(y: 4)
-                        )
-                }
-                .padding(.bottom, 4)
-
-                // ── Divider ──────────────────────────────────────────────
-                HStack(spacing: 12) {
-                    Rectangle().fill(BBColors.border).frame(height: 1)
-                    Text("or").font(.system(size: 13, weight: .bold)).foregroundColor(BBColors.textMuted)
-                    Rectangle().fill(BBColors.border).frame(height: 1)
-                }
-                .padding(.vertical, 4)
-
-                // ── OAuth slots ──────────────────────────────────────────
-                // Design: provider enum drives both button appearance and action.
-                // Enable each provider by flipping `isAvailable` when the SDK is wired.
-                OAuthProviderButton(provider: .apple,  isAvailable: false) { /* TODO: Apple Sign In */ }
-                OAuthProviderButton(provider: .google, isAvailable: false) { /* TODO: Google Sign In */ }
-
-                // ── Guest ────────────────────────────────────────────────
-                Button {
-                    session.continueAsGuest()
-                } label: {
-                    Text("Continue as Guest")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(BBColors.textSecondary)
-                        .underline()
-                }
-                .padding(.top, 4)
-
-                // safe-area spacer
-                Spacer().frame(height: 8)
+        VStack(spacing: 12) {
+            // ── Primary email CTAs ───────────────────────────────────
+            Button {
+                showSignUp = true
+            } label: {
+                Text("Create Account")
+                    .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 20)
+            .buttonStyle(BBButtonStyle(
+                backgroundColor: BBColors.primary,
+                shadowColor: BBColors.primaryHover
+            ))
+
+            Button {
+                showLogin = true
+            } label: {
+                Text("Sign In")
+                    .frame(maxWidth: .infinity)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(BBColors.text)
+                    .padding(.vertical, 14)
+                    .background(BBColors.surfaceAlt)
+                    .cornerRadius(BBRadius.md)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: BBRadius.md)
+                            .stroke(BBColors.border, lineWidth: 2)
+                    )
+                    .background(
+                        RoundedRectangle(cornerRadius: BBRadius.md)
+                            .fill(BBColors.borderSubtle)
+                            .offset(y: 4)
+                    )
+            }
+
+            // ── Divider ──────────────────────────────────────────────
+            HStack(spacing: 12) {
+                Rectangle().fill(BBColors.border).frame(height: 1)
+                Text("or").font(.system(size: 13, weight: .bold)).foregroundColor(BBColors.textMuted)
+                Rectangle().fill(BBColors.border).frame(height: 1)
+            }
+            .padding(.vertical, 2)
+
+            // ── OAuth slots ──────────────────────────────────────────
+            // Design: provider enum drives both button appearance and action.
+            // Enable each provider by flipping `isAvailable` when the SDK is wired.
+            OAuthProviderButton(provider: .apple,  isAvailable: false) { /* TODO: Apple Sign In */ }
+            OAuthProviderButton(provider: .google, isAvailable: false) { /* TODO: Google Sign In */ }
+
+            // ── Guest ────────────────────────────────────────────────
+            Button {
+                session.continueAsGuest()
+            } label: {
+                Text("Continue as Guest")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(BBColors.textSecondary)
+                    .underline()
+            }
+            .padding(.top, 2)
         }
-        .background(
-            BBColors.surface
-                .clipShape(RoundedRectangle(cornerRadius: BBRadius.xl))
-                // top shadow so card feels lifted off the photo
-                .shadow(color: .black.opacity(0.18), radius: 20, x: 0, y: -4)
-        )
-        .padding(.horizontal, 0)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
+        .background(BBColors.surface)
+        // Round only the top corners and lift the card up over the photo edge.
+        .clipShape(.rect(topLeadingRadius: BBRadius.xl, topTrailingRadius: BBRadius.xl))
+        .shadow(color: .black.opacity(0.18), radius: 20, x: 0, y: -4)
+        .padding(.top, -24)
     }
 }
 
