@@ -28,6 +28,17 @@ $activeHeader = 'dashboard';
 $bodyClass = 'page-intake';
 $displayUser = $isLoggedIn ? $user['user_name'] : "Guest";
 
+// Backdating context (Layers 1 & 3). $selectedDate is set + clamped (never the
+// future) by dashboard_data.php. When it's a past day, the page shows a pinned
+// banner and the add form/toast make the target date unmistakable.
+$isPastDate = $isLoggedIn && ($selectedDate < date('Y-m-d'));
+$shortDateLabel = date('j/n', strtotime($selectedDate)); // e.g. 28/5
+
+// Task 1: a per-meal "+" on Overview links here with ?meal=… to pre-select the
+// meal and drop the user straight into the food name field.
+$prefillMeal = (isset($_GET['meal']) && in_array($_GET['meal'], ['breakfast', 'lunch', 'dinner', 'snack'], true))
+    ? $_GET['meal'] : '';
+
 if (!$isLoggedIn) {
     // Guest demo — populate the Food Log with sample data (mirrors the
     // Overview demo) so new visitors get the "this is what a day looks like"
@@ -100,6 +111,10 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
         <main class="dashboard-content">
             <div class="intake-container">
+
+                <?php if ($isPastDate): ?>
+                    <?php include PROJECT_ROOT . 'dashboard/views/_past-date-banner.php'; ?>
+                <?php endif; ?>
 
                 <?php if (!empty($todayFeedback)): ?>
                     <section class="dashboard-card pt-feedback-card" style="display: flex; align-items: center; gap: 16px; border: 2px solid var(--color-secondary); background: var(--color-surface); padding: 20px; border-radius: var(--radius-lg); box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm); margin-bottom: 24px;">
@@ -266,8 +281,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             </button>
                         </div>
 
-                        <form id="intakeForm" action="handlers/process_intake.php" method="POST">
+                        <form id="intakeForm" action="handlers/process_intake.php" method="POST"
+                            data-is-today="<?= $isPastDate ? '0' : '1' ?>"
+                            data-date-label="<?= htmlspecialchars($shortDateLabel, ENT_QUOTES) ?>">
                             <input type="hidden" name="image_path" id="image_path" value="">
+                            <input type="hidden" name="date" value="<?= htmlspecialchars($selectedDate, ENT_QUOTES) ?>">
                             <div class="form-group">
                                 <label for="food_item"><?= t('intake.food_name') ?></label>
                                 <div class="input-icon-wrapper food-name-wrapper">
@@ -321,11 +339,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <label for="meal_category"><?= t('intake.category_label') ?></label>
                                 <div class="select-wrapper">
                                     <select id="meal_category" name="meal_category" required>
-                                        <option value="" disabled selected><?= t('intake.select_category') ?></option>
-                                        <option value="breakfast"><?= t('intake.meal.breakfast_emoji') ?></option>
-                                        <option value="lunch"><?= t('intake.meal.lunch_emoji') ?></option>
-                                        <option value="dinner"><?= t('intake.meal.dinner_emoji') ?></option>
-                                        <option value="snack"><?= t('intake.meal.snack_emoji') ?></option>
+                                        <option value="" disabled <?= $prefillMeal === '' ? 'selected' : '' ?>><?= t('intake.select_category') ?></option>
+                                        <option value="breakfast" <?= $prefillMeal === 'breakfast' ? 'selected' : '' ?>><?= t('intake.meal.breakfast_emoji') ?></option>
+                                        <option value="lunch" <?= $prefillMeal === 'lunch' ? 'selected' : '' ?>><?= t('intake.meal.lunch_emoji') ?></option>
+                                        <option value="dinner" <?= $prefillMeal === 'dinner' ? 'selected' : '' ?>><?= t('intake.meal.dinner_emoji') ?></option>
+                                        <option value="snack" <?= $prefillMeal === 'snack' ? 'selected' : '' ?>><?= t('intake.meal.snack_emoji') ?></option>
                                     </select>
                                 </div>
                             </div>
@@ -336,9 +354,21 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             </div>
 
                             <button type="submit" class="btn-submit">
-                                <i class="fas fa-check"></i> <?= t('intake.log_entry_btn') ?>
+                                <i class="fas fa-check"></i>
+                                <?php if ($isPastDate): ?>
+                                    <?= t('intake.log_entry_btn_dated', ['date' => $shortDateLabel]) ?>
+                                <?php else: ?>
+                                    <?= t('intake.log_entry_btn') ?>
+                                <?php endif; ?>
                             </button>
                         </form>
+                        <?php if ($prefillMeal !== ''): ?>
+                            <script>
+                                // Arrived from an Overview "+" (meal already chosen) — drop the
+                                // cursor straight into the food name so the user can just type.
+                                document.getElementById('food_item')?.focus({ preventScroll: false });
+                            </script>
+                        <?php endif; ?>
                     </section>
                     <?php else: ?>
                     <section class="dashboard-card intake-form-card intake-form-card--demo">
@@ -1208,7 +1238,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                             const foodName = fd.get('food_item');
                             const cal = fd.get('calories');
                             const xpAdded = data.xp && data.xp.added;
-                            const subtext = foodName + ' • ' + cal + ' kcal' + (xpAdded ? ' • +' + xpAdded + ' XP' : '');
+                            let subtext = foodName + ' • ' + cal + ' kcal' + (xpAdded ? ' • +' + xpAdded + ' XP' : '');
+                            // Backdated log: spell out the target day so it's never mistaken for today.
+                            if (data && data.is_today === false) {
+                                subtext += ' • → ' + (form.dataset.dateLabel || data.date);
+                            }
                             showLoggingToast('Food logged!', subtext);
 
                             // Update XP chip + fire +XP popup + level-up toast if needed

@@ -41,6 +41,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Optional backdating: log to a chosen day (defaults to today). The Intake
+    // page passes the date it's currently showing. Rules: never the future, and
+    // the logging streak is only bumped for *today's* logs (see below).
+    $today = date('Y-m-d');
+    $logDate = $today;
+    if (isset($_POST['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['date'])) {
+        $logDate = $_POST['date'];
+    }
+    if ($logDate > $today) {
+        $logDate = $today;
+    }
+    $isToday = ($logDate === $today);
+    // Keep the real time-of-day so entries within a backdated day still order sensibly.
+    $logDateTime = $logDate . ' ' . date('H:i:s');
+
     // Validate input
     if ($food_item == '' || $calories == '' || $meal_category == '') {
         $error_message = 'Please fill in all fields.';
@@ -72,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         // Prepare and execute the SQL statement
-        $stmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         if (!$stmt) {
             $error_message = 'Database error: ' . implode(' ', $pdo->errorInfo());
             if ($isAjax) {
@@ -82,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Use array-style execute
-            if ($stmt->execute([$user_id, $food_item, $calories, $protein, $carbs, $fat, $meal_category, $image_path])) {
+            if ($stmt->execute([$user_id, $food_item, $calories, $protein, $carbs, $fat, $meal_category, $image_path, $logDateTime])) {
                 // Award XP (state-based, idempotent — log+delete spam can't farm).
                 $xpResult = ['xp_added' => 0, 'leveled_up' => false];
                 try {
@@ -92,26 +107,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     error_log('xp_award_intake_log: ' . $e->getMessage());
                 }
 
-                // Update logging streak
-                try {
-                    updateLoggingStreak($pdo, $user_id);
-                    // Streak milestones may have just been crossed
-                    $streakRow = $pdo->prepare("SELECT logging_streak FROM userStatus WHERE user_id = ?");
-                    $streakRow->execute([$user_id]);
-                    $newStreak = (int) $streakRow->fetchColumn();
-                    $milestoneRes = xp_award_streak_milestone($pdo, $user_id, $newStreak);
-                    $xpResult['xp_added']   += $milestoneRes['xp_added'] ?? 0;
-                    $xpResult['leveled_up'] = $xpResult['leveled_up'] || !empty($milestoneRes['leveled_up']);
-                } catch (Throwable $e) {
-                    if ($isAjax) {
-                        header('Content-Type: application/json');
-                        echo json_encode([
-                            'ok' => false,
-                            'error' => 'Failed to update logging streak: ' . $e->getMessage()
-                        ]);
-                        exit;
-                    } else {
-                        $error_message = 'Failed to update logging streak: ' . $e->getMessage();
+                // Update logging streak — ONLY for today's logs. Backdated entries
+                // must not inflate the current streak (recomputing historical
+                // streaks is out of scope).
+                if ($isToday) {
+                    try {
+                        updateLoggingStreak($pdo, $user_id);
+                        // Streak milestones may have just been crossed
+                        $streakRow = $pdo->prepare("SELECT logging_streak FROM userStatus WHERE user_id = ?");
+                        $streakRow->execute([$user_id]);
+                        $newStreak = (int) $streakRow->fetchColumn();
+                        $milestoneRes = xp_award_streak_milestone($pdo, $user_id, $newStreak);
+                        $xpResult['xp_added']   += $milestoneRes['xp_added'] ?? 0;
+                        $xpResult['leveled_up'] = $xpResult['leveled_up'] || !empty($milestoneRes['leveled_up']);
+                    } catch (Throwable $e) {
+                        if ($isAjax) {
+                            header('Content-Type: application/json');
+                            echo json_encode([
+                                'ok' => false,
+                                'error' => 'Failed to update logging streak: ' . $e->getMessage()
+                            ]);
+                            exit;
+                        } else {
+                            $error_message = 'Failed to update logging streak: ' . $e->getMessage();
+                        }
                     }
                 }
 
@@ -148,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'fat'           => $fat,
                         'meal_category' => $meal_category,
                         'image_path'    => $image_path,
-                        'date_intake'   => gmdate('Y-m-d\TH:i:s\Z'),
+                        'date_intake'   => $logDateTime,
                     ];
                     $showDate  = false;
                     $timeLabel = 'Just now';
@@ -156,15 +175,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     include PROJECT_ROOT . 'dashboard/views/_intake-row.php';
                     $newRow = ob_get_clean();
 
-                    // query new daily total + percentage
-                    $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(calories),0) FROM intakeLog WHERE user_id = ? AND DATE(date_intake)=CURDATE()");
-                    $totalStmt->execute([$user_id]);
+                    // query new daily total + percentage for the LOGGED day
+                    $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(calories),0) FROM intakeLog WHERE user_id = ? AND DATE(date_intake)=?");
+                    $totalStmt->execute([$user_id, $logDate]);
                     $totalCalories = (int) $totalStmt->fetchColumn();
                     $goal = $userGoal;
                     $pct = $goal ? min(100, round($totalCalories / $goal * 100)) : 0;
 
-                    // Daily macro totals
-                    $macroTotals = getMacroTotalsToday($user_id);
+                    // Daily macro totals for the LOGGED day
+                    $macroTotals = getMacroTotalsToday($user_id, $logDate);
                     $macroGoals  = getMacroGoalsFromCalorieGoal($goal);
 
                     // Log the attempt
@@ -177,6 +196,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo json_encode([
                         'ok' => true,
                         'new_row' => $newRow,
+                        'date' => $logDate,
+                        'is_today' => $isToday,
                         'total' => $totalCalories,
                         'percentage' => $pct,
                         'macros' => $macroTotals,

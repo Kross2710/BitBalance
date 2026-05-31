@@ -7,6 +7,11 @@ $selectedDate = date('Y-m-d');
 if (isset($_GET['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'])) {
     $selectedDate = $_GET['date'];
 }
+// Rule: never operate on a future day — clamp forward dates back to today.
+// Applies to every page that derives data from $selectedDate (Overview, Intake).
+if ($selectedDate > date('Y-m-d')) {
+    $selectedDate = date('Y-m-d');
+}
 
 // Prepare data for the history chart (last 7 days relative to selected date)
 $historyData = [];

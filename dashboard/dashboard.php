@@ -70,6 +70,17 @@ $activePage = 'overview';
 $activeHeader = 'dashboard';
 $bodyClass = 'page-dashboard';
 
+// Build the Intake link for a per-meal "+" button: pre-selects that meal
+// (Task 1) and carries the viewed day so it adds to the SAME day being reviewed
+// (not silently to today). Date omitted when viewing today.
+$intakeQuery = function (string $meal) use ($selectedDate) {
+    $params = ['meal' => $meal];
+    if (!empty($selectedDate) && $selectedDate !== date('Y-m-d')) {
+        $params['date'] = $selectedDate;
+    }
+    return '?' . http_build_query($params);
+};
+
 $status = 'Unset';
 $statusClass = 'unset';
 
@@ -670,7 +681,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                 <div class="slot-empty" id="bento-empty-breakfast">
                                                     <i class="fas fa-mug-hot slot-icon"></i>
                                                     <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
-                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                    <a href="dashboard-intake.php<?= $intakeQuery('breakfast') ?>" class="btn-add-bento"><i class="fas fa-plus"></i></a>
                                                 </div>
                                                 <div class="slot-list" id="bento-list-breakfast"></div>
                                             </div>
@@ -684,7 +695,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                 <div class="slot-empty" id="bento-empty-lunch">
                                                     <i class="fas fa-hamburger slot-icon"></i>
                                                     <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
-                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                    <a href="dashboard-intake.php<?= $intakeQuery('lunch') ?>" class="btn-add-bento"><i class="fas fa-plus"></i></a>
                                                 </div>
                                                 <div class="slot-list" id="bento-list-lunch"></div>
                                             </div>
@@ -698,7 +709,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                 <div class="slot-empty" id="bento-empty-dinner">
                                                     <i class="fas fa-utensils slot-icon"></i>
                                                     <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
-                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                    <a href="dashboard-intake.php<?= $intakeQuery('dinner') ?>" class="btn-add-bento"><i class="fas fa-plus"></i></a>
                                                 </div>
                                                 <div class="slot-list" id="bento-list-dinner"></div>
                                             </div>
@@ -712,7 +723,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                 <div class="slot-empty" id="bento-empty-snack">
                                                     <i class="fas fa-apple-alt slot-icon"></i>
                                                     <span class="slot-prompt"><?= t('dashboard.bento.empty_slot') ?></span>
-                                                    <a href="dashboard-intake.php" class="btn-add-bento"><i class="fas fa-plus"></i></a>
+                                                    <a href="dashboard-intake.php<?= $intakeQuery('snack') ?>" class="btn-add-bento"><i class="fas fa-plus"></i></a>
                                                 </div>
                                                 <div class="slot-list" id="bento-list-snack"></div>
                                             </div>

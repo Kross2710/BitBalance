@@ -9,9 +9,14 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         $sidebarPendingFriends = 0;
     }
 }
+// Carry the currently-viewed day across the Overview <-> Intake flow, so
+// reviewing a past day on one page lands on the same day on the other. Empty
+// for today or on pages that don't set $selectedDate (no change there).
+$__navDateQ = (!empty($selectedDate) && $selectedDate !== date('Y-m-d'))
+    ? '?date=' . urlencode($selectedDate) : '';
 ?>
 <div class="sidebar">
-    <a href="dashboard.php" class="nav-link <?php echo ($activePage == 'overview') ? 'active' : ''; ?>"
+    <a href="dashboard.php<?= $__navDateQ ?>" class="nav-link <?php echo ($activePage == 'overview') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.overview_short') ?>">
         <i class="fas fa-th-large"></i> <?= t('dashboard.sidebar.overview') ?>
     </a>
@@ -23,7 +28,7 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         </a>
     <?php endif; ?>
 
-    <a href="dashboard-intake.php" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
+    <a href="dashboard-intake.php<?= $__navDateQ ?>" class="nav-link <?php echo ($activePage == 'intake') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.intake_short') ?>">
         <i class="fas fa-utensils"></i> <?= t('dashboard.sidebar.intake') ?>
     </a>
@@ -51,6 +56,7 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <?php endif; ?>
     </a>
 
+    <!-- Future feature, so ignore implement for this page -->
     <!-- <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.beats_short') ?>">
         <i class="fa-solid fa-music"></i> <?= t('dashboard.sidebar.beats') ?>
@@ -62,3 +68,5 @@ if (!empty($_SESSION['user']) && isset($pdo)) {
         <i class="fas fa-video"></i> Video Promo
     </a> -->
 </div>
+<?php /* Perceived-speed boost (no SPA): prefetch sidebar pages on hover + show a top loading bar on click. Pure progressive enhancement. */ ?>
+<script src="<?= BASE_URL ?>dashboard/views/sidebar-prefetch.js?v=<?= @filemtime(PROJECT_ROOT . 'dashboard/views/sidebar-prefetch.js') ?>" defer></script>

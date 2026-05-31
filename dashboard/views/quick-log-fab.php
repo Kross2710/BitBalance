@@ -7,8 +7,11 @@
  * Usage:
  *   <?php include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; ?>
  */
+// Carry the viewed day so logging from a past-day page targets that day.
+$__fabDateQ = (!empty($selectedDate) && $selectedDate !== date('Y-m-d'))
+    ? '?date=' . urlencode($selectedDate) : '';
 ?>
-<a href="<?= BASE_URL ?>dashboard/dashboard-intake.php"
+<a href="<?= BASE_URL ?>dashboard/dashboard-intake.php<?= $__fabDateQ ?>"
    class="quick-log-fab quick-log-fab--extended"
    aria-label="<?= t('fab.log_food') ?>"
    title="<?= t('fab.log_food') ?>">
