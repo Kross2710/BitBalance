@@ -3,3 +3,4 @@ include/db_config.php
 .claude/
 .DS_Store
 AGENTS.md
+docs/
