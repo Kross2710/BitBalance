@@ -511,13 +511,14 @@ function bb_save_beats_mirror_cache(PDO $pdo, int $userId, string $lang, string 
     }
 }
 
-/* ============ Diet & Beats — AI text call (OpenRouter first, Gemini fallback) ============ */
+/* ============ Diet & Beats — AI text call (Gemini first, OpenRouter fallback) ============ */
 /**
- * Single AI text call for the Beats handlers. Tries OpenRouter first because the RMIT
- * outbound firewall breaks DIRECT calls to generativelanguage.googleapis.com (this is why
- * mascot_chat.php was migrated to OpenRouter). Falls back to Gemini direct where reachable
- * (e.g. local XAMPP). Returns the model's raw text reply, or null if all providers fail.
- * Callers strip ```json fences and json_decode() as needed.
+ * Single AI text call for the Beats handlers. Calls Gemini direct first: outbound HTTPS is
+ * open on RMIT (verified 2026-06-01 — generativelanguage.googleapis.com returns HTTP 200),
+ * and a personal Gemini key is steadier than OpenRouter's free models, which 429
+ * ("temporarily rate-limited") intermittently. Falls back to OpenRouter if Gemini is unset
+ * or fails. Returns the model's raw text reply, or null if all providers fail. Callers strip
+ * ```json fences and json_decode() as needed.
  */
 function bb_beats_ai_text($prompt)
 {
@@ -526,9 +527,34 @@ function bb_beats_ai_text($prompt)
         return null;
     }
 
-    // 1. OpenRouter (OpenAI-compatible /chat/completions) — the path that works on RMIT.
-    //    Try the configured model, then a couple of free fallbacks: free models 429
-    //    ("temporarily rate-limited") intermittently, so one alone is not reliable.
+    // 1. Gemini direct (primary) — outbound HTTPS to Google is open on RMIT and local XAMPP.
+    if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
+        $model = defined('AI_COACH_MODEL') ? AI_COACH_MODEL : 'gemini-3.1-flash-lite';
+        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . GEMINI_API_KEY);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+            'contents' => array(array('parts' => array(array('text' => $prompt)))),
+        )));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ((int) $code === 200 && $res !== false) {
+            $data = json_decode($res, true);
+            $text = isset($data['candidates'][0]['content']['parts'][0]['text']) ? (string) $data['candidates'][0]['content']['parts'][0]['text'] : '';
+            if (trim($text) !== '') {
+                return $text;
+            }
+        }
+    }
+
+    // 2. OpenRouter fallback (OpenAI-compatible /chat/completions). Try the configured model,
+    //    then a couple of free fallbacks: free models 429 ("temporarily rate-limited")
+    //    intermittently, so one alone is not reliable.
     if (defined('OPENROUTER_API_KEY') && OPENROUTER_API_KEY !== '') {
         $models = array();
         if (defined('OPENROUTER_MODEL') && OPENROUTER_MODEL !== '') {
@@ -563,31 +589,6 @@ function bb_beats_ai_text($prompt)
                 if ($text !== '') {
                     return $text;
                 }
-            }
-        }
-    }
-
-    // 2. Gemini direct fallback (reachable on local XAMPP; blocked on RMIT).
-    if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
-        $model = defined('AI_COACH_MODEL') ? AI_COACH_MODEL : 'gemini-3.1-flash-lite';
-        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . GEMINI_API_KEY);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
-            'contents' => array(array('parts' => array(array('text' => $prompt)))),
-        )));
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-        $res = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ((int) $code === 200 && $res !== false) {
-            $data = json_decode($res, true);
-            $text = isset($data['candidates'][0]['content']['parts'][0]['text']) ? (string) $data['candidates'][0]['content']['parts'][0]['text'] : '';
-            if (trim($text) !== '') {
-                return $text;
             }
         }
     }
