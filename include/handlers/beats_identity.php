@@ -334,61 +334,61 @@ if (!function_exists('bb_beats_clamp01')) {
     {
         return array(
             array('key' => 'sprinter',
-                  'emoji' => '🏋️',
+                  'icon' => 'fa-dumbbell',
                   'name' => array('vi' => 'Vận Động Viên Kỷ Luật', 'en' => 'The Disciplined Sprinter'),
                   'axes' => array('energy' => 0.85, 'comfort' => 0.25, 'diversity' => 0.30, 'nocturnal' => 0.20),
                   'voice' => array('vi' => 'năng lượng cao, kỷ luật, ăn sạch nghe bốc',
                                    'en' => 'high-energy, disciplined, clean eats & hype beats')),
             array('key' => 'romantic',
-                  'emoji' => '🌙',
+                  'icon' => 'fa-moon',
                   'name' => array('vi' => 'Kẻ Lãng Mạn Nửa Đêm', 'en' => 'The Midnight Romantic'),
                   'axes' => array('energy' => 0.20, 'comfort' => 0.85, 'diversity' => 0.40, 'nocturnal' => 0.90),
                   'voice' => array('vi' => 'cú đêm, nhạc dịu, đồ ăn an ủi',
                                    'en' => 'night owl, soft tunes, comfort food')),
             array('key' => 'cozy',
-                  'emoji' => '🧸',
+                  'icon' => 'fa-mug-hot',
                   'name' => array('vi' => 'Tín Đồ An Yên', 'en' => 'The Cozy Creature of Habit'),
                   'axes' => array('energy' => 0.30, 'comfort' => 0.80, 'diversity' => 0.20, 'nocturnal' => 0.40),
                   'voice' => array('vi' => 'an yên, ổn định, gu quen thuộc dễ chịu',
                                    'en' => 'cozy, steady, comforting routines')),
             array('key' => 'explorer',
-                  'emoji' => '🌀',
+                  'icon' => 'fa-compass',
                   'name' => array('vi' => 'Nhà Thám Hiểm Đa Sắc', 'en' => 'The Eclectic Explorer'),
                   'axes' => array('energy' => 0.55, 'comfort' => 0.50, 'diversity' => 0.95, 'nocturnal' => 0.50),
                   'voice' => array('vi' => 'phiêu lưu, đa dạng, không ngại thử cái mới',
                                    'en' => 'adventurous, varied, never the same twice')),
             array('key' => 'hype',
-                  'emoji' => '🔥',
+                  'icon' => 'fa-fire',
                   'name' => array('vi' => 'Cỗ Máy Bùng Nổ', 'en' => 'The Hype Machine'),
                   'axes' => array('energy' => 0.95, 'comfort' => 0.35, 'diversity' => 0.60, 'nocturnal' => 0.55),
                   'voice' => array('vi' => 'bốc lửa, dồn dập, sống hết công suất',
                                    'en' => 'explosive, relentless, full throttle')),
             array('key' => 'minimalist',
-                  'emoji' => '🍃',
+                  'icon' => 'fa-leaf',
                   'name' => array('vi' => 'Người Tối Giản Thư Thái', 'en' => 'The Mellow Minimalist'),
                   'axes' => array('energy' => 0.35, 'comfort' => 0.70, 'diversity' => 0.25, 'nocturnal' => 0.45),
                   'voice' => array('vi' => 'nhẹ nhàng, tối giản, ít mà chất',
                                    'en' => 'calm, minimal, less but better')),
             array('key' => 'maestro',
-                  'emoji' => '🎯',
+                  'icon' => 'fa-bullseye',
                   'name' => array('vi' => 'Nhạc Trưởng Cân Bằng', 'en' => 'The Balanced Maestro'),
                   'axes' => array('energy' => 0.50, 'comfort' => 0.50, 'diversity' => 0.50, 'nocturnal' => 0.45),
                   'voice' => array('vi' => 'cân bằng mọi mặt, hài hoà',
                                    'en' => 'balanced across the board, in harmony')),
             array('key' => 'dreamer',
-                  'emoji' => '🍰',
+                  'icon' => 'fa-cake-candles',
                   'name' => array('vi' => 'Mộng Mơ Hảo Ngọt', 'en' => 'The Sweet-Tooth Dreamer'),
                   'axes' => array('energy' => 0.40, 'comfort' => 0.90, 'diversity' => 0.55, 'nocturnal' => 0.60),
                   'voice' => array('vi' => 'mơ mộng, hảo ngọt, chiều bản thân',
                                    'en' => 'dreamy, sweet-toothed, treats first')),
             array('key' => 'snacker',
-                  'emoji' => '⚡',
+                  'icon' => 'fa-bolt',
                   'name' => array('vi' => 'Thợ Săn Bữa Phụ', 'en' => 'The Power-Snacker'),
                   'axes' => array('energy' => 0.70, 'comfort' => 0.60, 'diversity' => 0.70, 'nocturnal' => 0.65),
                   'voice' => array('vi' => 'năng động, ăn vặt thông minh, bắt trend',
                                    'en' => 'snappy, smart-snacking, trend-riding')),
             array('key' => 'strategist',
-                  'emoji' => '♟️',
+                  'icon' => 'fa-chess-knight',
                   'name' => array('vi' => 'Chiến Lược Gia Bền Bỉ', 'en' => 'The Steady Strategist'),
                   'axes' => array('energy' => 0.60, 'comfort' => 0.40, 'diversity' => 0.35, 'nocturnal' => 0.30),
                   'voice' => array('vi' => 'bền bỉ, có kế hoạch, kiên định',
@@ -399,7 +399,7 @@ if (!function_exists('bb_beats_clamp01')) {
     /**
      * Assign the nearest archetype to a combined fingerprint (Euclidean over the 4 axes).
      *
-     * @return array{key:string,emoji:string,name:string,voice:string,distance:float}
+     * @return array{key:string,icon:string,name:string,voice:string,distance:float}
      */
     function bb_beats_assign_archetype($combined, $lang = 'en')
     {
@@ -420,11 +420,11 @@ if (!function_exists('bb_beats_clamp01')) {
         }
 
         if ($best === null) {
-            return array('key' => '', 'emoji' => '🎵', 'name' => '', 'voice' => '', 'distance' => INF);
+            return array('key' => '', 'icon' => 'fa-music', 'name' => '', 'voice' => '', 'distance' => INF);
         }
         return array(
             'key'      => $best['key'],
-            'emoji'    => $best['emoji'],
+            'icon'     => $best['icon'],
             'name'     => $best['name'][$lang],
             'voice'    => $best['voice'][$lang],
             'distance' => round($bestDist, 4),

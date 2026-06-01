@@ -12,6 +12,7 @@
  */
 require_once __DIR__ . '/../../include/init.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../../include/handlers/beats_identity.php';
 
 header('Content-Type: application/json');
 
@@ -34,18 +35,30 @@ $newId = bb_log_beats_mix($pdo, $userId, $pending);
 // One-shot: clear so the same result can't be kept twice.
 unset($_SESSION['beats_last_mix']);
 
-$scores = is_array($pending['scores'] ?? null) ? $pending['scores'] : [];
+// Catalog flavor text for the live Pokedex unlock (so the freshly revealed card
+// opens a complete detail modal before any reload). Falls back to '' if unknown.
+$lang = (function_exists('current_locale') && current_locale() === 'vi') ? 'vi' : 'en';
+$archetypeKey = (string) ($pending['archetype_key'] ?? '');
+$catalogEntry = $archetypeKey !== '' ? bb_beats_archetype_by_key($archetypeKey) : null;
+$voice = ($catalogEntry !== null) ? (string) ($catalogEntry['voice'][$lang] ?? '') : '';
+
 echo json_encode([
     'ok' => true,
     'saved' => true,
+    // archetype_key/icon/rarity_tier let the page unlock the matching dex card in
+    // place (no reload); voice powers its detail modal.
     'item' => [
-        'mix_id'        => $newId,
-        'archetype'     => (string) ($pending['archetype'] ?? ''),
-        'detected_vibe' => (string) ($pending['detected_vibe'] ?? ''),
-        'track_name'    => (string) ($pending['track_name'] ?? ''),
-        'food_item'     => (string) ($pending['food_item'] ?? ''),
-        'match_score'   => (int) ($pending['match_score'] ?? 0),
-        'rarity'        => (string) ($pending['rarity'] ?? ''),
+        'mix_id'         => $newId,
+        'archetype'      => (string) ($pending['archetype'] ?? ''),
+        'archetype_key'  => $archetypeKey,
+        'archetype_icon' => (string) ($pending['archetype_icon'] ?? 'fa-music'),
+        'rarity_tier'    => (string) ($pending['rarity_tier'] ?? 'common'),
+        'voice'          => $voice,
+        'detected_vibe'  => (string) ($pending['detected_vibe'] ?? ''),
+        'track_name'     => (string) ($pending['track_name'] ?? ''),
+        'food_item'      => (string) ($pending['food_item'] ?? ''),
+        'match_score'    => (int) ($pending['match_score'] ?? 0),
+        'rarity'         => (string) ($pending['rarity'] ?? ''),
     ],
 ]);
 exit;

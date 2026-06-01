@@ -116,33 +116,16 @@ function bb_mirror_lastfm_tags($name, $apiKey)
     return bb_beats_filter_lastfm_tags($tags, 5, 10);
 }
 
-/** One Gemini generateContent call → decoded JSON array, or null on any failure. */
+/**
+ * One AI call → decoded JSON array, or null on any failure. Delegates to bb_beats_ai_text()
+ * (OpenRouter first, then Gemini) so it works through the RMIT outbound firewall.
+ */
 function bb_mirror_gemini($prompt)
 {
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
+    $rawText = bb_beats_ai_text($prompt);
+    if ($rawText === null) {
         return null;
     }
-    $model = defined('AI_COACH_MODEL') ? AI_COACH_MODEL : 'gemini-3.1-flash-lite';
-    $apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . GEMINI_API_KEY;
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
-        'contents' => array(array('parts' => array(array('text' => $prompt)))),
-    )));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-    $response = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($code !== 200) {
-        return null;
-    }
-    $resJson = json_decode($response, true);
-    $rawText = isset($resJson['candidates'][0]['content']['parts'][0]['text'])
-        ? $resJson['candidates'][0]['content']['parts'][0]['text'] : '';
     $clean = trim(str_replace(array('```json', '```'), '', $rawText));
     $parsed = json_decode($clean, true);
     return is_array($parsed) ? $parsed : null;
@@ -290,7 +273,7 @@ foreach (bb_beats_axes() as $ax) {
 }
 $genreKeys = array_keys($genreWeights);
 sort($genreKeys);
-$cacheKey = md5('mirror|v5|' . $lang . '|' . md5(implode('|', $namesForKey)) . '|' . $foodSig . '|' . md5(implode(',', $genreKeys)));
+$cacheKey = md5('mirror|v6|' . $lang . '|' . md5(implode('|', $namesForKey)) . '|' . $foodSig . '|' . md5(implode(',', $genreKeys)));
 
 // Today's budget (fuel is recomputed live — deterministic, no AI cost).
 $goal = (int) (getUserIntakeGoal($userId) ?? 0);
@@ -443,7 +426,7 @@ $payload = array(
     'connected'  => true,
     'forming'    => false,
     'congruence' => $congruence,
-    'archetype'  => array('name' => $archetype['name'], 'emoji' => $archetype['emoji'], 'key' => $archetype['key']),
+    'archetype'  => array('name' => $archetype['name'], 'icon' => $archetype['icon'], 'key' => $archetype['key']),
     'music'      => array('top_genre' => $topGenre, 'source' => $musicSource),
     'food'       => array('top_food' => $topFood, 'avg_kcal' => $foodAxes['avg_kcal'],
                           'distinct_foods' => $foodAxes['distinct_foods'], 'total_logs' => $foodAxes['total_logs']),

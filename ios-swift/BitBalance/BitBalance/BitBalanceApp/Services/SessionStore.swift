@@ -24,12 +24,12 @@ final class SessionStore: ObservableObject {
         isGuest = false
     }
 
-    func signIn(email: String, password: String) async {
+    func signIn(email: String, password: String, remember: Bool = true) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            user = try await api.login(email: email, password: password)
+            user = try await api.login(email: email, password: password, remember: remember)
             needsOnboarding = user?.needsOnboarding ?? false
         } catch {
             errorMessage = error.localizedDescription

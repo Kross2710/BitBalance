@@ -670,21 +670,18 @@
     /* ================================================
        HORIZONTAL CALENDAR CONTROLLER
        ================================================ */
+    /* Flat, compact strip: no 3D card, no chunky offset shadow.
+       Keeps the playful chips but removes the heavy wrapper to save space. */
     .calendar-navbar {
-        background: var(--color-surface);
-        border: 3px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: 20px;
-        box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
-        transition: all var(--transition-base);
-        margin-bottom: 24px;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+        margin-bottom: 18px;
         display: flex;
         flex-direction: column;
-        gap: 16px;
-    }
-    .calendar-navbar:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 0 var(--color-border-subtle), var(--shadow-md);
+        gap: 8px;
     }
 
     .calendar-header {
@@ -712,36 +709,33 @@
         background: var(--color-surface-alt);
         border: 2px solid var(--color-border);
         color: var(--color-text-secondary);
-        width: 38px;
-        height: 38px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 3px 0 var(--color-border-subtle);
-        transition: all 0.1s ease;
-        font-size: 0.9rem;
+        box-shadow: none;
+        transition: all 0.12s ease;
+        font-size: 0.85rem;
         text-decoration: none;
     }
     .btn-month-nav:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 0 var(--color-border-subtle);
         background: var(--color-surface-hover);
         color: var(--color-primary);
         border-color: var(--color-primary);
     }
     .btn-month-nav:active {
-        transform: translateY(2px);
-        box-shadow: 0 0 0 transparent;
+        transform: scale(0.92);
     }
 
     /* Horizontal Days Scroll */
     .day-scroll {
         display: flex;
         overflow-x: auto;
-        gap: 10px;
-        padding: 4px 0 12px 0;
+        gap: 8px;
+        padding: 2px 0 8px 0;
         scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
         /* Isolate the strip's intrinsic width: without layout containment the
@@ -767,45 +761,42 @@
     }
 
     .day-chip {
-        flex: 0 0 54px;
-        height: 70px;
+        flex: 0 0 46px;
+        height: 56px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        gap: 2px;
         background: var(--color-surface-alt);
         border: 2px solid var(--color-border);
         border-radius: var(--radius-md);
         cursor: pointer;
-        box-shadow: 0 4px 0 var(--color-border-subtle);
-        transition: all 0.1s ease;
+        box-shadow: none;
+        transition: all 0.12s ease;
         text-decoration: none;
         user-select: none;
     }
 
     .day-chip:hover:not(.future):not(.active) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 0 var(--color-border-subtle);
         background: var(--color-surface-hover);
         border-color: var(--color-text-secondary);
     }
 
     .day-chip:active:not(.future):not(.active) {
-        transform: translateY(2px);
-        box-shadow: 0 0 0 transparent;
+        transform: scale(0.94);
     }
 
     .day-chip .day-name {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
         color: var(--color-text-secondary);
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
     }
 
     .day-chip .day-number {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 850;
         color: var(--color-text);
     }
@@ -814,7 +805,7 @@
     .day-chip.active {
         background: var(--color-primary);
         border-color: var(--color-primary-hover);
-        box-shadow: 0 4px 0 var(--color-primary-hover);
+        box-shadow: none;
     }
     .day-chip.active .day-name {
         color: rgba(255, 255, 255, 0.9);
@@ -831,18 +822,18 @@
     .day-chip.today:not(.active)::after {
         content: '';
         position: absolute;
-        bottom: 6px;
-        width: 6px;
-        height: 6px;
+        bottom: 5px;
+        width: 5px;
+        height: 5px;
         background: var(--color-secondary);
         border-radius: 50%;
     }
     .day-chip.today.active::after {
         content: '';
         position: absolute;
-        bottom: 6px;
-        width: 6px;
-        height: 6px;
+        bottom: 5px;
+        width: 5px;
+        height: 5px;
         background: #ffffff;
         border-radius: 50%;
     }
@@ -2082,4 +2073,63 @@
     .bento-slot {
         min-height: 140px;
     }
+}
+
+/* ================================================
+   3D TACTILE + GLASSMORPHISM ACCENTS
+   Premium polish ported from the dashboard prototype: a glassy light-sheen
+   on the welcome banner and a soft colored glow that lifts the key cards on
+   hover. Deliberately kept to "key accents" — card backgrounds stay fully
+   opaque so text and charts stay crisp; the glow is an external drop-shadow
+   layer (never an overlay), so it never washes out content.
+   ================================================ */
+
+/* Welcome banner: frosted glass light-sheen sweeping in from the top-right. */
+body.page-dashboard .welcome-banner {
+    position: relative;
+    overflow: hidden;
+}
+/* Lift the real content above the decorative sheen. */
+body.page-dashboard .welcome-banner > * {
+    position: relative;
+    z-index: 1;
+}
+body.page-dashboard .welcome-banner::before {
+    content: '';
+    position: absolute;
+    top: -55%;
+    right: -12%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Glassy stat chips: brighten the rim a touch for a frosted-glass edge
+   (they already carry backdrop-filter: blur). */
+body.page-dashboard .welcome-stat-chip {
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Key cards: deeper lift + soft primary glow on hover (the glassmorphism
+   "glow map"). Higher specificity than the base .dashboard-card:hover rule. */
+body.page-dashboard .progress-widget:hover,
+body.page-dashboard .stats-hub-card:hover,
+body.page-dashboard .mascot-room-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 11px 0 var(--color-border-subtle), var(--shadow-md),
+                0 18px 34px -12px var(--color-primary-soft);
+}
+
+/* Streak card keeps its warm orange identity — glow it amber to match. */
+body.page-dashboard .streak-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 11px 0 rgba(255, 150, 0, 0.15), var(--shadow-md),
+                0 18px 34px -12px rgba(255, 150, 0, 0.30) !important;
+}
+
+/* Tactile press feedback on the in-card meal "+" buttons. */
+.btn-add-bento:active {
+    transform: scale(0.9);
 }

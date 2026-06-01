@@ -51,7 +51,7 @@ struct IntakeHistoryView: View {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(errorMessage)
                         }
-                        .font(.system(size: 14, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                         .bbAlert(isSuccess: false)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
@@ -62,7 +62,7 @@ struct IntakeHistoryView: View {
                     // Entries Header
                     if !entries.isEmpty {
                         Text("MEAL TIMELINE")
-                            .font(.system(size: 12, weight: .heavy))
+                            .font(BBFont.font(BBFont.xs, .heavy))
                             .foregroundColor(BBColors.textSecondary)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
@@ -86,10 +86,10 @@ struct IntakeHistoryView: View {
                             Text("🍽️")
                                 .font(.system(size: 48))
                             Text("No entries recorded yet.")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(BBFont.bodyBold)
                                 .foregroundColor(BBColors.textSecondary)
                             Text("Add your meals using the Log tab!")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(BBFont.font(13, .medium))
                                 .foregroundColor(BBColors.textMuted)
                         }
                         .frame(maxWidth: .infinity)
@@ -147,19 +147,7 @@ struct IntakeHistoryView: View {
                 .listStyle(.plain)
             }
 //            .navigationTitle("History")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task {
-                            await load()
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(BBColors.primary)
-                    }
-                }
-            }
+
             .task {
                 await load()
             }
@@ -469,10 +457,10 @@ private struct HistoryDateSectionHeader: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(section.weekdayLabel)
-                    .font(.system(size: 15, weight: .black))
+                    .font(BBFont.font(15, .black))
                     .foregroundColor(BBColors.text)
                 Text(section.monthYear)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(BBFont.font(12, .bold))
                     .foregroundColor(BBColors.textSecondary)
             }
 
@@ -480,7 +468,7 @@ private struct HistoryDateSectionHeader: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text("\(section.totalCalories) kcal")
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .foregroundColor(BBColors.text)
                 Text("\(section.entryCount) \(section.entryCount == 1 ? "entry" : "entries")")
                     .font(.system(size: 11, weight: .bold))
@@ -531,7 +519,7 @@ private struct HistoryPaginationBar: View {
                                 currentPage = page
                             } label: {
                                 Text("\(page)")
-                                    .font(.system(size: 13, weight: .black))
+                                    .font(BBFont.font(13, .black))
                                     .foregroundColor(currentPage == page ? .white : BBColors.text)
                                     .frame(width: 36, height: 36)
                                     .background(currentPage == page ? BBColors.primary : BBColors.surfaceAlt)
@@ -581,7 +569,7 @@ private struct HistoryPaginationBar: View {
     private func pageNavButton(title: String, systemImage: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 12, weight: .black))
+                .font(BBFont.font(12, .black))
                 .foregroundColor(disabled ? BBColors.textMuted : .white)
                 .frame(width: 38, height: 38)
                 .background(disabled ? BBColors.surfaceAlt : BBColors.secondary)
@@ -619,7 +607,7 @@ private struct HistorySummaryCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 Text("TODAY'S SUMMARY")
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(BBFont.font(BBFont.xs, .heavy))
                     .foregroundColor(BBColors.textSecondary)
                 Spacer()
                 Text(statusText.uppercased())
@@ -636,7 +624,7 @@ private struct HistorySummaryCard: View {
                     .font(.system(size: 40, weight: .black))
                     .foregroundColor(statusColor)
                 Text("kcal")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(BBFont.font(15, .bold))
                     .foregroundColor(BBColors.textSecondary)
                 Spacer()
             }
@@ -645,11 +633,11 @@ private struct HistorySummaryCard: View {
 
             HStack {
                 Text(summary.calorieGoal.map { "Goal \($0) kcal" } ?? "No calorie goal set")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BBFont.font(13, .bold))
                     .foregroundColor(BBColors.textSecondary)
                 Spacer()
                 Text("\(Int(min(max(summary.progressPercentage, 0), 999)))%")
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .foregroundColor(statusColor)
             }
         }
@@ -682,7 +670,7 @@ private struct IntakeEntryRow: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(alignment: .top, spacing: 10) {
                 Text(categoryIcon)
-                    .font(.system(size: 18))
+                    .font(BBFont.font(BBFont.lg, .regular))
                     .frame(width: 38, height: 38)
                     .background(categoryColor.opacity(0.12))
                     .cornerRadius(12)
@@ -693,7 +681,7 @@ private struct IntakeEntryRow: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.foodItem)
-                        .font(.system(size: 16, weight: .black))
+                        .font(BBFont.font(BBFont.base, .black))
                         .foregroundColor(BBColors.text)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -716,7 +704,7 @@ private struct IntakeEntryRow: View {
 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(entry.calories)")
-                        .font(.system(size: 22, weight: .black))
+                        .font(BBFont.font(22, .black))
                         .foregroundColor(BBColors.text)
                     Text("kcal")
                         .font(.system(size: 10, weight: .heavy))
@@ -844,12 +832,12 @@ private struct EditIntakeView: View {
                         // Food Section Card
                         VStack(alignment: .leading, spacing: 18) {
                             Text("FOOD DETAILS")
-                                .font(.system(size: 12, weight: .heavy))
+                                .font(BBFont.font(BBFont.xs, .heavy))
                                 .foregroundColor(BBColors.textSecondary)
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Food Name")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(13, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("Food item", text: $foodItem)
                                     .textInputAutocapitalization(.words)
@@ -859,7 +847,7 @@ private struct EditIntakeView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Calories")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(13, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("Calories", text: $calories)
                                     .keyboardType(.numberPad)
@@ -869,7 +857,7 @@ private struct EditIntakeView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Meal Category")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(13, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                     .padding(.bottom, 2)
                                 
@@ -884,7 +872,7 @@ private struct EditIntakeView: View {
                                                 HStack(spacing: 6) {
                                                     Text(emoji)
                                                     Text(cat.1)
-                                                        .font(.system(size: 14, weight: .bold))
+                                                        .font(BBFont.font(BBFont.sm, .bold))
                                                 }
                                                 .padding(.vertical, 8)
                                                 .padding(.horizontal, 12)
@@ -915,13 +903,13 @@ private struct EditIntakeView: View {
                         // Macros Section Card
                         VStack(alignment: .leading, spacing: 18) {
                             Text("NUTRITION MACROS")
-                                .font(.system(size: 12, weight: .heavy))
+                                .font(BBFont.font(BBFont.xs, .heavy))
                                 .foregroundColor(BBColors.textSecondary)
                             
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Protein (g)")
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(BBFont.font(13, .bold))
                                         .foregroundColor(BBColors.textSecondary)
                                     TextField("Protein", text: $protein)
                                         .keyboardType(.decimalPad)
@@ -931,7 +919,7 @@ private struct EditIntakeView: View {
                                 
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Carbs (g)")
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(BBFont.font(13, .bold))
                                         .foregroundColor(BBColors.textSecondary)
                                     TextField("Carbs", text: $carbs)
                                         .keyboardType(.decimalPad)
@@ -942,7 +930,7 @@ private struct EditIntakeView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Fat (g)")
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(BBFont.font(13, .bold))
                                     .foregroundColor(BBColors.textSecondary)
                                 TextField("Fat", text: $fat)
                                     .keyboardType(.decimalPad)
@@ -957,7 +945,7 @@ private struct EditIntakeView: View {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                 Text(errorMessage)
                             }
-                            .font(.system(size: 14, weight: .bold))
+                            .font(BBFont.font(BBFont.sm, .bold))
                             .bbAlert(isSuccess: false)
                         }
                         
@@ -996,7 +984,7 @@ private struct EditIntakeView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .font(.system(size: 15, weight: .bold))
+                    .font(BBFont.font(15, .bold))
                     .foregroundColor(BBColors.textSecondary)
                 }
             }

@@ -7,6 +7,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var showSignUp = false
+    @State private var keepSignedIn = true
 
     @FocusState private var focusedField: Field?
     enum Field {
@@ -53,10 +54,10 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Welcome back")
-                    .font(.system(size: 30, weight: .heavy))
+                    .font(BBFont.displayBold)
                     .foregroundColor(BBColors.text)
                 Text("Sign in to keep your streak alive.")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(BBFont.font(BBFont.base, .medium))
                     .foregroundColor(BBColors.textSecondary)
             }
             .padding(.bottom, 6)
@@ -74,12 +75,20 @@ struct LoginView: View {
                 .focused($focusedField, equals: .password)
                 .bbInput(isFocused: focusedField == .password)
 
+            Toggle(isOn: $keepSignedIn) {
+                Text("Keep signed in")
+                    .font(BBFont.font(BBFont.sm, .bold))
+                    .foregroundColor(BBColors.textSecondary)
+            }
+            .tint(BBColors.primary)
+            .padding(.vertical, 2)
+
             if let errorMessage = session.errorMessage {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(BBFont.bodyBold)
                     Text(errorMessage)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .bbAlert(isSuccess: false)
@@ -89,7 +98,7 @@ struct LoginView: View {
             Button {
                 focusedField = nil
                 Task {
-                    await session.signIn(email: email, password: password)
+                    await session.signIn(email: email, password: password, remember: keepSignedIn)
                 }
             } label: {
                 if session.isLoading {
@@ -115,7 +124,7 @@ struct LoginView: View {
                 }
             } label: {
                 Text("Forgot password?")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BBFont.font(BBFont.sm, .bold))
                     .foregroundColor(BBColors.primary)
                     .frame(maxWidth: .infinity)
             }
@@ -123,14 +132,14 @@ struct LoginView: View {
 
             HStack(spacing: 4) {
                 Text("Don't have an account?")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(BBFont.font(BBFont.sm, .medium))
                     .foregroundColor(BBColors.textSecondary)
                 Button {
                     session.errorMessage = nil
                     showSignUp = true
                 } label: {
                     Text("Sign Up")
-                        .font(.system(size: 14, weight: .heavy))
+                        .font(BBFont.font(BBFont.sm, .heavy))
                         .foregroundColor(BBColors.primary)
                 }
             }
@@ -181,10 +190,10 @@ struct AuthHeroBanner: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 22, weight: .heavy))
+                    .font(BBFont.font(22, .heavy))
                     .foregroundColor(.white)
                 Text(subtitle)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(BBFont.font(15, .medium))
                     .foregroundColor(.white.opacity(0.92))
             }
             .shadow(color: Color.black.opacity(0.45), radius: 6, x: 0, y: 1)

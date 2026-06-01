@@ -1727,7 +1727,8 @@
 
 /* Highlight pulse when an item/chip is added live after a mix */
 .mix-history-item.is-new,
-.archetype-chip.is-new {
+.archetype-chip.is-new,
+.dex-card.is-new {
     animation: mixNewPulse 1.1s ease;
 }
 @keyframes mixNewPulse {
@@ -1980,7 +1981,8 @@
 .dex-card.epic { border-color: #a855f7; box-shadow: 0 5px 0 #8a36df; }
 .dex-card.legendary { border-color: var(--color-accent, #ff9600); box-shadow: 0 5px 0 #d97e00;
   background: linear-gradient(180deg, rgba(255,150,0,0.06), var(--color-surface)); }
-.dex-card.shiny::after { content: "✨"; position: absolute; top: 7px; left: 9px; font-size: 14px; animation: dex-tw 1.6s ease-in-out infinite; }
+.dex-shiny-star { color: var(--color-accent, #ff9600); animation: dex-tw 1.6s ease-in-out infinite; }
+.dex-card > .dex-shiny-star { position: absolute; top: 7px; left: 9px; font-size: 13px; }
 @keyframes dex-tw { 0%,100% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
 
 .dex-card.locked { background: var(--color-surface-alt, #eef1f0); border-color: var(--color-border);
@@ -2007,4 +2009,30 @@
   border-radius: 12px; padding: 9px 11px; font-weight: 800; font-size: 12px; }
 .dex-m-combo small { color: var(--color-text-secondary); font-weight: 700; }
 .dex-m-combo span { color: #a855f7; }
-@media (prefers-reduced-motion: reduce) { .dex-card.shiny::after { animation: none; } .mix-dex-bar > i { transition: none; } }
+
+/* Live unlock: a locked card popping into an owned one when a mix is kept. */
+.dex-card.dex-unlock { animation: dex-unlock-pop 0.6s cubic-bezier(0.2, 1.2, 0.3, 1); }
+@keyframes dex-unlock-pop {
+    0%   { transform: scale(0.4) rotate(-8deg); opacity: 0.2; }
+    60%  { transform: scale(1.12) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); }
+}
+
+/* Confetti burst on a new discovery (built + cleaned up in JS). */
+.dex-confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10000; overflow: hidden; }
+.dex-confetti-layer > i {
+    position: absolute; width: 9px; height: 14px; border-radius: 2px; opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: dex-confetti-fly 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes dex-confetti-fly {
+    0%   { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 130px)) rotate(var(--rot)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dex-shiny-star { animation: none; }
+    .mix-dex-bar > i { transition: none; }
+    .dex-card.dex-unlock, .dex-card.is-new { animation: none; }
+    .dex-confetti-layer { display: none; }
+}

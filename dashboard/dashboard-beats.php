@@ -26,7 +26,7 @@ $texts = [
         'kicker' => 'Âm nhạc & Dinh dưỡng',
         'connected_title' => 'Đã kết nối Spotify',
         'connected_subtitle' => 'Gu âm nhạc và thực đơn dinh dưỡng của bạn đang được đồng bộ thời gian thực!',
-        'open_story' => 'Xem câu chuyện tuần này ✨',
+        'open_story' => 'Xem câu chuyện tuần này',
         'disconnect' => 'Hủy kết nối',
         'hero_title' => 'Cá tính Dinh dưỡng & Gu nhạc',
         'hero_desc' => 'Mood-Food Matcher: Phân tích gu âm nhạc gần đây và đối chiếu với chất lượng khẩu phần calo của bạn.',
@@ -45,11 +45,11 @@ $texts = [
         'feature_ai_desc' => 'AI Gemini sẽ gọi tên phong cách ẩm thực của bạn dựa trên sự kết hợp bài hát và món ăn một cách hài hước.',
         'vibe_recommend' => 'Gợi ý món ăn theo gu nhạc hôm nay',
         'recommend_title' => 'Thực đơn đề xuất cho tâm trạng của bạn',
-        'rec_lofi' => 'Lo-Fi Chill Beats 🎧',
+        'rec_lofi' => 'Lo-Fi Chill Beats',
         'rec_lofi_food' => 'Trà xanh ấm & Bánh quy yến mạch nhẹ nhàng',
-        'rec_workout' => 'Workout / Electronic / Rock ⚡',
+        'rec_workout' => 'Workout / Electronic / Rock',
         'rec_workout_food' => 'Sinh tố Whey Protein giàu đạm để phục hồi cơ bắp',
-        'rec_sad' => 'Sad Indie / Ballad 🌧️',
+        'rec_sad' => 'Sad Indie / Ballad',
         'rec_sad_food' => 'Một tô súp ấm hoặc chocolate đắng để xoa dịu tâm hồn',
         'loading_vibe' => 'Đang phân tích cá tính âm nhạc và ẩm thực của bạn...',
         'matched_concept' => 'Cặp đôi Vibe tiêu biểu',
@@ -77,17 +77,17 @@ $texts = [
         'mirror_ai_offline' => 'AI tạm offline — vẫn dựng từ dữ liệu thật của bạn',
 
         // DJ Mixer localization
-        'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
+        'dj_title' => 'BitBalance AI DJ Mixer',
         'dj_subtitle' => 'Mix bài hát vừa nghe cùng thực đơn để xem điểm "hợp cạ" từ AI!',
         'dj_deck_track' => 'Mâm Xoay Nhạc',
         'dj_deck_food' => 'Đĩa Thức Ăn',
         'dj_empty_track' => 'Bấm + ở danh sách bài hát...',
         'dj_empty_food' => 'Bấm + ở danh sách món ăn...',
         'dj_crossfader_title' => 'Chọn Vibe Tâm Trạng',
-        'dj_mix_btn' => 'Bấm Mix Ngay! 🎚️',
+        'dj_mix_btn' => 'Bấm Mix Ngay!',
         'dj_result_title' => 'KẾT QUẢ PHỐI TRỘN AI',
         'dj_match_lbl' => 'ĐỘ HỢP CẠ',
-        'dj_reset_btn' => 'Mix Bản Khác 🔁',
+        'dj_reset_btn' => 'Mix Bản Khác',
         'dj_mixing_active' => 'Đang xoay đĩa & mix nhạc...',
         'dj_score_energy' => 'Độ bốc',
         'dj_score_comfort' => 'Độ an ủi',
@@ -99,14 +99,15 @@ $texts = [
         'mix_just_now' => 'Vừa xong',
         'dj_keep_btn' => 'Giữ lại',
         'dj_discard_btn' => 'Bỏ qua',
-        'dj_kept_toast' => 'Đã lưu vào bộ sưu tập! 🎉'
+        'dj_kept_toast' => 'Đã lưu vào bộ sưu tập!',
+        'dj_new_unlock_toast' => 'Khám phá archetype mới!'
     ],
     'en' => [
         'title' => 'Diet & Beats | BitBalance',
         'kicker' => 'Music & Nutrition',
         'connected_title' => 'Spotify Connected',
         'connected_subtitle' => 'Your music taste and dietary intake are syncing in real time!',
-        'open_story' => 'View Weekly Wrapped ✨',
+        'open_story' => 'View Weekly Wrapped',
         'disconnect' => 'Disconnect Spotify',
         'hero_title' => 'Music & Food Personality',
         'hero_desc' => 'Mood-Food Matcher: Analyzes your overall music taste against your recent dietary macronutrient profile.',
@@ -125,11 +126,11 @@ $texts = [
         'feature_ai_desc' => 'Gemini AI analyzes your music + food combos to give you hilarious, custom archetype names.',
         'vibe_recommend' => 'Food Pairings for Your Music Vibe',
         'recommend_title' => 'Suggested Fuel for Your Current Beats',
-        'rec_lofi' => 'Lo-Fi Chill Beats 🎧',
+        'rec_lofi' => 'Lo-Fi Chill Beats',
         'rec_lofi_food' => 'Warm Green Tea & Light Oatmeal Cookies',
-        'rec_workout' => 'Workout / Electronic / Rock ⚡',
+        'rec_workout' => 'Workout / Electronic / Rock',
         'rec_workout_food' => 'A High-Protein Whey Shake for muscle recovery',
-        'rec_sad' => 'Sad Indie / Ballad 🌧️',
+        'rec_sad' => 'Sad Indie / Ballad',
         'rec_sad_food' => 'A warm bowl of soup or dark chocolate to soothe the soul',
         'loading_vibe' => 'Analyzing your music and culinary vibes...',
         'matched_concept' => 'Featured Vibe Pair',
@@ -157,17 +158,17 @@ $texts = [
         'mirror_ai_offline' => 'AI offline — still built from your real data',
 
         // DJ Mixer localization
-        'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
+        'dj_title' => 'BitBalance AI DJ Mixer',
         'dj_subtitle' => 'Mix your recent tracks with weekly meals to rate AI vibe compatibility!',
         'dj_deck_track' => 'Music Vinyl',
         'dj_deck_food' => 'Fuel Plate',
         'dj_empty_track' => 'Click + on a song to load...',
         'dj_empty_food' => 'Click + on a food to load...',
         'dj_crossfader_title' => 'Crossfade Mood Vibe',
-        'dj_mix_btn' => 'MIX IT UP! 🎚️',
+        'dj_mix_btn' => 'MIX IT UP!',
         'dj_result_title' => 'AI MIXER RESULT',
         'dj_match_lbl' => 'COMPATIBILITY',
-        'dj_reset_btn' => 'Mix Another 🔁',
+        'dj_reset_btn' => 'Mix Another',
         'dj_mixing_active' => 'Spinning & mixing vibes...',
         'dj_score_energy' => 'Energy Sync',
         'dj_score_comfort' => 'Comfort',
@@ -179,7 +180,8 @@ $texts = [
         'mix_just_now' => 'Just now',
         'dj_keep_btn' => 'Keep',
         'dj_discard_btn' => 'Discard',
-        'dj_kept_toast' => 'Saved to your collection! 🎉'
+        'dj_kept_toast' => 'Saved to your collection!',
+        'dj_new_unlock_toast' => 'New archetype discovered!'
     ]
 ];
 
@@ -417,7 +419,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
 
                         <!-- CENTER CONTROLS: WAVEFORM & MIX BUTTON -->
                         <div class="dj-center-controls">
-                            <span class="dj-slider-title" style="margin-bottom: 12px;"><?= ($lang === 'vi') ? 'AI Tự Động Phân Tích Vibe 🧠' : 'AI Auto-Vibe Analyzer 🧠' ?></span>
+                            <span class="dj-slider-title" style="margin-bottom: 12px;"><?= ($lang === 'vi') ? 'AI Tự Động Phân Tích Vibe' : 'AI Auto-Vibe Analyzer' ?></span>
                             
                             <!-- 3D Neon Waveform visualizer container -->
                             <div class="dj-waveform-container" id="djWaveformContainer">
@@ -525,7 +527,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                                         </div>
                                     </div>
                                     <div class="mirror-archetype">
-                                        <span class="mirror-arch-emoji" id="mirrorArchEmoji">🎵</span>
+                                        <span class="mirror-arch-emoji" id="mirrorArchEmoji"><i class="fa-solid fa-music"></i></span>
                                         <strong id="mirrorArchName">—</strong>
                                         <p class="mirror-tagline" id="mirrorTagline"></p>
                                     </div>
@@ -659,15 +661,17 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                             <?php foreach ($mixDex as $d): ?>
                                 <?php if ($d['owned']): ?>
                                     <div class="dex-card <?= $d['rarity'] ?><?= $d['shiny'] ? ' shiny' : '' ?>"
+                                         data-key="<?= htmlspecialchars($d['key'], ENT_QUOTES) ?>"
                                          data-card='<?= htmlspecialchars(json_encode($d, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES) ?>'>
                                         <span class="dex-hits">×<?= (int) $d['hits'] ?></span>
-                                        <div class="dex-emoji"><?= $d['emoji'] ?></div>
+                                        <?php if ($d['shiny']): ?><i class="fa-solid fa-star dex-shiny-star"></i><?php endif; ?>
+                                        <div class="dex-emoji"><i class="fa-solid <?= htmlspecialchars($d['icon'], ENT_QUOTES) ?>"></i></div>
                                         <div class="dex-name"><?= htmlspecialchars($d['name'], ENT_QUOTES) ?></div>
                                         <span class="dex-tier <?= $d['rarity'] ?>"><?= strtoupper($d['rarity']) ?></span>
                                     </div>
                                 <?php else: ?>
-                                    <div class="dex-card locked">
-                                        <div class="dex-emoji"><?= $d['emoji'] ?></div>
+                                    <div class="dex-card locked" data-key="<?= htmlspecialchars($d['key'], ENT_QUOTES) ?>">
+                                        <div class="dex-emoji"><i class="fa-solid <?= htmlspecialchars($d['icon'], ENT_QUOTES) ?>"></i></div>
                                         <div class="dex-q">?</div>
                                         <div class="dex-name">???</div>
                                     </div>
@@ -747,6 +751,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
             const lang = '<?= $lang ?>';
             const KEEP_LABEL = <?= json_encode($t['dj_keep_btn']) ?>;
             const KEPT_TOAST = <?= json_encode($t['dj_kept_toast']) ?>;
+            const NEW_UNLOCK_TOAST = <?= json_encode($t['dj_new_unlock_toast']) ?>;
 
             // --- The Mirror: personality congruence card ---
             const mirrorLoading = document.getElementById('mirror-loading');
@@ -807,7 +812,8 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                         ring.style.setProperty('--mirror-pct', score);
                         mCountUp(document.getElementById('mirrorScoreVal'), score);
 
-                        document.getElementById('mirrorArchEmoji').textContent = data.archetype.emoji || '🎵';
+                        const _archIcon = String(data.archetype.icon || 'fa-music').replace(/[^a-z0-9-]/gi, '');
+                        document.getElementById('mirrorArchEmoji').innerHTML = '<i class="fa-solid ' + _archIcon + '"></i>';
                         document.getElementById('mirrorArchName').textContent = data.archetype.name || '';
                         document.getElementById('mirrorTagline').textContent = data.narration.tagline || '';
 
@@ -1047,7 +1053,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                         djMixBtn.removeAttribute('disabled');
                         djMixBtn.classList.add('glowing');
                         djMixerBoard.classList.add('ready');
-                        djMoodIndicator.textContent = lang === 'vi' ? 'Bản mix đã sẵn sàng! 🎚️' : 'Mix ready to spin! 🎚️';
+                        djMoodIndicator.textContent = lang === 'vi' ? 'Bản mix đã sẵn sàng!' : 'Mix ready to spin!';
                     } else {
                         djMixBtn.setAttribute('disabled', 'true');
                         djMixBtn.classList.remove('glowing');
@@ -1140,7 +1146,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                         this.speedX = Math.random() * 2 - 1;
                         this.opacity = 1;
                         this.fade = Math.random() * 0.015 + 0.005;
-                        this.char = ['♫', '♪', '♬', '♩', '✨', '🎵'][Math.floor(Math.random() * 6)];
+                        this.char = ['♫', '♪', '♬', '♩'][Math.floor(Math.random() * 4)];
                         // Colors corresponding to moods
                         const colors = ['#1cb0f6', '#58cc02', '#ff9600', '#a855f7'];
                         this.color = colors[Math.floor(Math.random() * colors.length)];
@@ -1184,7 +1190,7 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                     djMixerBoard.classList.add('mixing');
                     djTitleIcon.classList.add('fa-spin');
                     djTitleIcon.style.animationDuration = '1s';
-                    djMoodIndicator.textContent = lang === 'vi' ? 'Đang phân tích vibe nhạc... 🧠' : 'Analyzing track vibe... 🧠';
+                    djMoodIndicator.textContent = lang === 'vi' ? 'Đang phân tích vibe nhạc...' : 'Analyzing track vibe...';
                     particles = [];
                     animateParticles();
                 };
@@ -1245,7 +1251,9 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                                     }
 
                                     // Persona + vibe chip + tagline
-                                    djResultArchetype.textContent = data.archetype || data.detected_vibe || '';
+                                    const _rIcon = String(data.archetype_icon || 'fa-music').replace(/[^a-z0-9-]/gi, '');
+                                    djResultArchetype.innerHTML = '<i class="fa-solid ' + _rIcon + '"></i> ';
+                                    djResultArchetype.appendChild(document.createTextNode(data.archetype || data.detected_vibe || ''));
                                     setOptional(djResultVibe, data.detected_vibe);
                                     setOptional(djResultTagline, data.tagline);
 
@@ -1308,7 +1316,11 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                         .then(res => {
                             if (res.ok && res.saved && res.item) {
                                 addMixToHistory(res.item);
-                                showBeatsToast(KEPT_TOAST);
+                                // Reflect the kept mix into the Pokedex live. A brand-new
+                                // archetype unlocks its card (confetti) and shows its own
+                                // toast; a repeat catch just bumps the existing card.
+                                const newlyUnlocked = unlockDexCard(res.item);
+                                showBeatsToast(newlyUnlocked ? NEW_UNLOCK_TOAST : KEPT_TOAST);
                                 playSynthesizerSound('success');
                             }
                             closeResult();
@@ -1334,6 +1346,131 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
                 clearTimeout(el._t);
                 el._t = setTimeout(() => el.classList.remove('show'), 2600);
             }
+
+            // Reflect a kept mix into the Pokedex without a reload. Finds the dex card
+            // for this archetype: a locked one becomes a fully owned card in place
+            // (pop reveal + progress bump + confetti); an already-owned one just bumps
+            // its hit count + best score. Returns true only on a brand-new unlock.
+            function unlockDexCard(item) {
+                const grid = document.getElementById('mixDexGrid');
+                if (!grid || !item || !item.archetype_key) return false;
+
+                const key = String(item.archetype_key);
+                const card = grid.querySelector('.dex-card[data-key="' + key.replace(/"/g, '\\"') + '"]');
+                if (!card) return false;
+
+                const score = parseInt(item.match_score, 10) || 0;
+
+                if (!card.classList.contains('locked')) {
+                    bumpDexCard(card, score);   // repeat catch
+                    return false;
+                }
+
+                const rarity = (item.rarity_tier || 'common').replace(/[^a-z]/gi, '');
+                const icon = String(item.archetype_icon || 'fa-music').replace(/[^a-z0-9-]/gi, '');
+                const shiny = score >= 90;
+                const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+                // Mirror the server-side dex shape so the existing detail-modal handler works.
+                const cardData = {
+                    key: key,
+                    name: item.archetype || '',
+                    icon: icon,
+                    voice: item.voice || '',
+                    rarity: rarity,
+                    owned: true,
+                    hits: 1,
+                    best: score,
+                    first_at: null,
+                    shiny: shiny,
+                    combo: [item.track_name || '', item.food_item || '']
+                };
+
+                card.className = 'dex-card ' + rarity + (shiny ? ' shiny' : '') + ' dex-unlock';
+                card.setAttribute('data-card', JSON.stringify(cardData));
+                card.innerHTML =
+                    '<span class="dex-hits">×1</span>' +
+                    (shiny ? '<i class="fa-solid fa-star dex-shiny-star"></i>' : '') +
+                    '<div class="dex-emoji"><i class="fa-solid ' + icon + '"></i></div>' +
+                    '<div class="dex-name">' + esc(item.archetype || '') + '</div>' +
+                    '<span class="dex-tier ' + rarity + '">' + esc(rarity.toUpperCase()) + '</span>';
+                card.addEventListener('animationend', () => card.classList.remove('dex-unlock'), { once: true });
+
+                bumpDexProgress();
+                spawnConfetti(card);
+                return true;
+            }
+
+            // Repeat catch of an owned archetype: increment the visible hit count,
+            // raise the stored best score, promote to shiny at >= 90, gentle re-pulse.
+            function bumpDexCard(card, score) {
+                const hitsEl = card.querySelector('.dex-hits');
+                let n = 1;
+                if (hitsEl) {
+                    n = (parseInt(hitsEl.textContent.replace(/[^0-9]/g, ''), 10) || 0) + 1;
+                    hitsEl.textContent = '×' + n;
+                }
+                try {
+                    const d = JSON.parse(card.getAttribute('data-card') || '{}');
+                    d.hits = n;
+                    if (score > (parseInt(d.best, 10) || 0)) d.best = score;
+                    if (score >= 90 && !d.shiny) {
+                        d.shiny = true;
+                        card.classList.add('shiny');
+                        if (!card.querySelector('.dex-shiny-star')) {
+                            const star = document.createElement('i');
+                            star.className = 'fa-solid fa-star dex-shiny-star';
+                            card.appendChild(star);
+                        }
+                    }
+                    card.setAttribute('data-card', JSON.stringify(d));
+                } catch (e) {}
+                card.classList.remove('is-new');
+                void card.offsetWidth;   // restart the pulse animation
+                card.classList.add('is-new');
+            }
+
+            // Grow the collection header (count + percent + bar) by one unlocked card.
+            function bumpDexProgress() {
+                const countEl = document.getElementById('dexCount');
+                const totalEl = document.getElementById('dexTotal');
+                const pctEl = document.getElementById('dexPct');
+                const barEl = document.getElementById('dexBar');
+                const total = parseInt(totalEl && totalEl.textContent, 10) || 0;
+                const owned = (parseInt(countEl && countEl.textContent, 10) || 0) + 1;
+                if (countEl) countEl.textContent = owned;
+                const pct = total > 0 ? Math.round(owned / total * 100) : 0;
+                if (pctEl) pctEl.textContent = pct + '%';
+                if (barEl) barEl.style.width = pct + '%';
+            }
+
+            // Lightweight dependency-free confetti burst from an element. Skipped when
+            // the user prefers reduced motion. Cleans itself up after the animation.
+            function spawnConfetti(originEl) {
+                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                const colors = ['#58CC02', '#1cb0f6', '#ff9600', '#a855f7', '#ff4b4b', '#ffd700'];
+                const rect = (originEl && originEl.getBoundingClientRect) ? originEl.getBoundingClientRect() : null;
+                const ox = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+                const oy = rect ? rect.top + rect.height / 2 : window.innerHeight / 3;
+                const layer = document.createElement('div');
+                layer.className = 'dex-confetti-layer';
+                const N = 30;
+                for (let i = 0; i < N; i++) {
+                    const p = document.createElement('i');
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 70 + Math.random() * 120;
+                    p.style.left = ox + 'px';
+                    p.style.top = oy + 'px';
+                    p.style.background = colors[i % colors.length];
+                    p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+                    p.style.setProperty('--dy', (Math.sin(angle) * dist - 30) + 'px');
+                    p.style.setProperty('--rot', Math.round(Math.random() * 720 - 360) + 'deg');
+                    p.style.animationDelay = (Math.round(Math.random() * 90)) + 'ms';
+                    layer.appendChild(p);
+                }
+                document.body.appendChild(layer);
+                setTimeout(() => layer.remove(), 1500);
+            }
         });
     </script>
 
@@ -1351,15 +1488,15 @@ $dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
             shiny: <?= json_encode($lang === 'vi' ? 'Bản Shiny' : 'Shiny', JSON_UNESCAPED_UNICODE) ?>,
             combo: <?= json_encode($lang === 'vi' ? 'Combo đỉnh nhất' : 'Best combo', JSON_UNESCAPED_UNICODE) ?>,
             close: <?= json_encode($lang === 'vi' ? 'Đóng' : 'Close', JSON_UNESCAPED_UNICODE) ?>,
-            locked: <?= json_encode($lang === 'vi' ? 'Chưa mở khoá — Mix thêm để khám phá! 🔒' : 'Locked — mix more to discover! 🔒', JSON_UNESCAPED_UNICODE) ?>,
-            yes: <?= json_encode($lang === 'vi' ? '✨ Có' : '✨ Yes', JSON_UNESCAPED_UNICODE) ?>
+            locked: <?= json_encode($lang === 'vi' ? 'Chưa mở khoá — Mix thêm để khám phá!' : 'Locked — mix more to discover!', JSON_UNESCAPED_UNICODE) ?>,
+            yes: <?= json_encode($lang === 'vi' ? '<i class="fa-solid fa-star"></i> Có' : '<i class="fa-solid fa-star"></i> Yes', JSON_UNESCAPED_UNICODE) ?>
         };
         const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         function openCard(d){
             const combo = Array.isArray(d.combo)
-                ? `<div class="dex-m-combo"><small>${esc(L.combo)}:</small> 🎵 ${esc(d.combo[0])} <span>✕</span> 🍽️ ${esc(d.combo[1])}</div>` : '';
+                ? `<div class="dex-m-combo"><small>${esc(L.combo)}:</small> <i class="fa-solid fa-music"></i> ${esc(d.combo[0])} <span>✕</span> <i class="fa-solid fa-utensils"></i> ${esc(d.combo[1])}</div>` : '';
             modal.innerHTML = `
-                <div class="dex-m-emoji">${esc(d.emoji)}${d.shiny ? ' ✨' : ''}</div>
+                <div class="dex-m-emoji"><i class="fa-solid ${String(d.icon||'fa-music').replace(/[^a-z0-9-]/gi,'')}"></i>${d.shiny ? ' <i class="fa-solid fa-star dex-shiny-star"></i>' : ''}</div>
                 <h3 class="dex-m-name">${esc(d.name)}</h3>
                 <span class="dex-tier ${esc(d.rarity)}">${esc((d.rarity||'').toUpperCase())}</span>
                 <p class="dex-m-flavor">"${esc(d.voice)}"</p>

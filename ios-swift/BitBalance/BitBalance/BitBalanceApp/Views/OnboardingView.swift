@@ -85,7 +85,7 @@ struct OnboardingView: View {
                 goBack()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(BBFont.bodyBold)
                     .foregroundColor(BBColors.text)
                     .frame(width: 44, height: 44)
                     .background(BBColors.surfaceAlt)
@@ -99,11 +99,11 @@ struct OnboardingView: View {
             VStack(spacing: 6) {
                 HStack {
                     Text(progressTitle)
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(BBFont.font(13, .heavy))
                         .foregroundColor(BBColors.textSecondary)
                     Spacer()
                     Text(progressLabel)
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(BBFont.font(13, .heavy))
                         .foregroundColor(BBColors.primary)
                 }
                 GeometryReader { geo in
@@ -152,7 +152,7 @@ struct OnboardingView: View {
                    subtitle: "BitBalance uses this to estimate your daily energy burn.") {
             HStack(spacing: 12) {
                 ForEach(genderOptions, id: \.id) { opt in
-                    ChoiceCard(emoji: opt.emoji, label: opt.label, isSelected: gender == opt.id) {
+                    ChoiceCard(icon: opt.icon, label: opt.label, isSelected: gender == opt.id) {
                         gender = opt.id
                     }
                 }
@@ -163,10 +163,10 @@ struct OnboardingView: View {
         }
     }
 
-    private let genderOptions: [(id: String, emoji: String, label: String)] = [
-        ("male",   "♂️", "Male"),
-        ("female", "♀️", "Female"),
-        ("other",  "⚧️",  "Other")
+    private let genderOptions: [(id: String, icon: String, label: String)] = [
+        ("male",   "person.fill", "Male"),
+        ("female", "person.fill", "Female"),
+        ("other",  "person.fill",  "Other")
     ]
 
     // MARK: - Step: Picker (age / height / weight)
@@ -193,7 +193,7 @@ struct OnboardingView: View {
                    subtitle: "Choose the option that looks most like a normal week.") {
             VStack(spacing: 10) {
                 ForEach(activityOptions, id: \.id) { opt in
-                    WideChoiceCard(emoji: opt.emoji, label: opt.label, detail: opt.detail, isSelected: activity == opt.id) {
+                    WideChoiceCard(icon: opt.icon, label: opt.label, detail: opt.detail, isSelected: activity == opt.id) {
                         activity = opt.id
                     }
                 }
@@ -203,12 +203,12 @@ struct OnboardingView: View {
         }
     }
 
-    private let activityOptions: [(id: String, emoji: String, label: String, detail: String)] = [
-        ("sedentary",        "🛋️", "Sedentary",         "Little or no exercise"),
-        ("lightly_active",   "🚶", "Lightly active",    "Light exercise 1-3 days/week"),
-        ("moderately_active","🏃", "Moderately active", "Exercise 3-5 days/week"),
-        ("very_active",      "🏋️", "Very active",       "Hard exercise 6-7 days/week"),
-        ("extra_active",     "⚡", "Extra active",      "Physical job or intense training")
+    private let activityOptions: [(id: String, icon: String, label: String, detail: String)] = [
+        ("sedentary",        "couch.fill", "Sedentary",         "Little or no exercise"),
+        ("lightly_active",   "figure.walk", "Lightly active",    "Light exercise 1-3 days/week"),
+        ("moderately_active","figure.run", "Moderately active", "Exercise 3-5 days/week"),
+        ("very_active",      "dumbbell.fill", "Very active",       "Hard exercise 6-7 days/week"),
+        ("extra_active",     "bolt.fill", "Extra active",      "Physical job or intense training")
     ]
 
     // MARK: - Step: Goal
@@ -218,7 +218,7 @@ struct OnboardingView: View {
                    subtitle: "This sets the calorie target we will use on your dashboard.") {
             HStack(spacing: 12) {
                 ForEach(goalOptions, id: \.id) { opt in
-                    ChoiceCard(emoji: opt.emoji, label: opt.label, detail: opt.detail, isSelected: goalMode == opt.id) {
+                    ChoiceCard(icon: opt.icon, label: opt.label, detail: opt.detail, isSelected: goalMode == opt.id) {
                         goalMode = opt.id
                         if goalMode == "maintain" { weeklyRate = 0 }
                     }
@@ -229,10 +229,10 @@ struct OnboardingView: View {
         }
     }
 
-    private let goalOptions: [(id: String, emoji: String, label: String, detail: String)] = [
-        ("lose",     "📉", "Lose",     "Calorie deficit"),
-        ("maintain", "⚖️", "Maintain", "Hold steady"),
-        ("gain",     "📈", "Gain",     "Calorie surplus")
+    private let goalOptions: [(id: String, icon: String, label: String, detail: String)] = [
+        ("lose",     "arrow.down.right.circle.fill", "Lose",     "Calorie deficit"),
+        ("maintain", "scalemass.fill", "Maintain", "Hold steady"),
+        ("gain",     "arrow.up.forward.circle.fill", "Gain",     "Calorie surplus")
     ]
 
     // MARK: - Step: Pace
@@ -242,7 +242,7 @@ struct OnboardingView: View {
                    subtitle: goalMode == "lose" ? "Pick a weekly loss pace." : "Pick a weekly gain pace.") {
             HStack(spacing: 12) {
                 ForEach(paceOptions, id: \.rate) { opt in
-                    ChoiceCard(emoji: opt.emoji, label: opt.label, detail: opt.detail, isSelected: weeklyRate == opt.rate) {
+                    ChoiceCard(icon: opt.icon, label: opt.label, detail: opt.detail, isSelected: weeklyRate == opt.rate) {
                         weeklyRate = opt.rate
                     }
                 }
@@ -251,7 +251,7 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Target weight (optional)")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BBFont.font(13, .bold))
                     .foregroundColor(BBColors.textSecondary)
                 TextField("e.g. 60 kg", text: $targetWeight)
                     .keyboardType(.decimalPad)
@@ -265,10 +265,10 @@ struct OnboardingView: View {
         }
     }
 
-    private let paceOptions: [(rate: Double, emoji: String, label: String, detail: String)] = [
-        (0.25, "🪶", "Gentle", "0.25 kg/wk"),
-        (0.50, "⚡", "Steady", "0.50 kg/wk"),
-        (0.75, "🔥", "Fast",   "0.75 kg/wk")
+    private let paceOptions: [(rate: Double, icon: String, label: String, detail: String)] = [
+        (0.25, "leaf.fill", "Gentle", "0.25 kg/wk"),
+        (0.50, "bolt.fill", "Steady", "0.50 kg/wk"),
+        (0.75, "flame.fill", "Fast",   "0.75 kg/wk")
     ]
 
     // MARK: - Step: Loading
@@ -288,10 +288,15 @@ struct OnboardingView: View {
                     .frame(width: 160, height: 160)
                     .rotationEffect(.degrees(-90))
                     .animation(.easeInOut(duration: 0.5), value: loadingChecks.filter { $0 }.count)
-                Text(loadingChecks.filter { $0 }.count == loadingChecks.count ? "✓" :
-                     "\(Int(Double(loadingChecks.filter { $0 }.count) / Double(loadingChecks.count) * 100))%")
-                    .font(.system(size: 36, weight: .heavy))
-                    .foregroundColor(BBColors.text)
+                if loadingChecks.filter { $0 }.count == loadingChecks.count {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 36, weight: .heavy))
+                        .foregroundColor(BBColors.primary)
+                } else {
+                    Text("\(Int(Double(loadingChecks.filter { $0 }.count) / Double(loadingChecks.count) * 100))%")
+                        .font(.system(size: 36, weight: .heavy))
+                        .foregroundColor(BBColors.text)
+                }
             }
             .padding(.bottom, 28)
 
@@ -300,7 +305,7 @@ struct OnboardingView: View {
                 .foregroundColor(BBColors.text)
                 .padding(.bottom, 8)
             Text("Building a personalized plan for you...")
-                .font(.system(size: 16, weight: .medium))
+                .font(BBFont.font(BBFont.base, .medium))
                 .foregroundColor(BBColors.textSecondary)
                 .padding(.bottom, 32)
 
@@ -312,12 +317,18 @@ struct OnboardingView: View {
                                 .fill(loadingChecks[i] ? BBColors.primarySoft : BBColors.surfaceAlt)
                                 .frame(width: 46, height: 46)
                                 .overlay(Circle().stroke(loadingChecks[i] ? BBColors.primary : BBColors.border, lineWidth: 2))
-                            Text(loadingChecks[i] ? "✓" : loadingItems[i].emoji)
-                                .font(.system(size: loadingChecks[i] ? 18 : 20))
-                                .foregroundColor(loadingChecks[i] ? BBColors.primary : BBColors.textMuted)
+                            if loadingChecks[i] {
+                                Image(systemName: "checkmark")
+                                    .font(BBFont.font(18, .bold))
+                                    .foregroundColor(BBColors.primary)
+                            } else {
+                                Image(systemName: loadingItems[i].icon)
+                                    .font(BBFont.font(20))
+                                    .foregroundColor(BBColors.textMuted)
+                            }
                         }
                         Text(loadingItems[i].label)
-                            .font(.system(size: 17, weight: .heavy))
+                            .font(BBFont.font(17, .heavy))
                             .foregroundColor(loadingChecks[i] ? BBColors.text : BBColors.textMuted)
                         Spacer()
                     }
@@ -332,12 +343,12 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
     }
 
-    private let loadingItems: [(emoji: String, label: String)] = [
-        ("📏", "Analyzing body metrics"),
-        ("🔥", "Estimating daily energy burn"),
-        ("🎯", "Setting calorie target"),
-        ("🥩", "Distributing macronutrients"),
-        ("💧", "Personalizing hydration")
+    private let loadingItems: [(icon: String, label: String)] = [
+        ("ruler.fill", "Analyzing body metrics"),
+        ("flame.fill", "Estimating daily energy burn"),
+        ("target", "Setting calorie target"),
+        ("chart.pie.fill", "Distributing macronutrients"),
+        ("drop.fill", "Personalizing hydration")
     ]
 
     // MARK: - Step: Overview
@@ -348,8 +359,8 @@ struct OnboardingView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
-                        Text("🪄 Your personal plan is ready")
-                            .font(.system(size: 14, weight: .heavy))
+                        Text("Your personal plan is ready")
+                            .font(BBFont.font(14, .heavy))
                             .foregroundColor(BBColors.primary)
                             .padding(.horizontal, 16).padding(.vertical, 8)
                             .background(BBColors.primarySoft)
@@ -363,13 +374,14 @@ struct OnboardingView: View {
 
                     // Summary icon card
                     VStack(spacing: 10) {
-                        Text("🎯")
+                        Image(systemName: "target")
                             .font(.system(size: 38))
+                            .foregroundColor(.white)
                             .frame(width: 80, height: 80)
                             .background(BBColors.primary)
                             .cornerRadius(BBRadius.pill)
                         Text("Based on body metrics and personal goals")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(BBFont.font(15, .bold))
                             .foregroundColor(BBColors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -383,10 +395,10 @@ struct OnboardingView: View {
 
                     // Macro grid
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                        MetricCard(color: BBColors.primary,   icon: "🔥", label: "Calories", value: "\(p.calories)", unit: "kcal")
-                        MetricCard(color: BBColors.secondary, icon: "⚡",  label: "Protein",  value: "\(p.protein)",  unit: "g/day")
-                        MetricCard(color: BBColors.accent,    icon: "🌿", label: "Carbs",    value: "\(p.carbs)",    unit: "g/day")
-                        MetricCard(color: BBColors.info,      icon: "🫧",  label: "Fat",      value: "\(p.fat)",      unit: "g/day")
+                        MetricCard(color: BBColors.primary,   icon: "flame.fill", label: "Calories", value: "\(p.calories)", unit: "kcal")
+                        MetricCard(color: BBColors.secondary, icon: "bolt.fill",  label: "Protein",  value: "\(p.protein)",  unit: "g/day")
+                        MetricCard(color: BBColors.accent,    icon: "leaf.fill", label: "Carbs",    value: "\(p.carbs)",    unit: "g/day")
+                        MetricCard(color: BBColors.info,      icon: "drop.fill",  label: "Fat",      value: "\(p.fat)",      unit: "g/day")
                     }
 
                     // Context row
@@ -398,9 +410,11 @@ struct OnboardingView: View {
 
                     // Disclaimer
                     HStack(alignment: .top, spacing: 12) {
-                        Text("ℹ️").font(.system(size: 18))
+                        Image(systemName: "info.circle.fill")
+                            .font(BBFont.font(18, .semibold))
+                            .foregroundColor(BBColors.warning)
                         Text("Data from this app is for general reference only. Consult a doctor before changing your diet.")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(BBFont.font(13, .semibold))
                             .foregroundColor(BBColors.text)
                     }
                     .padding(16)
@@ -412,7 +426,7 @@ struct OnboardingView: View {
 
                     if let err = errorMessage {
                         Text(err)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(BBFont.font(14, .bold))
                             .foregroundColor(BBColors.danger)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
@@ -581,7 +595,7 @@ private struct WizardCard<Content: View, Footer: View>: View {
                 VStack(spacing: 16) {
                     VStack(spacing: 12) {
                         Text(kicker)
-                            .font(.system(size: 13, weight: .heavy))
+                            .font(BBFont.font(13, .heavy))
                             .foregroundColor(BBColors.primary)
                             .padding(.horizontal, 14).padding(.vertical, 8)
                             .background(BBColors.primarySoft)
@@ -593,7 +607,7 @@ private struct WizardCard<Content: View, Footer: View>: View {
                             .multilineTextAlignment(.center)
 
                         Text(subtitle)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(BBFont.font(BBFont.base, .semibold))
                             .foregroundColor(BBColors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -614,7 +628,7 @@ private struct WizardCard<Content: View, Footer: View>: View {
 }
 
 private struct ChoiceCard: View {
-    let emoji: String
+    let icon: String
     let label: String
     var detail: String = ""
     let isSelected: Bool
@@ -623,9 +637,11 @@ private struct ChoiceCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                Text(emoji).font(.system(size: 28))
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(isSelected ? .white : BBColors.primary)
                 Text(label)
-                    .font(.system(size: 15, weight: .heavy))
+                    .font(BBFont.font(15, .heavy))
                     .foregroundColor(isSelected ? .white : BBColors.text)
                 if !detail.isEmpty {
                     Text(detail)
@@ -650,7 +666,7 @@ private struct ChoiceCard: View {
 }
 
 private struct WideChoiceCard: View {
-    let emoji: String
+    let icon: String
     let label: String
     let detail: String
     let isSelected: Bool
@@ -659,18 +675,19 @@ private struct WideChoiceCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 14) {
-                Text(emoji)
+                Image(systemName: icon)
                     .font(.system(size: 22))
+                    .foregroundColor(isSelected ? .white : BBColors.primary)
                     .frame(width: 44, height: 44)
                     .background(isSelected ? BBColors.primary : BBColors.surface)
                     .cornerRadius(BBRadius.pill)
                     .overlay(Circle().stroke(isSelected ? BBColors.primaryHover : BBColors.border, lineWidth: 2))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(label)
-                        .font(.system(size: 15, weight: .heavy))
+                        .font(BBFont.font(15, .heavy))
                         .foregroundColor(isSelected ? .white : BBColors.text)
                     Text(detail)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(BBFont.font(12, .semibold))
                         .foregroundColor(isSelected ? .white.opacity(0.80) : BBColors.textSecondary)
                 }
                 Spacer()
@@ -699,12 +716,14 @@ private struct MetricCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Text(icon).font(.system(size: 16))
-                Text(label).font(.system(size: 15, weight: .heavy)).foregroundColor(BBColors.textSecondary)
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
+                Text(label).font(BBFont.font(15, .heavy)).foregroundColor(BBColors.textSecondary)
             }
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(value).font(.system(size: 38, weight: .heavy)).foregroundColor(BBColors.text)
-                Text(unit).font(.system(size: 15, weight: .heavy)).foregroundColor(BBColors.textSecondary)
+                Text(unit).font(BBFont.font(15, .heavy)).foregroundColor(BBColors.textSecondary)
             }
         }
         .padding(18)
@@ -722,7 +741,7 @@ private struct ContextPill: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(label).font(.system(size: 11, weight: .heavy)).foregroundColor(BBColors.textSecondary)
-            Text(value).font(.system(size: 15, weight: .heavy)).foregroundColor(BBColors.text)
+            Text(value).font(BBFont.font(15, .heavy)).foregroundColor(BBColors.text)
         }
         .padding(12)
         .frame(maxWidth: .infinity)

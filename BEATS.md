@@ -147,6 +147,8 @@ It is **cold-start-proof** (uses only the user's own data) and reuses the existi
 
 ## 🚀 Future Roadmap & Improvement Ideas
 
+> Current status + concrete next steps (session handoff): **`docs/beats-next-steps.md`**.
+
 1. **Direction 2 — "The Tribe"** *(parked until the user base is large enough)*:
    percentiles, data-driven k-means tribes, and a monthly "Beats Wrapped" event.
    Full plan: [`docs/beats-tribe-plan.md`](docs/beats-tribe-plan.md).

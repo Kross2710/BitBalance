@@ -1,87 +1,191 @@
 /* =========================================================================
-   FAB — Floating Action Button (mobile primary CTA).
-   Mobile-first: only visible <= 900px (desktop already shows sidebars).
+   FAB — Bouncy Quick-Log Floating Action Button.
+   A primary action anchored bottom-right. Tap to fan out stacked quick
+   actions (Add food / AI Coach / Log weight). 3D-tactile press feedback on
+   the main button + glassy pills that spring in with a stagger.
+   Visible on every viewport for logged-in dashboard pages.
    ========================================================================= */
 
-.quick-log-fab {
+.quick-fab {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-full);
-    background: var(--gradient-primary);
-    color: var(--color-text-on-primary);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 6px 20px rgba(74, 126, 227, 0.45);
+    bottom: 28px;
+    right: 28px;
     z-index: var(--z-fab);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-    /* Chuẩn hoá line-height: icon (1.4rem) và label (0.95rem) khác font-size
-       nên line-box khác nhau → text bị lệch dọc. line-height:1 ép cả hai
-       về cùng baseline để align-items:center hoạt động chính xác. */
-    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
 }
 
-/* Cả icon + label dùng line-height:1 để collapse line-box về đúng glyph size.
-   Khi font-size icon (1.1rem) và label (0.95rem) gần nhau + line-height đồng nhất,
-   align-items:center của .quick-log-fab tự khớp baseline. */
-.quick-log-fab i,
-.quick-log-fab .quick-log-fab__label {
-    line-height: 1;
+/* --- Fan-out menu (sits above the toggle; revealed when .is-open) --- */
+.quick-fab__menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 2px;
+    /* Stay click-through until opened so it never blocks the page. */
+    pointer-events: none;
+}
+
+.quick-fab__item {
     display: inline-flex;
     align-items: center;
-}
-
-.quick-log-fab i {
-    /* Giảm từ 1.4rem → 1.1rem để icon gần size label (0.95rem), tránh chênh
-       lệch line-box quá lớn gây cảm giác lệch dù đã center. */
-    font-size: 1.1rem;
-}
-
-.quick-log-fab:hover,
-.quick-log-fab:focus {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 10px 28px rgba(74, 126, 227, 0.55);
-    color: var(--color-text-on-primary);
-}
-
-.quick-log-fab:active {
-    transform: scale(0.97);
-}
-
-/* Extended FAB (icon + label) — used when there's room */
-.quick-log-fab--extended {
-    width: auto;
-    padding: 0 22px 0 18px;
     gap: 10px;
+    padding: 8px 10px 8px 16px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
     border-radius: var(--radius-pill);
-    font-weight: 700;
-    font-size: 0.95rem;
-}
-
-.quick-log-fab--extended .quick-log-fab__label {
+    box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-sm);
+    font-size: 0.9rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
     white-space: nowrap;
+    /* Hidden + nudged down until open; bouncy spring on reveal. */
+    opacity: 0;
+    transform: translateY(14px) scale(0.85);
+    transition: opacity 0.2s ease,
+                transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                box-shadow var(--transition-fast),
+                border-color var(--transition-fast);
 }
 
-/* Show on mobile / tablet only */
-@media (max-width: 900px) {
-    .quick-log-fab {
-        display: inline-flex;
+.quick-fab__item:hover,
+.quick-fab__item:focus-visible {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-md);
+    border-color: var(--color-primary);
+    color: var(--color-text);
+    outline: none;
+}
+
+.quick-fab__item:active {
+    transform: translateY(2px) scale(0.98);
+    box-shadow: 0 2px 0 var(--color-border-subtle);
+}
+
+.quick-fab__item-label {
+    line-height: 1;
+}
+
+.quick-fab__item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: 0.9rem;
+}
+
+/* Open state — fan the pills in. The one closest to the button pops first
+   (nth-last-child), so the stack appears to rise out of the FAB. */
+.quick-fab.is-open .quick-fab__menu {
+    pointer-events: auto;
+}
+
+.quick-fab.is-open .quick-fab__item {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.quick-fab.is-open .quick-fab__item:nth-last-child(1) { transition-delay: 0.04s; }
+.quick-fab.is-open .quick-fab__item:nth-last-child(2) { transition-delay: 0.09s; }
+.quick-fab.is-open .quick-fab__item:nth-last-child(3) { transition-delay: 0.14s; }
+
+/* --- Main toggle button (3D tactile) --- */
+.quick-fab__toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gradient-primary);
+    color: var(--color-text-on-primary);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Chunky offset shadow under the button = the Duolingo "tactile" base. */
+    box-shadow: 0 6px 0 var(--color-primary-hover), var(--shadow-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.quick-fab__toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 var(--color-primary-hover), var(--shadow-lg);
+}
+
+/* Press compresses the button down onto its shadow. */
+.quick-fab__toggle:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 var(--color-primary-hover);
+}
+
+.quick-fab__toggle:focus-visible {
+    outline: 3px solid var(--color-primary-soft);
+    outline-offset: 3px;
+}
+
+.quick-fab__plus {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* When open: settle the shadow and rotate the plus into an "x". */
+.quick-fab.is-open .quick-fab__toggle {
+    box-shadow: 0 4px 0 var(--color-primary-hover), var(--shadow-md);
+}
+
+.quick-fab.is-open .quick-fab__plus {
+    transform: rotate(135deg);
+}
+
+/* On wide screens the fixed right-sidebar (var(--sidebar-width)) occupies the
+   bottom-right corner. Shift the FAB clear of it on pages that render that
+   sidebar (home / plan / history / calculator). Wiki has no right sidebar. */
+@media (min-width: 1201px) {
+    body.page-dashboard .quick-fab,
+    body.page-plan .quick-fab,
+    body.page-history .quick-fab,
+    body.page-calculator .quick-fab {
+        right: calc(var(--sidebar-width) + 40px);
     }
 }
 
-/* Tighten on very small screens */
-@media (max-width: 480px) {
-    .quick-log-fab--extended {
-        padding: 0 18px 0 14px;
-        font-size: 0.9rem;
+/* Tighten on small screens. */
+@media (max-width: 600px) {
+    .quick-fab {
+        bottom: 18px;
+        right: 18px;
+        gap: 12px;
     }
+    .quick-fab__toggle {
+        width: 54px;
+        height: 54px;
+        font-size: 1.3rem;
+    }
+    .quick-fab__item {
+        font-size: 0.85rem;
+    }
+}
 
-    .quick-log-fab {
-        bottom: 16px;
-        right: 16px;
+/* Respect reduced-motion: keep the reveal instant, drop the springy transforms. */
+@media (prefers-reduced-motion: reduce) {
+    .quick-fab__item,
+    .quick-fab__plus,
+    .quick-fab__toggle {
+        transition: opacity 0.15s ease;
+    }
+    .quick-fab__item {
+        transform: none;
+    }
+    .quick-fab.is-open .quick-fab__item {
+        transition-delay: 0s;
     }
 }

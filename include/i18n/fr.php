@@ -526,6 +526,10 @@ return array_merge($translations, [
     // FAB & toast
     'fab.log_food'                     => 'Enregistrer un repas',
     'fab.log'                          => 'Enregistrer',
+    'fab.quick_log'                    => 'Saisie rapide',
+    'fab.add_food'                     => 'Ajouter un repas',
+    'fab.ai_coach'                     => 'Coach IA',
+    'fab.log_weight'                   => 'Peser',
     'toast.logged_success'             => 'Enregistré avec succès !',
 
     // Intake — rows & edit/delete

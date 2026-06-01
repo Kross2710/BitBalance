@@ -133,9 +133,9 @@ struct ProfileView: View {
                         if let message {
                             HStack(spacing: 10) {
                                 Image(systemName: messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(BBFont.bodyBold)
                                 Text(message)
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(BBFont.font(BBFont.sm, .bold))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .bbAlert(isSuccess: !messageIsError)
@@ -161,7 +161,7 @@ struct ProfileView: View {
                                 .tint(BBColors.primary)
                         } else {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 15, weight: .black))
+                                .font(BBFont.font(15, .black))
                                 .foregroundColor(BBColors.primary)
                         }
                     }
@@ -225,18 +225,18 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(displayName)
-                        .font(.system(size: 28, weight: .black))
+                        .font(BBFont.font(28, .black))
                         .foregroundColor(BBColors.text)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
 
                     HStack(spacing: 8) {
                         Image(systemName: goalStatusIcon)
-                            .font(.system(size: 13, weight: .black))
+                            .font(BBFont.font(13, .black))
                             .foregroundColor(BBColors.textSecondary)
 
                         Text(goalStatusText)
-                            .font(.system(size: 17, weight: .bold))
+                            .font(BBFont.font(17, .bold))
                             .foregroundColor(BBColors.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
@@ -246,7 +246,7 @@ struct ProfileView: View {
                 Spacer(minLength: 8)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 22, weight: .heavy))
+                    .font(BBFont.font(22, .heavy))
                     .foregroundColor(BBColors.textMuted)
             }
             .padding(18)
@@ -273,11 +273,11 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(isGuestUser ? "Sign In" : "Signed in")
-                        .font(.system(size: 24, weight: .black))
+                        .font(BBFont.titleBold)
                         .foregroundColor(BBColors.primary)
 
                     Text(isGuestUser ? "Sign in to sync your data across devices" : currentEmail)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(BBFont.bodyBold)
                         .foregroundColor(BBColors.textSecondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -286,7 +286,7 @@ struct ProfileView: View {
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(BBFont.font(20, .heavy))
                     .foregroundColor(BBColors.textMuted)
             }
             .padding(18)
@@ -297,7 +297,7 @@ struct ProfileView: View {
 
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 22, weight: .black))
+            .font(BBFont.font(22, .black))
             .foregroundColor(BBColors.textSecondary)
             .padding(.horizontal, 8)
             .padding(.top, 4)
@@ -521,20 +521,20 @@ private struct PremiumBanner: View {
                             .allowsHitTesting(false)
                     )
                 Image(systemName: "leaf.fill")
-                    .font(.system(size: 24, weight: .black))
+                    .font(BBFont.font(24, .black))
                     .foregroundColor(BBColors.primaryHover)
                     .offset(x: 16, y: -22)
             }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Go Premium")
-                    .font(.system(size: 28, weight: .black))
+                    .font(BBFont.font(28, .black))
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
                 Text("$4.17 / month")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(BBFont.font(18, .bold))
                     .foregroundColor(.white.opacity(0.85))
             }
 
@@ -542,10 +542,10 @@ private struct PremiumBanner: View {
 
             VStack(spacing: 2) {
                 Text("SAVE")
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .tracking(2)
                 Text("47%")
-                    .font(.system(size: 28, weight: .black))
+                    .font(BBFont.font(28, .black))
             }
             .foregroundColor(.white)
             .padding(.horizontal, 18)
@@ -614,7 +614,7 @@ private struct SettingsRow: View {
                     SettingsIconBox(icon: icon, color: iconColor)
 
                     Text(title)
-                        .font(.system(size: 22, weight: .heavy))
+                        .font(BBFont.font(22, .heavy))
                         .foregroundColor(isDestructive ? BBColors.danger : BBColors.text)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -626,14 +626,14 @@ private struct SettingsRow: View {
                             .tint(BBColors.primary)
                     } else if let value {
                         Text(value)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(BBFont.heading)
                             .foregroundColor(BBColors.textSecondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 18, weight: .black))
+                        .font(BBFont.font(18, .black))
                         .foregroundColor(BBColors.textMuted)
                 }
                 .padding(.horizontal, 16)
@@ -659,7 +659,7 @@ private struct SettingsIconBox: View {
 
     var body: some View {
         Image(systemName: icon)
-            .font(.system(size: size * 0.44, weight: .black))
+            .font(BBFont.font(size * 0.44, .black))
             .foregroundColor(color)
             .frame(width: size, height: size)
             .background(color.opacity(0.16))

@@ -143,8 +143,8 @@ DỮ LIỆU THẬT của người dùng (HÃY DÙNG để cá nhân hoá, đừn
 
 NHIỆM VỤ — trả về JSON thô (KHÔNG markdown, KHÔNG ```):
 {
-  \"archetype\": \"Tên 'nhân vật ẩm thực-âm nhạc' sáng tạo, có emoji, <40 ký tự (vd: 'Tay Trống Mì Cay Lúc Nửa Đêm 🤘🍜')\",
-  \"detected_vibe\": \"Nhãn vibe nhạc ngắn + emoji (<25 ký tự)\",
+  \"archetype\": \"Tên 'nhân vật ẩm thực-âm nhạc' sáng tạo, <40 ký tự\",
+  \"detected_vibe\": \"Nhãn vibe nhạc ngắn (<25 ký tự)\",
   \"tagline\": \"1 câu móc nối nhạc và món, <14 từ\",
   \"scores\": {
     \"energy_sync\": 0-100,  // nhịp/độ bốc của nhạc khớp độ-năng-lượng món ({$foodEnergy}) tới đâu
@@ -168,8 +168,8 @@ REAL user data (USE it to personalize, do NOT invent):
 
 TASK — return RAW JSON (NO markdown, NO ```):
 {
-  \"archetype\": \"A creative music-food persona name with emoji, <40 chars (e.g. 'The Midnight Ramen Headbanger 🤘🍜')\",
-  \"detected_vibe\": \"Short music vibe label + emoji (<25 chars)\",
+  \"archetype\": \"A creative music-food persona name, <40 chars\",
+  \"detected_vibe\": \"Short music vibe label (<25 chars)\",
   \"tagline\": \"One punchy line linking the song and the food, <14 words\",
   \"scores\": {
     \"energy_sync\": 0-100,  // how the song's tempo/intensity matches the food energy ({$foodEnergy})
@@ -197,32 +197,10 @@ $comfortScore = 0;
 $chaos = 0;
 $success = false;
 
-// --- Call Gemini API ---
+// --- Call AI (OpenRouter first, then Gemini) — works through the RMIT firewall ---
 try {
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-        throw new Exception('Gemini API key not configured');
-    }
-
-    $model = defined('AI_COACH_MODEL') ? AI_COACH_MODEL : 'gemini-3.1-flash-lite';
-    $apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . GEMINI_API_KEY;
-
-    $body = ['contents' => [['parts' => [['text' => $systemPrompt]]]]];
-
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 9);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-    if ($httpCode === 200) {
-        $resJson = json_decode($response, true);
-        $rawText = $resJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    $rawText = bb_beats_ai_text($systemPrompt);
+    if ($rawText !== null) {
         $cleanText = trim(str_replace(['```json', '```'], '', $rawText));
 
         $parsed = json_decode($cleanText, true);
@@ -272,11 +250,10 @@ if (!$success) {
         ][$mealSlot] ?? ['vi' => 'Tín Đồ', 'en' => 'Devotee']);
     $persona = $personaMap[$lang];
 
-    $emoji = $trackEnergy >= 67 ? '🔥' : ($trackEnergy >= 34 ? '🎶' : '🌙');
     $archetype = $lang === 'vi'
-        ? "{$persona} {$food} {$adj} {$emoji}"
-        : "The {$adj} {$food} {$persona} {$emoji}";
-    $detectedVibe = $lang === 'vi' ? "{$adj} {$emoji}" : "{$adj} Beats {$emoji}";
+        ? "{$persona} {$food} {$adj}"
+        : "The {$adj} {$food} {$persona}";
+    $detectedVibe = $lang === 'vi' ? "{$adj}" : "{$adj} Beats";
 
     $hasMacro = ($p + $c + $f) > 0;
     if ($lang === 'vi') {
@@ -319,7 +296,8 @@ $mixArch = bb_beats_assign_archetype(
     $lang
 );
 $archetypeKey = $mixArch['key'];
-$archetype = $mixArch['emoji'] . ' ' . $mixArch['name'];   // override AI/fallback free-text
+$archetype = $mixArch['name'];                             // override AI/fallback free-text (name only)
+$archetypeIcon = $mixArch['icon'];                         // FontAwesome class for the UI
 $rarityTier = bb_beats_archetype_rarity($archetypeKey);    // common|rare|epic|legendary
 $rarityLabels = array(
     'legendary' => array('vi' => 'Huyền thoại', 'en' => 'Legendary'),
@@ -330,7 +308,7 @@ $rarityLabels = array(
 $rarity = $rarityLabels[$rarityTier][$lang];
 
 if ($detectedVibe === '') {
-    $detectedVibe = $lang === 'vi' ? 'Vibe Nghệ Thuật 🎵' : 'Artistic Vibe 🎵';
+    $detectedVibe = $lang === 'vi' ? 'Vibe Nghệ Thuật' : 'Artistic Vibe';
 }
 
 // --- Assemble result (new multi-dimensional fields + back-compat aliases) ---
@@ -338,6 +316,7 @@ $resultData = [
     'match_score'   => $matchScore,
     'archetype'     => $archetype,
     'archetype_key' => $archetypeKey,
+    'archetype_icon' => $archetypeIcon,
     'rarity_tier'   => $rarityTier,
     'detected_vibe' => $detectedVibe !== '' ? $detectedVibe : $archetype,
     'tagline'       => $tagline,

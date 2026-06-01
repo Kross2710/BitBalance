@@ -100,12 +100,12 @@ check('identical → 100', $identical['score'] === 100);
 
 echo "== archetype assignment ==\n";
 $archHype = bb_beats_assign_archetype(bb_beats_combine($hypeMusic, $foodHype), 'en');
-echo "  (hype combined → {$archHype['name']} {$archHype['emoji']})\n";
+echo "  (hype combined → {$archHype['name']} [{$archHype['icon']}])\n";
 check('energetic profile → energetic archetype',
     in_array($archHype['key'], array('sprinter', 'hype', 'strategist'), true));
 
 $archCozy = bb_beats_assign_archetype(bb_beats_combine($chillMusic, $foodCozy), 'vi');
-echo "  (cozy combined → {$archCozy['name']} {$archCozy['emoji']})\n";
+echo "  (cozy combined → {$archCozy['name']} [{$archCozy['icon']}])\n";
 check('cozy nocturnal profile → cozy/romantic/dreamer',
     in_array($archCozy['key'], array('romantic', 'cozy', 'dreamer', 'minimalist'), true));
 check('vi name non-empty', $archCozy['name'] !== '');
@@ -161,7 +161,7 @@ check('noise excluded from axes (comfort stays high)', $noisy['comfort'] >= 0.8)
 check('noise never chosen as label', $noisy['top_genre'] === 'lo-fi');
 
 echo "== archetype rarity & lookup ==\n";
-check('lookup by key works', bb_beats_archetype_by_key('romantic')['emoji'] === '🌙');
+check('lookup by key works', bb_beats_archetype_by_key('romantic')['icon'] === 'fa-moon');
 check('unknown key → null', bb_beats_archetype_by_key('nope') === null);
 check('centre archetype → common', bb_beats_archetype_rarity('maestro') === 'common');
 check('extreme archetype → legendary', bb_beats_archetype_rarity('romantic') === 'legendary');

@@ -69,7 +69,7 @@ struct AIChatView: View {
                         showNewChat = true
                     } label: {
                         Image(systemName: "square.and.pencil")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(BBFont.bodyBold)
                             .foregroundColor(BBColors.primary)
                     }
                 }
@@ -114,11 +114,11 @@ struct AIChatView: View {
                 .padding(.bottom, 8)
                 
                 Text("Your AI Coach")
-                    .font(.system(size: 24, weight: .black))
+                    .font(BBFont.titleBold)
                     .foregroundColor(BBColors.text)
                 
                 Text("Get personalized nutrition advice,\nmeal suggestions, and fitness tips.")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(BBFont.font(15, .bold))
                     .foregroundColor(BBColors.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -159,12 +159,12 @@ struct AIChatView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundColor(BBColors.primary)
-                            .font(.system(size: 18))
+                            .font(BBFont.font(BBFont.lg, .regular))
                             .frame(width: 32)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(conv.title)
-                                .font(.system(size: 15, weight: .black))
+                                .font(BBFont.font(15, .black))
                                 .foregroundColor(BBColors.text)
                                 .lineLimit(1)
                             
@@ -176,7 +176,7 @@ struct AIChatView: View {
                         Spacer()
                         
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .heavy))
+                            .font(BBFont.font(12, .heavy))
                             .foregroundColor(BBColors.textMuted)
                     }
                     .padding(.vertical, 12)
@@ -286,7 +286,7 @@ struct ChatDetailView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                         Text(error)
                     }
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BBFont.font(BBFont.sm, .bold))
                     .bbAlert(isSuccess: false)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
@@ -312,7 +312,7 @@ struct ChatDetailView: View {
                                 }
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 20))
+                                    .font(BBFont.font(BBFont.xl, .regular))
                                     .foregroundColor(.red)
                                     .background(Circle().fill(Color.white))
                             }
@@ -332,7 +332,7 @@ struct ChatDetailView: View {
                         showPhotoOptions = true
                     } label: {
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 20))
+                            .font(BBFont.font(BBFont.xl, .regular))
                             .foregroundColor(BBColors.primary)
                     }
                     .disabled(isSending)
@@ -341,14 +341,14 @@ struct ChatDetailView: View {
                         .lineLimit(1...5)
                         .disabled(isSending)
                         .focused($isInputFocused)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                         .padding(.vertical, 8)
                     
                     Button {
                         sendMessage()
                     } label: {
                         Image(systemName: isSending ? "hourglass" : "arrow.up.circle.fill")
-                            .font(.system(size: 28, weight: .bold))
+                            .font(BBFont.font(28, .bold))
                             .foregroundColor((inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedImage == nil) || isSending ? BBColors.textMuted : BBColors.primary)
                     }
                     .disabled((inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedImage == nil) || isSending)
@@ -422,11 +422,11 @@ struct ChatDetailView: View {
             
             VStack(spacing: 8) {
                 Text("How can I help you today?")
-                    .font(.system(size: 20, weight: .black))
+                    .font(BBFont.font(BBFont.xl, .black))
                     .foregroundColor(BBColors.text)
                 
                 Text("Ask about nutrition, meal ideas, or your daily goals.")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BBFont.font(13, .bold))
                     .foregroundColor(BBColors.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -538,12 +538,12 @@ private struct SuggestionRow: View {
         Button(action: action) {
             HStack {
                 Text(text)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BBFont.font(BBFont.sm, .bold))
                     .foregroundColor(BBColors.text)
                 Spacer()
                 Image(systemName: "arrow.right.circle.fill")
                     .foregroundColor(BBColors.primary)
-                    .font(.system(size: 18))
+                    .font(BBFont.font(BBFont.lg, .regular))
             }
             .bbCard(radius: BBRadius.md, padding: 14)
         }
@@ -583,7 +583,7 @@ private struct MessageBubble: View {
                                 .offset(y: 2)
                         )
                     Text("✨")
-                        .font(.system(size: 15))
+                        .font(BBFont.font(15, .regular))
                 }
                 .padding(.bottom, 16)
             } else {
@@ -620,7 +620,7 @@ private struct MessageBubble: View {
                     
                     if !message.content.isEmpty {
                         Text(message.content)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(BBFont.font(BBFont.sm, .bold))
                             .foregroundColor(BBColors.text)
                     }
                 }
@@ -668,7 +668,7 @@ private struct MessageBubble: View {
 
                 if let error = logError {
                     Text(error)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                         .foregroundColor(BBColors.danger)
                         .padding(.horizontal, 4)
                         .padding(.bottom, 4)
@@ -696,7 +696,7 @@ private struct MessageBubble: View {
                                 .offset(y: 2)
                         )
                     Text("👤")
-                        .font(.system(size: 15))
+                        .font(BBFont.font(15, .regular))
                 }
                 .padding(.bottom, 16)
             } else {
@@ -732,16 +732,16 @@ private struct MessageBubble: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(mealEmoji(item.mealCategory) + " " + item.mealCategory.capitalized)
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .foregroundColor(BBColors.dynamicColor(light: "1CB0F6", dark: "60A5FA"))
                 Spacer()
                 Text("\(item.calories) kcal")
-                    .font(.system(size: 14, weight: .black))
+                    .font(BBFont.font(BBFont.sm, .black))
                     .foregroundColor(BBColors.accent)
             }
             
             Text(item.foodName)
-                .font(.system(size: 15, weight: .bold))
+                .font(BBFont.font(15, .bold))
                 .foregroundColor(BBColors.text)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -889,7 +889,7 @@ private struct TypingIndicator: View {
                             .offset(y: 2)
                     )
                 Text("✨")
-                    .font(.system(size: 15))
+                    .font(BBFont.font(15, .regular))
             }
             .padding(.bottom, 16)
 

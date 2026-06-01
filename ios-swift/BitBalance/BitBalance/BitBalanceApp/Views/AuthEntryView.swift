@@ -58,14 +58,14 @@ struct AuthEntryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
                     Text("BitBalance")
-                        .font(.system(size: 28, weight: .heavy))
+                        .font(BBFont.displayBold)
                         .foregroundColor(.white)
                 }
                 Text("Track. Earn XP. Level up.")
-                    .font(.system(size: 17, weight: .heavy))
+                    .font(BBFont.font(17, .heavy))
                     .foregroundColor(.white)
                 Text("Your wellness journey, gamified.")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(BBFont.font(BBFont.sm, .medium))
                     .foregroundColor(.white.opacity(0.88))
             }
             .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 1)
@@ -105,7 +105,7 @@ struct AuthEntryView: View {
             } label: {
                 Text("Sign In")
                     .frame(maxWidth: .infinity)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(BBFont.bodyBold)
                     .foregroundColor(BBColors.text)
                     .padding(.vertical, 14)
                     .background(BBColors.surfaceAlt)
@@ -124,7 +124,7 @@ struct AuthEntryView: View {
             // ── Divider ──────────────────────────────────────────────
             HStack(spacing: 12) {
                 Rectangle().fill(BBColors.border).frame(height: 1)
-                Text("or").font(.system(size: 13, weight: .bold)).foregroundColor(BBColors.textMuted)
+                Text("or").font(BBFont.font(13, .bold)).foregroundColor(BBColors.textMuted)
                 Rectangle().fill(BBColors.border).frame(height: 1)
             }
             .padding(.vertical, 2)
@@ -140,7 +140,7 @@ struct AuthEntryView: View {
                 session.continueAsGuest()
             } label: {
                 Text("Continue as Guest")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(BBFont.font(BBFont.sm, .bold))
                     .foregroundColor(BBColors.textSecondary)
                     .underline()
             }
@@ -209,9 +209,9 @@ private struct OAuthProviderButton: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: provider.logo)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(BBFont.font(BBFont.lg, .semibold))
                 Text(provider.label)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(BBFont.font(15, .bold))
                 Spacer()
                 if !isAvailable {
                     Text("Coming soon")

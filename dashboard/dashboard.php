@@ -1187,6 +1187,12 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     const fill = document.getElementById('progressFill');
                     if (fill) fill.style.width = '<?php echo $progressPercentage; ?>%';
                 }, 100);
+                <?php /* Quick-log FAB "Log weight" lands here with ?log=weight so
+                         the weight modal (which only lives on this page) opens
+                         straight away from any dashboard page. */ ?>
+                <?php if (isset($_GET['log']) && $_GET['log'] === 'weight'): ?>
+                if (typeof openWeightModal === 'function') openWeightModal();
+                <?php endif; ?>
             });
         </script>
     <?php endif; ?>

@@ -1,0 +1,489 @@
+/* =========================================================================
+   DASHBOARD INTAKE PROTOTYPE — Visual Bento Builder & AI Scanner
+   Premium gamified interactions for meal logging.
+   ========================================================================= */
+
+:root {
+    --intake-glow-primary: rgba(88, 204, 2, 0.2);
+    --intake-glow-secondary: rgba(28, 176, 246, 0.2);
+    --intake-glow-accent: rgba(255, 150, 0, 0.2);
+    --intake-glass-bg: rgba(255, 255, 255, 0.7);
+    --intake-glass-border: rgba(226, 232, 240, 0.8);
+}
+
+[data-theme="dark"] {
+    --intake-glass-bg: rgba(30, 41, 59, 0.6);
+    --intake-glass-border: rgba(71, 85, 105, 0.4);
+}
+
+/* --- Controls/Theme strip mapping --- */
+body.proto-theme-green {
+    --color-primary: #58CC02;
+    --color-primary-hover: #4CAF00;
+    --intake-glow-primary: rgba(88, 204, 2, 0.25);
+}
+body.proto-theme-blue {
+    --color-primary: #1CB0F6;
+    --color-primary-hover: #009be3;
+    --intake-glow-primary: rgba(28, 176, 246, 0.25);
+}
+body.proto-theme-orange {
+    --color-primary: #FF9600;
+    --color-primary-hover: #E67E00;
+    --intake-glow-primary: rgba(255, 150, 0, 0.25);
+}
+body.proto-theme-purple {
+    --color-primary: #a855f7;
+    --color-primary-hover: #9333ea;
+    --intake-glow-primary: rgba(168, 85, 247, 0.25);
+}
+
+/* --- Container primitives --- */
+.intake-proto-container {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 24px var(--page-pad-x) var(--page-pad-bottom);
+    display: flex;
+    flex-direction: column;
+    gap: var(--stack-gap);
+}
+
+/* --- Header Controls Strip --- */
+.intake-proto-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--intake-glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 2px solid var(--color-border);
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 0 var(--color-border-subtle), var(--shadow-sm);
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.intake-proto-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 850;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- Dynamic Visual Diet Plate Builder --- */
+.diet-plate-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    padding: 24px;
+    transition: all var(--transition-base);
+}
+
+.diet-plate-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 0 var(--color-border-subtle), var(--shadow-md);
+}
+
+.diet-plate-flex {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+}
+
+@media (max-width: 800px) {
+    .diet-plate-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+.plate-canvas-area {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--color-surface) 60%, var(--color-surface-alt) 100%);
+    border: 4px dashed var(--color-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 4px 10px rgba(0,0,0,0.03), var(--shadow-sm);
+    flex-shrink: 0;
+}
+
+.plate-main-circle {
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    border: 2px solid var(--color-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.plate-food-floating {
+    position: absolute;
+    transition: all var(--transition-base);
+    animation: floatingPlateItem 4s infinite ease-in-out;
+}
+
+.plate-food-emoji {
+    font-size: 2.2rem;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+}
+
+.plate-center-kcal {
+    font-size: 1.6rem;
+    font-weight: 850;
+    color: var(--color-text);
+    z-index: 5;
+    background: var(--color-surface);
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--color-border);
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+
+.plate-info-details {
+    flex-grow: 1;
+}
+
+.plate-info-details h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+    font-weight: 850;
+    color: var(--color-text);
+}
+
+.plate-info-details p {
+    margin: 0 0 20px 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+.macro-sandbox-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sandbox-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sandbox-lbl-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    font-weight: 750;
+    color: var(--color-text);
+}
+
+.sandbox-track {
+    height: 10px;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.sandbox-fill {
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sandbox-fill.p { background: var(--color-primary); }
+.sandbox-fill.c { background: var(--color-secondary); }
+.sandbox-fill.f { background: var(--color-accent); }
+
+/* --- AI Scanner & Form Section --- */
+.intake-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: var(--stack-gap);
+}
+
+@media (max-width: 900px) {
+    .intake-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-premium-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    padding: 24px;
+}
+
+/* Simulated AI scanner panel */
+.ai-scan-panel {
+    background: var(--color-surface-alt);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: all var(--transition-fast);
+}
+
+.ai-scan-panel:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-primary);
+}
+
+.ai-scan-icon {
+    font-size: 2.2rem;
+    color: var(--color-primary);
+    margin-bottom: 8px;
+    transition: transform var(--transition-fast);
+}
+
+.ai-scan-panel:hover .ai-scan-icon {
+    transform: scale(1.15) rotate(5deg);
+}
+
+.ai-scan-title {
+    font-size: 0.95rem;
+    font-weight: 850;
+    color: var(--color-text);
+    margin: 0 0 4px 0;
+}
+
+.ai-scan-desc {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Simulated Scanner Animation Layer */
+.sim-scan-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sim-scan-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.laser-beam {
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(to right, transparent, var(--color-primary), transparent);
+    box-shadow: 0 0 12px var(--color-primary);
+    animation: laserScan 2s infinite ease-in-out;
+}
+
+.scanning-photo {
+    width: 130px;
+    height: 130px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 3px solid var(--color-primary);
+    box-shadow: 0 0 20px var(--intake-glow-primary);
+    animation: heartbeat 1.5s infinite;
+}
+
+/* Custom premium input wrappers */
+.input-grp-glass {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-grp-glass input,
+.input-grp-glass select {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: all var(--transition-fast);
+}
+
+.input-grp-glass input:focus,
+.input-grp-glass select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px var(--intake-glow-primary);
+    outline: none;
+}
+
+.input-grp-icon {
+    position: absolute;
+    left: 14px;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+/* --- Simulated Food Suggestions Strip --- */
+.suggested-food-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0 12px 0;
+    margin-bottom: 16px;
+}
+
+.suggested-food-chip {
+    flex-shrink: 0;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+}
+
+.suggested-food-chip:hover {
+    background: var(--color-surface-hover);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+}
+
+.suggested-food-chip:active {
+    transform: translateY(0);
+}
+
+/* --- Simulated Today's Logs Table/Cards --- */
+.logs-board-card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    padding: 24px;
+}
+
+.interactive-log-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-log-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--color-border-subtle);
+    border-color: var(--color-text-secondary);
+}
+
+.interactive-log-item.removing {
+    opacity: 0;
+    transform: translateX(50px) scale(0.9);
+}
+
+.log-item-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.log-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.log-item-name {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.log-item-sub {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    display: block;
+    margin-top: 2px;
+}
+
+.log-item-stats {
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.log-item-kcal {
+    font-size: 1.05rem;
+    font-weight: 850;
+    color: var(--color-text);
+}
+
+.log-btn-delete {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background var(--transition-fast);
+}
+
+.log-btn-delete:hover {
+    background: var(--color-danger-bg);
+}
+
+/* Animations */
+@keyframes laserScan {
+    0%, 100% { top: 0%; }
+    50% { top: 100%; }
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+@keyframes floatingPlateItem {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+}

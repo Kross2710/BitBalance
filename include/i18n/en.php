@@ -267,6 +267,10 @@ return [
     // ── Shared partials ─────────────────────────────────────────────────────
     'fab.log_food'                     => 'Log food intake',
     'fab.log'                          => 'Log',
+    'fab.quick_log'                    => 'Quick log',
+    'fab.add_food'                     => 'Add food',
+    'fab.ai_coach'                     => 'AI Coach',
+    'fab.log_weight'                   => 'Log weight',
     'toast.logged_success'             => 'Logged successfully!',
 
     // Intake row + edit modal

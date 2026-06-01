@@ -23,13 +23,18 @@ final class APIClient {
         self.session = session
     }
 
-    func login(email: String, password: String) async throws -> UserSession {
+    func login(email: String, password: String, remember: Bool = true) async throws -> UserSession {
+        var fields = [
+            "email": email,
+            "password": password
+        ]
+        if remember {
+            fields["remember"] = "1"
+        }
+
         let response: APIEnvelope<UserSession> = try await postForm(
             path: "api/auth/login.php",
-            fields: [
-                "email": email,
-                "password": password
-            ]
+            fields: fields
         )
 
         if response.ok, let user = response.data {

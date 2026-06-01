@@ -36,7 +36,7 @@ struct DashboardView: View {
                                 Text(errorMessage)
                                     .lineLimit(3)
                             }
-                            .font(.system(size: 14, weight: .bold))
+                            .font(BBFont.font(BBFont.sm, .bold))
                             .bbAlert(isSuccess: false)
                         }
 
@@ -60,18 +60,7 @@ struct DashboardView: View {
                     await loadDashboardDay()
                 }
             }
-//            .navigationTitle("Dashboard")
-            .toolbar {
-                if session.user != nil && !session.isGuest {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Log Out") {
-                            Task { await session.signOut() }
-                        }
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(BBColors.danger)
-                    }
-                }
-            }
+
             .task {
                 await loadDashboardDay()
             }
@@ -162,14 +151,14 @@ private struct DashboardCalendarStrip: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 monthButton(systemName: "chevron.left") {
                     shiftMonth(-1)
                 }
 
                 Text(DashboardDateFormat.monthTitle.string(from: selectedDate))
-                    .font(.system(size: 18, weight: .black))
+                    .font(BBFont.font(18, .black))
                     .foregroundColor(BBColors.text)
                     .frame(maxWidth: .infinity)
 
@@ -197,6 +186,7 @@ private struct DashboardCalendarStrip: View {
                         }
                     }
                     .padding(.vertical, 2)
+                    .padding(.horizontal, 2)
                 }
                 .onAppear {
                     proxy.scrollTo(DashboardDateFormat.api.string(from: selectedDate), anchor: .center)
@@ -208,7 +198,7 @@ private struct DashboardCalendarStrip: View {
                 }
             }
         }
-        .bbCard()
+        .padding(.vertical, 10)
     }
 
     private var canMoveToNextMonth: Bool {
@@ -230,13 +220,12 @@ private struct DashboardCalendarStrip: View {
     private func monthButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 14, weight: .black))
+                .font(BBFont.font(14, .bold))
                 .foregroundColor(BBColors.textSecondary)
-                .frame(width: 38, height: 38)
+                .frame(width: 32, height: 32)
                 .background(BBColors.surfaceAlt)
                 .clipShape(Circle())
-                .overlay(Circle().stroke(BBColors.border, lineWidth: 2))
-                .background(Circle().fill(BBColors.borderSubtle).offset(y: 3))
+                .overlay(Circle().stroke(BBColors.border, lineWidth: 1.5))
         }
     }
 
@@ -267,27 +256,52 @@ private struct DayChip: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 Text(String(DashboardDateFormat.dayName.string(from: date).prefix(1)))
                     .font(.system(size: 11, weight: .black))
+                    .foregroundColor(isSelected ? .white : BBColors.textSecondary)
+                
                 Text("\(Calendar.current.component(.day, from: date))")
-                    .font(.system(size: 18, weight: .black))
+                    .font(BBFont.font(16, .black))
+                    .foregroundColor(isSelected ? .white : (isDisabled ? BBColors.textMuted : BBColors.text))
+                
+                if isToday {
+                    Circle()
+                        .fill(isSelected ? .white : BBColors.primary)
+                        .frame(width: 4, height: 4)
+                } else {
+                    Spacer().frame(height: 4)
+                }
             }
-            .foregroundColor(isSelected ? .white : BBColors.text)
-            .frame(width: 52, height: 64)
-            .background(isSelected ? BBColors.primary : BBColors.surfaceAlt)
-            .cornerRadius(BBRadius.md)
-            .overlay(
-                RoundedRectangle(cornerRadius: BBRadius.md)
-                    .stroke(isToday ? BBColors.primary : BBColors.border, lineWidth: 2)
-            )
+            .frame(width: 46, height: 58)
             .background(
-                RoundedRectangle(cornerRadius: BBRadius.md)
-                    .fill(isSelected ? BBColors.primaryHover : BBColors.borderSubtle)
-                    .offset(y: isSelected ? 4 : 3)
+                Group {
+                    if isSelected {
+                        BBColors.primary
+                    } else {
+                        BBColors.surfaceAlt
+                    }
+                }
             )
-            .opacity(isDisabled ? 0.4 : 1)
-            .padding(.bottom, 4)
+            .cornerRadius(10)
+            .overlay(
+                Group {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(BBColors.primaryHover, lineWidth: 1)
+                    } else if isDisabled {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(BBColors.border, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [4, 4]))
+                    } else if isToday {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(BBColors.primary, lineWidth: 1.5)
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(BBColors.border, lineWidth: 1.5)
+                    }
+                }
+            )
+            .opacity(isDisabled ? 0.6 : 1.0)
         }
         .disabled(isDisabled)
     }
@@ -315,10 +329,9 @@ private struct WelcomeBanner: View {
             HStack(alignment: .top, spacing: 14) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(greeting)
-                        .font(.system(size: 24, weight: .black))
-                        .foregroundColor(.white)
+                        .font(BBFont.titleBold)
                     Text(message)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(BBFont.font(15, .bold))
                         .foregroundColor(.white.opacity(0.92))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -350,9 +363,9 @@ private struct WelcomeChip: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .black))
+                .font(BBFont.font(12, .black))
             Text(text.uppercased())
-                .font(.system(size: 12, weight: .black))
+                .font(BBFont.font(12, .black))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
@@ -377,11 +390,11 @@ private struct TodayProgressCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Today")
-                    .font(.system(size: 18, weight: .black))
+                    .font(BBFont.font(BBFont.lg, .black))
                     .foregroundColor(BBColors.text)
                 Spacer()
                 Text(payload.statusClass == "overlimit" ? "Overlimit" : "Ongoing")
-                    .font(.system(size: 12, weight: .black))
+                    .font(BBFont.captionBold)
                     .foregroundColor(statusColor)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -394,7 +407,7 @@ private struct TodayProgressCard: View {
                     .font(.system(size: 42, weight: .black))
                     .foregroundColor(statusColor)
                 Text("kcal")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(BBFont.bodyBold)
                     .foregroundColor(BBColors.textSecondary)
             }
 
@@ -402,11 +415,11 @@ private struct TodayProgressCard: View {
 
             HStack {
                 Text("Goal")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BBFont.font(13, .bold))
                     .foregroundColor(BBColors.textSecondary)
                 Spacer()
                 Text(payload.calorieGoal.map { "\($0) kcal" } ?? "Not set")
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .foregroundColor(BBColors.text)
             }
         }
@@ -522,7 +535,7 @@ private struct WeightStatsView: View {
                             .font(.system(size: 34, weight: .black))
                             .foregroundColor(BBColors.text)
                         Text("kg")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(BBFont.font(13, .bold))
                             .foregroundColor(BBColors.textSecondary)
                     }
                 }
@@ -592,14 +605,14 @@ private struct LevelCard: View {
                     .foregroundColor(BBColors.accent)
                     .shadow(color: BBColors.accent.opacity(0.28), radius: 6, x: 0, y: 3)
                 Text("\(payload.currentLevel)")
-                    .font(.system(size: 18, weight: .black))
+                    .font(BBFont.font(BBFont.lg, .black))
                     .foregroundColor(.white)
                     .offset(y: -2)
             }
 
             VStack(alignment: .leading, spacing: 7) {
                 Text("LEVEL")
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(BBFont.font(BBFont.xs, .heavy))
                     .foregroundColor(BBColors.textSecondary)
                 Text("\(payload.totalXp) XP")
                     .font(.system(size: 26, weight: .black))
@@ -650,7 +663,7 @@ private struct MascotRoomCard: View {
                             .frame(width: 70, height: 54)
                             .overlay(
                                 Image(systemName: payload.statusClass == "overlimit" ? "zzz" : "heart.fill")
-                                    .font(.system(size: 18, weight: .black))
+                                    .font(BBFont.font(BBFont.lg, .black))
                                     .foregroundColor(.white)
                             )
                     }
@@ -658,11 +671,11 @@ private struct MascotRoomCard: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(stateText)
-                        .font(.system(size: 16, weight: .black))
+                        .font(BBFont.bodyBold)
                         .foregroundColor(BBColors.text)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Tap into the same daily feedback loop as the web overview.")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(BBFont.font(BBFont.xs, .bold))
                         .foregroundColor(BBColors.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -703,21 +716,21 @@ private struct StreakCard: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Logging streak")
-                        .font(.system(size: 17, weight: .black))
+                        .font(BBFont.font(17, .black))
                         .foregroundColor(BBColors.text)
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text("\(payload.streak.current)")
                             .font(.system(size: 32, weight: .black))
                             .foregroundColor(BBColors.text)
                         Text("days")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(BBFont.font(13, .bold))
                             .foregroundColor(BBColors.textSecondary)
                     }
                 }
             }
 
             Text(payload.streak.current > 0 ? "Keep the chain alive with one log today." : "Start a streak by logging your first meal.")
-                .font(.system(size: 13, weight: .bold))
+                .font(BBFont.font(13, .bold))
                 .foregroundColor(BBColors.textSecondary)
 
             ProgressTrack(value: progress, color: BBColors.accent, height: 10)
@@ -727,7 +740,7 @@ private struct StreakCard: View {
                 Spacer()
                 Label("\(payload.streak.freezes)", systemImage: "snowflake")
             }
-            .font(.system(size: 12, weight: .black))
+            .font(BBFont.font(12, .black))
             .foregroundColor(BBColors.textSecondary)
             .lineLimit(1)
             .minimumScaleFactor(0.75)
@@ -757,7 +770,7 @@ private struct FocusCard: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Label("Today's focus", systemImage: "location.north.line.fill")
-                    .font(.system(size: 12, weight: .black))
+                    .font(BBFont.font(12, .black))
                     .foregroundColor(BBColors.textSecondary)
                 Spacer()
                 Text(payload.focus.status.uppercased())
@@ -771,10 +784,10 @@ private struct FocusCard: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 22, weight: .black))
+                    .font(BBFont.font(22, .black))
                     .foregroundColor(BBColors.text)
                 Text(payload.focus.tone == "alert" ? "Adjust the next meal and keep the weekly trend steady." : "Use the next meal to balance calories and macros.")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(BBFont.font(13, .bold))
                     .foregroundColor(BBColors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -980,7 +993,7 @@ private struct WeightLineChart: View {
 
                 if points.isEmpty {
                     Text("No weight logs yet")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(BBFont.font(13, .bold))
                         .foregroundColor(BBColors.textSecondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -1014,7 +1027,7 @@ private struct MealRingsView: View {
                     .font(.system(size: 34, weight: .black))
                     .foregroundColor(BBColors.text)
                 Text("kcal")
-                    .font(.system(size: 12, weight: .black))
+                    .font(BBFont.font(12, .black))
                     .foregroundColor(BBColors.textSecondary)
             }
         }
@@ -1036,19 +1049,19 @@ private struct MealSlotCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("\(meal.emoji) \(meal.title)")
-                    .font(.system(size: 13, weight: .black))
+                    .font(BBFont.font(13, .black))
                     .foregroundColor(BBColors.text)
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
                 Spacer()
                 Text("\(calories)")
-                    .font(.system(size: 12, weight: .black))
+                    .font(BBFont.font(12, .black))
                     .foregroundColor(meal.color)
             }
 
             if let first = entries.first {
                 Text(first.foodItem)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(BBFont.font(12, .bold))
                     .foregroundColor(BBColors.textSecondary)
                     .lineLimit(2)
             } else {
@@ -1056,7 +1069,7 @@ private struct MealSlotCard: View {
                     Image(systemName: "plus")
                     Text("Add food")
                 }
-                .font(.system(size: 12, weight: .black))
+                .font(BBFont.font(12, .black))
                 .foregroundColor(meal.color)
             }
         }
@@ -1097,15 +1110,15 @@ private struct SectionHeader: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .black))
+                .font(BBFont.font(BBFont.sm, .black))
                 .foregroundColor(BBColors.primary)
             Text(title)
-                .font(.system(size: 16, weight: .black))
+                .font(BBFont.font(BBFont.base, .black))
                 .foregroundColor(BBColors.text)
             Spacer()
             if let trailing {
                 Text(trailing)
-                    .font(.system(size: 11, weight: .black))
+                    .font(BBFont.font(11, .black))
                     .foregroundColor(BBColors.textSecondary)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
@@ -1129,7 +1142,7 @@ private struct MacroLegend: View {
         HStack(spacing: 5) {
             Circle().fill(color).frame(width: 8, height: 8)
             Text(text)
-                .font(.system(size: 11, weight: .bold))
+                .font(BBFont.font(11, .bold))
                 .foregroundColor(BBColors.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -1145,7 +1158,7 @@ private struct TrendBadge: View {
             Image(systemName: diff > 0 ? "arrow.up" : (diff < 0 ? "arrow.down" : "minus"))
             Text(String(format: "%.1f kg", abs(diff)))
         }
-        .font(.system(size: 12, weight: .black))
+        .font(BBFont.font(12, .black))
         .foregroundColor(color)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
@@ -1162,7 +1175,7 @@ private struct MiniActionButton: View {
     var body: some View {
         Button {} label: {
             Label(title, systemImage: icon)
-                .font(.system(size: 13, weight: .black))
+                .font(BBFont.font(13, .black))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
@@ -1183,13 +1196,13 @@ private struct FocusInsight: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .black))
+                .font(BBFont.font(BBFont.base, .black))
                 .foregroundColor(color)
             Text(label)
                 .font(.system(size: 10, weight: .black))
                 .foregroundColor(BBColors.textSecondary)
             Text(value)
-                .font(.system(size: 13, weight: .black))
+                .font(BBFont.font(13, .black))
                 .foregroundColor(BBColors.text)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
@@ -1210,15 +1223,15 @@ private struct MetricMiniBox: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 16, weight: .black))
+                .font(BBFont.font(BBFont.base, .black))
                 .foregroundColor(BBColors.primary)
             Text(value)
-                .font(.system(size: 18, weight: .black))
+                .font(BBFont.font(BBFont.lg, .black))
                 .foregroundColor(BBColors.text)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
             Text(label.uppercased())
-                .font(.system(size: 9, weight: .black))
+                .font(BBFont.font(9, .black))
                 .foregroundColor(BBColors.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -1235,7 +1248,7 @@ private struct DashboardLoadingCard: View {
             ProgressView()
                 .tint(BBColors.primary)
             Text("Loading overview...")
-                .font(.system(size: 14, weight: .bold))
+                .font(BBFont.font(BBFont.sm, .bold))
                 .foregroundColor(BBColors.textSecondary)
         }
         .frame(maxWidth: .infinity)

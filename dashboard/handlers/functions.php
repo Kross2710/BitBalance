@@ -435,7 +435,7 @@ function bb_beats_collection_dex(PDO $pdo, int $userId, string $lang = 'en'): ar
         $dex[] = array(
             'key'      => $key,
             'name'     => $a['name'][$lang],
-            'emoji'    => $a['emoji'],
+            'icon'     => $a['icon'],
             'voice'    => $a['voice'][$lang],
             'rarity'   => bb_beats_archetype_rarity($key),
             'owned'    => ($o !== null),
@@ -509,6 +509,90 @@ function bb_save_beats_mirror_cache(PDO $pdo, int $userId, string $lang, string 
     } catch (PDOException $e) {
         // ignore
     }
+}
+
+/* ============ Diet & Beats — AI text call (OpenRouter first, Gemini fallback) ============ */
+/**
+ * Single AI text call for the Beats handlers. Tries OpenRouter first because the RMIT
+ * outbound firewall breaks DIRECT calls to generativelanguage.googleapis.com (this is why
+ * mascot_chat.php was migrated to OpenRouter). Falls back to Gemini direct where reachable
+ * (e.g. local XAMPP). Returns the model's raw text reply, or null if all providers fail.
+ * Callers strip ```json fences and json_decode() as needed.
+ */
+function bb_beats_ai_text($prompt)
+{
+    $prompt = (string) $prompt;
+    if ($prompt === '') {
+        return null;
+    }
+
+    // 1. OpenRouter (OpenAI-compatible /chat/completions) — the path that works on RMIT.
+    //    Try the configured model, then a couple of free fallbacks: free models 429
+    //    ("temporarily rate-limited") intermittently, so one alone is not reliable.
+    if (defined('OPENROUTER_API_KEY') && OPENROUTER_API_KEY !== '') {
+        $models = array();
+        if (defined('OPENROUTER_MODEL') && OPENROUTER_MODEL !== '') {
+            $models[] = OPENROUTER_MODEL;
+        }
+        foreach (array('google/gemma-4-31b-it:free', 'meta-llama/llama-3.3-70b-instruct:free') as $fallbackModel) {
+            if (!in_array($fallbackModel, $models, true)) {
+                $models[] = $fallbackModel;
+            }
+        }
+        foreach ($models as $model) {
+            $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+                'model' => $model,
+                'messages' => array(array('role' => 'user', 'content' => $prompt)),
+            )));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Authorization: Bearer ' . OPENROUTER_API_KEY,
+                'Content-Type: application/json',
+            ));
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            $res = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ((int) $code === 200 && $res !== false) {
+                $data = json_decode($res, true);
+                $text = isset($data['choices'][0]['message']['content']) ? trim((string) $data['choices'][0]['message']['content']) : '';
+                if ($text !== '') {
+                    return $text;
+                }
+            }
+        }
+    }
+
+    // 2. Gemini direct fallback (reachable on local XAMPP; blocked on RMIT).
+    if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
+        $model = defined('AI_COACH_MODEL') ? AI_COACH_MODEL : 'gemini-3.1-flash-lite';
+        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . GEMINI_API_KEY);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+            'contents' => array(array('parts' => array(array('text' => $prompt)))),
+        )));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+        $res = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ((int) $code === 200 && $res !== false) {
+            $data = json_decode($res, true);
+            $text = isset($data['candidates'][0]['content']['parts'][0]['text']) ? (string) $data['candidates'][0]['content']['parts'][0]['text'] : '';
+            if (trim($text) !== '') {
+                return $text;
+            }
+        }
+    }
+
+    return null;
 }
 
 /* ============ The Mirror — global artist→genre cache (Last.fm, #1) ============ */

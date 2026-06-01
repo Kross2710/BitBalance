@@ -87,10 +87,10 @@ struct SignUpView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Create your account")
-                    .font(.system(size: 30, weight: .heavy))
+                    .font(BBFont.displayBold)
                     .foregroundColor(BBColors.text)
                 Text("Start your first streak in under a minute.")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(BBFont.font(BBFont.base, .medium))
                     .foregroundColor(BBColors.textSecondary)
             }
             .padding(.bottom, 6)
@@ -133,7 +133,7 @@ struct SignUpView: View {
 
             if !passwordsMatch {
                 Text("Passwords do not match")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(BBFont.font(13, .semibold))
                     .foregroundColor(BBColors.danger)
             }
 
@@ -142,9 +142,9 @@ struct SignUpView: View {
             if let errorMessage = session.errorMessage {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(BBFont.bodyBold)
                     Text(errorMessage)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(BBFont.font(BBFont.sm, .bold))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .bbAlert(isSuccess: false)
@@ -182,13 +182,13 @@ struct SignUpView: View {
 
             HStack(spacing: 4) {
                 Text("Already have an account?")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(BBFont.font(BBFont.sm, .medium))
                     .foregroundColor(BBColors.textSecondary)
                 Button {
                     dismiss()
                 } label: {
                     Text("Sign In")
-                        .font(.system(size: 14, weight: .heavy))
+                        .font(BBFont.font(BBFont.sm, .heavy))
                         .foregroundColor(BBColors.primary)
                 }
             }
@@ -204,11 +204,11 @@ struct SignUpView: View {
     private var passwordHint: some View {
         HStack(spacing: 6) {
             Image(systemName: passwordValid ? "checkmark.circle.fill" : "info.circle")
-                .font(.system(size: 12, weight: .bold))
+                .font(BBFont.captionBold)
             Text(passwordValid
                  ? "Password meets all requirements"
                  : "At least 8 characters, with an uppercase, lowercase letter and a number.")
-                .font(.system(size: 13, weight: .semibold))
+                .font(BBFont.font(13, .semibold))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .foregroundColor(passwordValid ? BBColors.success : BBColors.textSecondary)
@@ -231,7 +231,7 @@ struct SignUpView: View {
                 Link(destination: url) {
                     Text("I agree to the \(Text("Terms and Conditions").foregroundColor(BBColors.primary).fontWeight(.bold))")
                         .foregroundColor(BBColors.textSecondary)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(BBFont.font(BBFont.sm, .medium))
                         .fixedSize(horizontal: false, vertical: true)
                         .multilineTextAlignment(.leading) // Đảm bảo text căn lề trái nếu xuống dòng
                 }

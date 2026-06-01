@@ -99,11 +99,10 @@ $__navDateQ = (!empty($selectedDate) && $selectedDate !== date('Y-m-d'))
         <?php endif; ?>
     </a>
 
-    <!-- Future feature, so ignore implement for this page -->
-    <!-- <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
+    <a href="dashboard-beats.php" class="nav-link <?php echo ($activePage == 'beats') ? 'active' : ''; ?>"
         data-short="<?= t('dashboard.sidebar.beats_short') ?>">
         <i class="fa-solid fa-music"></i> <?= t('dashboard.sidebar.beats') ?>
-    </a> -->
+    </a>
 
 
     <!-- <a href="promo-video.php" class="nav-link <?php echo ($activePage == 'promo-video') ? 'active' : ''; ?>"
