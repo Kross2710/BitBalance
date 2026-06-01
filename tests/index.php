@@ -497,6 +497,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'run') {
         <button class="btn btn-primary" id="run-btn">
             <span>🚀</span> Run All Tests
         </button>
+        <a class="btn" href="i18n.php" style="text-decoration: none; background-color: var(--color-surface); color: var(--color-text); border: 2px solid var(--color-border); box-shadow: 0 4px 0 var(--color-border);">
+            <span>🌐</span> i18n Parity
+        </a>
         <div class="search-box">
             <input type="text" class="search-input" id="search-input" placeholder="Search test suites (e.g. UsernameTest)...">
         </div>
