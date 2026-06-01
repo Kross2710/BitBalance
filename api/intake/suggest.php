@@ -26,7 +26,15 @@ $user = api_require_auth($pdo);
 $userId = (int) $user['user_id'];
 
 $q = isset($_GET['q']) ? trim((string) $_GET['q']) : '';
-$q = mb_substr($q, 0, 100);
+// Cap to 100 chars, UTF-8-safe. mbstring is absent on RMIT (mb_substr would fatal),
+// and no mb_* polyfill exists in this repo, so use iconv with a regex fallback.
+if (function_exists('iconv_substr') && ($qCut = @iconv_substr($q, 0, 100, 'UTF-8')) !== false) {
+    $q = $qCut;
+} elseif (preg_match_all('/./us', $q, $qm)) {
+    $q = implode('', array_slice($qm[0], 0, 100));
+} else {
+    $q = substr($q, 0, 100);
+}
 
 // Escape LIKE wildcards in user input so % and _ are matched literally.
 $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
