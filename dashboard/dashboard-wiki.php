@@ -166,7 +166,7 @@ $wikiArticles = [
     <main class="dashboard-content wiki-page">
         <div class="wiki-container">
 
-            <section class="wiki-hero">
+            <section class="wiki-hero surface-card">
                 <div class="wiki-hero-icon"><i class="fas fa-book-medical"></i></div>
                 <div>
                     <h1><?= t('wiki.hero.title') ?></h1>

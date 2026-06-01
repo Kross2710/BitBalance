@@ -140,8 +140,10 @@ It is **cold-start-proof** (uses only the user's own data) and reuses the existi
 > 2. If genre coverage < 40% (no key / niche or local artists), **Gemini infers** the axes from the
 >    artist names instead — folded into the same call that writes the narration (no extra cost).
 >
-> The Mirror cache key (`v4`) includes a genre signature, so a result flips from AI- to Last.fm-based
-> the moment real genres become available. One Gemini call max either way.
+> The Mirror cache key (`v5`) includes a genre signature, so a result flips from AI- to Last.fm-based
+> the moment real genres become available. One Gemini call max either way. The headline `top_genre`
+> skips generic umbrellas (`pop`/`rock`/`indie`…) in favour of a specific tag; folksonomy noise
+> (`seen live`, `favorites`…) is stripped from both the axes and the label (`bb_beats_noise_tags()`).
 
 ## 🚀 Future Roadmap & Improvement Ideas
 

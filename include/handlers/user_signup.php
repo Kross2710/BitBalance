@@ -72,14 +72,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until) VALUES (?, 'active', 'system', 0, NULL)");
                 $stmt->execute([$user_id]);
 
-                // Auto-login the user after successful registration
+                // Auto-login the user after successful registration.
+                // 'is_new_signup' marks this as a brand-new account so the
+                // dashboard greets with "Welcome" instead of "Welcome back". The
+                // flag lives only for this first session — a later real login
+                // rebuilds $_SESSION['user'] without it (see user_login.php).
                 $_SESSION['user'] = [
                     'user_id' => $user_id,
                     'user_name' => $username,
                     'first_name' => $first_name,
                     'last_name' => $last_name,
                     'email' => $email,
-                    'role' => 'regular'
+                    'role' => 'regular',
+                    'is_new_signup' => true
                 ];
 
                 // Log the signup attempt

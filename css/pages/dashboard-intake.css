@@ -611,20 +611,6 @@
         background: var(--color-secondary, #ef4444);
         box-shadow: 0 0 8px var(--color-secondary, #ef4444);
     }
-    /* TEMP: on-screen scan diagnostics (backend · frame · resolution). Remove once tuned. */
-    .scanner-debug {
-        position: absolute;
-        left: 8px;
-        bottom: 8px;
-        padding: 2px 8px;
-        border-radius: 6px;
-        background: rgba(0, 0, 0, 0.6);
-        color: #9be7a0;
-        font: 600 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-        letter-spacing: 0.02em;
-        pointer-events: none;
-        z-index: 2;
-    }
 
     .scanner-controls {
         display: flex;

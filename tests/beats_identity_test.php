@@ -133,13 +133,14 @@ check('low budget caps kcal', max(array_map(function ($s) { return $s['kcal']; }
 echo "== last.fm tag filter ==\n";
 $sampleTags = array(
     array('name' => 'indie pop', 'count' => 100),
-    array('name' => 'seen live', 'count' => 80),     // noise but high count → still kept by weight
+    array('name' => 'seen live', 'count' => 80),      // folksonomy noise → dropped
     array('name' => 'lo-fi', 'count' => 45),
     array('name' => 'chill', 'count' => 30),
     array('name' => 'obscure', 'count' => 3),         // below minCount → dropped
 );
 $filtered = bb_beats_filter_lastfm_tags($sampleTags, 5, 10);
 check('drops sub-threshold tags', !in_array('obscure', $filtered, true));
+check('drops noise tags', !in_array('seen live', $filtered, true));
 check('keeps strong genre tags', in_array('indie pop', $filtered, true) && in_array('lo-fi', $filtered, true));
 check('respects max count', count(bb_beats_filter_lastfm_tags($sampleTags, 2, 10)) === 2);
 check('empty/garbage input → empty', bb_beats_filter_lastfm_tags(null) === array() && bb_beats_filter_lastfm_tags('x') === array());
@@ -149,6 +150,41 @@ $gw = array();
 foreach ($filtered as $g) { $gw[$g] = isset($gw[$g]) ? $gw[$g] + 1 : 1; }
 $axesFromTags = bb_beats_music_axes($gw, 50, count($gw));
 check('lo-fi/chill tags → high comfort axis', $axesFromTags['comfort'] >= 0.6);
+
+echo "== genre label & noise filtering in axes ==\n";
+$lbl = bb_beats_music_axes(array('pop' => 10, 'synth-funk' => 3), 50, 2);
+check('label prefers specific over generic', $lbl['top_genre'] === 'synth-funk');
+$allGeneric = bb_beats_music_axes(array('pop' => 10), 50, 1);
+check('all-generic → still labels (fallback)', $allGeneric['top_genre'] === 'pop');
+$noisy = bb_beats_music_axes(array('lo-fi' => 5, 'seen live' => 10), 50, 2);
+check('noise excluded from axes (comfort stays high)', $noisy['comfort'] >= 0.8);
+check('noise never chosen as label', $noisy['top_genre'] === 'lo-fi');
+
+echo "== archetype rarity & lookup ==\n";
+check('lookup by key works', bb_beats_archetype_by_key('romantic')['emoji'] === '🌙');
+check('unknown key → null', bb_beats_archetype_by_key('nope') === null);
+check('centre archetype → common', bb_beats_archetype_rarity('maestro') === 'common');
+check('extreme archetype → legendary', bb_beats_archetype_rarity('romantic') === 'legendary');
+check('hype → epic', bb_beats_archetype_rarity('hype') === 'epic');
+check('minimalist → rare', bb_beats_archetype_rarity('minimalist') === 'rare');
+check('unknown key → common (safe default)', bb_beats_archetype_rarity('nope') === 'common');
+$tiers = array();
+foreach (bb_beats_archetype_catalog() as $a) { $t = bb_beats_archetype_rarity($a['key']); $tiers[$t] = ($tiers[$t] ?? 0) + 1; }
+echo "  (rarity spread: " . json_encode($tiers) . ")\n";
+check('every tier represented', isset($tiers['common'], $tiers['rare'], $tiers['epic'], $tiers['legendary']));
+
+echo "== single-food axes (DJ Mixer) ==\n";
+$proteinFood = bb_beats_food_axes_single(40, 5, 4, 250, 13);
+check('protein food → energy-leaning', $proteinFood['energy'] >= 0.5);
+check('daytime → low nocturnal', $proteinFood['nocturnal'] < 0.5);
+$lateCarbFood = bb_beats_food_axes_single(8, 60, 20, 600, 23);
+check('carb/fat → comfort-leaning', $lateCarbFood['comfort'] >= 0.5);
+check('late hour → high nocturnal', $lateCarbFood['nocturnal'] >= 0.8);
+// A pair lands on a sensible catalog archetype.
+$pairArch = bb_beats_assign_archetype(bb_beats_combine(
+    array('energy'=>0.2,'comfort'=>0.9,'diversity'=>0.4,'nocturnal'=>0.85), $lateCarbFood), 'en');
+check('chill+late+carb pair → cozy/romantic/dreamer',
+    in_array($pairArch['key'], array('romantic','cozy','dreamer','minimalist'), true));
 
 echo "\n== RESULT: {$pass} passed, {$fail} failed ==\n";
 exit($fail > 0 ? 1 : 0);

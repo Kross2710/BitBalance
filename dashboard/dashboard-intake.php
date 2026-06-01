@@ -627,8 +627,6 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             let scanCanvas     = null;  // offscreen canvas for ZXing frame grabs
             let scanCtx        = null;
             let activeBackend  = null;  // 'native' | 'zxing'
-            let frameCount     = 0;
-            let debugEl        = null;  // on-screen diagnostics (temporary)
 
             const SCAN_FORMATS_NATIVE = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
             // Request a high-res rear camera: sharper frames decode 1D barcodes far
@@ -685,9 +683,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 videoEl.setAttribute('muted', '');
                 videoEl.muted = true;
                 reader.appendChild(videoEl);
-                reader.insertAdjacentHTML('beforeend',
-                    '<div class="scanner-guide"></div><div class="scanner-debug">…</div>');
-                debugEl = reader.querySelector('.scanner-debug');
+                reader.insertAdjacentHTML('beforeend', '<div class="scanner-guide"></div>');
 
                 try {
                     // We own the stream for BOTH backends — no library lifecycle surprises.
@@ -699,7 +695,6 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     if (activeBackend === 'zxing') setupZxing();
 
                     scanning = true;
-                    frameCount = 0;
                     startBtn.style.display = 'none';
                     stopBtn.style.display = 'block';
                     scanLoop();
@@ -758,21 +753,15 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             // Single decode loop, throttled, driving whichever backend is active.
             async function scanLoop() {
                 if (!scanning || !videoEl) return;
-                frameCount++;
-                const dims = videoEl.videoWidth + '×' + videoEl.videoHeight;
                 try {
                     if (activeBackend === 'native') {
                         const codes = await nativeDetector.detect(videoEl);
-                        setDebug('native · #' + frameCount + ' · ' + dims);
                         if (codes && codes.length) onScanSuccess(codes[0].rawValue);
                     } else {
                         const text = decodeZxingFrame();
-                        setDebug('zxing · #' + frameCount + ' · ' + dims + (text ? ' · HIT' : ''));
                         if (text) onScanSuccess(text);
                     }
-                } catch (e) {
-                    setDebug(activeBackend + ' · #' + frameCount + ' · ' + dims + ' · ' + ((e && e.name) || 'err'));
-                }
+                } catch (e) { /* transient per-frame decode error — keep looping */ }
                 if (scanning) scanTimer = setTimeout(scanLoop, SCAN_INTERVAL_MS);
             }
 
@@ -796,8 +785,6 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 }
             }
 
-            function setDebug(msg) { if (debugEl) debugEl.textContent = msg; }
-
             async function stopScanner() {
                 await teardown();
                 startBtn.style.display = 'block';
@@ -816,7 +803,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                     videoEl.srcObject = null;
                     videoEl = null;
                 }
-                scanCanvas = null; scanCtx = null; debugEl = null;
+                scanCanvas = null; scanCtx = null;
                 const reader = document.getElementById('scannerReader');
                 if (reader) reader.innerHTML = ''; // restores the :empty placeholder
             }

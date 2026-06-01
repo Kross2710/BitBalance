@@ -231,7 +231,7 @@ $csrfToken = csrf_token();
     <main class="dashboard-content">
         <div class="pt-container">
             <!-- Header Hero -->
-            <section class="pt-hero">
+            <section class="pt-hero surface-card">
                 <div class="pt-hero__copy">
                     <span class="pt-kicker"><i class="fas fa-dumbbell"></i> <?= ($lang === 'vi') ? 'Huấn luyện viên cá nhân' : 'Personal Trainer' ?></span>
                     <h1><?= ($lang === 'vi') ? 'PT Dashboard' : 'PT Dashboard' ?></h1>
@@ -313,7 +313,7 @@ $csrfToken = csrf_token();
                                     $over     = (!$needsLog && $calGoal > 0 && $rawPct >= 110);
                                     $cardMod  = $needsLog ? ' client-card--alert' : ($over ? ' client-card--warn' : '');
                                 ?>
-                                    <article class="client-card<?= $cardMod ?>" data-user-id="<?= $cid ?>" data-name="<?= strtolower($name) ?>">
+                                    <article class="client-card surface-card<?= $cardMod ?>" data-user-id="<?= $cid ?>" data-name="<?= strtolower($name) ?>">
                                         <div class="client-card__header">
                                             <div class="client-card__avatar">
                                                 <?php if ($avatar): ?>
@@ -379,7 +379,7 @@ $csrfToken = csrf_token();
                 <div class="pt-drawer" id="clientDrawer" hidden>
                     <div class="pt-drawer__backdrop" data-drawer-close></div>
                     <div class="pt-drawer__panel" role="dialog" aria-modal="true" aria-label="<?= ($lang === 'vi') ? 'Chi tiết học viên' : 'Client details' ?>">
-                        <div class="pt-details-card" id="clientDetailsCard">
+                        <div class="pt-details-card surface-card" id="clientDetailsCard">
                             <button class="close-side-details" onclick="closeClientDetails()"><i class="fas fa-times"></i></button>
                             
                             <div class="details-header">

@@ -10,6 +10,7 @@
  */
 require_once __DIR__ . '/../../include/init.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../../include/handlers/beats_identity.php';
 
 header('Content-Type: application/json');
 
@@ -109,7 +110,7 @@ $mixInputMeta = [
 ];
 
 // --- Session cache (bumped to v2 for the new multi-dimensional schema) ---
-$cacheKey = md5('v2|' . $track . '|' . $artist . '|' . $food . '|' . $kcal . '|' . $lang);
+$cacheKey = md5('v3|' . $track . '|' . $artist . '|' . $food . '|' . $kcal . '|' . $lang);
 if (isset($_SESSION['beats_mixer_cache'][$cacheKey])) {
     $cached = $_SESSION['beats_mixer_cache'][$cacheKey];
     // Stash as the pending mix so it can be kept even on a cache hit.
@@ -302,15 +303,32 @@ if (!$success) {
 // --- Headline score = average of the three dimensions (ring matches bars) ---
 $matchScore = $clamp(($energySync + $comfortScore + $chaos) / 3);
 
-if ($rarity === '') {
-    if ($matchScore >= 80) {
-        $rarity = $lang === 'vi' ? 'Huyền thoại — top 5% combo' : 'Legendary — top 5% of mixes';
-    } elseif ($matchScore >= 60) {
-        $rarity = $lang === 'vi' ? 'Hiếm — 12% mix kiểu này' : 'Rare — only 12% mix it this way';
-    } else {
-        $rarity = $lang === 'vi' ? 'Combo thử nghiệm táo bạo' : 'A bold experimental blend';
-    }
-}
+// --- Catalog archetype + REAL rarity (Pokédex integrity) ---------------------
+// The pair's "personality" is assigned from the FIXED hand-designed catalog (stable,
+// finite, collectible) — NOT AI free-text — so the collection is a real dex. The food
+// side is grounded in real macros; the track side uses the existing per-track energy
+// heuristic for now. (TODO: ground the track via Last.fm genre like The Mirror does.)
+$mixMusicAxes = array(
+    'energy'    => $trackEnergy / 100.0,
+    'comfort'   => bb_beats_clamp01(1.0 - $trackEnergy / 100.0),
+    'diversity' => 0.5,
+    'nocturnal' => 0.5,
+);
+$mixArch = bb_beats_assign_archetype(
+    bb_beats_combine($mixMusicAxes, bb_beats_food_axes_single($p, $c, $f, $kcal, $typicalHour)),
+    $lang
+);
+$archetypeKey = $mixArch['key'];
+$archetype = $mixArch['emoji'] . ' ' . $mixArch['name'];   // override AI/fallback free-text
+$rarityTier = bb_beats_archetype_rarity($archetypeKey);    // common|rare|epic|legendary
+$rarityLabels = array(
+    'legendary' => array('vi' => 'Huyền thoại', 'en' => 'Legendary'),
+    'epic'      => array('vi' => 'Sử thi',      'en' => 'Epic'),
+    'rare'      => array('vi' => 'Hiếm',        'en' => 'Rare'),
+    'common'    => array('vi' => 'Thường',      'en' => 'Common'),
+);
+$rarity = $rarityLabels[$rarityTier][$lang];
+
 if ($detectedVibe === '') {
     $detectedVibe = $lang === 'vi' ? 'Vibe Nghệ Thuật 🎵' : 'Artistic Vibe 🎵';
 }
@@ -319,6 +337,8 @@ if ($detectedVibe === '') {
 $resultData = [
     'match_score'   => $matchScore,
     'archetype'     => $archetype,
+    'archetype_key' => $archetypeKey,
+    'rarity_tier'   => $rarityTier,
     'detected_vibe' => $detectedVibe !== '' ? $detectedVibe : $archetype,
     'tagline'       => $tagline,
     'scores'        => [

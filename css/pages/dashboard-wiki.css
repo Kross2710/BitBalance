@@ -27,16 +27,12 @@
 }
 
 /* --- Hero --- */
+/* Card skin from .surface-card (dash-layout.css); keep layout + hover transition. */
 .wiki-hero {
     display: flex;
     align-items: center;
     gap: 20px;
-    background: var(--color-surface);
-    color: var(--color-text);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 28px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 

@@ -110,7 +110,7 @@ $csrfToken     = csrf_token();
         <div class="pt-container">
             <!-- Trainer-centric slim hero: identity + stat strip (no duplicate card header) -->
             <?php $latestAdvice = !empty($feedbackHistory) ? date('j/n', strtotime($feedbackHistory[0]['date_for'])) : null; ?>
-            <section class="pt-hero coach-hero">
+            <section class="pt-hero coach-hero surface-card">
                 <div class="coach-hero__id">
                     <button type="button" class="coach-hero__avatar coach-hero__avatar--btn" id="viewTrainerProfile"
                             title="<?= ($lang === 'vi') ? 'Xem hồ sơ huấn luyện viên' : 'View trainer profile' ?>"
@@ -136,7 +136,7 @@ $csrfToken     = csrf_token();
                 </div>
             </section>
 
-            <section class="coach-card">
+            <section class="coach-card surface-card">
                 <!-- Internal tabs: Chat (default) / Feedback -->
                 <div class="details-tabs" role="tablist">
                     <button type="button" class="details-tab active" data-pane="chat"><i class="fas fa-comments"></i> <?= ($lang === 'vi') ? 'Trò chuyện' : 'Chat' ?></button>

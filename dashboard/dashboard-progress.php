@@ -30,7 +30,7 @@ if (!$isLoggedIn) {
         <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
 
         <main class="dashboard-content">
-            <section class="progress-locked">
+            <section class="progress-locked surface-card">
                 <div class="progress-locked__icon"><i class="fas fa-lock"></i></div>
                 <span class="progress-kicker"><i class="fas fa-bolt"></i> <?= t('progress.locked.kicker') ?></span>
                 <h1><?= t('progress.locked.title') ?></h1>
@@ -112,7 +112,7 @@ function bb_progress_render_achievement(array $achievement): void
     $maxLevel = (int) $achievement['max_level'];
     $isUnlocked = $level > 0;
     $isComplete = !empty($achievement['is_complete']);
-    $cardClass = 'achievement-card achievement-card--' . htmlspecialchars($achievement['tone'], ENT_QUOTES);
+    $cardClass = 'achievement-card surface-card surface-card--sm achievement-card--' . htmlspecialchars($achievement['tone'], ENT_QUOTES);
     if (!$isUnlocked) $cardClass .= ' achievement-card--locked';
     if ($isComplete) $cardClass .= ' achievement-card--complete';
     $levelText = $isComplete
@@ -179,7 +179,7 @@ function bb_progress_render_achievement(array $achievement): void
                 </div>
             <?php endif; ?>
 
-            <section class="progress-hero">
+            <section class="progress-hero surface-card">
                 <div class="progress-hero__copy">
                     <span class="progress-kicker"><i class="fas fa-bolt"></i> <?= t('progress.hero.kicker') ?></span>
                     <h1><?= t('progress.hero.level_title', ['n' => (int) $xp['current_level']]) ?></h1>
@@ -211,19 +211,19 @@ function bb_progress_render_achievement(array $achievement): void
             </section>
 
             <section class="progress-stat-grid">
-                <div class="progress-stat">
+                <div class="progress-stat surface-card surface-card--sm">
                     <span><?= t('progress.stat.total_xp') ?></span>
                     <strong><?= number_format((int) $xp['total_xp']) ?></strong>
                 </div>
-                <div class="progress-stat">
+                <div class="progress-stat surface-card surface-card--sm">
                     <span><?= t('progress.stat.achievements') ?></span>
                     <strong><?= (int) $summary['unlocked'] ?>/<?= (int) $summary['total_achievements'] ?></strong>
                 </div>
-                <div class="progress-stat">
+                <div class="progress-stat surface-card surface-card--sm">
                     <span><?= t('progress.stat.current_streak') ?></span>
                     <strong><?= (int) $summary['current_streak'] ?><?= t('progress.streak.day_short') ?></strong>
                 </div>
-                <div class="progress-stat">
+                <div class="progress-stat surface-card surface-card--sm">
                     <span><?= t('progress.stat.foods_logged') ?></span>
                     <strong><?= number_format((int) $summary['total_foods']) ?></strong>
                 </div>
@@ -263,7 +263,7 @@ function bb_progress_render_achievement(array $achievement): void
                         $recLabel = $recKey ? t_raw('progress.rec.' . $recKey) : $record['label'];
                         if ($recLabel === 'progress.rec.' . $recKey) $recLabel = $record['label'];
                         ?>
-                        <article class="record-card">
+                        <article class="record-card surface-card surface-card--sm">
                             <div class="record-card__icon"><i class="fas <?= htmlspecialchars($record['icon'], ENT_QUOTES) ?>"></i></div>
                             <div>
                                 <span><?= htmlspecialchars($recLabel, ENT_QUOTES) ?></span>

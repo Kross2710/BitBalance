@@ -56,13 +56,9 @@
     border: 1px solid var(--color-success-border);
 }
 
+/* Card skin from .surface-card (dash-layout.css); keep hover transition. */
 .plan-summary-strip,
 .plan-panel {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
-    color: var(--color-text);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 

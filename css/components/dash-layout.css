@@ -34,22 +34,21 @@
 }
 
 /* ---- Surface card ----
-   The canonical "3D tactile" card. Identical recipe to the legacy
-   .dashboard-card so the two can be used interchangeably while pages migrate.
-   New markup should use .surface-card. */
+   The canonical "3D tactile" card SKIN (background / border / radius / shadow).
+   Intentionally sets NO padding so it can be added to existing cards without
+   disturbing their own padding — pair it with a padding declaration in markup
+   or page CSS. New markup should use .surface-card. */
 .surface-card {
     background: var(--color-surface);
     color: var(--color-text);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: 24px;
     box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     box-sizing: border-box;
 }
 
-/* Compact variant — smaller padding + shallower lift (stat tiles, list rows). */
+/* Compact variant — shallower lift for stat tiles / list rows. */
 .surface-card--sm {
-    padding: 16px;
     box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
 }
 

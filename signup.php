@@ -57,14 +57,26 @@ if ($isLoggedIn) {
                 <input type="email" placeholder="Email" name="email" required
                     value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
 
-                <input type="password" placeholder="Password" name="password" required>
+                <div class="password-field">
+                    <input type="password" placeholder="Password" name="password" required
+                        value="<?php echo isset($_POST['password']) ? htmlspecialchars($_POST['password']) : ''; ?>">
+                    <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
 
                 <div class="password-requirements">
                     Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase
                     letter, and one number.
                 </div>
 
-                <input type="password" placeholder="Confirm Password" name="confirm_password" required>
+                <div class="password-field">
+                    <input type="password" placeholder="Confirm Password" name="confirm_password" required
+                        value="<?php echo isset($_POST['confirm_password']) ? htmlspecialchars($_POST['confirm_password']) : ''; ?>">
+                    <button type="button" class="password-toggle" aria-label="Show password" aria-pressed="false">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
 
                 <!-- CAPTCHA Section -->
                 <div class="captcha-section">
@@ -133,6 +145,26 @@ if ($isLoggedIn) {
 
             password.addEventListener('input', validatePasswords);
             confirmPassword.addEventListener('input', validatePasswords);
+
+            // Re-run match check on load in case the server preserved both
+            // password fields after a validation error (e.g. wrong captcha).
+            validatePasswords();
+        });
+
+        // Show / hide password toggle (one button per password field).
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.password-toggle').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const input = btn.parentElement.querySelector('input');
+                    const icon = btn.querySelector('i');
+                    const reveal = input.type === 'password';
+                    input.type = reveal ? 'text' : 'password';
+                    btn.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+                    btn.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+                    icon.classList.toggle('fa-eye', !reveal);
+                    icon.classList.toggle('fa-eye-slash', reveal);
+                });
+            });
         });
 
         // Refresh CAPTCHA without reloading the page (preserves everything the

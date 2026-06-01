@@ -246,7 +246,7 @@ if ($physicalReady) {
                     <div class="plan-alert plan-alert-success"><i class="fas fa-circle-check"></i> <?= $success_message ?></div>
                 <?php endif; ?>
 
-                <section class="plan-summary-strip">
+                <section class="plan-summary-strip surface-card">
                     <div class="plan-summary-title">
                         <span class="plan-kicker"><i class="fas fa-route"></i> <?= t('plan.kicker') ?></span>
                         <h1><?= t('plan.page_title') ?></h1>
@@ -271,7 +271,7 @@ if ($physicalReady) {
                 </section>
 
                 <div class="plan-grid">
-                    <section class="plan-panel plan-calculator-panel">
+                    <section class="plan-panel plan-calculator-panel surface-card">
                         <div class="plan-section-head">
                             <h2><i class="fas fa-calculator"></i> <?= t('calc.card_title') ?></h2>
                             <p><?= t('calc.card_sub') ?></p>
@@ -323,7 +323,7 @@ if ($physicalReady) {
 
 
 
-                    <section class="plan-panel plan-result-panel">
+                    <section class="plan-panel plan-result-panel surface-card">
                         <div class="plan-section-head">
                             <h2><i class="fas fa-bullseye"></i> <?= t('plan.recommendation.heading') ?></h2>
                             <p><?= t('plan.recommendation.subtitle') ?></p>
@@ -374,7 +374,7 @@ if ($physicalReady) {
                     </section>
                 </div>
 
-                <section class="plan-panel plan-notes-panel">
+                <section class="plan-panel plan-notes-panel surface-card">
                     <div class="plan-section-head compact">
                         <h2><i class="fas fa-compass"></i> <?= t('plan.notes.heading') ?></h2>
                     </div>

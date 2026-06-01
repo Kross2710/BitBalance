@@ -75,7 +75,7 @@ if ($isLoggedIn) {
                     </div>
                 <?php endif; ?>
 
-                <section class="filter-card">
+                <section class="filter-card surface-card">
                     <div class="card-header">
                         <h3><i class="fas fa-history"></i> <?= t('history.heading') ?></h3>
                         <p class="subtitle"><?= t('history.subtitle_short') ?></p>
@@ -112,7 +112,7 @@ if ($isLoggedIn) {
                     </div>
                 </section>
 
-                <section class="history-list-card">
+                <section class="history-list-card surface-card">
                     <div class="table-responsive">
                         <!-- Column order matches dashboard-intake (Food → Cal → Macros → Cat → Time → Action),
                              with Date prepended. `modern-table--with-date` enables the mobile card layout

@@ -6,13 +6,7 @@
     padding: 24px var(--page-pad-x) var(--page-pad-bottom);
 }
 
-.progress-hero,
-.progress-locked {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
-}
+/* .progress-hero / .progress-locked card skin from .surface-card (dash-layout.css). */
 
 .progress-hero {
     display: flex;
@@ -150,13 +144,10 @@
     margin-bottom: 30px;
 }
 
+/* Card skin from .surface-card + .surface-card--sm (dash-layout.css). */
 .progress-stat,
 .record-card,
 .achievement-card {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
 }
 

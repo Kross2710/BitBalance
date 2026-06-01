@@ -56,12 +56,9 @@
     font-size: 13px;
 }
 
+/* Card skin from .surface-card (dash-layout.css). */
 .coach-card {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 24px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     max-width: 720px;
 }
 

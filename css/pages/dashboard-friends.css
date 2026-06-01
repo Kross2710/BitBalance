@@ -6,15 +6,12 @@
     padding: 24px var(--page-pad-x) var(--page-pad-bottom);
 }
 
+/* Card skin from .surface-card (dash-layout.css). */
 .friends-locked {
     max-width: 680px;
     margin: 48px auto 80px;
     padding: 34px;
     text-align: center;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
 }
 
 .friends-locked__icon {
@@ -55,18 +52,15 @@
 }
 
 /* ---------- Hero ---------- */
+/* Card skin from .surface-card (dash-layout.css). */
 .friends-hero {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 28px 32px;
     margin-bottom: 28px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
 }
 .friends-hero__copy { flex: 1 1 320px; }
 .friends-hero__copy h1 {
@@ -264,16 +258,13 @@
     gap: 12px;
 }
 
+/* Card skin from .surface-card + .surface-card--sm (dash-layout.css). */
 .leaderboard-row {
     display: grid;
     grid-template-columns: 48px 56px minmax(0, 1fr) auto;
     align-items: center;
     gap: 14px;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 14px 16px;
-    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
 }
 
@@ -440,15 +431,12 @@
     gap: 16px;
 }
 
+/* Card skin from .surface-card + .surface-card--sm (dash-layout.css). */
 .friend-card {
     display: flex;
     align-items: center;
     gap: 14px;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 16px;
-    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 .friend-card:hover {

@@ -10,12 +10,9 @@
 }
 
 /* ==================== HERO SECTION ==================== */
+/* Card skin from .surface-card (dash-layout.css). */
 .pt-hero {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 32px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -178,12 +175,9 @@
 }
 
 /* ==================== CLIENT CARD ==================== */
+/* Card skin from .surface-card (dash-layout.css); keep hover transition. */
 .client-card {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 20px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     cursor: pointer;
     transition: all var(--transition-base);
     display: flex;
@@ -391,12 +385,9 @@
     top: 96px;
 }
 
+/* Card skin from .surface-card (dash-layout.css). */
 .pt-details-card {
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 24px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     position: relative;
 }
 

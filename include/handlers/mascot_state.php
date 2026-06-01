@@ -115,6 +115,14 @@ if (!function_exists('mascot_sanitize_name')) {
 
 if (!function_exists('mascot_ensure_state_table')) {
 
+    /** Lazily load the species registry only when a DB helper needs to validate. */
+    function mascot_state_require_species()
+    {
+        if (!function_exists('mascot_species_valid')) {
+            require_once __DIR__ . '/mascot_species.php';
+        }
+    }
+
     /** Create the pet-state table lazily (once per session), mirroring the
      *  beats_mirror_cache pattern — RMIT has no migration runner. */
     function mascot_ensure_state_table(PDO $pdo)
@@ -127,6 +135,7 @@ if (!function_exists('mascot_ensure_state_table')) {
                 "CREATE TABLE IF NOT EXISTS `mascot_state` (
                     `user_id` INT(11) NOT NULL,
                     `name` VARCHAR(40) DEFAULT NULL,
+                    `active_species` VARCHAR(20) NOT NULL DEFAULT 'owl',
                     `active_skin` VARCHAR(30) DEFAULT NULL,
                     `created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp(),
                     `updated_at` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -139,42 +148,159 @@ if (!function_exists('mascot_ensure_state_table')) {
         }
     }
 
-    /** The pet's name, or '' if unnamed / unavailable. */
-    function mascot_get_name(PDO $pdo, $userId)
+    /** Add active_species to a table that pre-dates P2 (idempotent, MariaDB). */
+    function mascot_ensure_active_species_column(PDO $pdo)
     {
-        $userId = (int) $userId;
-        if ($userId <= 0) return '';
+        if (!empty($_SESSION['mascot_active_species_col_ok'])) {
+            return;
+        }
         mascot_ensure_state_table($pdo);
         try {
-            $stmt = $pdo->prepare("SELECT name FROM `mascot_state` WHERE user_id = ? LIMIT 1");
+            $pdo->exec("ALTER TABLE `mascot_state` ADD COLUMN IF NOT EXISTS `active_species` VARCHAR(20) NOT NULL DEFAULT 'owl'");
+            $_SESSION['mascot_active_species_col_ok'] = true;
+        } catch (PDOException $e) {
+            // If the column already exists (fresh CREATE) the ALTER is a no-op;
+            // if ADD COLUMN IF NOT EXISTS is unsupported, reads fall back to 'owl'.
+        }
+    }
+
+    /** Create the per-species pet-names table lazily. */
+    function mascot_ensure_pet_names_table(PDO $pdo)
+    {
+        if (!empty($_SESSION['mascot_pet_names_table_ok'])) {
+            return;
+        }
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS `mascot_pet_names` (
+                    `user_id` INT(11) NOT NULL,
+                    `species` VARCHAR(20) NOT NULL,
+                    `name` VARCHAR(40) NOT NULL,
+                    `updated_at` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                    PRIMARY KEY (`user_id`, `species`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            );
+            $_SESSION['mascot_pet_names_table_ok'] = true;
+        } catch (PDOException $e) {
+            // tolerate; callers handle absence
+        }
+    }
+
+    /** The currently displayed species for a user; defaults to 'owl'. */
+    function mascot_get_active_species(PDO $pdo, $userId)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0) return 'owl';
+        mascot_state_require_species();
+        mascot_ensure_active_species_column($pdo);
+        try {
+            $stmt = $pdo->prepare("SELECT active_species FROM `mascot_state` WHERE user_id = ? LIMIT 1");
             $stmt->execute([$userId]);
-            $name = $stmt->fetchColumn();
-            if ($name === false || $name === null) return '';
-            return (string) $name;
+            $sp = $stmt->fetchColumn();
+            if ($sp !== false && $sp !== null && mascot_species_valid($sp)) {
+                return (string) $sp;
+            }
+        } catch (PDOException $e) {
+            // fall through
+        }
+        return 'owl';
+    }
+
+    /** Persist the active species (validated). Returns the stored id or ''. */
+    function mascot_set_active_species(PDO $pdo, $userId, $species)
+    {
+        $userId = (int) $userId;
+        mascot_state_require_species();
+        if ($userId <= 0 || !mascot_species_valid($species)) return '';
+        mascot_ensure_active_species_column($pdo);
+        try {
+            $stmt = $pdo->prepare(
+                "INSERT INTO `mascot_state` (user_id, active_species) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE active_species = VALUES(active_species), updated_at = CURRENT_TIMESTAMP"
+            );
+            $stmt->execute([$userId, $species]);
+            return $species;
         } catch (PDOException $e) {
             return '';
         }
     }
 
-    /**
-     * Sanitize + upsert the pet's name. Returns the stored (sanitized) name,
-     * or '' when the input was empty/invalid (nothing is written in that case).
-     */
-    function mascot_set_name(PDO $pdo, $userId, $rawName)
+    /** Read the legacy single name (P1 stored it on mascot_state.name = the owl). */
+    function mascot_get_legacy_name(PDO $pdo, $userId)
     {
-        $userId = (int) $userId;
-        $name = mascot_sanitize_name($rawName);
-        if ($userId <= 0 || $name === '') return '';
         mascot_ensure_state_table($pdo);
         try {
+            $stmt = $pdo->prepare("SELECT name FROM `mascot_state` WHERE user_id = ? LIMIT 1");
+            $stmt->execute([(int) $userId]);
+            $n = $stmt->fetchColumn();
+            if ($n !== false && $n !== null) return (string) $n;
+        } catch (PDOException $e) {
+            // ignore
+        }
+        return '';
+    }
+
+    /** A species' pet name, or '' if unnamed. Migrates the P1 owl name forward. */
+    function mascot_get_name(PDO $pdo, $userId, $species)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0) return '';
+        mascot_state_require_species();
+        if (!mascot_species_valid($species)) $species = 'owl';
+        mascot_ensure_pet_names_table($pdo);
+        try {
+            $stmt = $pdo->prepare("SELECT name FROM `mascot_pet_names` WHERE user_id = ? AND species = ? LIMIT 1");
+            $stmt->execute([$userId, $species]);
+            $name = $stmt->fetchColumn();
+            if ($name !== false && $name !== null && $name !== '') {
+                return (string) $name;
+            }
+        } catch (PDOException $e) {
+            return '';
+        }
+        // Legacy migration-on-read: the P1 single name belonged to the owl.
+        if ($species === 'owl') {
+            $legacy = mascot_get_legacy_name($pdo, $userId);
+            if ($legacy !== '') {
+                mascot_set_name($pdo, $userId, 'owl', $legacy);
+                return $legacy;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Sanitize + upsert a species' pet name. Returns the stored (sanitized)
+     * name, or '' when the input was empty/invalid (nothing is written then).
+     */
+    function mascot_set_name(PDO $pdo, $userId, $species, $rawName)
+    {
+        $userId = (int) $userId;
+        mascot_state_require_species();
+        if (!mascot_species_valid($species)) $species = 'owl';
+        $name = mascot_sanitize_name($rawName);
+        if ($userId <= 0 || $name === '') return '';
+        mascot_ensure_pet_names_table($pdo);
+        try {
             $stmt = $pdo->prepare(
-                "INSERT INTO `mascot_state` (user_id, name) VALUES (?, ?)
+                "INSERT INTO `mascot_pet_names` (user_id, species, name) VALUES (?, ?, ?)
                  ON DUPLICATE KEY UPDATE name = VALUES(name), updated_at = CURRENT_TIMESTAMP"
             );
-            $stmt->execute([$userId, $name]);
+            $stmt->execute([$userId, $species, $name]);
             return $name;
         } catch (PDOException $e) {
             return '';
         }
+    }
+
+    /** Map of species id => stored name ('' if unnamed) for every species. */
+    function mascot_get_all_names(PDO $pdo, $userId)
+    {
+        mascot_state_require_species();
+        $out = array();
+        foreach (mascot_species_ids() as $sp) {
+            $out[$sp] = mascot_get_name($pdo, $userId, $sp);
+        }
+        return $out;
     }
 }

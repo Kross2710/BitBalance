@@ -290,7 +290,7 @@ foreach (bb_beats_axes() as $ax) {
 }
 $genreKeys = array_keys($genreWeights);
 sort($genreKeys);
-$cacheKey = md5('mirror|v4|' . $lang . '|' . md5(implode('|', $namesForKey)) . '|' . $foodSig . '|' . md5(implode(',', $genreKeys)));
+$cacheKey = md5('mirror|v5|' . $lang . '|' . md5(implode('|', $namesForKey)) . '|' . $foodSig . '|' . md5(implode(',', $genreKeys)));
 
 // Today's budget (fuel is recomputed live — deterministic, no AI cost).
 $goal = (int) (getUserIntakeGoal($userId) ?? 0);

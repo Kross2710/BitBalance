@@ -1,6 +1,7 @@
 # 🦉 Pet Mascot — Evolution Plan ("The Companion")
 
-> **Status:** P0 + P1 SHIPPED (2026-06-01). P2/P3 proposed.
+> **Status:** P0 + P1 + P2 SHIPPED (2026-06-01). P2 = **Multi-pet Picker** (owl + cat vertical
+> slice; replaces the earlier owl-evolution idea). P3 proposed.
 > This document is the master plan for turning the Blue Owl from a *stateless mood widget*
 > into a *persistent companion* the user bonds with over time. Phases are independent.
 >
@@ -61,9 +62,9 @@ state that survives across days and rewards the core loop (logging + streaks).
 > **"A companion that grows with you."**
 
 The owl stops being a daily weather-vane and becomes a creature that *remembers you*, *levels
-up when you stay consistent*, and *changes its look* as you progress — without ever guilt-
-tripping. The emotional hooks are the proven trio: **a name** (ownership), **growth**
-(progress you can see), and **collection** (skins worth chasing).
+up when you stay consistent*, and that you can *make your own* — without ever guilt-tripping.
+The emotional hooks: **a name** (ownership), **growth** (the shared Level chip), and **variety**
+(pick your species and, later, skins to make it yours).
 
 ---
 
@@ -114,20 +115,87 @@ is **no** mascot-specific XP store.
 
 **Effort:** S–M · **Impact:** high (ownership + responsiveness, almost no new infra).
 
-### P2 — Evolution by streak (the retention engine)
-**Goal:** tie visible growth directly to the habit we already reward.
+### P2 — Multi-pet Picker (species = the collection axis) — ✅ SHIPPED (owl + cat slice)
 
-- The owl hatches and matures along `logging_streak` (table `streaks`):
-  `egg (0) → baby (3) → adult (14) → sage (30+)`, thresholds tunable.
-- Each stage = a variant of the existing SVG (bigger eyes → glasses/wise look for *sage*).
-  Reuse the current `state-*` CSS class pattern; add `stage-*` classes layered on top.
-- XP sources (all deterministic): +X for a daily log, bonus for hitting calorie *and* protein,
-  streak-milestone bumps. Level-up shows a small celebration (reuse `petBounce` + a burst).
-- **Anti-shame guardrail:** evolution only ever moves *forward or pauses* — a broken streak
-  never visibly "kills" or downgrades the pet (it just naps until you return). This is a
-  product rule, not a technical one, and it protects the Body Positivity Mandate.
+> Shipped as a one-species vertical slice (owl + cat). Files: `include/handlers/mascot_species.php`
+> (registry + per-species SVG renderers + 39-check `tests/mascot_species_test.php`),
+> `mascot_state.php` (active_species column via `ALTER … ADD COLUMN IF NOT EXISTS` + per-species
+> `mascot_pet_names` table, with the P1 owl name migrated forward), `dashboard/handlers/mascot_select.php`,
+> species-aware `mascot_chat.php`, and the 🐾 picker UI in `dashboard.php` (instant SVG swap — note
+> SVGElement needs the `hidden` *attribute* toggled, not the `.hidden` property). Add more species by
+> appending to the catalog + drawing one SVG body on the shared scaffold.
+>
+> Original design decisions (locked 2026-06-01):
+> **free choice** (no unlock/gating), **species is the sole collection axis** (no per-species
+> life-stages), **per-species names**, **full character** per species (own look + personality +
+> `deficit` prop). The `stage-*` CSS hook added in P1 goes dormant (not removed).
 
-**Effort:** M (mostly SVG variants + CSS) · **Impact:** high (growth you can see, on the core loop).
+**Concept.** The owl is the default. The user freely switches species anytime via an inline
+picker. Each species is its own character — own art, own name, own personality, own `deficit`
+prop. No unlock logic (free choice) and no life-stages (species *is* the variety). The Level
+chip (shared XP) stays the only progression axis.
+
+**Why this shape.** Two product decisions collapsed the complexity:
+- *Free choice* → no unlock logic at all; the picker is a pure selector.
+- *Species = axis, no stages* → the art matrix is just `species × 4 states`, never
+  `species × stages × skins × states`. Avoids combinatorial art blow-up.
+
+**Art architecture — shared scaffold + per-species body** (the cost saver):
+- *Shared across all species (drawn once):* the health-aura glow, the floating Zzz, the shadow
+  ellipse, the speech bubble, and the `owlBob` / `petBounce` animations.
+- *Per species:* body/face/limb paths, the closed-eyes shape (overlimit), and the `deficit`
+  prop + its animation.
+- The 4 `vibeState` triggers are unchanged — only the *expression* differs per species.
+
+**Data:**
+- `mascot_state.active_species` VARCHAR(20) DEFAULT 'owl'. Adding it to the already-existing
+  runtime-created table needs an idempotent `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` guard
+  (MariaDB supports it), run lazily + session-flagged like the table create.
+- NEW table `mascot_pet_names(user_id, species, name)`, PK `(user_id, species)` — names are
+  per species. Migrate the existing `mascot_state.name` into `(user, 'owl')` on first access so
+  nobody loses the name they set in P1.
+
+  ```sql
+  CREATE TABLE IF NOT EXISTS mascot_pet_names (
+    user_id    INT(11)     NOT NULL,
+    species    VARCHAR(20) NOT NULL,
+    name       VARCHAR(40) NOT NULL,
+    updated_at TIMESTAMP   NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (user_id, species)
+  );
+  ```
+
+**Species registry** — `include/handlers/mascot_species.php` (pure, no unlock conditions): each
+species → `id`, default display name EN/VI, personality tone EN/VI, per-state flavor EN/VI
+(incl. its own `deficit` metaphor), an SVG renderer reference, and a CSS class. The current owl
+identity/flavor moves out of `mascot_chat.php` into this registry.
+
+**Rendering & picker UX:**
+- Render every available species' SVG inline, hidden except the active one; the picker toggles
+  visibility → instant swap, no reload. (Fine for a handful of species; switch to AJAX-render
+  only when the catalogue grows to dozens.)
+- A 🐾 button next to the rename pencil opens a horizontal strip of species icons. Picking one
+  persists via a new `mascot_select.php` endpoint (modelled on `mascot_name.php`).
+
+**AI:** `mascot_chat.php` looks up the *active* species' identity + personality + state flavor +
+that species' name; `active_species` joins the cache key. The **Body Positivity Mandate** applies
+to every species' prompt verbatim.
+
+**Slice example — the Cat (build the pipeline end-to-end on one species first):**
+- Look: calico cat — ears, tail, whiskers. Personality: lazy/cozy, a touch sassy.
+- States: `neutral` sits with curled tail · `healthy` content + shared aura · `overlimit` curls
+  into a loaf, eyes closed + shared Zzz · `deficit` eyes/holds a fish 🐟 (on-message protein
+  metaphor). Own name (default suggestion "Mochi").
+
+**Open / defaulted (non-blocking):** unnamed → prompt uses the generic species identity ("the
+Calico Cat"); initial catalogue = owl + cat, more species after the pipeline proves out.
+
+**Tradeoff accepted:** free choice means no "unlock chase" — the Level chip carries progression;
+species is pure personalisation/variety.
+
+**Effort:** M engineering (registry, `active_species` + names table, SVG extraction/refactor, CSS
+namespacing, picker UI + endpoint, species-aware prompts) + art/content that scales with the
+number of species (the real cost). **Impact:** high (variety + ownership; sets up P3 skins).
 
 ### P3 — Collectible skins from Beats archetypes (reuse what's built)
 **Goal:** a collection chase with zero new identity engine.
@@ -136,10 +204,11 @@ is **no** mascot-specific XP store.
   romantic 🌙, cozy 🧸, explorer 🌀, hype 🔥, minimalist 🍃, maestro 🎯, dreamer 🍰,
   snacker ⚡, strategist ♟️). Each becomes an **unlockable owl outfit/skin**.
 - When a user reaches an archetype (already computed in `beats_mirror.php`), unlock its skin and
-  let them equip it via `mascot_state.active_skin`. Skins are CSS overlays on the base owl
-  (headband, vinyl-disc halo, chef hat…), not new SVGs.
-- A small "Owl Wardrobe" grid shows owned vs. locked skins → the collection rarity that
-  `BEATS.md` says makes archetypes feel valuable.
+  let them equip it via `mascot_state.active_skin`. Skins are CSS overlays on whichever species
+  is active (headband, vinyl-disc halo, chef hat…), not new SVGs — they ride on the shared
+  scaffold from P2, so one skin works across every species.
+- A small "Wardrobe" grid shows owned vs. locked skins → the collection rarity that `BEATS.md`
+  says makes archetypes feel valuable. (Sits alongside the P2 species picker.)
 
 **Effort:** M · **Impact:** medium–high (collection loop; bridges the Mascot and Beats features).
 
@@ -159,27 +228,33 @@ is **no** mascot-specific XP store.
 
 This is **additive**, not a rewrite. Every phase reuses current assets:
 
-- **Streaks** (`streaks.logging_streak`) → evolution thresholds (P2). No new tracking.
+- **XP/level** (`xp.php`, `user_xp`) → the Level chip and the only progression axis. No new store.
 - **Beats archetypes** (`beats_identity.php`) → collectible skins (P3). No new identity engine.
-- **`vibeState` + `state-*` CSS** → extended with `stage-*` / `skin-*` layers (P2/P3).
-- **3-tier AI fallback + body-positive prompts** (`mascot_chat.php`) → unchanged plumbing; we
-  only enrich the prompt inputs (name, streak, yesterday) and add a DB cache later.
-- **Runtime `CREATE TABLE IF NOT EXISTS`** pattern (`functions.php` / `beats_mirror_cache`) →
-  how `mascot_state` ships without a manual migration on the RMIT box.
+- **`vibeState` + `state-*` CSS** → the 4-state triggers stay; P2 adds `species-*` namespacing
+  and P3 adds `skin-*` overlays, all riding the shared scaffold.
+- **3-tier AI fallback + body-positive prompts** (`mascot_chat.php`) → unchanged plumbing; P2
+  moves the hardcoded owl identity into the species registry and adds `active_species` to the key.
+- **Runtime `CREATE TABLE IF NOT EXISTS`** pattern (`beats_mirror_cache`) → how `mascot_state`,
+  `mascot_pet_names`, and the `active_species` column ship without a manual RMIT migration.
 
 ---
 
 ## 5. Risks / open questions
 - **Scope creep into a full game.** Mitigation: phases are independent; P0+P1 alone already
-  improve the feel. Don't build P2/P3 until P1 lands.
-- **SVG variant cost (P2).** Four stages × possible skins could balloon art work. Mitigation:
-  one base owl + additive CSS overlays; only the *stage* silhouettes are true variants.
-- **Body Positivity Mandate under "evolution".** Growth/regression framing can read as
-  judgmental. Mitigation: forward-or-pause only, never downgrade; "napping," never "dying."
-- **AI cost as states multiply.** More moods = more unique cache keys. Mitigation: ship the DB
-  caption cache (P-later) before adding many new contextual moods.
-- **Migration safety.** `mascot_state` must self-create idempotently and tolerate the missing-
-  table case (RMIT has no migration runner) — copy the `beats_mirror_cache` guard exactly.
+  improve the feel. Build P2 as a one-species vertical slice before scaling the catalogue.
+- **Per-species art/content cost (P2).** Each species needs body + closed-eyes + a `deficit` prop
+  and personality text ×EN/VI. Mitigation: the shared scaffold (aura/Zzz/shadow/bubble/anims) is
+  drawn once; only the body layer is per-species, and there are no life-stages to multiply it.
+- **Migration of an existing column (P2).** `active_species` is added to a table that may already
+  exist → needs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, lazy + session-flagged (MariaDB OK).
+- **Body Positivity Mandate across species.** Every species' personality prompt inherits the rule
+  verbatim; a sassier voice (e.g. the cat) must never tip into judging food or body.
+- **AI cost as species/states multiply.** More combos = more unique cache keys. Mitigation: ship
+  the DB caption cache before the catalogue grows large.
+- **Picker rendering at scale.** Inlining every species' SVG is fine for a handful; switch to
+  AJAX-render or reload-on-select once the catalogue reaches dozens.
+- **Migration safety.** `mascot_state` / `mascot_pet_names` must self-create idempotently and
+  tolerate the missing-table case — copy the `beats_mirror_cache` guard exactly.
 
 ---
 
@@ -195,8 +270,17 @@ This is **additive**, not a rewrite. Every phase reuses current assets:
 - ✅ `dashboard.php`: Level chip, nameplate + rename, inline name form, `stage-*` CSS hook,
   `mascotCheer()` + once-per-session "fed today" greeting. New i18n keys (en/vi) + CSS.
 
-**Next (P2 → P3):**
-1. SVG stage variants (egg/baby/adult/sage) keyed on the `stage-*` class the card already
-   emits, driven by `mascot_stage_from_level()` (P2). Honour the forward-or-pause rule.
-2. Owl Wardrobe: unlock + equip Beats archetype skins via `mascot_state.active_skin` (P3).
-3. Cost: promote the mascot caption cache from session to a `mascot_chat_cache` table.
+**Next — P2 Multi-pet Picker, as a one-species vertical slice (owl + cat):**
+1. `include/handlers/mascot_species.php` registry (owl + cat: identity, personality, per-state
+   flavor EN/VI, SVG renderer ref, CSS class) + a CLI test like `tests/mascot_state_test.php`.
+2. Add `active_species` (ALTER guard) + `mascot_pet_names` table (migrate the P1 owl name in).
+3. Extract the inline owl SVG into a per-species renderer; draw the cat (body + closed-eyes +
+   fish 🐟 `deficit` prop) on the shared scaffold; namespace the CSS per species.
+4. Make `mascot_chat.php` species-aware (identity/flavor/name from the registry; species in key).
+5. `mascot_select.php` endpoint + the 🐾 picker UI (inline strip, instant toggle, no reload).
+6. Verify, then scale the catalogue (dog, …) once the slice proves the pipeline.
+
+**Then — P3 + cost:**
+7. Wardrobe: unlock + equip Beats archetype skins via `mascot_state.active_skin` (skins ride the
+   shared scaffold, so they work across species).
+8. Promote the mascot caption cache from session to a `mascot_chat_cache` table.

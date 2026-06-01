@@ -110,51 +110,82 @@ if (!function_exists('bb_beats_clamp01')) {
         return array('energy' => $e / $k, 'comfort' => $c / $k, 'nocturnal' => $n / $k);
     }
 
+    /** Folksonomy noise that should never influence the vibe axes OR the label. */
+    function bb_beats_noise_tags()
+    {
+        return array(
+            'seen live', 'favorites', 'favourites', 'favorite', 'favourite',
+            'love', 'beautiful', 'awesome', 'amazing', 'cool', 'good', 'music',
+            'spotify', 'favorite songs', 'all', 'fav', 'best', 'great', 'nice',
+        );
+    }
+
+    /** Real genres too generic to headline — kept in the axes, skipped for the label. */
+    function bb_beats_generic_label_tags()
+    {
+        return array('pop', 'rock', 'indie', 'alternative', 'alternative rock', 'indie rock', 'electronic');
+    }
+
     /**
      * Build the MUSIC fingerprint from genre weights + catalog signals.
+     * Noise tags are excluded from the axes entirely; the headline label additionally
+     * skips overly-generic umbrellas (falling back to the top tag if all are generic).
      *
      * @param array $genreWeights  [genre_string => weight] (weight = #artists/plays carrying it)
-     * @param float $avgPopularity 0..100 average Spotify artist popularity (mainstream-ness)
-     * @param int   $distinctGenres number of distinct genres seen
+     * @param float $avgPopularity 0..100 average artist popularity (mainstream-ness); often 50 default
+     * @param int   $distinctGenres advisory count; the function recomputes from non-noise genres
      * @return array{energy:float,comfort:float,diversity:float,nocturnal:float,top_genre:string}
      */
     function bb_beats_music_axes($genreWeights, $avgPopularity = 50.0, $distinctGenres = 0)
     {
+        $noise = bb_beats_noise_tags();
+        $generic = bb_beats_generic_label_tags();
+
         $e = 0.0; $c = 0.0; $n = 0.0; $wSum = 0.0;
-        $topGenre = ''; $topW = -1.0;
+        $distinctCount = 0;
+        $topGenre = ''; $topW = -1.0;             // highest weight overall (fallback label)
+        $topSpecific = ''; $topSpecificW = -1.0;  // highest weight, non-generic (preferred label)
 
         foreach ($genreWeights as $genre => $w) {
             $w = (float) $w;
             if ($w <= 0) continue;
-            $ax = bb_beats_genre_axes($genre);
+            $g = strtolower(trim((string) $genre));
+            if ($g === '' || in_array($g, $noise, true)) continue;   // ignore noise entirely
+
+            $ax = bb_beats_genre_axes($g);
             $e += $ax['energy'] * $w;
             $c += $ax['comfort'] * $w;
             $n += $ax['nocturnal'] * $w;
             $wSum += $w;
+            $distinctCount++;
+
             if ($w > $topW) { $topW = $w; $topGenre = (string) $genre; }
+            if (!in_array($g, $generic, true) && $w > $topSpecificW) {
+                $topSpecificW = $w; $topSpecific = (string) $genre;
+            }
         }
 
         if ($wSum <= 0) {
-            // No genre data → neutral fingerprint (still usable for congruence).
+            // No usable genre data → neutral fingerprint (still usable for congruence).
             $e = 0.5; $c = 0.5; $n = 0.35;
         } else {
             $e /= $wSum; $c /= $wSum; $n /= $wSum;
         }
 
-        if ($distinctGenres <= 0) {
-            $distinctGenres = count(array_filter($genreWeights, function ($w) { return (float) $w > 0; }));
-        }
-        // Diversity = genre spread blended with niche-ness (low popularity = more adventurous).
-        $spread = bb_beats_clamp01($distinctGenres / 10.0);
+        // Diversity from the noise-filtered distinct count, blended with niche-ness.
+        if ($distinctCount <= 0) { $distinctCount = (int) $distinctGenres; }
+        $spread = bb_beats_clamp01($distinctCount / 10.0);
         $niche  = bb_beats_clamp01(1.0 - ((float) $avgPopularity / 100.0));
         $diversity = bb_beats_clamp01($spread * 0.6 + $niche * 0.4);
+
+        $label = ($topSpecific !== '') ? $topSpecific : $topGenre;
 
         return array(
             'energy'    => bb_beats_clamp01($e),
             'comfort'   => bb_beats_clamp01($c),
             'diversity' => $diversity,
             'nocturnal' => bb_beats_clamp01($n),
-            'top_genre' => $topGenre,
+            'top_genre' => $label,
         );
     }
 
@@ -400,6 +431,67 @@ if (!function_exists('bb_beats_clamp01')) {
         );
     }
 
+    /** Look up a catalog archetype by its stable key. Returns the entry array or null. */
+    function bb_beats_archetype_by_key($key)
+    {
+        foreach (bb_beats_archetype_catalog() as $a) {
+            if ($a['key'] === $key) {
+                return $a;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Intrinsic rarity tier of an archetype, derived from how "extreme" its centroid is
+     * (Euclidean distance from the neutral centre 0.5 on every axis). Extreme personalities
+     * are rarer to land on → higher tier. Deterministic & cold-start-proof. A global,
+     * population-based rarity is the Direction-2 upgrade (see docs/beats-tribe-plan.md).
+     *
+     * @return string one of: common | rare | epic | legendary
+     */
+    function bb_beats_archetype_rarity($key)
+    {
+        $a = bb_beats_archetype_by_key($key);
+        if ($a === null) {
+            return 'common';
+        }
+        $d = 0.0;
+        foreach (bb_beats_axes() as $axis) {
+            $diff = ($a['axes'][$axis] ?? 0.5) - 0.5;
+            $d += $diff * $diff;
+        }
+        $d = sqrt($d); // 0 (dead-centre) .. 1 (every axis at an extreme)
+        if ($d >= 0.55) return 'legendary';
+        if ($d >= 0.45) return 'epic';
+        if ($d >= 0.30) return 'rare';
+        return 'common';
+    }
+
+    /**
+     * Build a 4-axis vector for a SINGLE food from its macros + typical eating hour
+     * (the DJ Mixer works on one food at a time, unlike the Mirror's 30-day fingerprint).
+     * Diversity is neutral (not meaningful for one item).
+     */
+    function bb_beats_food_axes_single($protein, $carbs, $fat, $kcal, $typicalHour = null)
+    {
+        $p = max(0.0, (float) $protein);
+        $c = max(0.0, (float) $carbs);
+        $f = max(0.0, (float) $fat);
+        $macroSum = $p + $c + $f;
+        if ($macroSum <= 0) $macroSum = 1.0;
+        $calBand = bb_beats_clamp01(((float) $kcal) / 800.0);
+
+        $late = ($typicalHour !== null && ($typicalHour >= 21 || ($typicalHour >= 0 && $typicalHour <= 4)));
+
+        return array(
+            'energy'    => bb_beats_clamp01(($p / $macroSum) * 0.6 + $calBand * 0.4),
+            'comfort'   => bb_beats_clamp01(($c / $macroSum) * 0.5 + ($f / $macroSum) * 0.3 + $calBand * 0.2),
+            'diversity' => 0.5,
+            'nocturnal' => $late ? 0.8 : 0.35,
+        );
+    }
+
     /** Combine two fingerprints into one personality location (per-axis mean). */
     function bb_beats_combine($music, $food)
     {
@@ -427,11 +519,13 @@ if (!function_exists('bb_beats_clamp01')) {
         if (!is_array($toptags)) {
             return $out;
         }
+        $noise = bb_beats_noise_tags();
         foreach ($toptags as $t) {
             if (!is_array($t)) continue;
             $name = strtolower(trim((string) ($t['name'] ?? '')));
             $count = (int) ($t['count'] ?? 0);
             if ($name === '' || $count < (int) $minCount) continue;
+            if (in_array($name, $noise, true)) continue;   // drop folksonomy noise at the source
             $out[] = $name;
             if (count($out) >= (int) $max) break;
         }

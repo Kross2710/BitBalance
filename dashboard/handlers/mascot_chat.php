@@ -10,6 +10,7 @@
 require_once __DIR__ . '/../../include/init.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/mascot_ai.php';
+require_once __DIR__ . '/../../include/handlers/mascot_species.php';
 require_once __DIR__ . '/../../include/handlers/mascot_state.php';
 require_once __DIR__ . '/../../include/handlers/xp.php';
 
@@ -37,9 +38,11 @@ if (!in_array($vibeState, $allowedStates, true)) {
 }
 
 // --- Persistent pet identity (read server-side; cannot be spoofed by POST) ---
-// Name is the owl's own name (P1); level comes from the shared XP system so the
-// mascot and the user progress together (no separate XP store).
-$ownerName = mascot_get_name($pdo, $userId);
+// Active species + that species' name are persisted; level comes from the shared
+// XP system so the mascot and the user progress together (no separate XP store).
+$species = mascot_get_active_species($pdo, $userId);
+$speciesEntry = mascot_species_get($species);
+$ownerName = mascot_get_name($pdo, $userId, $species);
 $xpSummary = function_exists('xp_get_summary') ? xp_get_summary($pdo, $userId) : array();
 $level = isset($xpSummary['current_level']) ? (int) $xpSummary['current_level'] : 1;
 if ($level < 1) {
@@ -49,13 +52,13 @@ if ($level < 1) {
 $identityVi = '';
 $identityEn = '';
 if ($ownerName !== '') {
-    $identityVi = "Tên của bạn (chú Cú) là \"{$ownerName}\". Hãy tự xưng bằng tên này một cách dễ thương khi phù hợp.";
-    $identityEn = "Your name (the owl) is \"{$ownerName}\". Refer to yourself by this name in a cute way when it fits.";
+    $identityVi = "Tên riêng của bạn là \"{$ownerName}\". Hãy tự xưng bằng tên này một cách dễ thương khi phù hợp.";
+    $identityEn = "Your name is \"{$ownerName}\". Refer to yourself by this name in a cute way when it fits.";
 }
 
 // --- Check session-based cache to save token costs & load instantly ---
-// Name + level join the key so a freshly-named owl or a level-up refreshes the line.
-$cacheKey = md5($calories . '|' . $goal . '|' . $protein . '|' . $proteinGoal . '|' . $streak . '|' . $vibeState . '|' . $lang . '|' . $ownerName . '|' . $level);
+// Species + name + level join the key so a swap, rename or level-up refreshes the line.
+$cacheKey = md5($calories . '|' . $goal . '|' . $protein . '|' . $proteinGoal . '|' . $streak . '|' . $vibeState . '|' . $lang . '|' . $species . '|' . $ownerName . '|' . $level);
 if (isset($_SESSION['mascot_chat_cache']) && is_array($_SESSION['mascot_chat_cache'])) {
     if (isset($_SESSION['mascot_chat_cache'][$cacheKey])) {
         $cachedData = $_SESSION['mascot_chat_cache'][$cacheKey];
@@ -64,26 +67,19 @@ if (isset($_SESSION['mascot_chat_cache']) && is_array($_SESSION['mascot_chat_cac
     }
 }
 
-// --- Construct Prompt (Cute Owl Mascot Roleplay) ---
-$stateContextVi = '';
-$stateContextEn = '';
+// --- Construct Prompt (species-aware mascot roleplay) ---
+// State flavor + identity come from the species registry so each pet has its own
+// look and voice; the metrics, level, task and body-positivity rule are shared.
+$stateContextVi = mascot_species_state_text($species, $vibeState, 'vi');
+$stateContextEn = mascot_species_state_text($species, $vibeState, 'en');
 
-if ($vibeState === 'healthy') {
-    $stateContextVi = "Người dùng đang ăn uống rất lành mạnh, đầy đủ dinh dưỡng và gần hoặc đạt mục tiêu calo hôm nay. Bạn đang cảm thấy tràn đầy năng lượng, có hào quang xanh (Green Aura) tỏa sáng rực rỡ xung quanh. Hãy khen ngợi sự kiên trì và kỷ luật thép của họ!";
-    $stateContextEn = "The user is eating very healthily, keeping balanced nutrition, and is comfortably near or met their calorie goal. You feel energized, and a bright green aura is glowing around you. Praise their dedication and discipline!";
-} elseif ($vibeState === 'overlimit') {
-    $stateContextVi = "Người dùng đã ăn vượt quá calo mục tiêu hôm nay. Bạn đang ở trạng thái 'no nê và buồn ngủ' (Zzz), chuẩn bị ngủ khò. [QUY TẮC]: KHÔNG chỉ trích hay gây áp lực cho họ! Hãy khuyên họ nhẹ nhàng rằng cơ thể cần được nghỉ ngơi, giấc ngủ phục hồi là quan trọng nhất, hôm nay hãy thư giãn và ngày mai chúng ta sẽ lại cùng nhau cố gắng!";
-    $stateContextEn = "The user has exceeded their daily calorie target today. You are full and sleepy (Zzz), resting in bed. [RULE]: DO NOT judge or make them feel bad! Gently suggest that rest and good recovery sleep are essential, encourage them to relax tonight, and remind them that tomorrow is a fresh new start!";
-} elseif ($vibeState === 'deficit') {
-    $stateContextVi = "Người dùng nạp đủ calo nhưng lượng chất đạm (protein) lại bị thiếu nghiêm trọng. Bạn đang đeo băng trán thể thao và cố gắng nâng tạ mini. Hãy động viên họ nạp thêm một chút đạm chất lượng (như ức gà, trứng, sữa) để cơ bắp ta khỏe mạnh nhé!";
-    $stateContextEn = "The user has logged calories but is significantly low on protein. You are wearing a sweatband and lifting tiny weights. Encourage them to add some high-quality protein (like chicken breast, eggs, or whey) so we can stay strong together!";
-} else {
-    $stateContextVi = "Hôm nay người dùng chưa ghi nhận món ăn nào cả. Bạn đang đứng chờ nắp hộp cơm mở ra. Hãy rủ họ ghi nhận bữa ăn đầu tiên để bắt đầu một ngày tuyệt vời cùng nhau!";
-    $stateContextEn = "The user hasn't logged any meals yet today. You are waiting for them to open their lunch box. Invite them to log their first bite of the day and start an awesome tracking journey together!";
-}
+$spNameVi    = $speciesEntry['name_vi'];
+$spNameEn    = $speciesEntry['name_en'];
+$spPersonaVi = $speciesEntry['persona_vi'];
+$spPersonaEn = $speciesEntry['persona_en'];
 
 if ($lang === 'vi') {
-    $systemPrompt = "Bạn là chú Cú Xanh - Mascot ảo dễ thương, thông thái và ấm áp của ứng dụng BitBalance. Người dùng đang xem bạn trong căn phòng linh vật trên Dashboard.
+    $systemPrompt = "Bạn là {$spNameVi} - linh vật ảo {$spPersonaVi} của ứng dụng BitBalance. Người dùng đang xem bạn trong căn phòng linh vật trên Dashboard.
 Số liệu hôm nay:
 - Đã ăn: {$calories} / {$goal} kcal
 - Protein: {$protein} / {$proteinGoal}g
@@ -92,12 +88,12 @@ Số liệu hôm nay:
 Trạng thái cảm xúc của bạn lúc này: {$vibeState}
 Mô tả trạng thái: {$stateContextVi}
 {$identityVi}
-Nhiệm vụ: Hãy đóng vai chú Cú nói một câu nhận xét ngắn (dưới 18 từ) bằng tiếng Việt siêu đáng yêu, ấm áp, hóm hỉnh.
+Nhiệm vụ: Hãy đóng vai {$spNameVi} nói một câu nhận xét ngắn (dưới 18 từ) bằng tiếng Việt siêu đáng yêu, ấm áp, đúng với cá tính của con vật này.
 - [QUY TẮC TUYỆT ĐỐI]: HOÀN TOÀN KHÔNG body shaming, chê bai ngoại hình, phán xét tiêu cực về cân nặng hay thói quen ăn uống của người dùng. Hãy luôn là người đồng hành đáng yêu, truyền cảm hứng tích cực.
 
-Chỉ trả về chuỗi văn bản thô đại diện cho lời thoại của chú Cú (không markdown, không bọc nháy kép ngoài cùng):";
+Chỉ trả về chuỗi văn bản thô đại diện cho lời thoại của linh vật (không markdown, không bọc nháy kép ngoài cùng):";
 } else {
-    $systemPrompt = "You are the Blue Owl - the cute, wise, and warm virtual Mascot of the BitBalance app. The user is viewing you in your mascot room on their dashboard.
+    $systemPrompt = "You are the {$spNameEn} - the {$spPersonaEn} virtual mascot of the BitBalance app. The user is viewing you in your mascot room on their dashboard.
 Today's metrics:
 - Intake: {$calories} / {$goal} kcal
 - Protein: {$protein} / {$proteinGoal}g
@@ -106,10 +102,10 @@ Today's metrics:
 Your current emotional state: {$vibeState}
 State details: {$stateContextEn}
 {$identityEn}
-Task: Roleplay as the Owl and speak one short speech caption (under 18 words) in English that is extremely warm, wise, and adorable.
+Task: Roleplay as the {$spNameEn} and speak one short speech caption (under 18 words) in English that is extremely warm and adorable, true to this pet's personality.
 - [ABSOLUTE RULE]: NEVER comment on weight, fatness, body shape, or body-shame the user. Never judge or shame their diet negatively. Always be a warm, encouraging, positive companion.
 
-Return ONLY the raw text representing the owl's speech (no markdown, no surrounding quotes):";
+Return ONLY the raw text representing the mascot's speech (no markdown, no surrounding quotes):";
 }
 
 // --- API Execution with fallback layer ---

@@ -150,6 +150,7 @@ return array_merge($translations, [
     'dashboard.demo.body'              => 'Ce sont des données d’exemple — créez un compte gratuit pour commencer votre propre tableau de bord.',
     'dashboard.demo.cta'               => 'Commencer gratuitement',
     'dashboard.welcome.greeting'       => 'Bon retour, {name} ! 👋',
+    'dashboard.welcome.greeting_new'   => 'Bienvenue, {name} ! 👋',
     'dashboard.welcome.set_goal'       => 'Définissez un objectif calorique quotidien pour personnaliser votre tableau de bord ! 🎯',
     'dashboard.welcome.achieved'       => 'Vous avez atteint votre objectif calorique aujourd’hui ! Excellent travail ! 🌟',
     'dashboard.welcome.progress'       => 'Vous avez atteint <strong>{pct}%</strong> de votre objectif calorique quotidien. On nourrit le corps ! 🚀',

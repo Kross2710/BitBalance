@@ -33,15 +33,13 @@
     align-items: start;
 }
 
+/* Card skin (bg/border/radius/shadow) comes from .surface-card in
+   css/components/dash-layout.css. Keep only the transition so the hover
+   lift below still animates. */
 .calc-form-card,
 .metric-card,
 .accordion-item,
 .empty-calc-state {
-    background: var(--color-surface);
-    color: var(--color-text);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 

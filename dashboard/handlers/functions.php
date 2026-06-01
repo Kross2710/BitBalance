@@ -249,6 +249,7 @@ function bb_ensure_beats_mix_table(PDO $pdo): void
                 `food_item` VARCHAR(120) NOT NULL,
                 `calories` INT(11) NOT NULL DEFAULT 0,
                 `archetype` VARCHAR(80) NOT NULL DEFAULT '',
+                `archetype_key` VARCHAR(40) NOT NULL DEFAULT '',
                 `detected_vibe` VARCHAR(60) NOT NULL DEFAULT '',
                 `match_score` TINYINT(4) NOT NULL DEFAULT 0,
                 `energy_sync` TINYINT(4) NOT NULL DEFAULT 0,
@@ -261,6 +262,12 @@ function bb_ensure_beats_mix_table(PDO $pdo): void
                 KEY `user_created` (`user_id`, `created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
+        // Backfill archetype_key for tables created before the Pokédex (ignore "duplicate column").
+        try {
+            $pdo->exec("ALTER TABLE `beats_mix_log` ADD COLUMN `archetype_key` VARCHAR(40) NOT NULL DEFAULT '' AFTER `archetype`");
+        } catch (PDOException $e) {
+            // Column already exists → fine.
+        }
         $_SESSION['beats_mix_table_ok'] = true;
     } catch (PDOException $e) {
         // Leave the flag unset so we retry next time; callers handle absence.
@@ -275,9 +282,9 @@ function bb_log_beats_mix(PDO $pdo, int $userId, array $r): int
         $scores = is_array($r['scores'] ?? null) ? $r['scores'] : [];
         $stmt = $pdo->prepare(
             "INSERT INTO `beats_mix_log`
-                (user_id, track_name, artist_name, food_item, calories, archetype,
+                (user_id, track_name, artist_name, food_item, calories, archetype, archetype_key,
                  detected_vibe, match_score, energy_sync, comfort, chaos, verdict, rarity)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         );
         $stmt->execute([
             $userId,
@@ -286,6 +293,7 @@ function bb_log_beats_mix(PDO $pdo, int $userId, array $r): int
             (string) ($r['food_item'] ?? ''),
             (int) ($r['calories'] ?? 0),
             (string) ($r['archetype'] ?? ''),
+            (string) ($r['archetype_key'] ?? ''),
             (string) ($r['detected_vibe'] ?? ''),
             (int) ($r['match_score'] ?? 0),
             (int) ($scores['energy_sync'] ?? 0),
@@ -366,6 +374,79 @@ function bb_get_beats_collection(PDO $pdo, int $userId): array
     } catch (PDOException $e) {
         return [];
     }
+}
+
+/**
+ * Pokédex view: the FULL hand-designed catalog with the user's owned/locked status,
+ * per-archetype stats (hits, best score, first-caught, best combo, shiny) and intrinsic
+ * rarity tier. Grouped by the stable `archetype_key` so it survives language switches.
+ */
+function bb_beats_collection_dex(PDO $pdo, int $userId, string $lang = 'en'): array
+{
+    require_once __DIR__ . '/../../include/handlers/beats_identity.php';
+    bb_ensure_beats_mix_table($pdo);
+    $lang = ($lang === 'vi') ? 'vi' : 'en';
+
+    // Owned aggregates keyed by archetype_key.
+    $owned = array();
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT archetype_key, COUNT(*) AS hits, MAX(match_score) AS best,
+                    MIN(created_at) AS first_at, (MAX(match_score) >= 90) AS shiny
+             FROM `beats_mix_log`
+             WHERE user_id = ? AND archetype_key <> ''
+             GROUP BY archetype_key"
+        );
+        $stmt->execute([$userId]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $owned[$row['archetype_key']] = $row;
+        }
+    } catch (PDOException $e) {
+        $owned = array();
+    }
+
+    // Highest-scoring combo per archetype_key (the "signature" pairing).
+    $combos = array();
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT t.archetype_key, t.track_name, t.food_item
+             FROM `beats_mix_log` t
+             INNER JOIN (
+                 SELECT archetype_key, MAX(match_score) AS mx
+                 FROM `beats_mix_log`
+                 WHERE user_id = ? AND archetype_key <> ''
+                 GROUP BY archetype_key
+             ) b ON b.archetype_key = t.archetype_key AND t.match_score = b.mx
+             WHERE t.user_id = ?
+             GROUP BY t.archetype_key"
+        );
+        $stmt->execute([$userId, $userId]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $combos[$row['archetype_key']] = array($row['track_name'], $row['food_item']);
+        }
+    } catch (PDOException $e) {
+        $combos = array();
+    }
+
+    $dex = array();
+    foreach (bb_beats_archetype_catalog() as $a) {
+        $key = $a['key'];
+        $o = isset($owned[$key]) ? $owned[$key] : null;
+        $dex[] = array(
+            'key'      => $key,
+            'name'     => $a['name'][$lang],
+            'emoji'    => $a['emoji'],
+            'voice'    => $a['voice'][$lang],
+            'rarity'   => bb_beats_archetype_rarity($key),
+            'owned'    => ($o !== null),
+            'hits'     => $o ? (int) $o['hits'] : 0,
+            'best'     => $o ? (int) $o['best'] : 0,
+            'first_at' => $o ? $o['first_at'] : null,
+            'shiny'    => $o ? ((int) $o['shiny'] === 1) : false,
+            'combo'    => isset($combos[$key]) ? $combos[$key] : null,
+        );
+    }
+    return $dex;
 }
 
 /* ===================== The Mirror — identity DB cache ===================== */

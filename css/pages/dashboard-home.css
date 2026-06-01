@@ -1028,14 +1028,11 @@
 /* ================================================
    AI MASCOT ROOM & HEALTH AURA
    ================================================ */
+/* Card skin from .surface-card (dash-layout.css); keep hover transition. */
 .mascot-room-card {
     position: relative;
     overflow: visible; /* To allow speech bubble and particles to float outside */
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
     padding: 24px;
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     transition: all var(--transition-base);
     display: flex;
     flex-direction: column;
@@ -1519,6 +1516,130 @@
 .mascot-rename-btn[hidden] {
     display: none;
 }
+
+/* =================================================================
+   P2 — Multi-species "Pet Picker"
+   Only the active species' SVG is visible; cat parts use .cat-* and
+   reuse the shared eye/aura/zzz classes so states work for free.
+   ================================================================= */
+.mascot-svg[hidden] { display: none; }
+
+/* --- Cat (calico) body parts --- */
+.cat-head,
+.cat-body {
+    fill: #f6b17a;
+    stroke: #e0884a;
+    stroke-width: 3px;
+    transition: fill 0.3s ease, filter 0.3s ease;
+}
+.cat-ear {
+    fill: #f6b17a;
+    stroke: #e0884a;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+.cat-ear-inner { fill: #f7b6c2; }
+.cat-patch { fill: #fdeede; }
+[data-theme="dark"] .cat-patch { fill: #f6e3cf; }
+.cat-tail {
+    fill: #f6b17a;
+    stroke: #e0884a;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+}
+.cat-nose { fill: #e8788a; }
+.cat-mouth {
+    fill: none;
+    stroke: #8a5a3c;
+    stroke-width: 2px;
+    stroke-linecap: round;
+}
+.cat-whisker {
+    stroke: #b98a63;
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+}
+
+/* Healthy: subtle warm glow on the cat (the green aura is shared). */
+.state-healthy .species-cat .cat-head,
+.state-healthy .species-cat .cat-body {
+    filter: saturate(1.15) brightness(1.04);
+}
+
+/* Deficit prop: a fish (protein!), shown only when low on protein. */
+.cat-fish-group {
+    display: none;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+.cat-fish-body { fill: #9ad0ec; stroke: #6fb0d6; stroke-width: 1.5px; }
+.cat-fish-tail { fill: #7fb9dc; }
+.cat-fish-eye  { fill: #1e2937; }
+.state-deficit .species-cat .cat-fish-group {
+    display: block;
+    animation: catFishBob 1.6s infinite ease-in-out;
+}
+@keyframes catFishBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+}
+
+/* --- Header tools + species picker --- */
+.mascot-header-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.mascot-species-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mascot-species-toggle:hover { transform: translateY(-1px); box-shadow: 0 3px 0 var(--color-border-subtle); }
+.mascot-species-toggle:active { transform: translateY(1px); box-shadow: none; }
+
+.mascot-species-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+.mascot-species-picker[hidden] { display: none; }
+
+.mascot-species-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.mascot-species-option:hover { transform: translateY(-1px); }
+.mascot-species-option.is-active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-soft, rgba(88, 204, 2, 0.2));
+}
+.mascot-species-option .sp-emoji { font-size: 1rem; line-height: 1; }
 
 /* Speeches Typing Cursor Effect */
 .typing-cursor {

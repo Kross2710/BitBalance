@@ -120,24 +120,30 @@ $averageCalories = $averageCalories ?: 'N/A';
 $streakDays = (int) ($userStreak['logging_streak'] ?? 0);
 $brokenStreak = (int) ($userStreak['broken_streak'] ?? 0);
 
-// --- Mascot identity & companion level (P0/P1) ---
-// The NAME is pet-specific (mascot_state); the LEVEL is the shared XP level
-// (xp.php) so the owl grows as the user logs — no separate XP store. Guests get
-// friendly defaults (naming requires an account).
-require_once __DIR__ . '/../include/handlers/mascot_state.php'; // pure include, safe for guests
-$mascotName  = '';
+// --- Mascot identity, species & companion level (P0/P1/P2) ---
+// SPECIES is the collection axis (free choice); each species has its own NAME
+// (mascot_pet_names). The LEVEL is the shared XP level (xp.php) so the pet grows
+// as the user logs — no separate XP store. Guests get friendly defaults
+// (naming + switching require an account).
+require_once __DIR__ . '/../include/handlers/mascot_species.php'; // pure, safe for guests
+require_once __DIR__ . '/../include/handlers/mascot_state.php';   // pure include, safe for guests
+$mascotActiveSpecies = 'owl';
+$mascotNames = array();
+foreach (mascot_species_ids() as $__sp) { $mascotNames[$__sp] = ''; }
 $mascotLevel = 1;
 if ($isLoggedIn) {
     require_once __DIR__ . '/../include/handlers/xp.php';
-    $mascotUid   = (int) $user['user_id'];
-    $mascotName  = mascot_get_name($pdo, $mascotUid);
-    $mascotXp    = xp_get_summary($pdo, $mascotUid);
-    $mascotLevel = isset($mascotXp['current_level']) ? (int) $mascotXp['current_level'] : 1;
+    $mascotUid           = (int) $user['user_id'];
+    $mascotActiveSpecies = mascot_get_active_species($pdo, $mascotUid);
+    $mascotNames         = mascot_get_all_names($pdo, $mascotUid);
+    $mascotXp            = xp_get_summary($pdo, $mascotUid);
+    $mascotLevel         = isset($mascotXp['current_level']) ? (int) $mascotXp['current_level'] : 1;
     if ($mascotLevel < 1) {
         $mascotLevel = 1;
     }
 }
-$mascotStage = mascot_stage_from_level($mascotLevel);
+$mascotName  = isset($mascotNames[$mascotActiveSpecies]) ? $mascotNames[$mascotActiveSpecies] : '';
+$mascotStage = mascot_stage_from_level($mascotLevel); // dormant hook (life-stages dropped in P2)
 
 $streakMilestones = [7, 14, 30, 60, 100, 180, 365];
 $prevMilestone = 0;
@@ -293,7 +299,15 @@ if ($actualWeight > 0 && $actualHeight > 0) {
 
         <div class="welcome-banner">
             <div class="welcome-text">
-                <h2><?= t('dashboard.welcome.greeting', ['name' => htmlspecialchars($user['first_name'] ?? 'Champion')]) ?></h2>
+                <?php
+                    // Brand-new accounts (just signed up, still in their first
+                    // session) get "Welcome"; everyone returning gets "Welcome
+                    // back". Flag is set in user_signup.php.
+                    $greetingKey = !empty($_SESSION['user']['is_new_signup'])
+                        ? 'dashboard.welcome.greeting_new'
+                        : 'dashboard.welcome.greeting';
+                ?>
+                <h2><?= t($greetingKey, ['name' => htmlspecialchars($user['first_name'] ?? 'Champion')]) ?></h2>
                 <p><?php
                     if (!$hasCalorieGoal) {
                         echo t('dashboard.welcome.set_goal');
@@ -822,7 +836,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             <div class="flex dashboard-bento-column">
                 <div class="bento-grid-mobile">
                     <!-- AI MASCOT ROOM CARD -->
-                    <section class="mascot-room-card" id="mascotRoomCard"
+                    <section class="mascot-room-card surface-card" id="mascotRoomCard"
                              data-calories="<?php echo (int) $totalCalories; ?>"
                              data-goal="<?php echo (int) $userGoal; ?>"
                              data-protein="<?php echo (float) ($macroTotals['protein'] ?? 0); ?>"
@@ -832,15 +846,31 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                              data-level="<?php echo (int) $mascotLevel; ?>"
                              data-stage="<?php echo htmlspecialchars($mascotStage, ENT_QUOTES, 'UTF-8'); ?>"
                              data-cheer-named="<?= t('dashboard.mascot.named_cheer') ?>"
-                             data-cheer-fed="<?= t('dashboard.mascot.fed_today') ?>">
+                             data-cheer-fed="<?= t('dashboard.mascot.fed_today') ?>"
+                             data-species="<?php echo htmlspecialchars($mascotActiveSpecies, ENT_QUOTES, 'UTF-8'); ?>"
+                             data-names="<?php echo htmlspecialchars(json_encode($mascotNames, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="mascot-card-header">
                             <h3><i class="fas fa-ghost"></i> <?= t('dashboard.mascot.heading') ?></h3>
                             <?php if ($isLoggedIn): ?>
-                            <span class="mascot-level-chip" id="mascotLevelChip" title="<?= t('dashboard.mascot.level_title') ?>">
-                                <i class="fas fa-star"></i> <?= t('dashboard.mascot.level_label') ?> <?php echo (int) $mascotLevel; ?>
-                            </span>
+                            <div class="mascot-header-tools">
+                                <span class="mascot-level-chip" id="mascotLevelChip" title="<?= t('dashboard.mascot.level_title') ?>">
+                                    <i class="fas fa-star"></i> <?= t('dashboard.mascot.level_label') ?> <?php echo (int) $mascotLevel; ?>
+                                </span>
+                                <button type="button" class="mascot-species-toggle" id="mascotSpeciesToggle" title="<?= t('dashboard.mascot.pick_pet') ?>" aria-label="<?= t('dashboard.mascot.pick_pet') ?>">🐾</button>
+                            </div>
                             <?php endif; ?>
                         </div>
+
+                        <?php if ($isLoggedIn): ?>
+                        <div class="mascot-species-picker" id="mascotSpeciesPicker" hidden>
+                            <?php foreach (mascot_species_catalog() as $__spOpt): ?>
+                            <button type="button" class="mascot-species-option<?php echo $__spOpt['id'] === $mascotActiveSpecies ? ' is-active' : ''; ?>" data-species="<?php echo htmlspecialchars($__spOpt['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <span class="sp-emoji"><?php echo $__spOpt['emoji']; ?></span>
+                                <span class="sp-name"><?php echo htmlspecialchars(current_locale() === 'vi' ? $__spOpt['name_vi'] : $__spOpt['name_en'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
 
                         <div class="mascot-stage stage-<?php echo htmlspecialchars($mascotStage, ENT_QUOTES, 'UTF-8'); ?>" id="mascotStage" onclick="petMascot()">
                             <!-- Speech bubble -->
@@ -849,85 +879,10 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 <span class="typing-cursor" id="mascotTypingCursor"></span>
                             </div>
 
-                            <!-- Inline Geometric Vector SVG Owl -->
-                            <svg viewBox="0 0 200 200" class="mascot-svg" id="mascotSvg">
-                                <!-- shadow under the owl -->
-                                <ellipse cx="100" cy="165" rx="55" ry="12" class="mascot-shadow" />
-                                
-                                <!-- Green aura glow (active in state-healthy) -->
-                                <circle cx="100" cy="100" r="75" class="health-aura" />
-                                
-                                <!-- Left Foot -->
-                                <path d="M75 160 Q80 170 85 162 T95 160" class="mascot-feet" />
-                                <!-- Right Foot -->
-                                <path d="M105 160 Q115 170 120 162 T125 160" class="mascot-feet" />
-
-                                <!-- Wings -->
-                                <!-- Left Wing -->
-                                <path d="M45 100 Q15 90 35 130 T52 115" class="mascot-wing left-wing" />
-                                <!-- Right Wing -->
-                                <path d="M155 100 Q185 90 165 130 T148 115" class="mascot-wing right-wing" />
-
-                                <!-- Main Body (rounded bell shape) -->
-                                <path d="M50 80 C50 40, 150 40, 150 80 C150 130, 50 130, 50 80 Z" class="mascot-body-outer" />
-                                <!-- Belly patch -->
-                                <path d="M65 95 C65 75, 135 75, 135 95 C135 130, 65 130, 65 95 Z" class="mascot-belly" />
-                                <path d="M75 110 L85 115 L95 110 M105 110 L115 115 L125 110" class="mascot-belly-feathers" />
-
-                                <!-- Eyes and Face -->
-                                <!-- Left Eye Outer -->
-                                <circle cx="78" cy="78" r="22" class="mascot-eye-outer" />
-                                <!-- Right Eye Outer -->
-                                <circle cx="122" cy="78" r="22" class="mascot-eye-outer" />
-
-                                <!-- Left Eye Inner (White) -->
-                                <circle cx="78" cy="78" r="16" class="mascot-eye-inner" />
-                                <!-- Right Eye Inner (White) -->
-                                <circle cx="122" cy="78" r="16" class="mascot-eye-inner" />
-
-                                <!-- Pupil Left -->
-                                <circle cx="78" cy="78" r="9" class="mascot-pupil left-pupil" />
-                                <!-- Pupil Right -->
-                                <circle cx="122" cy="78" r="9" class="mascot-pupil right-pupil" />
-
-                                <!-- Eye Shine Left -->
-                                <circle cx="81" cy="74" r="3.5" class="mascot-shine" />
-                                <!-- Eye Shine Right -->
-                                <circle cx="125" cy="74" r="3.5" class="mascot-shine" />
-
-                                <!-- Closed Sleepy Eyes (shown in state-overlimit) -->
-                                <path d="M62 78 Q78 94 94 78" class="mascot-eyes-closed left-closed" />
-                                <path d="M106 78 Q122 94 138 78" class="mascot-eyes-closed right-closed" />
-
-                                <!-- Beak (Orange Triangle) -->
-                                <polygon points="94,86 106,86 100,98" class="mascot-beak" />
-
-                                <!-- Accessories (deficit state) -->
-                                <!-- Sweatband (Headband for gym state-deficit) -->
-                                <g class="mascot-sweatband-group">
-                                    <rect x="52" y="44" width="96" height="12" rx="4" class="mascot-sweatband" />
-                                    <rect x="90" y="44" width="20" height="12" class="mascot-sweatband-stripe" />
-                                </g>
-
-                                <!-- Gym Weights (Dumbbells) -->
-                                <g class="mascot-dumbbell left-dumbbell">
-                                    <rect x="15" y="110" width="10" height="24" rx="2" class="db-plate" />
-                                    <rect x="23" y="120" width="16" height="4" class="db-bar" />
-                                    <rect x="37" y="110" width="10" height="24" rx="2" class="db-plate" />
-                                </g>
-                                <g class="mascot-dumbbell right-dumbbell">
-                                    <rect x="153" y="110" width="10" height="24" rx="2" class="db-plate" />
-                                    <rect x="161" y="120" width="16" height="4" class="db-bar" />
-                                    <rect x="175" y="110" width="10" height="24" rx="2" class="db-plate" />
-                                </g>
-
-                                <!-- Sleeping Zzz (Floating letters, shown in state-overlimit) -->
-                                <g class="mascot-zzz-group">
-                                    <text x="145" y="55" class="zzz-text zzz-1">Z</text>
-                                    <text x="160" y="40" class="zzz-text zzz-2">z</text>
-                                    <text x="172" y="28" class="zzz-text zzz-3">z</text>
-                                </g>
-                            </svg>
+                            <!-- One inline SVG per species; only the active one is visible (P2). -->
+                            <?php foreach (mascot_species_ids() as $__spSvg): ?>
+                            <?php echo mascot_render_svg($__spSvg, $__spSvg === $mascotActiveSpecies); ?>
+                            <?php endforeach; ?>
                         </div>
                         <div class="mascot-nameplate" id="mascotNameplate"<?php echo $mascotName === '' ? ' hidden' : ''; ?>>
                             <i class="fas fa-feather-pointed"></i>
@@ -2066,7 +2021,11 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             if (!mascotCard) return;
 
             const stage = document.getElementById('mascotStage');
-            const svg = document.getElementById('mascotSvg');
+            // With multiple species rendered, target whichever SVG is visible.
+            const getActiveSvg = () => stage.querySelector('.mascot-svg:not([hidden])') || stage.querySelector('.mascot-svg');
+            let activeSpecies = mascotCard.dataset.species || 'owl';
+            let perSpeciesNames = {};
+            try { perSpeciesNames = JSON.parse(mascotCard.dataset.names || '{}'); } catch (e) { perSpeciesNames = {}; }
             const bubble = document.getElementById('mascotSpeechBubble');
             const bubbleText = document.getElementById('mascotBubbleText');
             const cursor = document.getElementById('mascotTypingCursor');
@@ -2134,8 +2093,11 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             // Reused for the naming confirmation and the "fed today" greeting (P1).
             window.mascotCheer = function(text) {
                 if (!text) return;
-                svg.classList.add('flap-wings', 'pet-bounce');
-                setTimeout(() => svg.classList.remove('flap-wings', 'pet-bounce'), 600);
+                const sv = getActiveSvg();
+                if (sv) {
+                    sv.classList.add('flap-wings', 'pet-bounce');
+                    setTimeout(() => sv.classList.remove('flap-wings', 'pet-bounce'), 600);
+                }
                 try { playMascotBoop(); } catch (e) {}
                 if (bubbleTimeout) clearTimeout(bubbleTimeout);
                 bubble.classList.add('active');
@@ -2154,11 +2116,14 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 // Play synth sound
                 playMascotBoop();
 
-                // Trigger flap and bounce CSS animations
-                svg.classList.add('flap-wings', 'pet-bounce');
-                setTimeout(() => {
-                    svg.classList.remove('flap-wings', 'pet-bounce');
-                }, 600);
+                // Trigger flap and bounce CSS animations on the active pet
+                const sv = getActiveSvg();
+                if (sv) {
+                    sv.classList.add('flap-wings', 'pet-bounce');
+                    setTimeout(() => {
+                        sv.classList.remove('flap-wings', 'pet-bounce');
+                    }, 600);
+                }
 
                 // Show speech bubble with loading indicator
                 if (bubbleTimeout) clearTimeout(bubbleTimeout);
@@ -2228,13 +2193,25 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 }
             });
 
-            // --- Name your owl (P1) ---
+            // --- Name your pet (P1) + pick a species (P2) ---
             const nameForm  = document.getElementById('mascotNameForm');
             const nameInput = document.getElementById('mascotNameInput');
             const nameBtn   = document.getElementById('mascotNameBtn');
             const nameplate = document.getElementById('mascotNameplate');
             const nameText  = document.getElementById('mascotNameText');
             const renameBtn = document.getElementById('mascotRenameBtn');
+            const speciesToggle  = document.getElementById('mascotSpeciesToggle');
+            const speciesPicker  = document.getElementById('mascotSpeciesPicker');
+            const speciesOptions = speciesPicker ? speciesPicker.querySelectorAll('.mascot-species-option') : [];
+
+            // Reflect a species' stored name into the nameplate / naming form.
+            function applyNameUI(name) {
+                const named = !!(name && name !== '');
+                if (named && nameText) nameText.textContent = name;
+                if (nameplate) nameplate.hidden = !named;
+                if (nameForm)  nameForm.hidden  = named;
+                mascotCard.dataset.name = named ? name : '';
+            }
 
             async function submitMascotName() {
                 if (!nameInput) return;
@@ -2244,14 +2221,13 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 try {
                     const fd = new FormData();
                     fd.append('name', val);
+                    fd.append('species', activeSpecies);
                     const res = await fetch('handlers/mascot_name.php', { method: 'POST', body: fd });
                     const data = await res.json();
                     if (data.ok && data.name) {
-                        if (nameText)  nameText.textContent = data.name;
-                        if (nameplate) nameplate.hidden = false;
-                        if (nameForm)  nameForm.hidden = true;
-                        mascotCard.dataset.name = data.name;
-                        mascotCheer(mascotCard.dataset.cheerNamed || '🦉');
+                        perSpeciesNames[activeSpecies] = data.name;
+                        applyNameUI(data.name);
+                        mascotCheer(mascotCard.dataset.cheerNamed || '🐾');
                     } else if (nameInput) {
                         nameInput.focus();
                     }
@@ -2271,12 +2247,62 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     if (nameplate) nameplate.hidden = true;
                     if (nameForm)  nameForm.hidden = false;
                     if (nameInput) {
-                        nameInput.value = mascotCard.dataset.name || '';
+                        nameInput.value = perSpeciesNames[activeSpecies] || '';
                         nameInput.focus();
                         nameInput.select();
                     }
                 });
             }
+
+            // Species picker: free choice, instant local swap (no reload), persisted.
+            if (speciesToggle && speciesPicker) {
+                speciesToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    speciesPicker.hidden = !speciesPicker.hidden;
+                });
+            }
+            async function selectSpecies(species) {
+                if (!species) return;
+                if (speciesPicker) speciesPicker.hidden = true;
+                if (species === activeSpecies) return;
+                // Swap which SVG is visible. NOTE: SVGElement does not reflect the
+                // `.hidden` IDL property, so toggle the content attribute directly.
+                stage.querySelectorAll('.mascot-svg').forEach((s) => {
+                    if (s.dataset.species === species) { s.removeAttribute('hidden'); }
+                    else { s.setAttribute('hidden', ''); }
+                });
+                activeSpecies = species;
+                mascotCard.dataset.species = species;
+                speciesOptions.forEach((o) => o.classList.toggle('is-active', o.dataset.species === species));
+                applyNameUI(perSpeciesNames[species] || '');
+                // A little hello bounce on the new pet.
+                const sv = getActiveSvg();
+                if (sv) { sv.classList.add('pet-bounce'); setTimeout(() => sv.classList.remove('pet-bounce'), 500); }
+                try { playMascotBoop(); } catch (e) {}
+                try {
+                    const fd = new FormData();
+                    fd.append('species', species);
+                    const res = await fetch('handlers/mascot_select.php', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.ok && typeof data.name === 'string') {
+                        perSpeciesNames[species] = data.name;
+                        applyNameUI(data.name);
+                    }
+                } catch (err) {
+                    console.error('Mascot select err:', err);
+                }
+            }
+            speciesOptions.forEach((opt) => {
+                opt.addEventListener('click', (e) => { e.stopPropagation(); selectSpecies(opt.dataset.species); });
+            });
+            // Close the picker when clicking away from it.
+            document.addEventListener('click', (e) => {
+                if (speciesPicker && !speciesPicker.hidden &&
+                    !(speciesToggle && speciesToggle.contains(e.target)) &&
+                    !speciesPicker.contains(e.target)) {
+                    speciesPicker.hidden = true;
+                }
+            });
 
             // --- "Feed = log" made visible: one warm greeting per day/session
             // once the user has logged a meal today (P1). ---

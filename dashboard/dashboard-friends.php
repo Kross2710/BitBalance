@@ -34,7 +34,7 @@ if (!$isLoggedIn) {
         <?php include PROJECT_ROOT . 'dashboard/views/sidebar.php'; ?>
 
         <main class="dashboard-content">
-            <section class="friends-locked">
+            <section class="friends-locked surface-card">
                 <div class="friends-locked__icon"><i class="fas fa-user-lock"></i></div>
                 <span class="friends-kicker"><i class="fas fa-user-friends"></i> <?= t('friends.locked.kicker') ?></span>
                 <h1><?= t('friends.locked.title') ?></h1>
@@ -89,7 +89,7 @@ function fr_render_card(array $u, string $context, string $csrf): void
     $reqId  = (int) ($u['request_id'] ?? 0);
     $rel    = $u['relationship'] ?? null;
     ?>
-    <article class="friend-card" data-user-id="<?= $uid ?>" data-request-id="<?= $reqId ?>">
+    <article class="friend-card surface-card surface-card--sm" data-user-id="<?= $uid ?>" data-request-id="<?= $reqId ?>">
         <div class="friend-card__avatar">
             <?php if ($avatar): ?>
                 <img src="<?= BASE_URL . htmlspecialchars($avatar, ENT_QUOTES) ?>" alt="">
@@ -166,7 +166,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
         ? t_raw('friends.lb.secondary.weekly', ['n' => number_format($weekly)])
         : t_raw('friends.lb.secondary.total', ['n' => number_format($total)]);
     ?>
-    <article class="leaderboard-row<?= $isYou ? ' leaderboard-row--you' : '' ?>" data-user-id="<?= (int) ($row['user_id'] ?? 0) ?>">
+    <article class="leaderboard-row surface-card surface-card--sm<?= $isYou ? ' leaderboard-row--you' : '' ?>" data-user-id="<?= (int) ($row['user_id'] ?? 0) ?>">
         <div class="leaderboard-rank<?= $rankClass ?>">
             <?php if ($rank <= 3): ?>
                 <i class="fas <?= $rank === 1 ? 'fa-trophy' : 'fa-medal' ?>"></i>
@@ -220,7 +220,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
 
     <main class="dashboard-content">
         <div class="friends-container" data-active-tab="<?= htmlspecialchars($activeTabFromUrl, ENT_QUOTES) ?>">
-            <section class="friends-hero">
+            <section class="friends-hero surface-card">
                 <div class="friends-hero__copy">
                     <span class="friends-kicker"><i class="fas fa-user-friends"></i> <?= t('friends.hero.kicker') ?></span>
                     <h1><?= t('friends.hero.title') ?></h1>
@@ -473,7 +473,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
                     : I18N.secondaryTotal.replace('{n}', formatNumber(u.total_xp));
 
                 return `
-                    <article class="leaderboard-row${isYou ? ' leaderboard-row--you' : ''}" data-user-id="${toNumber(u.user_id)}">
+                    <article class="leaderboard-row surface-card surface-card--sm${isYou ? ' leaderboard-row--you' : ''}" data-user-id="${toNumber(u.user_id)}">
                         <div class="leaderboard-rank${leaderboardRankClass(rank)}">${rankContent}</div>
                         <div class="leaderboard-avatar">${avatar}</div>
                         <div class="leaderboard-main">
@@ -607,7 +607,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
                         cta = '<button class="btn-tactile btn-tactile--primary js-send"><i class="fas fa-user-plus"></i> Add Friend</button>';
                 }
                 return `
-                    <article class="friend-card" data-user-id="${u.user_id}" data-request-id="0">
+                    <article class="friend-card surface-card surface-card--sm" data-user-id="${u.user_id}" data-request-id="0">
                         <div class="friend-card__avatar">${avatar}<span class="friend-card__level">Lv ${level}</span></div>
                         <div class="friend-card__body">
                             <h3 class="friend-card__name">${name}</h3>
@@ -657,7 +657,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
                     (streak > 0 ? '<span class="friend-card__stat"><i class="fas fa-fire"></i> ' + streak + 'd</span>' : '') +
                     (weekly !== null ? '<span class="friend-card__stat"><i class="fas fa-bolt"></i> ' + formatNumber(weekly) + ' XP / 7d</span>' : '');
                 return `
-                    <article class="friend-card" data-user-id="${uid}" data-request-id="${reqId}">
+                    <article class="friend-card surface-card surface-card--sm" data-user-id="${uid}" data-request-id="${reqId}">
                         <div class="friend-card__avatar">${avatar}<span class="friend-card__level">Lv ${level}</span></div>
                         <div class="friend-card__body">
                             <h3 class="friend-card__name">${name}</h3>

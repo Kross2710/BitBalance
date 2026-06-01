@@ -36,12 +36,10 @@
     }
 
     /* 3. FILTER CARD */
+    /* Card skin from .surface-card (dash-layout.css); keep the 3px border + hover. */
     .filter-card {
-        background: var(--color-surface);
         border: 3px solid var(--color-border);
-        border-radius: var(--radius-lg);
         padding: 24px;
-        box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
         transition: all var(--transition-base);
         min-width: 0;
     }
@@ -138,12 +136,10 @@
     }
 
     /* 4. HISTORY TABLE CARD */
+    /* Card skin from .surface-card (dash-layout.css); keep the 3px border + hover. */
     .history-list-card {
-        background: var(--color-surface);
         border: 3px solid var(--color-border);
-        border-radius: var(--radius-lg);
         padding: 24px;
-        box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
         transition: all var(--transition-base);
         min-width: 0;
     }

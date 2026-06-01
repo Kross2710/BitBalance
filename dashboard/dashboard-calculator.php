@@ -63,7 +63,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                 </div>
             <?php endif; ?>
 
-            <section class="calc-form-card">
+            <section class="calc-form-card surface-card">
                 <div class="card-header">
                     <h3><i class="fas fa-calculator"></i> <?= t('calc.card_title') ?></h3>
                     <p class="subtitle"><?= t('calc.card_sub') ?></p>
@@ -142,7 +142,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                     </div>
 
                     <div class="metrics-row">
-                        <div class="metric-card card-blue">
+                        <div class="metric-card card-blue surface-card">
                             <div class="metric-icon"><i class="fas fa-fire"></i></div>
                             <div class="metric-info">
                                 <span class="metric-label"><?= t('calc.results.maintenance') ?></span>
@@ -150,7 +150,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                             </div>
                         </div>
 
-                        <div class="metric-card card-purple">
+                        <div class="metric-card card-purple surface-card">
                             <div class="metric-icon"><i class="fas fa-weight-hanging"></i></div>
                             <div class="metric-info">
                                 <span class="metric-label"><?= t('calc.results.bmi_score') ?></span>
@@ -158,7 +158,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                             </div>
                         </div>
 
-                        <div class="metric-card card-green">
+                        <div class="metric-card card-green surface-card">
                             <div class="metric-icon"><i class="fas fa-bullseye"></i></div>
                             <div class="metric-info">
                                 <span class="metric-label"><?= t('calc.results.ideal_weight') ?></span>
@@ -172,7 +172,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 
                     <div class="details-section">
 
-                        <div class="accordion-item">
+                        <div class="accordion-item surface-card">
                             <button class="accordion-header" type="button">
                                 <span><i class="fas fa-list-alt"></i> <?= t('calc.acc.breakdown') ?></span>
                                 <i class="fas fa-chevron-down arrow"></i>
@@ -204,7 +204,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
                             </div>
                         </div>
 
-                        <div class="accordion-item">
+                        <div class="accordion-item surface-card">
                             <button class="accordion-header" type="button">
                                 <span><i class="fas fa-info-circle"></i> <?= t('calc.acc.bmi_analysis') ?></span>
                                 <i class="fas fa-chevron-down arrow"></i>
@@ -227,7 +227,7 @@ $selectedActivity = $calculatorResult['activity_level'] ?? (!$isLoggedIn ? 'mode
 
                     </div>
                 <?php else: ?>
-                    <div class="empty-calc-state">
+                    <div class="empty-calc-state surface-card">
                         <i class="fas fa-calculator"></i>
                         <h4><?= t('calc.empty.title') ?></h4>
                         <p><?= t('calc.empty.body') ?></p>

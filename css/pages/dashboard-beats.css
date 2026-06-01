@@ -12,15 +12,12 @@
 /* =========================================================================
    HERO SECTION & PROMO CARD
    ========================================================================= */
+/* Card skin from .surface-card (dash-layout.css); keep sizing + hover transition. */
 .beats-hero,
 .beats-promo-card {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     padding: 30px;
     margin-bottom: 30px;
     transition: transform var(--transition-base), box-shadow var(--transition-base);
@@ -200,14 +197,11 @@
     min-width: 0;
 }
 
+/* Card skin from .surface-card (dash-layout.css). */
 .beats-section {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    background: var(--color-surface);
-    border: 2px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
     padding: 24px;
 }
 
@@ -1954,3 +1948,63 @@
     .mirror-content-box { animation: none; }
     .mirror-axis-fill { transition: none; }
 }
+
+/* =========================================================================
+   ARCHETYPE POKÉDEX — collection grid + detail modal (Diet & Beats)
+   ========================================================================= */
+.mix-dex { margin-bottom: 22px; }
+.mix-dex-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px; }
+.mix-dex-count { font-weight: 800; font-size: 14px; color: var(--color-text); }
+.mix-dex-count strong { color: var(--color-primary); font-size: 19px; }
+.mix-dex-pct { font-weight: 800; font-size: 13px; color: var(--color-text-secondary); }
+.mix-dex-bar { height: 12px; background: var(--color-border-subtle); border-radius: 99px; overflow: hidden; border: 2px solid var(--color-border); }
+.mix-dex-bar > i { display: block; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--color-primary), #86e01e); transition: width 0.7s cubic-bezier(0.2,0.8,0.2,1); }
+.mix-dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 14px; }
+
+.dex-card { position: relative; background: var(--color-surface); border: 2px solid var(--color-border);
+  border-radius: 16px; padding: 14px 10px 12px; text-align: center; cursor: pointer;
+  box-shadow: 0 5px 0 var(--color-border-subtle); transition: transform 0.12s, box-shadow 0.12s; }
+.dex-card:hover { transform: translateY(-3px); box-shadow: 0 8px 0 var(--color-border-subtle); }
+.dex-card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--color-border-subtle); }
+.dex-emoji { font-size: 38px; line-height: 1; }
+.dex-name { font-weight: 900; font-size: 13px; margin-top: 7px; line-height: 1.2; color: var(--color-text); }
+.dex-hits { position: absolute; top: 7px; right: 9px; font-size: 11px; font-weight: 900; color: var(--color-text-secondary); }
+.dex-tier { display: inline-block; margin-top: 7px; font-size: 9px; font-weight: 900; letter-spacing: 0.04em;
+  padding: 3px 8px; border-radius: 99px; color: #fff; }
+.dex-tier.common { background: #9aa0aa; }
+.dex-tier.rare { background: #1cb0f6; }
+.dex-tier.epic { background: #a855f7; }
+.dex-tier.legendary { background: var(--color-accent, #ff9600); }
+.dex-card.rare { border-color: #1cb0f6; box-shadow: 0 5px 0 #128fd0; }
+.dex-card.epic { border-color: #a855f7; box-shadow: 0 5px 0 #8a36df; }
+.dex-card.legendary { border-color: var(--color-accent, #ff9600); box-shadow: 0 5px 0 #d97e00;
+  background: linear-gradient(180deg, rgba(255,150,0,0.06), var(--color-surface)); }
+.dex-card.shiny::after { content: "✨"; position: absolute; top: 7px; left: 9px; font-size: 14px; animation: dex-tw 1.6s ease-in-out infinite; }
+@keyframes dex-tw { 0%,100% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
+
+.dex-card.locked { background: var(--color-surface-alt, #eef1f0); border-color: var(--color-border);
+  box-shadow: 0 5px 0 var(--color-border-subtle); cursor: default; }
+.dex-card.locked:hover { transform: none; box-shadow: 0 5px 0 var(--color-border-subtle); }
+.dex-card.locked .dex-emoji { filter: grayscale(1) blur(1px); opacity: 0.3; }
+.dex-card.locked .dex-name { color: var(--color-text-secondary); opacity: 0.6; }
+.dex-card.locked .dex-q { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-60%);
+  font-size: 30px; font-weight: 900; color: var(--color-text-secondary); opacity: 0.5; }
+
+.dex-overlay { position: fixed; inset: 0; background: rgba(20,24,30,0.55); display: none;
+  align-items: center; justify-content: center; padding: 20px; z-index: 1000; }
+.dex-overlay.on { display: flex; }
+.dex-modal { background: var(--color-surface); border: 2px solid var(--color-border); border-radius: 22px;
+  max-width: 360px; width: 100%; padding: 24px 20px; text-align: center; box-shadow: 0 10px 0 var(--color-border-subtle); }
+.dex-m-emoji { font-size: 58px; line-height: 1; }
+.dex-m-name { font-size: 20px; font-weight: 900; margin: 6px 0 0; color: var(--color-text); }
+.dex-m-flavor { color: var(--color-text-secondary); font-style: italic; font-weight: 600; margin-top: 10px; font-size: 13px; line-height: 1.5; }
+.dex-m-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 16px; }
+.dex-stat { background: var(--color-surface-alt, #f3f6f4); border: 2px solid var(--color-border); border-radius: 12px; padding: 9px; }
+.dex-stat .k { font-size: 10px; font-weight: 800; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+.dex-stat .v { font-size: 16px; font-weight: 900; margin-top: 2px; color: var(--color-text); }
+.dex-m-combo { margin-top: 12px; background: var(--color-surface-alt, #f3f6f4); border: 2px solid var(--color-border);
+  border-radius: 12px; padding: 9px 11px; font-weight: 800; font-size: 12px; }
+.dex-m-combo small { color: var(--color-text-secondary); font-weight: 700; }
+.dex-m-combo span { color: #a855f7; }
+@media (prefers-reduced-motion: reduce) { .dex-card.shiny::after { animation: none; } .mix-dex-bar > i { transition: none; } }

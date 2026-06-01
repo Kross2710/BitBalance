@@ -318,6 +318,12 @@ if ($isLoggedIn) {
 // DJ Mixer history + archetype collection (Diet & Beats)
 $mixHistory = $spotifyConnected ? bb_get_beats_mix_history($pdo, $userId, 12) : [];
 $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : [];
+// Pokédex: full catalog + owned/locked status, stats and intrinsic rarity.
+$mixDex = $spotifyConnected ? bb_beats_collection_dex($pdo, $userId, $lang) : [];
+$dexTotal = count($mixDex);
+$dexOwned = 0;
+foreach ($mixDex as $d) { if ($d['owned']) $dexOwned++; }
+$dexPct = $dexTotal > 0 ? (int) round($dexOwned / $dexTotal * 100) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="<?= html_lang_attr() ?>" data-theme="<?= htmlspecialchars($_SESSION['user']['theme_preference'] ?? 'system', ENT_QUOTES) ?>">
@@ -352,7 +358,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
 
             <?php if ($spotifyConnected): ?>
                 <!-- CONNECTED DASHBOARD -->
-                <section class="beats-hero">
+                <section class="beats-hero surface-card">
                     <div class="beats-hero__copy">
                         <span class="beats-kicker"><i class="fa-solid fa-music"></i> <?= htmlspecialchars($t['kicker'], ENT_QUOTES) ?></span>
                         <h1><?= htmlspecialchars($t['hero_title'], ENT_QUOTES) ?></h1>
@@ -493,7 +499,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                 <div class="beats-dashboard-grid">
                     <!-- LEFT COLUMN: AI VIBE CARD -->
                     <div class="beats-left-col">
-                        <section class="beats-section mirror-card" id="mirrorCard">
+                        <section class="beats-section mirror-card surface-card" id="mirrorCard">
                             <h2><i class="fa-solid fa-wand-magic-sparkles"></i> <?= htmlspecialchars($t['mirror_title'], ENT_QUOTES) ?></h2>
 
                             <div id="mirror-loading" class="vibe-loading-box">
@@ -554,7 +560,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                         </section>
 
                         <!-- SUGGESTED VIBES -->
-                        <section class="beats-section recommendation-section" style="margin-top: 30px;">
+                        <section class="beats-section recommendation-section surface-card" style="margin-top: 30px;">
                             <h2><i class="fa-solid fa-wand-magic"></i> <?= htmlspecialchars($t['recommend_title'], ENT_QUOTES) ?></h2>
                             <div class="recommendations-grid" id="fuelGrid"
                                 data-recent-tracks='<?= htmlspecialchars(json_encode(array_map(fn($t) => ['track' => $t['track'], 'artist' => $t['artist']], $recentTracks), JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES) ?>'>
@@ -580,7 +586,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                     <!-- RIGHT COLUMN: REALTIME LOGS -->
                     <div class="beats-right-col">
                         <!-- RECENT BEATS (SPOTIFY) -->
-                        <section class="beats-section">
+                        <section class="beats-section surface-card">
                             <h2><i class="fa-solid fa-compact-disc"></i> <?= htmlspecialchars($t['recent_beats_title'], ENT_QUOTES) ?></h2>
                             <div class="beats-simple-list">
                                 <?php if (empty($recentTracks)): ?>
@@ -610,7 +616,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                         </section>
 
                         <!-- WEEKLY FUEL (FOODS) -->
-                        <section class="beats-section" style="margin-top: 30px;">
+                        <section class="beats-section surface-card" style="margin-top: 30px;">
                             <h2><i class="fa-solid fa-utensils"></i> <?= htmlspecialchars($t['weekly_fuel_title'], ENT_QUOTES) ?></h2>
                             <div class="beats-simple-list">
                                 <?php if (empty($topFoods)): ?>
@@ -640,23 +646,37 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                 </div>
 
                 <!-- MIX HISTORY + ARCHETYPE COLLECTION -->
-                <section class="beats-section mix-history-section">
+                <section class="beats-section mix-history-section surface-card">
                     <h2><i class="fa-solid fa-record-vinyl"></i> <?= htmlspecialchars($t['history_title'], ENT_QUOTES) ?></h2>
 
-                    <div class="mix-collection">
-                        <div class="mix-collection-stat">
-                            <strong id="mixCollectionCount"><?= count($mixCollection) ?></strong>
-                            <span><?= htmlspecialchars($t['collection_label'], ENT_QUOTES) ?></span>
+                    <div class="mix-dex">
+                        <div class="mix-dex-head">
+                            <span class="mix-dex-count"><strong id="dexCount"><?= $dexOwned ?></strong> / <span id="dexTotal"><?= $dexTotal ?></span> <?= htmlspecialchars($t['collection_label'], ENT_QUOTES) ?></span>
+                            <span class="mix-dex-pct" id="dexPct"><?= $dexPct ?>%</span>
                         </div>
-                        <div class="mix-collection-chips" id="mixCollectionChips">
-                            <?php foreach ($mixCollection as $col): ?>
-                                <span class="archetype-chip" data-arch="<?= htmlspecialchars($col['archetype'], ENT_QUOTES) ?>"
-                                    title="<?= (int) $col['best_score'] ?>% · x<?= (int) $col['hits'] ?>">
-                                    <?= htmlspecialchars($col['archetype'], ENT_QUOTES) ?>
-                                </span>
+                        <div class="mix-dex-bar"><i id="dexBar" style="width: <?= $dexPct ?>%"></i></div>
+                        <div class="mix-dex-grid" id="mixDexGrid">
+                            <?php foreach ($mixDex as $d): ?>
+                                <?php if ($d['owned']): ?>
+                                    <div class="dex-card <?= $d['rarity'] ?><?= $d['shiny'] ? ' shiny' : '' ?>"
+                                         data-card='<?= htmlspecialchars(json_encode($d, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES) ?>'>
+                                        <span class="dex-hits">×<?= (int) $d['hits'] ?></span>
+                                        <div class="dex-emoji"><?= $d['emoji'] ?></div>
+                                        <div class="dex-name"><?= htmlspecialchars($d['name'], ENT_QUOTES) ?></div>
+                                        <span class="dex-tier <?= $d['rarity'] ?>"><?= strtoupper($d['rarity']) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="dex-card locked">
+                                        <div class="dex-emoji"><?= $d['emoji'] ?></div>
+                                        <div class="dex-q">?</div>
+                                        <div class="dex-name">???</div>
+                                    </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
                     </div>
+
+                    <div class="dex-overlay" id="dexOverlay"><div class="dex-modal" id="dexModal"></div></div>
 
                     <ul class="mix-history-list" id="mixHistoryList">
                         <?php if (empty($mixHistory)): ?>
@@ -688,7 +708,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
 
             <?php else: ?>
                 <!-- PROMO STATE (DISCONNECTED) -->
-                <section class="beats-promo-card">
+                <section class="beats-promo-card surface-card">
                     <div class="beats-promo-icon"><i class="fa-brands fa-spotify"></i></div>
                     <h1><?= htmlspecialchars($t['promo_title'], ENT_QUOTES) ?></h1>
                     <p class="promo-desc"><?= htmlspecialchars($t['promo_subtitle'], ENT_QUOTES) ?></p>
@@ -1315,6 +1335,58 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                 el._t = setTimeout(() => el.classList.remove('show'), 2600);
             }
         });
+    </script>
+
+    <!-- Archetype Pokédex: detail modal (self-contained) -->
+    <script>
+    (function(){
+        const grid = document.getElementById('mixDexGrid');
+        const overlay = document.getElementById('dexOverlay');
+        const modal = document.getElementById('dexModal');
+        if (!grid || !overlay || !modal) return;
+        const L = {
+            hits:  <?= json_encode($lang === 'vi' ? 'Số lần bắt' : 'Times caught', JSON_UNESCAPED_UNICODE) ?>,
+            best:  <?= json_encode($lang === 'vi' ? 'Best Đồng Điệu' : 'Best score', JSON_UNESCAPED_UNICODE) ?>,
+            first: <?= json_encode($lang === 'vi' ? 'Lần đầu' : 'First caught', JSON_UNESCAPED_UNICODE) ?>,
+            shiny: <?= json_encode($lang === 'vi' ? 'Bản Shiny' : 'Shiny', JSON_UNESCAPED_UNICODE) ?>,
+            combo: <?= json_encode($lang === 'vi' ? 'Combo đỉnh nhất' : 'Best combo', JSON_UNESCAPED_UNICODE) ?>,
+            close: <?= json_encode($lang === 'vi' ? 'Đóng' : 'Close', JSON_UNESCAPED_UNICODE) ?>,
+            locked: <?= json_encode($lang === 'vi' ? 'Chưa mở khoá — Mix thêm để khám phá! 🔒' : 'Locked — mix more to discover! 🔒', JSON_UNESCAPED_UNICODE) ?>,
+            yes: <?= json_encode($lang === 'vi' ? '✨ Có' : '✨ Yes', JSON_UNESCAPED_UNICODE) ?>
+        };
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        function openCard(d){
+            const combo = Array.isArray(d.combo)
+                ? `<div class="dex-m-combo"><small>${esc(L.combo)}:</small> 🎵 ${esc(d.combo[0])} <span>✕</span> 🍽️ ${esc(d.combo[1])}</div>` : '';
+            modal.innerHTML = `
+                <div class="dex-m-emoji">${esc(d.emoji)}${d.shiny ? ' ✨' : ''}</div>
+                <h3 class="dex-m-name">${esc(d.name)}</h3>
+                <span class="dex-tier ${esc(d.rarity)}">${esc((d.rarity||'').toUpperCase())}</span>
+                <p class="dex-m-flavor">"${esc(d.voice)}"</p>
+                <div class="dex-m-stats">
+                    <div class="dex-stat"><div class="k">${esc(L.hits)}</div><div class="v">×${parseInt(d.hits,10)||0}</div></div>
+                    <div class="dex-stat"><div class="k">${esc(L.best)}</div><div class="v">${parseInt(d.best,10)||0}%</div></div>
+                    <div class="dex-stat"><div class="k">${esc(L.first)}</div><div class="v">${d.first_at ? esc(String(d.first_at).slice(0,10)) : '—'}</div></div>
+                    <div class="dex-stat"><div class="k">${esc(L.shiny)}</div><div class="v">${d.shiny ? L.yes : '—'}</div></div>
+                </div>
+                ${combo}
+                <button class="btn-dj-reset" id="dexCloseBtn" style="width:100%;margin-top:16px">${esc(L.close)}</button>`;
+            overlay.classList.add('on');
+            const cb = document.getElementById('dexCloseBtn'); if (cb) cb.onclick = closeCard;
+        }
+        function closeCard(){ overlay.classList.remove('on'); }
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeCard(); });
+        grid.addEventListener('click', e => {
+            const card = e.target.closest('.dex-card'); if (!card) return;
+            if (card.classList.contains('locked')) { dexToast(L.locked); return; }
+            try { openCard(JSON.parse(card.dataset.card)); } catch (err) {}
+        });
+        function dexToast(msg){
+            let el = document.getElementById('dexToast');
+            if (!el) { el = document.createElement('div'); el.id = 'dexToast'; el.className = 'beats-toast'; document.body.appendChild(el); }
+            el.textContent = msg; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+    })();
     </script>
 </body>
 </html>
