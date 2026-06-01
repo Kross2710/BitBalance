@@ -98,7 +98,9 @@ $foodComfort = (int) round(min(100, $carbRatio * 50 + $fatRatio * 30 + $calBand 
 $lateNight = ($typicalHour !== null && ($typicalHour >= 21 || $typicalHour <= 4));
 
 // Pseudo track-energy for the OFFLINE fallback only (stable per song, varied).
-$trackEnergy = (int) (hexdec(substr(md5(mb_strtolower($track . '|' . $artist, 'UTF-8')), 0, 6)) % 101);
+// NOTE: strtolower (ASCII), NOT mb_strtolower — mbstring is absent on RMIT (would fatal).
+// The value only feeds md5() for a deterministic hash, so ASCII-only folding is fine.
+$trackEnergy = (int) (hexdec(substr(md5(strtolower($track . '|' . $artist)), 0, 6)) % 101);
 
 // Identifying meta saved alongside every result so the "Keep" action can
 // persist exactly what the user is looking at (server-trusted, not client text).
