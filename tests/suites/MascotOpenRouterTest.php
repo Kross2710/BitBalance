@@ -98,7 +98,8 @@ class MascotOpenRouterTest {
         $caption = mascot_openrouter_extract_caption(200, $this->body($vi));
 
         Assert::equals(140, preg_match_all('/./us', $caption), 'should keep 140 UTF-8 chars');
-        Assert::equals($caption, mb_convert_encoding($caption, 'UTF-8', 'UTF-8'), 'must remain valid UTF-8');
+        // preg '//u' returns 1 for valid UTF-8, false otherwise — mbstring-free (RMIT has no mb_*).
+        Assert::equals(1, preg_match('//u', $caption), 'must remain valid UTF-8');
     }
 
     // ── Response parsing: rejection paths (caller falls through) ─────────
