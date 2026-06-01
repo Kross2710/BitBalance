@@ -194,42 +194,43 @@ $tagline = '';
 $verdict = '';
 $funFact = '';
 $rarity = '';
-$energySync = 0;
-$comfortScore = 0;
-$chaos = 0;
 $success = false;
 
+// Deterministic base scores (grounded in real macros). The AI may override them below,
+// but they always exist so the result is never empty if the model omits "scores".
+$energySync = $clamp(100 - abs($trackEnergy - $foodEnergy) * 0.8);
+$comfortScore = $foodComfort > 0 ? $foodComfort : $clamp(40 + $calBand * 30);
+$chaos = $clamp(min(100, abs($trackEnergy - $foodEnergy) * 0.9 + 25));
+
 // --- Call AI (OpenRouter first, then Gemini) — works through the RMIT firewall ---
+// The archetype is assigned from the FIXED catalog below, so the AI "success" flag
+// (which drives the "AI offline" hint) is judged ONLY on getting usable narration
+// (a verdict) — NOT on the AI's own archetype field, which we discard.
 try {
     $rawText = bb_beats_ai_text($systemPrompt);
     if ($rawText !== null) {
         $cleanText = trim(str_replace(['```json', '```'], '', $rawText));
-
         $parsed = json_decode($cleanText, true);
-        if (is_array($parsed) && isset($parsed['scores']) && is_array($parsed['scores'])) {
-            $energySync = $clamp($parsed['scores']['energy_sync'] ?? 50);
-            $comfortScore = $clamp($parsed['scores']['comfort'] ?? $foodComfort);
-            $chaos = $clamp($parsed['scores']['chaos'] ?? 50);
-            $archetype = mixer_utf8_substr(trim((string) ($parsed['archetype'] ?? '')), 0, 60);
+        if (is_array($parsed)) {
+            if (isset($parsed['scores']) && is_array($parsed['scores'])) {
+                $energySync = $clamp($parsed['scores']['energy_sync'] ?? $energySync);
+                $comfortScore = $clamp($parsed['scores']['comfort'] ?? $comfortScore);
+                $chaos = $clamp($parsed['scores']['chaos'] ?? $chaos);
+            }
             $detectedVibe = mixer_utf8_substr(trim((string) ($parsed['detected_vibe'] ?? '')), 0, 40);
             $tagline = mixer_utf8_substr(trim((string) ($parsed['tagline'] ?? '')), 0, 120);
             $verdict = mixer_utf8_substr(trim((string) ($parsed['verdict'] ?? '')), 0, 240);
             $funFact = mixer_utf8_substr(trim((string) ($parsed['fun_fact'] ?? '')), 0, 160);
-            $rarity = mixer_utf8_substr(trim((string) ($parsed['rarity'] ?? '')), 0, 60);
-            $success = ($archetype !== '' && $verdict !== '');
+            $success = ($verdict !== '');
         }
     }
 } catch (Exception $e) {
     // Keep success false to fall back gracefully
 }
 
-// --- Personalized deterministic fallback (AI offline / bad format) ---
-// Even offline this stays grounded in the user's real macros, slot & history,
-// so the result never reads like a generic template.
+// --- Personalized deterministic NARRATION fallback (AI offline / bad format) ---
+// Scores are already set above; here we only fill the witty copy when the AI gave none.
 if (!$success) {
-    $energySync = $clamp(100 - abs($trackEnergy - $foodEnergy) * 0.8);
-    $comfortScore = $foodComfort > 0 ? $foodComfort : $clamp(40 + $calBand * 30);
-    $chaos = $clamp(min(100, abs($trackEnergy - $foodEnergy) * 0.9 + 25));
 
     if ($trackEnergy >= 67) {
         $adj = $lang === 'vi' ? 'Bùng Nổ' : 'High-Voltage';
