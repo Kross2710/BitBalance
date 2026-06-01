@@ -106,6 +106,12 @@ try {
 
     log_attempt($pdo, (int) $user['user_id'], 'login', 'User logged in successfully via API');
 
+    // Persistent "remember me": issue a long-lived token when the client opts in.
+    if (!empty($data['remember'])) {
+        require_once PROJECT_ROOT . 'include/handlers/remember_token.php';
+        remember_create($pdo, (int) $user['user_id']);
+    }
+
     api_send(true, api_public_user($user), null);
 } catch (PDOException $e) {
     error_log('API login error: ' . $e->getMessage());

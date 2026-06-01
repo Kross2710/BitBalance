@@ -74,6 +74,17 @@ try {
     // Table/columns may not exist yet.
 }
 
+// Trainer's coaching profile (bio/specialties/experience) — shown when the
+// client taps the trainer's avatar to view who is coaching them.
+$trainerProfile = null;
+try {
+    $stmt = $pdo->prepare("SELECT bio, specialties, experience_years FROM pt_profile WHERE user_id = ?");
+    $stmt->execute([(int) $myTrainer['user_id']]);
+    $trainerProfile = $stmt->fetch();
+} catch (PDOException $e) {
+    // pt_profile may not exist yet.
+}
+
 $trainerName   = htmlspecialchars(trim($myTrainer['first_name'] . ' ' . $myTrainer['last_name']), ENT_QUOTES);
 $trainerHandle = htmlspecialchars($myTrainer['user_name'] ?? '', ENT_QUOTES);
 $csrfToken     = csrf_token();
@@ -97,33 +108,35 @@ $csrfToken     = csrf_token();
 
     <main class="dashboard-content">
         <div class="pt-container">
-            <!-- Header Hero -->
-            <section class="pt-hero">
-                <div class="pt-hero__copy">
-                    <span class="pt-kicker"><i class="fas fa-dumbbell"></i> <?= ($lang === 'vi') ? 'Huấn luyện viên của bạn' : 'Your Personal Trainer' ?></span>
-                    <h1><?= ($lang === 'vi') ? 'PT của tôi' : 'My Trainer' ?></h1>
-                    <p><?= ($lang === 'vi') ? 'Trò chuyện trực tiếp với huấn luyện viên và xem lại những lời khuyên dinh dưỡng họ gửi cho bạn.' : 'Chat directly with your trainer and review the nutrition advice they send you.' ?></p>
-                </div>
-            </section>
-
-            <section class="coach-card">
-                <!-- Trainer identity header -->
-                <div class="details-header">
-                    <div class="details-avatar">
+            <!-- Trainer-centric slim hero: identity + stat strip (no duplicate card header) -->
+            <?php $latestAdvice = !empty($feedbackHistory) ? date('j/n', strtotime($feedbackHistory[0]['date_for'])) : null; ?>
+            <section class="pt-hero coach-hero">
+                <div class="coach-hero__id">
+                    <button type="button" class="coach-hero__avatar coach-hero__avatar--btn" id="viewTrainerProfile"
+                            title="<?= ($lang === 'vi') ? 'Xem hồ sơ huấn luyện viên' : 'View trainer profile' ?>"
+                            aria-label="<?= ($lang === 'vi') ? 'Xem hồ sơ huấn luyện viên' : 'View trainer profile' ?>">
                         <?php if (!empty($myTrainer['profile_image'])): ?>
                             <img src="<?= BASE_URL . htmlspecialchars($myTrainer['profile_image'], ENT_QUOTES) ?>" alt="<?= $trainerName ?>">
                         <?php else: ?>
                             <i class="fas fa-dumbbell"></i>
                         <?php endif; ?>
-                    </div>
-                    <div>
-                        <h2 class="details-name"><?= $trainerName ?></h2>
-                        <?php if ($trainerHandle !== ''): ?>
-                            <span class="details-handle">@<?= $trainerHandle ?></span>
-                        <?php endif; ?>
+                        <span class="coach-hero__avatar-hint"><i class="fas fa-eye"></i></span>
+                    </button>
+                    <div class="coach-hero__copy">
+                        <span class="pt-kicker"><i class="fas fa-dumbbell"></i> <?= ($lang === 'vi') ? 'Huấn luyện viên của bạn' : 'Your trainer' ?></span>
+                        <h1><?= $trainerName ?></h1>
+                        <?php if ($trainerHandle !== ''): ?><span class="details-handle">@<?= $trainerHandle ?></span><?php endif; ?>
                     </div>
                 </div>
+                <div class="pt-statstrip">
+                    <span class="pt-stat"><i class="fas fa-comment-medical"></i> <strong><?= count($feedbackHistory) ?></strong> <?= ($lang === 'vi') ? 'lời khuyên' : 'advice' ?></span>
+                    <?php if ($latestAdvice): ?>
+                        <span class="pt-stat"><i class="fas fa-clock"></i> <?= ($lang === 'vi') ? 'mới nhất' : 'latest' ?> <?= $latestAdvice ?></span>
+                    <?php endif; ?>
+                </div>
+            </section>
 
+            <section class="coach-card">
                 <!-- Internal tabs: Chat (default) / Feedback -->
                 <div class="details-tabs" role="tablist">
                     <button type="button" class="details-tab active" data-pane="chat"><i class="fas fa-comments"></i> <?= ($lang === 'vi') ? 'Trò chuyện' : 'Chat' ?></button>
@@ -182,6 +195,46 @@ $csrfToken     = csrf_token();
         </div>
     </main>
 
+    <!-- Trainer profile modal: client taps the avatar to see who's coaching them -->
+    <div id="trainerProfileModal" class="modal">
+        <div class="modal-content trainer-profile-modal">
+            <span class="close-modal" id="closeTrainerProfile" aria-label="<?= ($lang === 'vi') ? 'Đóng' : 'Close' ?>">&times;</span>
+            <div class="trainer-profile-modal__head">
+                <div class="trainer-profile-modal__avatar">
+                    <?php if (!empty($myTrainer['profile_image'])): ?>
+                        <img src="<?= BASE_URL . htmlspecialchars($myTrainer['profile_image'], ENT_QUOTES) ?>" alt="<?= $trainerName ?>">
+                    <?php else: ?>
+                        <i class="fas fa-dumbbell"></i>
+                    <?php endif; ?>
+                </div>
+                <h3><?= $trainerName ?></h3>
+                <?php if ($trainerHandle !== ''): ?><span class="details-handle">@<?= $trainerHandle ?></span><?php endif; ?>
+            </div>
+            <?php
+            $tSpec = trim($trainerProfile['specialties'] ?? '');
+            $tTags = $tSpec !== '' ? array_slice(array_filter(array_map('trim', preg_split('/[,;]+/', $tSpec))), 0, 6) : [];
+            $tBio  = trim($trainerProfile['bio'] ?? '');
+            $tExp  = (int) ($trainerProfile['experience_years'] ?? 0);
+            $hasProfile = $trainerProfile && ($tBio !== '' || !empty($tTags) || $tExp > 0);
+            ?>
+            <?php if ($hasProfile): ?>
+                <?php if (!empty($tTags)): ?>
+                    <div class="trainer-profile-modal__tags">
+                        <?php foreach ($tTags as $tag): ?><span class="trainer-profile-modal__tag"><?= htmlspecialchars($tag, ENT_QUOTES) ?></span><?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($tExp > 0): ?>
+                    <div class="trainer-profile-modal__meta"><i class="fas fa-medal"></i> <?= $tExp ?> <?= ($lang === 'vi') ? 'năm kinh nghiệm' : 'years experience' ?></div>
+                <?php endif; ?>
+                <?php if ($tBio !== ''): ?>
+                    <p class="trainer-profile-modal__bio"><?= htmlspecialchars($tBio, ENT_QUOTES) ?></p>
+                <?php endif; ?>
+            <?php else: ?>
+                <p class="trainer-profile-modal__empty"><?= ($lang === 'vi') ? 'Huấn luyện viên chưa cập nhật hồ sơ.' : 'This trainer hasn\'t set up a profile yet.' ?></p>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Toast for non-blocking chat error feedback (pt-chat.js uses showLoggingToast if present). -->
     <?php include PROJECT_ROOT . 'dashboard/views/logging-toast.php'; ?>
 
@@ -207,6 +260,22 @@ $csrfToken     = csrf_token();
                 }
             }
             tabs.forEach(tab => tab.addEventListener('click', () => show(tab.dataset.pane)));
+        })();
+
+        // Trainer profile modal — open on avatar tap, close on X / backdrop / Esc.
+        (function () {
+            const btn = document.getElementById('viewTrainerProfile');
+            const modal = document.getElementById('trainerProfileModal');
+            if (!btn || !modal) return;
+            const open = () => modal.classList.add('active');
+            const close = () => modal.classList.remove('active');
+            btn.addEventListener('click', open);
+            const x = document.getElementById('closeTrainerProfile');
+            if (x) x.addEventListener('click', close);
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.classList.contains('active')) close();
+            });
         })();
     </script>
 </body>

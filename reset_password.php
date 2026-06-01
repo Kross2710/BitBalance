@@ -200,7 +200,7 @@ function hashPassword($password) {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST">
+                <form method="POST" class="js-submit-lock">
                     <div class="form-group">
                         <label for="reset-email">Email Address</label>
                         <input type="email" id="reset-email" name="email" required placeholder="Enter your email address">
@@ -232,7 +232,7 @@ function hashPassword($password) {
                     </ul>
                 </div>
 
-                <form method="POST">
+                <form method="POST" class="js-submit-lock">
                     <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
                     <div class="form-group">
                         <label for="new-password">New Password</label>

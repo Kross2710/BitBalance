@@ -24,7 +24,11 @@ $protocol = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER
 $redirectUri = $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . 'dashboard/handlers/spotify_callback.php';
 
 // Spotify Scopes
-$scope = 'user-read-recently-played';
+// - user-read-recently-played: live DJ mixer + recent tracks list
+// - user-top-read: long-term genre/popularity signal for "The Mirror" music fingerprint.
+//   Older connections granted only the first scope still work — beats_mirror.php falls
+//   back to enriching recently-played artists via the public /v1/artists catalog endpoint.
+$scope = 'user-read-recently-played user-top-read';
 
 // Redirect to Spotify Auth
 $authorizeUrl = 'https://accounts.spotify.com/authorize?' . http_build_query([

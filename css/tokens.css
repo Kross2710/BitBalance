@@ -84,6 +84,13 @@
     --header-height: 70px;
     --sidebar-width: 220px;
     --sidebar-gap: 240px;
+    /* Canonical content column for centered dashboard pages (see
+       css/components/dash-layout.css). Full-bleed pages opt out via
+       .dash-page--wide. */
+    --content-max: 1180px;
+    --page-pad-x: 20px;
+    --page-pad-bottom: 90px;
+    --stack-gap: 24px;
     --z-header: 1000;
     --z-sidebar: 90;
     --z-fab: 950;

@@ -375,6 +375,38 @@ if ($isLoggedIn) {
             });
 
             // --- 2. DELETE CONFIRMATION ACTION ---
+            const __histDelI18n = {
+                deleted: <?= json_encode(current_locale() === 'vi' ? 'Đã xoá' : 'Entry deleted', JSON_UNESCAPED_UNICODE) ?>,
+                undo: <?= json_encode(current_locale() === 'vi' ? 'Hoàn tác' : 'Undo', JSON_UNESCAPED_UNICODE) ?>,
+                restoreFail: <?= json_encode(current_locale() === 'vi' ? 'Không thể khôi phục' : 'Could not restore', JSON_UNESCAPED_UNICODE) ?>,
+                conn: <?= json_encode(current_locale() === 'vi' ? 'Lỗi kết nối' : 'Connection error', JSON_UNESCAPED_UNICODE) ?>
+            };
+
+            // Undo a delete on the history page. The table is paginated/filtered via
+            // tableController, so the simplest correct re-sync is a reload after the
+            // row is restored server-side (with its original date/time).
+            async function undoDeleteHistory(snapshot) {
+                try {
+                    const fd = new FormData();
+                    ['food_item', 'calories', 'protein', 'carbs', 'fat', 'meal_category', 'image_path', 'date_intake']
+                        .forEach(k => fd.append(k, snapshot[k] != null ? snapshot[k] : ''));
+                    fd.append('show_date', '1');
+                    const res = await fetch('handlers/restore_intake.php', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'fetch' },
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        location.reload();
+                    } else {
+                        showToast(data.error || __histDelI18n.restoreFail, { type: 'error' });
+                    }
+                } catch (err) {
+                    showToast(__histDelI18n.conn, { type: 'error' });
+                }
+            }
+
             if (doConfirmDeleteBtn) {
                 doConfirmDeleteBtn.addEventListener('click', async function () {
                     if (!deleteRowTarget) return;
@@ -382,7 +414,7 @@ if ($isLoggedIn) {
                     const row = deleteRowTarget;
                     const id = row.getAttribute('data-id');
                     if (!id) {
-                        alert('Error: Could not find entry ID');
+                        showToast('Error: Could not find entry ID', { type: 'error' });
                         return;
                     }
 
@@ -395,6 +427,7 @@ if ($isLoggedIn) {
                         const data = await res.json();
 
                         if (data.ok) {
+                            const snapshot = data.deleted_row;
                             row.style.transition = 'opacity 0.3s, transform 0.3s';
                             row.style.opacity = '0';
                             row.style.transform = 'scale(0.95)';
@@ -405,12 +438,17 @@ if ($isLoggedIn) {
                                 tableController.filterAndPaginate();
                             }, 300);
                             closeDeleteConfirmModal();
+                            showToast(__histDelI18n.deleted, {
+                                type: 'success',
+                                duration: 9000,
+                                action: snapshot ? { label: __histDelI18n.undo, onClick: () => undoDeleteHistory(snapshot) } : null
+                            });
                         } else {
-                            alert(data.error || 'Failed to delete');
+                            showToast(data.error || 'Failed to delete', { type: 'error' });
                         }
                     } catch (err) {
                         console.error(err);
-                        alert('Connection error');
+                        showToast('Connection error', { type: 'error' });
                     } finally {
                         doConfirmDeleteBtn.disabled = false;
                     }
@@ -431,7 +469,7 @@ if ($isLoggedIn) {
                         const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
                         const data = await res.json();
                         if (!data.ok) {
-                            alert(data.error || 'Update failed');
+                            showToast(data.error || 'Update failed', { type: 'error' });
                             return;
                         }
                         if (currentRow) {
@@ -441,7 +479,7 @@ if ($isLoggedIn) {
                         IntakeRow.closeModal();
                     } catch (err) {
                         console.error(err);
-                        alert('Error connecting to server');
+                        showToast('Error connecting to server', { type: 'error' });
                     }
                 });
             }
@@ -457,7 +495,7 @@ if ($isLoggedIn) {
                 const row = btn.closest('tr');
                 const id = row.getAttribute('data-id');
                 if (!id) {
-                    alert('Error: Could not find entry ID');
+                    showToast('Error: Could not find entry ID', { type: 'error' });
                     return;
                 }
 
@@ -510,11 +548,11 @@ if ($isLoggedIn) {
                             }
                         }
                     } else {
-                        alert(data.error || 'Failed to log entry');
+                        showToast(data.error || 'Failed to log entry', { type: 'error' });
                     }
                 } catch (err) {
                     console.error(err);
-                    alert('Connection error');
+                    showToast('Connection error', { type: 'error' });
                 } finally {
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;

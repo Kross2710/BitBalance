@@ -48,7 +48,7 @@ Three main database components support this module:
 │       ├── spotify_callback.php     ← Spotify callback receiving authorization code, exchanging for tokens.
 │       ├── spotify_disconnect.php   ← Deletes token rows from user_spotify.
 │       ├── story_data.php           ← Fetches overall AI Dietary & Spotify Archetypes (cached weekly).
-│       ├── beats_fuel.php           ← AI Food Pairings based on recent songs & remaining daily calories.
+│       ├── beats_fuel.php           ← Deterministic fuel pairings from the cached Mirror fingerprint (no AI).
 │       └── beats_mixer.php          ← core DJ Mixer combination endpoint (song + food -> matching score & witty caption).
 │
 ├── css/
@@ -62,12 +62,9 @@ Three main database components support this module:
 
 ## 🔄 Core Architectural Workflows
 
-### 1. Suggested Fuel for Your Current Beats (`beats_fuel.php`)
-- **Frontend:** `dashboard-beats.php` fetches recent Spotify tracks on boot. If tracks exist, it passes them via POST to `/handlers/beats_fuel.php`.
-- **Backend:** 
-  - Retrieves the user's remaining calorie budget for the day.
-  - Feeds the tracks and calorie budget to Gemini AI.
-  - AI returns **exactly 3 food recommendations** matching the musical mood (Chill, Energetic, Sad, Happy, Focus) that fit within the remaining calorie budget.
+### 1. Suggested Fuel for Your Current Beats (deterministic, no AI)
+- **Frontend:** `dashboard-beats.php` reads `fuel_suggestions` straight from the single `beats_mirror.php` response (no separate request).
+- **Backend:** `bb_beats_fuel_suggestions()` maps the music fingerprint + remaining calorie budget to **3 mood-matched suggestions** (Chill / Energetic / Sad / Happy / Focus) via a deterministic rule-map — **no Gemini call**. `beats_fuel.php` survives as a thin endpoint deriving the same from the cached Mirror fingerprint. See `docs/ai-cost-optimization.md`.
 
 ### 2. AI Auto-Vibe DJ Mixer (`beats_mixer.php`)
 - **Frontend:** 
@@ -95,7 +92,7 @@ To keep the application welcoming and friendly, all prompts in this module must 
 ### Caching Layers
 API calls to Gemini are shielded by robust local caching to minimize network request latency and token expenses:
 - **Mixer Caching:** `$_SESSION['beats_mixer_cache']` caches the combination results using `md5($track|$artist|$food|$calories|$lang)`.
-- **Fuel Caching:** `$_SESSION['beats_fuel']` caches daily food suggestions, keyed by date and the top track played.
+- **Mirror Caching:** `beats_mirror_cache` (DB) stores the identity payload per user+lang, keyed by a fingerprint hash, so the Gemini narration is reused until the fingerprint changes. Fuel suggestions are deterministic and recomputed live (cheap, budget-aware).
 - **Wrapped Caching:** `weekly_wrapped_cache` freezes AI stories for the entire ISO week (`date('W-Y')`).
 
 ---
@@ -113,13 +110,44 @@ When modifying these handlers, you must bypass common server gotchas or the page
 
 ---
 
+## 🪞 The Mirror — Personality Engine (active direction)
+
+The headline evolution of this module. Instead of asking Gemini to free-text a one-off
+archetype (which makes every name unique and quietly kills the "collection" rarity), we build
+**two behavioural fingerprints** — music taste and eating habits — and project both onto the
+**same shared axes** (`energy / comfort / diversity / nocturnal`). The product is:
+
+- **A single "Congruence" score** (0–100): *do you eat the way you listen?* — computed
+  deterministically, then **narrated** by Gemini (numbers first, voice second).
+- **A hand-designed archetype** assigned by nearest-centroid over the shared axes, so names are
+  stable, finite, safe, and genuinely collectible.
+
+It is **cold-start-proof** (uses only the user's own data) and reuses the existing vibe-card slot.
+
+| Piece | File |
+|---|---|
+| Scoring engine (pure PHP, no DB/cURL — CLI-testable) | `include/handlers/beats_identity.php` |
+| AJAX endpoint (fingerprints → congruence → archetype → Gemini narration) | `dashboard/handlers/beats_mirror.php` |
+| CLI sanity harness for the engine math | `tests/beats_identity_test.php` |
+| UI: Congruence identity card | `dashboard/dashboard-beats.php` (replaces the old vibe card) |
+
+> **Music source (HYBRID):** Spotify dev-mode apps no longer return artist `genres`/`popularity`
+> (Nov-2024 / Feb-2026 Web API changes), but still return top-artist **names** (`/me/top/artists`,
+> needs `user-top-read`). The Mirror resolves the 4 music axes in two tiers:
+> 1. **Last.fm** `artist.getTopTags` → real genres → **deterministic** axes via `bb_beats_music_axes()`.
+>    Genres are cached **globally per artist** (`beats_artist_genre_cache`, shared across users), so
+>    Last.fm is hit only for never-seen artists. Needs `LASTFM_API_KEY` in `secrets.php`.
+> 2. If genre coverage < 40% (no key / niche or local artists), **Gemini infers** the axes from the
+>    artist names instead — folded into the same call that writes the narration (no extra cost).
+>
+> The Mirror cache key (`v4`) includes a genre signature, so a result flips from AI- to Last.fm-based
+> the moment real genres become available. One Gemini call max either way.
+
 ## 🚀 Future Roadmap & Improvement Ideas
 
-Future developers or AI agents can easily expand the module in these areas:
-
-1. **"Soundtrack Your Snack" (Song Logging Integration):**
+1. **Direction 2 — "The Tribe"** *(parked until the user base is large enough)*:
+   percentiles, data-driven k-means tribes, and a monthly "Beats Wrapped" event.
+   Full plan: [`docs/beats-tribe-plan.md`](docs/beats-tribe-plan.md).
+2. **"Soundtrack Your Snack" (Song Logging Integration):**
    - Bind the current Spotify track ID and artwork directly to the food logs inside the database (`intakeLog.spotify_track`).
    - Create a beautiful scrollable **Spotify-Nutrition Timeline** displaying what song was playing during breakfast, lunch, or late-night logs.
-2. **"Vibe Match Duel" (Social Comparisons):**
-   - Query a friend's weekly cached Spotify archetype.
-   - Let users "duel" their music-diet vibes against friends on the Leaderboard, with Gemini acting as a playful commentator deciding who has the most balanced lifestyle!

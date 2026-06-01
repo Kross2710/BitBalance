@@ -120,6 +120,25 @@ $averageCalories = $averageCalories ?: 'N/A';
 $streakDays = (int) ($userStreak['logging_streak'] ?? 0);
 $brokenStreak = (int) ($userStreak['broken_streak'] ?? 0);
 
+// --- Mascot identity & companion level (P0/P1) ---
+// The NAME is pet-specific (mascot_state); the LEVEL is the shared XP level
+// (xp.php) so the owl grows as the user logs — no separate XP store. Guests get
+// friendly defaults (naming requires an account).
+require_once __DIR__ . '/../include/handlers/mascot_state.php'; // pure include, safe for guests
+$mascotName  = '';
+$mascotLevel = 1;
+if ($isLoggedIn) {
+    require_once __DIR__ . '/../include/handlers/xp.php';
+    $mascotUid   = (int) $user['user_id'];
+    $mascotName  = mascot_get_name($pdo, $mascotUid);
+    $mascotXp    = xp_get_summary($pdo, $mascotUid);
+    $mascotLevel = isset($mascotXp['current_level']) ? (int) $mascotXp['current_level'] : 1;
+    if ($mascotLevel < 1) {
+        $mascotLevel = 1;
+    }
+}
+$mascotStage = mascot_stage_from_level($mascotLevel);
+
 $streakMilestones = [7, 14, 30, 60, 100, 180, 365];
 $prevMilestone = 0;
 $nextMilestone = null;
@@ -803,17 +822,27 @@ if ($actualWeight > 0 && $actualHeight > 0) {
             <div class="flex dashboard-bento-column">
                 <div class="bento-grid-mobile">
                     <!-- AI MASCOT ROOM CARD -->
-                    <section class="mascot-room-card" id="mascotRoomCard" 
-                             data-calories="<?php echo (int) $totalCalories; ?>" 
-                             data-goal="<?php echo (int) $userGoal; ?>" 
-                             data-protein="<?php echo (float) ($macroTotals['protein'] ?? 0); ?>" 
-                             data-protein-goal="<?php echo (float) ($macroGoals['protein'] ?? 0); ?>" 
-                             data-streak="<?php echo (int) $streakDays; ?>">
+                    <section class="mascot-room-card" id="mascotRoomCard"
+                             data-calories="<?php echo (int) $totalCalories; ?>"
+                             data-goal="<?php echo (int) $userGoal; ?>"
+                             data-protein="<?php echo (float) ($macroTotals['protein'] ?? 0); ?>"
+                             data-protein-goal="<?php echo (float) ($macroGoals['protein'] ?? 0); ?>"
+                             data-streak="<?php echo (int) $streakDays; ?>"
+                             data-name="<?= htmlspecialchars($mascotName, ENT_QUOTES, 'UTF-8') ?>"
+                             data-level="<?php echo (int) $mascotLevel; ?>"
+                             data-stage="<?php echo htmlspecialchars($mascotStage, ENT_QUOTES, 'UTF-8'); ?>"
+                             data-cheer-named="<?= t('dashboard.mascot.named_cheer') ?>"
+                             data-cheer-fed="<?= t('dashboard.mascot.fed_today') ?>">
                         <div class="mascot-card-header">
                             <h3><i class="fas fa-ghost"></i> <?= t('dashboard.mascot.heading') ?></h3>
+                            <?php if ($isLoggedIn): ?>
+                            <span class="mascot-level-chip" id="mascotLevelChip" title="<?= t('dashboard.mascot.level_title') ?>">
+                                <i class="fas fa-star"></i> <?= t('dashboard.mascot.level_label') ?> <?php echo (int) $mascotLevel; ?>
+                            </span>
+                            <?php endif; ?>
                         </div>
 
-                        <div class="mascot-stage" id="mascotStage" onclick="petMascot()">
+                        <div class="mascot-stage stage-<?php echo htmlspecialchars($mascotStage, ENT_QUOTES, 'UTF-8'); ?>" id="mascotStage" onclick="petMascot()">
                             <!-- Speech bubble -->
                             <div class="mascot-speech-bubble" id="mascotSpeechBubble">
                                 <span class="mascot-bubble-text" id="mascotBubbleText">...</span>
@@ -900,9 +929,29 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 </g>
                             </svg>
                         </div>
+                        <div class="mascot-nameplate" id="mascotNameplate"<?php echo $mascotName === '' ? ' hidden' : ''; ?>>
+                            <i class="fas fa-feather-pointed"></i>
+                            <span id="mascotNameText"><?= htmlspecialchars($mascotName, ENT_QUOTES, 'UTF-8') ?></span>
+                            <?php if ($isLoggedIn): ?>
+                            <button type="button" class="mascot-rename-btn" id="mascotRenameBtn" title="<?= t('dashboard.mascot.rename') ?>" aria-label="<?= t('dashboard.mascot.rename') ?>">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+
                         <div class="mascot-pet-prompt" id="mascotPetPrompt">
                             <?= t('dashboard.mascot.pet_action') ?>
                         </div>
+
+                        <?php if ($isLoggedIn): ?>
+                        <form class="mascot-name-form" id="mascotNameForm" autocomplete="off"<?php echo $mascotName === '' ? '' : ' hidden'; ?>>
+                            <input type="text" id="mascotNameInput" class="mascot-name-input"
+                                   maxlength="20" autocomplete="off" spellcheck="false"
+                                   placeholder="<?= t('dashboard.mascot.name_placeholder') ?>"
+                                   aria-label="<?= t('dashboard.mascot.name_placeholder') ?>" />
+                            <button type="submit" id="mascotNameBtn" class="mascot-name-btn"><?= t('dashboard.mascot.name_save') ?></button>
+                        </form>
+                        <?php endif; ?>
                     </section>
 
                     <!-- STREAK CARD -->
@@ -1166,11 +1215,11 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             // Reload to update chart
                             setTimeout(() => location.reload(), 500);
                         } else {
-                            alert(data.error || __weightDeleteI18n.failed);
+                            showToast(data.error || __weightDeleteI18n.failed, { type: 'error' });
                         }
                     } catch (err) {
                         console.error(err);
-                        alert(__weightDeleteI18n.connection);
+                        showToast(__weightDeleteI18n.connection, { type: 'error' });
                     } finally {
                         doConfirmDeleteBtn.disabled = false;
                     }
@@ -1651,7 +1700,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         const row = deleteRowTarget;
                         const id = row.getAttribute('data-id');
                         if (!id) {
-                            alert('Error: Could not find entry ID');
+                            showToast('Error: Could not find entry ID', { type: 'error' });
                             return;
                         }
 
@@ -1675,11 +1724,11 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 }, 300);
                                 closeIntakeDeleteConfirmModal();
                             } else {
-                                alert(data.error || 'Failed to delete');
+                                showToast(data.error || 'Failed to delete', { type: 'error' });
                             }
                         } catch (err) {
                             console.error(err);
-                            alert('Connection error');
+                            showToast('Connection error', { type: 'error' });
                         } finally {
                             doConfirmDeleteBtn.disabled = false;
                         }
@@ -1702,7 +1751,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
                             const data = await res.json();
                             if (!data.ok) {
-                                alert(data.error || 'Update failed');
+                                showToast(data.error || 'Update failed', { type: 'error' });
                                 return;
                             }
                             if (currentRow && typeof IntakeRow !== 'undefined') {
@@ -1716,7 +1765,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                             location.reload();
                         } catch (err) {
                             console.error(err);
-                            alert('Error connecting to server');
+                            showToast('Error connecting to server', { type: 'error' });
                         }
                     });
                 }
@@ -1736,7 +1785,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
 
                 async function handleLogAgainById(id, btn) {
                     if (!id) {
-                        alert('Error: Could not find entry ID');
+                        showToast('Error: Could not find entry ID', { type: 'error' });
                         return;
                     }
 
@@ -1796,11 +1845,11 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 window.showXpPopup(data.xp.added, btn);
                             }
                         } else {
-                            alert(data.error || 'Failed to log entry');
+                            showToast(data.error || 'Failed to log entry', { type: 'error' });
                         }
                     } catch (err) {
                         console.error(err);
-                        alert('Connection error');
+                        showToast('Connection error', { type: 'error' });
                     } finally {
                         if (btn) {
                             btn.innerHTML = originalHtml;
@@ -1953,14 +2002,14 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     } catch (e) {}
                 }
 
-                alert(data.message || 'Khôi phục chuỗi thành công!');
+                showToast(data.message || 'Khôi phục chuỗi thành công!', { type: 'success' });
 
                 // Reload page to update header bar XP displays
                 setTimeout(() => {
                     location.reload();
                 }, 1200);
             } else {
-                alert(data.error || 'Không thể khôi phục chuỗi.');
+                showToast(data.error || 'Không thể khôi phục chuỗi.', { type: 'error' });
             }
         }
 
@@ -1980,7 +2029,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     location.reload();
                 }, 1000);
             } else {
-                alert(data.error || 'Lỗi thao tác.');
+                showToast(data.error || 'Lỗi thao tác.', { type: 'error' });
             }
         }
 
@@ -2081,6 +2130,22 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 } catch(e) {}
             };
 
+            // Lightweight LOCAL reaction (no API call): quick bounce + caption.
+            // Reused for the naming confirmation and the "fed today" greeting (P1).
+            window.mascotCheer = function(text) {
+                if (!text) return;
+                svg.classList.add('flap-wings', 'pet-bounce');
+                setTimeout(() => svg.classList.remove('flap-wings', 'pet-bounce'), 600);
+                try { playMascotBoop(); } catch (e) {}
+                if (bubbleTimeout) clearTimeout(bubbleTimeout);
+                bubble.classList.add('active');
+                cursor.style.display = 'none';
+                bubbleText.textContent = text;
+                bubbleTimeout = setTimeout(() => {
+                    bubble.classList.remove('active');
+                }, 4000);
+            };
+
             // Pet mascot function
             window.petMascot = async function() {
                 if (isChatting) return;
@@ -2162,6 +2227,74 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                     bubble.classList.remove('active');
                 }
             });
+
+            // --- Name your owl (P1) ---
+            const nameForm  = document.getElementById('mascotNameForm');
+            const nameInput = document.getElementById('mascotNameInput');
+            const nameBtn   = document.getElementById('mascotNameBtn');
+            const nameplate = document.getElementById('mascotNameplate');
+            const nameText  = document.getElementById('mascotNameText');
+            const renameBtn = document.getElementById('mascotRenameBtn');
+
+            async function submitMascotName() {
+                if (!nameInput) return;
+                const val = (nameInput.value || '').trim();
+                if (!val) { nameInput.focus(); return; }
+                if (nameBtn) nameBtn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('name', val);
+                    const res = await fetch('handlers/mascot_name.php', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.ok && data.name) {
+                        if (nameText)  nameText.textContent = data.name;
+                        if (nameplate) nameplate.hidden = false;
+                        if (nameForm)  nameForm.hidden = true;
+                        mascotCard.dataset.name = data.name;
+                        mascotCheer(mascotCard.dataset.cheerNamed || '🦉');
+                    } else if (nameInput) {
+                        nameInput.focus();
+                    }
+                } catch (err) {
+                    console.error('Mascot name err:', err);
+                } finally {
+                    if (nameBtn) nameBtn.disabled = false;
+                }
+            }
+
+            if (nameForm) {
+                nameForm.addEventListener('submit', (e) => { e.preventDefault(); submitMascotName(); });
+            }
+            if (renameBtn) {
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (nameplate) nameplate.hidden = true;
+                    if (nameForm)  nameForm.hidden = false;
+                    if (nameInput) {
+                        nameInput.value = mascotCard.dataset.name || '';
+                        nameInput.focus();
+                        nameInput.select();
+                    }
+                });
+            }
+
+            // --- "Feed = log" made visible: one warm greeting per day/session
+            // once the user has logged a meal today (P1). ---
+            try {
+                if (calories > 0) {
+                    const today = new Date();
+                    const stamp = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+                    const fedKey = 'bb_mascot_fed_' + stamp;
+                    if (!sessionStorage.getItem(fedKey)) {
+                        sessionStorage.setItem(fedKey, '1');
+                        setTimeout(() => {
+                            if (!bubble.classList.contains('active')) {
+                                mascotCheer(mascotCard.dataset.cheerFed || '');
+                            }
+                        }, 1400);
+                    }
+                }
+            } catch (e) {}
         });
 
         // --- 3D Bento Box & Virtual Plate Controller ---

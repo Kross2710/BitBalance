@@ -43,19 +43,32 @@ try {
     $myRole = $iAmPt ? 'trainer' : 'client';
 
     if ($action === 'fetch') {
+        // Optional cursor: only return messages newer than this id (used by the
+        // client-side poll to fetch just the new ones each tick).
+        $since = isset($_POST['since']) ? (int) $_POST['since'] : 0;
         $thread = getThread($pdo, $trainerId, $clientId, false);
         $messages = [];
         if ($thread) {
-            $stmt = $pdo->prepare("
-                SELECT sender_role, content, created_at
-                FROM pt_message
-                WHERE thread_id = ?
-                ORDER BY created_at ASC, message_id ASC
-            ");
-            $stmt->execute([$thread]);
+            if ($since > 0) {
+                $stmt = $pdo->prepare("
+                    SELECT message_id, sender_role, content, created_at
+                    FROM pt_message
+                    WHERE thread_id = ? AND message_id > ?
+                    ORDER BY created_at ASC, message_id ASC
+                ");
+                $stmt->execute([$thread, $since]);
+            } else {
+                $stmt = $pdo->prepare("
+                    SELECT message_id, sender_role, content, created_at
+                    FROM pt_message
+                    WHERE thread_id = ?
+                    ORDER BY created_at ASC, message_id ASC
+                ");
+                $stmt->execute([$thread]);
+            }
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Mark the other side's messages as seen by me (groundwork for #4).
+            // Mark the other side's messages as seen by me (drives unread badges).
             $otherRole = $iAmPt ? 'client' : 'trainer';
             $upd = $pdo->prepare("
                 UPDATE pt_message SET seen_at = NOW()
@@ -88,6 +101,7 @@ try {
             VALUES (?, ?, ?)
         ");
         $stmt->execute([$thread, $myRole, $content]);
+        $newMessageId = (int) $pdo->lastInsertId();
 
         // Bump thread updated_at so it can sort by recency later.
         $pdo->prepare("UPDATE pt_thread SET updated_at = NOW() WHERE thread_id = ?")
@@ -96,6 +110,7 @@ try {
         echo json_encode([
             'ok' => true,
             'message' => [
+                'message_id'  => $newMessageId,
                 'sender_role' => $myRole,
                 'content'     => $content,
                 'created_at'  => date('Y-m-d H:i:s'),

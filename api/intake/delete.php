@@ -20,6 +20,12 @@ $user = api_require_auth($pdo);
 $userId = (int) $user['user_id'];
 
 try {
+    // Snapshot before deleting so clients can offer an Undo (re-insert).
+    $rowStmt = $pdo->prepare("SELECT food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
+                              FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?");
+    $rowStmt->execute([$intakeId, $userId]);
+    $deletedRow = $rowStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
     $stmt = $pdo->prepare("DELETE FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?");
     $stmt->execute([$intakeId, $userId]);
 
@@ -31,6 +37,7 @@ try {
 
     api_send(true, [
         'deleted_id' => $intakeId,
+        'deleted_row' => $deletedRow,
         'daily_summary' => api_intake_daily_summary($pdo, $userId)
     ], null);
 } catch (Throwable $e) {

@@ -1,9 +1,9 @@
 /* css/pages/dashboard-pt.css */
 
 .pt-container {
-    max-width: 1200px;
+    max-width: var(--content-max);
     margin: 0 auto;
-    padding: 24px 16px;
+    padding: 24px var(--page-pad-x) var(--page-pad-bottom);
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -95,6 +95,15 @@
     color: var(--color-accent);
 }
 
+/* New-messages tally turns blue when a client has messaged */
+.pt-metric--msg {
+    border-color: var(--color-secondary);
+}
+
+.pt-metric--msg strong {
+    color: var(--color-secondary);
+}
+
 /* ==================== TABS SWAPPER ==================== */
 .pt-tabs {
     display: flex;
@@ -152,17 +161,9 @@
 }
 
 /* ==================== PANEL LAYOUT ==================== */
+/* Client detail moved to a drawer/sheet, so the list spans the full width. */
 .pt-panel-layout {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 24px;
-    align-items: start;
-}
-
-@media (max-width: 900px) {
-    .pt-panel-layout {
-        grid-template-columns: 1fr;
-    }
+    display: block;
 }
 
 .pt-panel-main {
@@ -284,6 +285,20 @@
     font-size: 11px;
     font-weight: 700;
     color: var(--color-accent);
+}
+
+/* Unread chat badge — tells the PT which client messaged at a glance */
+.client-card__unread {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-secondary);
+    color: var(--color-text-on-primary);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 /* Progress bar inside card */
@@ -587,7 +602,7 @@
 
 .feedback-btn--primary {
     background: var(--color-primary);
-    color: #ffffff;
+    color: var(--color-text-on-primary);
     box-shadow: 0 4px 0 var(--color-primary-hover);
 }
 
@@ -745,5 +760,138 @@
 
     .pt-details-placeholder {
         padding: 36px 20px;
+    }
+}
+
+/* ==================== SLIM HERO STAT STRIP ==================== */
+.pt-statstrip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+}
+
+.pt-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.pt-stat i {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+.pt-stat strong {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+
+.pt-stat--msg strong,
+.pt-stat--msg i {
+    color: var(--color-secondary);
+}
+
+.pt-stat--alert strong,
+.pt-stat--alert i {
+    color: var(--color-accent);
+}
+
+/* ==================== CLIENT DETAIL DRAWER / BOTTOM-SHEET ==================== */
+.pt-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end; /* side drawer on desktop */
+}
+
+.pt-drawer[hidden] {
+    display: none;
+}
+
+.pt-drawer__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.pt-drawer.is-open .pt-drawer__backdrop {
+    opacity: 1;
+}
+
+.pt-drawer__panel {
+    position: relative;
+    width: 440px;
+    max-width: 100%;
+    height: 100%;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.3));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateX(100%);
+    transition: transform var(--transition-base);
+}
+
+.pt-drawer.is-open .pt-drawer__panel {
+    transform: translateX(0);
+}
+
+/* The detail card fills the drawer without its own border/shadow */
+.pt-drawer__panel .pt-details-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100%;
+}
+
+body.pt-drawer-open {
+    overflow: hidden;
+}
+
+/* Mobile: a bottom sheet that slides up */
+@media (max-width: 700px) {
+    .pt-drawer {
+        justify-content: stretch;
+        align-items: flex-end;
+    }
+
+    .pt-drawer__panel {
+        width: 100%;
+        height: auto;
+        max-height: 88vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        transform: translateY(100%);
+    }
+
+    .pt-drawer.is-open .pt-drawer__panel {
+        transform: translateY(0);
+    }
+
+    /* grab-handle affordance */
+    .pt-drawer__panel::before {
+        content: "";
+        position: sticky;
+        top: 0;
+        display: block;
+        width: 40px;
+        height: 4px;
+        margin: 8px auto 0;
+        border-radius: 999px;
+        background: var(--color-border);
+    }
+}
+
+/* Hide the hero blurb on small screens to reclaim space */
+@media (max-width: 600px) {
+    .pt-hero__copy p {
+        display: none;
     }
 }

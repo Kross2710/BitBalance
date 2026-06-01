@@ -101,7 +101,7 @@
         left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        color: #adb5bd;
+        color: var(--color-text-muted);
     }
 
     .intake-form-card input,
@@ -130,6 +130,19 @@
         background: var(--color-surface);
     }
 
+    /* Nudge: after auto-filling from the AI chat bubble, pulse the meal selector
+       so the user remembers to confirm which meal this entry belongs to. */
+    @keyframes mealPickPulse {
+        0%   { box-shadow: 0 0 0 0 var(--color-primary-soft); }
+        70%  { box-shadow: 0 0 0 10px transparent; }
+        100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
+    .select-wrapper.meal-needs-pick select {
+        border-color: var(--color-primary);
+        animation: mealPickPulse 1.2s ease-out 3;
+    }
+
     .form-row-split {
         display: grid;
         grid-template-columns: 2fr 1fr;
@@ -151,7 +164,7 @@
     }
 
     [data-theme="dark"] .ai-tip {
-        background: #343a40;
+        background: var(--color-surface-alt);
     }
 
     .btn-submit {
@@ -566,6 +579,52 @@
         font-weight: 600;
         font-size: 0.95rem;
     }
+    #scannerReader video {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+    }
+    /* Viewfinder reticle: dims the surroundings and draws a red aiming line so
+       users center the barcode (no qrbox overlay now that we own the video). */
+    .scanner-guide {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 78%;
+        height: 38%;
+        max-height: 160px;
+        border: 3px solid rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.35); /* clipped by #scannerReader overflow:hidden */
+        pointer-events: none;
+    }
+    .scanner-guide::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 8%;
+        right: 8%;
+        height: 2px;
+        transform: translateY(-50%);
+        background: var(--color-secondary, #ef4444);
+        box-shadow: 0 0 8px var(--color-secondary, #ef4444);
+    }
+    /* TEMP: on-screen scan diagnostics (backend · frame · resolution). Remove once tuned. */
+    .scanner-debug {
+        position: absolute;
+        left: 8px;
+        bottom: 8px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #9be7a0;
+        font: 600 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.02em;
+        pointer-events: none;
+        z-index: 2;
+    }
 
     .scanner-controls {
         display: flex;
@@ -601,7 +660,7 @@
     }
     .scanner-btn-stop {
         background-color: var(--color-danger);
-        color: #fff;
+        color: var(--color-text-on-primary);
         border-bottom: 4px solid var(--color-danger-border);
     }
     .scanner-btn-stop:hover {
@@ -1137,3 +1196,96 @@
             letter-spacing: 0;
         }
     }
+
+/* ============================================================
+   Food suggestions — autocomplete dropdown + recent chips
+   (history-based; data from api/intake/suggest.php)
+   ============================================================ */
+/* Anchor the dropdown to the input wrapper at every width. */
+.intake-form-card .food-name-wrapper { position: relative; }
+
+.food-suggest {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    z-index: 30;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 14px);
+    box-shadow: var(--shadow-lg);
+}
+
+.food-suggest[hidden] { display: none; }
+
+.food-suggest__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+}
+
+.food-suggest__item.is-active,
+.food-suggest__item:hover {
+    background: var(--color-primary-soft);
+}
+
+.food-suggest__name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--color-text);
+}
+
+.food-suggest__meta {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.food-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.food-chips[hidden] { display: none; }
+
+.food-chips__heading {
+    width: 100%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+    margin-bottom: 2px;
+}
+
+.food-chip {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-alt, var(--color-surface));
+    color: var(--color-text);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.food-chip:hover {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+}

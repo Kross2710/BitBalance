@@ -26,7 +26,8 @@
     }
 
     function notify(msg, type) {
-        if (window.showLoggingToast) { window.showLoggingToast(msg, '', type || 'error'); }
+        if (window.showToast) { window.showToast(msg, { type: type || 'error' }); }
+        else if (window.showLoggingToast) { window.showLoggingToast(msg, '', type || 'error'); }
         else { alert(msg); }
     }
 
@@ -50,19 +51,60 @@
             this.input = root.querySelector('.pt-chat__input');
             this.loaded = false;
 
+            // Live updates: poll for new messages every 12s. lastId is the fetch
+            // cursor (highest id received from the server); seenIds dedupes against
+            // optimistically-rendered sends so a poll never double-shows a message.
+            this.lastId = 0;
+            this.seenIds = new Set();
+            this.pollMs = 12000;
+            this._pollTimer = null;
+            // Pause polling while the tab is hidden; catch up the moment it returns.
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && this.counterpart) this.poll();
+            });
+
+            // Better on-screen keyboard hints (the action key reads "send").
+            this.input.setAttribute('enterkeyhint', 'send');
+            this.input.setAttribute('autocomplete', 'off');
+            this.baseHeight = 0;
+
             this.form.addEventListener('submit', (e) => this.onSubmit(e));
-            // Enter sends, Shift+Enter = newline.
+
+            // Enter sends, Shift+Enter = newline. Skip while the IME is composing
+            // (e.g. Vietnamese/Telex) so Enter confirms the candidate, not sends.
             this.input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
                     e.preventDefault();
                     this.form.requestSubmit ? this.form.requestSubmit() : this.onSubmit(new Event('submit'));
                 }
             });
+
+            // Auto-grow the textarea as the user types (capped; then it scrolls).
+            this.input.addEventListener('input', () => this.autoGrow());
+
+            // When focused (mobile keyboard opens), keep the latest message in view.
+            this.input.addEventListener('focus', () => {
+                setTimeout(() => { this.messagesEl.scrollTop = this.messagesEl.scrollHeight; }, 150);
+            });
+        }
+
+        autoGrow() {
+            const el = this.input;
+            if (!this.baseHeight) this.baseHeight = el.clientHeight;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+        }
+
+        resetInputHeight() {
+            this.input.style.height = '';
+            this.baseHeight = 0;
         }
 
         setCounterpart(id) {
             this.counterpart = id ? parseInt(id, 10) : null;
             this.loaded = false;
+            this.lastId = 0;
+            this.seenIds = new Set();
         }
 
         hint(text) {
@@ -81,6 +123,7 @@
                 if (data.ok) {
                     this.loaded = true;
                     this.render(data.messages || []);
+                    this.startPolling();
                 } else {
                     this.hint(data.error || 'Error loading messages');
                 }
@@ -91,12 +134,20 @@
 
         render(msgs) {
             this.messagesEl.innerHTML = '';
+            this.seenIds = new Set();
+            this.lastId = 0;
             if (!msgs.length) { this.hint(this.emptyText); return; }
-            msgs.forEach((m) => this.appendMessage(m));
+            msgs.forEach((m) => this.appendMessage(m, true));
             this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
         }
 
-        appendMessage(m) {
+        appendMessage(m, fromFetch) {
+            const id = parseInt(m.message_id, 10);
+            if (!isNaN(id)) {
+                if (this.seenIds.has(id)) return;       // already rendered (dedupe)
+                this.seenIds.add(id);
+                if (fromFetch && id > this.lastId) this.lastId = id;
+            }
             const mine = m.sender_role === this.selfRole;
             const row = document.createElement('div');
             row.className = 'pt-chat__msg ' + (mine ? 'pt-chat__msg--mine' : 'pt-chat__msg--them');
@@ -104,6 +155,42 @@
                 '<div class="pt-chat__bubble">' + esc(m.content) + '</div>' +
                 '<div class="pt-chat__time">' + esc(fmtTime(m.created_at)) + '</div>';
             this.messagesEl.appendChild(row);
+        }
+
+        isNearBottom() {
+            const el = this.messagesEl;
+            return (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+        }
+
+        startPolling() {
+            if (this._pollTimer) return;
+            this._pollTimer = setInterval(() => this.poll(), this.pollMs);
+        }
+
+        // Fetch only messages newer than our cursor and append the new ones. Skips
+        // when the tab is hidden, no counterpart is selected, or a send/poll is
+        // already in flight. Only auto-scrolls if the user is already at the bottom.
+        async poll() {
+            if (document.hidden || !this.counterpart || this.sending || this._polling) return;
+            this._polling = true;
+            try {
+                const fd = new FormData();
+                fd.append('action', 'fetch');
+                fd.append('counterpart_id', this.counterpart);
+                fd.append('since', this.lastId);
+                const res = await fetch(this.endpoint, { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: fd });
+                const data = await res.json();
+                if (data.ok && data.messages && data.messages.length) {
+                    const stick = this.isNearBottom();
+                    if (this.messagesEl.querySelector('.pt-chat__hint')) { this.messagesEl.innerHTML = ''; this.loaded = true; }
+                    data.messages.forEach((m) => this.appendMessage(m, true));
+                    if (stick) this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+                }
+            } catch (e) {
+                /* transient — try again on the next tick */
+            } finally {
+                this._polling = false;
+            }
         }
 
         async onSubmit(e) {
@@ -116,8 +203,14 @@
 
             this.sending = true;
             this.input.value = ''; // clear up front so a repeat submit has nothing to send
+            this.resetInputHeight();
             const btn = this.form.querySelector('button[type="submit"]');
-            if (btn) btn.disabled = true;
+            let btnOrig = null;
+            if (btn) {
+                btnOrig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>';
+            }
             try {
                 const fd = new FormData();
                 fd.append('action', 'send');
@@ -132,23 +225,48 @@
                         this.messagesEl.innerHTML = '';
                         this.loaded = true;
                     }
-                    this.appendMessage(data.message);
+                    this.appendMessage(data.message, false);
                     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+                    // Keep focus so the keyboard stays up for back-to-back messages.
+                    this.input.focus();
                 } else {
                     this.input.value = content; // restore so the user can retry
+                    this.autoGrow();
                     notify(data.error || 'Failed to send', 'error');
                 }
             } catch (e) {
                 this.input.value = content; // restore on network error
+                this.autoGrow();
                 notify('Connection error', 'error');
             } finally {
                 this.sending = false;
-                if (btn) btn.disabled = false;
+                if (btn) { btn.disabled = false; if (btnOrig !== null) btn.innerHTML = btnOrig; }
             }
         }
     }
 
     window.PTChat = PTChat;
+
+    // iOS/WebKit fix: opening the on-screen keyboard scrolls the page down to
+    // reveal the input; when it closes, the viewport grows back but the page can
+    // stay scrolled past its content, leaving a blank gap below the footer. When
+    // the visual viewport grows (keyboard dismissed), clamp the scroll back in.
+    if (window.visualViewport && !window.__ptChatViewportFix) {
+        window.__ptChatViewportFix = true;
+        let prevH = window.visualViewport.height;
+        let timer = null;
+        window.visualViewport.addEventListener('resize', () => {
+            const h = window.visualViewport.height;
+            const grew = h > prevH + 40; // keyboard just closed
+            prevH = h;
+            if (!grew) return;
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                const max = document.documentElement.scrollHeight - window.innerHeight;
+                if (window.scrollY > max + 1) window.scrollTo(0, Math.max(0, max));
+            }, 80);
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.pt-chat[data-auto-init]').forEach((root) => {

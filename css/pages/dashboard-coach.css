@@ -2,6 +2,60 @@
    Reuses the PT dashboard's .pt-hero / .details-* / .pt-chat styles; this file
    only adds the card shell, the feedback-history list and a roomier chat. */
 
+/* ---- Trainer-centric slim hero ---- */
+.coach-hero {
+    padding: 22px 28px;
+    max-width: 720px;
+}
+
+.coach-hero__id {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    flex: 1;
+}
+
+.coach-hero__avatar {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coach-hero__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.coach-hero__avatar i {
+    font-size: 26px;
+    color: var(--color-primary);
+}
+
+.coach-hero__copy {
+    min-width: 0;
+}
+
+.coach-hero__copy h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 4px 0 2px;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.coach-hero__copy .details-handle {
+    font-size: 13px;
+}
+
 .coach-card {
     background: var(--color-surface);
     border: 2px solid var(--color-border);
@@ -11,10 +65,10 @@
     max-width: 720px;
 }
 
-/* Give the chat more breathing room than the cramped 300px default. */
+/* This page is dedicated to the trainer, so let the chat fill real height. */
 .coach-card .pt-chat--roomy .pt-chat__messages {
-    max-height: 420px;
-    min-height: 220px;
+    max-height: min(58vh, 540px);
+    min-height: 300px;
 }
 
 /* Small count chip on the Advice tab. */
@@ -27,7 +81,7 @@
     padding: 0 5px;
     border-radius: 9px;
     background: var(--color-secondary);
-    color: #fff;
+    color: var(--color-text-on-primary);
     font-size: 11px;
     font-weight: 700;
 }
@@ -69,7 +123,7 @@
     padding: 1px 8px;
     border-radius: 10px;
     background: var(--color-accent);
-    color: #fff;
+    color: var(--color-text-on-primary);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -106,7 +160,146 @@
 }
 
 @media (max-width: 600px) {
+    .coach-hero {
+        padding: 18px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .coach-hero__avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+    .coach-hero__copy h1 {
+        font-size: 20px;
+    }
+
     .coach-card {
         padding: 16px;
     }
+
+    .coach-card .pt-chat--roomy .pt-chat__messages {
+        max-height: 62vh;
+    }
+}
+
+/* ---- Tappable trainer avatar (opens profile modal) ---- */
+.coach-hero__avatar--btn {
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+.coach-hero__avatar-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-overlay);
+    color: var(--color-text-on-primary);
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.coach-hero__avatar--btn:hover .coach-hero__avatar-hint,
+.coach-hero__avatar--btn:focus-visible .coach-hero__avatar-hint {
+    opacity: 1;
+}
+
+.coach-hero__avatar--btn:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ---- Trainer profile modal ---- */
+.trainer-profile-modal {
+    max-width: 420px;
+    text-align: center;
+}
+
+.trainer-profile-modal__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.trainer-profile-modal__avatar {
+    width: 84px;
+    height: 84px;
+    margin-bottom: 8px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface-alt);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trainer-profile-modal__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.trainer-profile-modal__avatar i {
+    font-size: 32px;
+    color: var(--color-primary);
+}
+
+.trainer-profile-modal__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.trainer-profile-modal__tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+}
+
+.trainer-profile-modal__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+}
+
+.trainer-profile-modal__meta i {
+    color: var(--color-accent);
+}
+
+.trainer-profile-modal__bio {
+    margin: 0;
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--color-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--color-surface-alt);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.trainer-profile-modal__empty {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
 }

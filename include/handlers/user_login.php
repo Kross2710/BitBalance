@@ -81,6 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         // Log the login attempt
                         log_attempt($pdo, $userId, 'login', 'User logged in successfully');
 
+                        // Persistent "remember me": issue a long-lived token so the
+                        // user stays signed in across browser restarts (default on;
+                        // see include/handlers/remember_token.php).
+                        if (!empty($_POST['remember'])) {
+                            require_once __DIR__ . '/remember_token.php';
+                            remember_create($pdo, $userId);
+                        }
+
                         // Redirect to dashboard instead of index
                         header("Location: dashboard/dashboard.php");
                         exit();

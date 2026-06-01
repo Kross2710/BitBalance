@@ -173,6 +173,42 @@ if (!empty($clients)) {
     }
 }
 
+// 7. Unread chat count per client, so the PT can see at a glance WHO messaged
+//    (instead of opening each client). Shape: $clientUnread[client_id] = count.
+$clientUnread = [];
+$clientUnreadTotal = 0;
+try {
+    $stmt = $pdo->prepare("
+        SELECT t.client_id, COUNT(*) AS unread
+        FROM pt_message m
+        JOIN pt_thread t ON m.thread_id = t.thread_id
+        WHERE t.trainer_id = ? AND m.sender_role = 'client' AND m.seen_at IS NULL
+        GROUP BY t.client_id
+    ");
+    $stmt->execute([$me]);
+    while ($row = $stmt->fetch()) {
+        $clientUnread[(int) $row['client_id']] = (int) $row['unread'];
+        $clientUnreadTotal += (int) $row['unread'];
+    }
+} catch (PDOException $e) {
+    error_log("PT Load Unread Error: " . $e->getMessage());
+}
+
+// Float clients who messaged to the top so the PT spots them without scanning.
+// Manual partition (not usort) keeps name order within each group on PHP 7.x too.
+if (!empty($clientUnread)) {
+    $withMsg = [];
+    $withoutMsg = [];
+    foreach ($clients as $c) {
+        if (($clientUnread[(int) $c['user_id']] ?? 0) > 0) {
+            $withMsg[] = $c;
+        } else {
+            $withoutMsg[] = $c;
+        }
+    }
+    $clients = array_merge($withMsg, $withoutMsg);
+}
+
 $csrfToken = csrf_token();
 ?>
 <!DOCTYPE html>
@@ -201,19 +237,19 @@ $csrfToken = csrf_token();
                     <h1><?= ($lang === 'vi') ? 'PT Dashboard' : 'PT Dashboard' ?></h1>
                     <p><?= ($lang === 'vi') ? 'Theo dõi tiến trình dinh dưỡng, lượng calo nạp vào và kiểm tra ảnh bữa ăn thực tế của học viên.' : 'Monitor nutritional progress, calorie intake, and view client meal photos in real-time.' ?></p>
                 </div>
-                <div class="pt-hero__metrics">
-                    <div class="pt-metric">
-                        <span class="pt-metric__label"><?= ($lang === 'vi') ? 'Học viên' : 'Clients' ?></span>
-                        <strong><?= count($clients) ?></strong>
-                    </div>
-                    <div class="pt-metric">
-                        <span class="pt-metric__label"><?= ($lang === 'vi') ? 'Yêu cầu chờ' : 'Pending requests' ?></span>
-                        <strong id="pending-badge-hero"><?= count($requests) ?></strong>
-                    </div>
-                    <div class="pt-metric <?= $clientsNeedLog > 0 ? 'pt-metric--alert' : '' ?>">
-                        <span class="pt-metric__label"><?= ($lang === 'vi') ? 'Chưa ghi hôm nay' : 'No log today' ?></span>
-                        <strong><?= $clientsNeedLog ?></strong>
-                    </div>
+                <div class="pt-statstrip">
+                    <span class="pt-stat">
+                        <i class="fas fa-users"></i> <strong><?= count($clients) ?></strong> <?= ($lang === 'vi') ? 'học viên' : 'clients' ?>
+                    </span>
+                    <span class="pt-stat <?= $clientUnreadTotal > 0 ? 'pt-stat--msg' : '' ?>" id="hero-msg-stat">
+                        <i class="fas fa-comment-dots"></i> <strong id="hero-msg-count"><?= $clientUnreadTotal ?></strong> <?= ($lang === 'vi') ? 'tin mới' : 'new' ?>
+                    </span>
+                    <span class="pt-stat <?= $clientsNeedLog > 0 ? 'pt-stat--alert' : '' ?>">
+                        <i class="fas fa-bell"></i> <strong><?= $clientsNeedLog ?></strong> <?= ($lang === 'vi') ? 'chưa ghi' : 'no log' ?>
+                    </span>
+                    <span class="pt-stat">
+                        <i class="fas fa-user-plus"></i> <strong id="pending-badge-hero"><?= count($requests) ?></strong> <?= ($lang === 'vi') ? 'chờ' : 'pending' ?>
+                    </span>
                 </div>
             </section>
 
@@ -252,8 +288,9 @@ $csrfToken = csrf_token();
                             </div>
                         <?php else: ?>
                             <div class="pt-bento-grid" id="clientsGrid">
-                                <?php foreach ($clients as $c): 
+                                <?php foreach ($clients as $c):
                                     $cid = (int) $c['user_id'];
+                                    $unread = $clientUnread[$cid] ?? 0;
                                     $name = htmlspecialchars($c['first_name'] . ' ' . $c['last_name'], ENT_QUOTES);
                                     $handle = htmlspecialchars($c['user_name'], ENT_QUOTES);
                                     $avatar = $c['profile_image'] ?? '';
@@ -290,6 +327,9 @@ $csrfToken = csrf_token();
                                                 <span><?= $handle ?></span>
                                             </div>
                                             <span class="client-card__streak" title="Streak"><i class="fas fa-fire"></i> <?= $streak ?>d</span>
+                                            <?php if ($unread > 0): ?>
+                                                <span class="client-card__unread" title="<?= ($lang === 'vi') ? 'Tin nhắn chưa đọc' : 'Unread messages' ?>"><i class="fas fa-comment-dots"></i> <?= $unread ?></span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <!-- Progress Bar -->
@@ -333,10 +373,13 @@ $csrfToken = csrf_token();
                             </div>
                         <?php endif; ?>
                     </div>
+                </div>
 
-                    <!-- Right: Dynamic Client Detailing Panel -->
-                    <div class="pt-panel-side">
-                        <div class="pt-details-card" id="clientDetailsCard" style="display: none;">
+                <!-- Client detail drawer: bottom-sheet on mobile, side drawer on desktop -->
+                <div class="pt-drawer" id="clientDrawer" hidden>
+                    <div class="pt-drawer__backdrop" data-drawer-close></div>
+                    <div class="pt-drawer__panel" role="dialog" aria-modal="true" aria-label="<?= ($lang === 'vi') ? 'Chi tiết học viên' : 'Client details' ?>">
+                        <div class="pt-details-card" id="clientDetailsCard">
                             <button class="close-side-details" onclick="closeClientDetails()"><i class="fas fa-times"></i></button>
                             
                             <div class="details-header">
@@ -401,12 +444,6 @@ $csrfToken = csrf_token();
                                     </div>
                                 </form>
                             </div>
-                        </div>
-
-                        <div class="pt-details-placeholder" id="detailsPlaceholder">
-                            <i class="fas fa-user-check pt-details-placeholder__icon"></i>
-                            <h3><?= ($lang === 'vi') ? 'Chi tiết học viên' : 'Client Profile Details' ?></h3>
-                            <p><?= ($lang === 'vi') ? 'Hãy chọn một học viên để kiểm tra chi tiết các món ăn, ảnh chụp và gửi nhận xét dinh dưỡng.' : 'Select a client from the list to review their meal logs, photos, and write nutrition feedback.' ?></p>
                         </div>
                     </div>
                 </div>
@@ -588,9 +625,11 @@ $csrfToken = csrf_token();
                 }
             };
 
-            // Details card selectors
-            const detailsPlaceholder = document.getElementById('detailsPlaceholder');
+            // Details drawer + card selectors
+            const clientDrawer = document.getElementById('clientDrawer');
             const clientDetailsCard = document.getElementById('clientDetailsCard');
+            // Per-client unread map (Task #4) — drives the smart default tab below
+            const clientUnread = <?= json_encode((object) $clientUnread) ?>;
             const detAvatar = document.getElementById('det-avatar');
             const detName = document.getElementById('det-name');
             const detHandle = document.getElementById('det-handle');
@@ -652,6 +691,23 @@ $csrfToken = csrf_token();
             // ---- Two-way chat (Task #3): one widget, re-pointed per client ----
             const chatEl = document.getElementById('ptClientChat');
             const clientChat = chatEl ? new PTChat(chatEl) : null;
+
+            // Clear a client's unread badge + decrement the hero tally
+            function clearCardUnread(card) {
+                const badge = card.querySelector('.client-card__unread');
+                if (!badge) return;
+                const n = parseInt(badge.textContent, 10) || 0;
+                badge.remove();
+                const heroCount = document.getElementById('hero-msg-count');
+                if (heroCount) {
+                    const left = Math.max(0, (parseInt(heroCount.textContent, 10) || 0) - n);
+                    heroCount.textContent = left;
+                    if (left === 0) {
+                        const m = document.getElementById('hero-msg-stat');
+                        if (m) m.classList.remove('pt-stat--msg');
+                    }
+                }
+            }
 
             // ---- Internal tabs inside the details card (Diary / Chat / Feedback) ----
             const detailTabs = clientDetailsCard ? clientDetailsCard.querySelectorAll('.details-tab') : [];
@@ -750,10 +806,14 @@ $csrfToken = csrf_token();
                 card.addEventListener('click', () => {
                     document.querySelectorAll('#clientsGrid .client-card').forEach(c => c.classList.remove('active'));
                     card.classList.add('active');
-                    
+
+                    // Opening a client loads + marks their chat read, so clear the
+                    // unread badge here and drop the hero "new messages" tally.
+                    clearCardUnread(card);
+
                     const cid = parseInt(card.dataset.userId, 10);
                     const client = clientsData.find(c => parseInt(c.user_id, 10) === cid);
-                    
+
                     if (client) {
                         showClientDetails(client);
                     }
@@ -761,9 +821,8 @@ $csrfToken = csrf_token();
             });
 
             function showClientDetails(c) {
-                detailsPlaceholder.style.display = 'none';
-                clientDetailsCard.style.display = 'block';
-                
+                openDrawer();
+
                 detClientId.value = c.user_id;
                 detName.textContent = c.first_name + ' ' + c.last_name;
                 detHandle.textContent = c.user_name;
@@ -804,8 +863,10 @@ $csrfToken = csrf_token();
                     });
                 }
                 
-                // Each new selection starts on the Diary tab for consistency
-                showDetailPane('diary');
+                // Smart default tab: if this client has unread messages, open
+                // straight to Chat (the most likely action); otherwise the Diary.
+                const hasUnread = (clientUnread[c.user_id] || clientUnread[String(c.user_id)] || 0) > 0;
+                showDetailPane(hasUnread ? 'chat' : 'diary');
 
                 // 7-day trend snapshot
                 renderClientTrend(c);
@@ -822,15 +883,33 @@ $csrfToken = csrf_token();
                 renderFeedbackHistory();
             }
 
+            // ---- Drawer open/close ----
+            function openDrawer() {
+                clientDrawer.removeAttribute('hidden');
+                // next frame so the slide-in transition runs
+                requestAnimationFrame(() => clientDrawer.classList.add('is-open'));
+                document.body.classList.add('pt-drawer-open');
+            }
+
             window.closeClientDetails = function() {
+                clientDrawer.classList.remove('is-open');
+                document.body.classList.remove('pt-drawer-open');
                 document.querySelectorAll('#clientsGrid .client-card').forEach(c => c.classList.remove('active'));
-                clientDetailsCard.style.display = 'none';
-                detailsPlaceholder.style.display = 'block';
+                // hide after the slide-out transition
+                setTimeout(() => { clientDrawer.setAttribute('hidden', ''); }, 280);
             };
+
+            // Close on backdrop click + Escape
+            clientDrawer.addEventListener('click', (e) => {
+                if (e.target.hasAttribute('data-drawer-close')) closeClientDetails();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && clientDrawer.classList.contains('is-open')) closeClientDetails();
+            });
 
             // Connect/Reject connection requests
             window.handleConnectionRequest = async function(reqId, action) {
-                if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+                if (!(await showConfirm({ message: `Are you sure you want to ${action} this request?`, danger: true }))) return;
                 
                 const btn = event.currentTarget;
                 btn.disabled = true;
@@ -937,7 +1016,7 @@ $csrfToken = csrf_token();
             // Disconnect client
             window.disconnectClient = async function() {
                 const cid = parseInt(detClientId.value, 10);
-                if (!confirm(`Are you sure you want to disconnect this client? They will no longer share their diet journal with you.`)) return;
+                if (!(await showConfirm({ message: `Are you sure you want to disconnect this client? They will no longer share their diet journal with you.`, danger: true }))) return;
                 
                 try {
                     const fd = new FormData();

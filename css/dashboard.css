@@ -1394,6 +1394,28 @@ table.meals-table {
     box-shadow: 0 0 0 #95a5a6 !important;
 }
 
+/* Dark-mode override: the light-purple fill (#f3e5f5) glares as a near-white
+   box on dark cards. Keep the purple accent identity but use a translucent
+   surface + lighter glyph, mirroring the .wiki-article-icon dark pattern. */
+[data-theme="dark"] .btn-icon-small {
+    border-color: #a569bd !important;
+    background: rgba(142, 68, 173, 0.22) !important;
+    color: #d2b4de !important;
+    box-shadow: 0 3px 0 #6c3483 !important;
+}
+[data-theme="dark"] .btn-icon-small:hover {
+    box-shadow: 0 4px 0 #6c3483 !important;
+}
+[data-theme="dark"] .btn-icon-small:active {
+    box-shadow: 0 0 0 #6c3483 !important;
+}
+[data-theme="dark"] .btn-icon-small.btn-secondary {
+    border-color: var(--color-border) !important;
+    background: var(--color-surface) !important;
+    color: var(--color-text-secondary) !important;
+    box-shadow: 0 3px 0 var(--color-border) !important;
+}
+
 .weight-chart-wrapper {
     height: 140px !important;
     width: 100%;

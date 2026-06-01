@@ -2,9 +2,9 @@
 
 .beats-container {
     width: 100%;
-    max-width: 1180px;
+    max-width: var(--content-max);
     margin: 0 auto;
-    padding: 24px 20px 90px;
+    padding: 24px var(--page-pad-x) var(--page-pad-bottom);
     box-sizing: border-box;
     min-width: 0;
 }
@@ -1800,3 +1800,157 @@
 }
 
 
+
+/* =========================================================================
+   THE MIRROR — Personality congruence card (Direction 1)
+   ========================================================================= */
+.mirror-content-box {
+    animation: mirror-fade-in 0.4s ease;
+}
+@keyframes mirror-fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.mirror-hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+/* Conic progress ring; fill % is driven by the --mirror-pct custom property. */
+.mirror-ring {
+    --mirror-pct: 0;
+    --ring-color: var(--color-primary);
+    width: 116px;
+    height: 116px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(var(--ring-color) calc(var(--mirror-pct) * 1%), var(--color-border-subtle) 0);
+    box-shadow: 0 4px 0 var(--color-border-subtle);
+}
+.mirror-ring.high { --ring-color: var(--color-primary); }
+.mirror-ring.mid  { --ring-color: var(--color-accent); }
+.mirror-ring.low  { --ring-color: var(--color-danger); }
+
+.mirror-ring-inner {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    background: var(--color-surface-alt, var(--color-surface));
+    border: 2px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+.mirror-score-val {
+    font-size: 30px;
+    font-weight: 950;
+    line-height: 1;
+    color: var(--color-text);
+}
+.mirror-ring.high .mirror-score-val { color: var(--color-primary); }
+.mirror-ring.mid  .mirror-score-val { color: var(--color-accent); }
+.mirror-ring.low  .mirror-score-val { color: var(--color-danger); }
+.mirror-pct { font-size: 15px; font-weight: 800; }
+.mirror-score-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+}
+
+.mirror-archetype { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mirror-arch-emoji { font-size: 26px; line-height: 1; }
+.mirror-archetype strong {
+    font-size: 19px;
+    font-weight: 900;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+.mirror-tagline {
+    margin: 2px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Per-axis music-vs-food comparison */
+.mirror-axes-legend {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--color-text-secondary);
+}
+.mirror-leg i { font-size: 9px; vertical-align: middle; }
+.mirror-leg.music i { color: var(--color-accent); }
+.mirror-leg.food  i { color: var(--color-primary); }
+
+.mirror-axes { margin-bottom: 18px; }
+.mirror-axis {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 11px;
+}
+.mirror-axis-label {
+    width: 84px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--color-text);
+}
+.mirror-axis-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.mirror-axis-track {
+    height: 7px;
+    background: var(--color-border-subtle);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.mirror-axis-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mirror-axis-fill.music { background: var(--color-accent); }
+.mirror-axis-fill.food  { background: var(--color-primary); }
+
+.mirror-cap { text-transform: capitalize; }
+
+.mirror-verdict {
+    margin: 16px 0 0;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--color-text);
+    text-align: center;
+}
+.mirror-funfact {
+    margin: 10px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: center;
+}
+.mirror-funfact i { color: var(--color-accent); margin-right: 4px; }
+
+@media (max-width: 480px) {
+    .mirror-hero { flex-direction: column; text-align: center; }
+    .mirror-archetype { align-items: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mirror-content-box { animation: none; }
+    .mirror-axis-fill { transition: none; }
+}

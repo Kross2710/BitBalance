@@ -9,26 +9,11 @@
  */
 require_once __DIR__ . '/../../include/init.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/mascot_ai.php';
+require_once __DIR__ . '/../../include/handlers/mascot_state.php';
+require_once __DIR__ . '/../../include/handlers/xp.php';
 
 header('Content-Type: application/json');
-
-function mascot_utf8_substr($text, $start, $length)
-{
-    $text = (string) $text;
-    if ($text === '') {
-        return '';
-    }
-    if (function_exists('iconv_substr')) {
-        $slice = @iconv_substr($text, $start, $length, 'UTF-8');
-        if ($slice !== false) {
-            return $slice;
-        }
-    }
-    if (preg_match_all('/./us', $text, $chars)) {
-        return implode('', array_slice($chars[0], (int) $start, (int) $length));
-    }
-    return substr($text, (int) $start, (int) $length);
-}
 
 if (!isset($_SESSION['user'])) {
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
@@ -51,8 +36,26 @@ if (!in_array($vibeState, $allowedStates, true)) {
     $vibeState = 'neutral';
 }
 
+// --- Persistent pet identity (read server-side; cannot be spoofed by POST) ---
+// Name is the owl's own name (P1); level comes from the shared XP system so the
+// mascot and the user progress together (no separate XP store).
+$ownerName = mascot_get_name($pdo, $userId);
+$xpSummary = function_exists('xp_get_summary') ? xp_get_summary($pdo, $userId) : array();
+$level = isset($xpSummary['current_level']) ? (int) $xpSummary['current_level'] : 1;
+if ($level < 1) {
+    $level = 1;
+}
+
+$identityVi = '';
+$identityEn = '';
+if ($ownerName !== '') {
+    $identityVi = "Tên của bạn (chú Cú) là \"{$ownerName}\". Hãy tự xưng bằng tên này một cách dễ thương khi phù hợp.";
+    $identityEn = "Your name (the owl) is \"{$ownerName}\". Refer to yourself by this name in a cute way when it fits.";
+}
+
 // --- Check session-based cache to save token costs & load instantly ---
-$cacheKey = md5($calories . '|' . $goal . '|' . $protein . '|' . $proteinGoal . '|' . $streak . '|' . $vibeState . '|' . $lang);
+// Name + level join the key so a freshly-named owl or a level-up refreshes the line.
+$cacheKey = md5($calories . '|' . $goal . '|' . $protein . '|' . $proteinGoal . '|' . $streak . '|' . $vibeState . '|' . $lang . '|' . $ownerName . '|' . $level);
 if (isset($_SESSION['mascot_chat_cache']) && is_array($_SESSION['mascot_chat_cache'])) {
     if (isset($_SESSION['mascot_chat_cache'][$cacheKey])) {
         $cachedData = $_SESSION['mascot_chat_cache'][$cacheKey];
@@ -85,9 +88,10 @@ Số liệu hôm nay:
 - Đã ăn: {$calories} / {$goal} kcal
 - Protein: {$protein} / {$proteinGoal}g
 - Chuỗi kỷ luật Streak: {$streak} ngày
+- Cấp độ đồng hành: Cấp {$level}
 Trạng thái cảm xúc của bạn lúc này: {$vibeState}
 Mô tả trạng thái: {$stateContextVi}
-
+{$identityVi}
 Nhiệm vụ: Hãy đóng vai chú Cú nói một câu nhận xét ngắn (dưới 18 từ) bằng tiếng Việt siêu đáng yêu, ấm áp, hóm hỉnh.
 - [QUY TẮC TUYỆT ĐỐI]: HOÀN TOÀN KHÔNG body shaming, chê bai ngoại hình, phán xét tiêu cực về cân nặng hay thói quen ăn uống của người dùng. Hãy luôn là người đồng hành đáng yêu, truyền cảm hứng tích cực.
 
@@ -98,9 +102,10 @@ Today's metrics:
 - Intake: {$calories} / {$goal} kcal
 - Protein: {$protein} / {$proteinGoal}g
 - Logging Streak: {$streak} days
+- Companion Level: Level {$level}
 Your current emotional state: {$vibeState}
 State details: {$stateContextEn}
-
+{$identityEn}
 Task: Roleplay as the Owl and speak one short speech caption (under 18 words) in English that is extremely warm, wise, and adorable.
 - [ABSOLUTE RULE]: NEVER comment on weight, fatness, body shape, or body-shame the user. Never judge or shame their diet negatively. Always be a warm, encouraging, positive companion.
 
@@ -115,16 +120,11 @@ $success = false;
 // 1. Try OpenRouter if configured
 if (defined('OPENROUTER_API_KEY') && OPENROUTER_API_KEY !== '') {
     try {
-        $model = defined('OPENROUTER_MODEL') ? OPENROUTER_MODEL : 'google/gemini-2.5-flash:free';
+        $model = mascot_openrouter_model();
         $apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
-        
-        $data = [
-            'model' => $model,
-            'messages' => [
-                ['role' => 'user', 'content' => $systemPrompt]
-            ]
-        ];
-        
+
+        $data = mascot_openrouter_payload($model, $systemPrompt);
+
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -140,16 +140,12 @@ if (defined('OPENROUTER_API_KEY') && OPENROUTER_API_KEY !== '') {
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
-        if ($httpCode === 200) {
-            $resData = json_decode($response, true);
-            $aiText = $resData['choices'][0]['message']['content'] ?? '';
-            $aiText = trim(str_replace(['"', '“', '”'], '', $aiText));
-            if ($aiText !== '') {
-                $caption = mascot_utf8_substr($aiText, 0, 140);
-                $source = 'openrouter';
-                $success = true;
-            }
+
+        $parsedCaption = mascot_openrouter_extract_caption($httpCode, $response);
+        if ($parsedCaption !== null) {
+            $caption = $parsedCaption;
+            $source = 'openrouter';
+            $success = true;
         }
     } catch (Exception $e) {
         // Fall through to local Gemini fallback

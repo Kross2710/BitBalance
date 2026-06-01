@@ -408,13 +408,13 @@ const BitBalanceStory = {
                     this.startCarousel();
                 } else {
                     console.error('Error fetching story data:', data.error);
-                    alert(data.error || 'Failed to fetch wrapped stats.');
+                    showToast(data.error || 'Failed to fetch wrapped stats.', { type: 'error' });
                     this.close();
                 }
             })
             .catch(err => {
                 console.error('Error fetching wrapped data:', err);
-                alert('Connection failed.');
+                showToast('Connection failed.', { type: 'error' });
                 this.close();
             });
     },
@@ -660,7 +660,7 @@ const BitBalanceStory = {
     // Client-side HTML to PNG export using html2canvas
     exportPng(triggerShare = false) {
         if (!this.html2canvasLoaded) {
-            alert('Loading rendering engine, please try again in a second...');
+            showToast('Loading rendering engine, please try again in a second...', { type: 'info' });
             return;
         }
 
@@ -741,7 +741,7 @@ const BitBalanceStory = {
                 // memory. Fail loudly instead of downloading a broken file.
                 if (!blob) {
                     console.error('toBlob returned null — canvas tainted or too large for this browser.');
-                    alert('Failed to generate image.');
+                    showToast('Failed to generate image.', { type: 'error' });
                     this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
                     return;
                 }
@@ -785,7 +785,7 @@ const BitBalanceStory = {
         }).catch(err => {
             cleanupCapture();
             console.error('Rendering failed:', err);
-            alert('Failed to generate image.');
+            showToast('Failed to generate image.', { type: 'error' });
             this.resetButtons(downloadBtn, shareBtn, originalDownloadTxt, originalShareTxt);
         });
     },

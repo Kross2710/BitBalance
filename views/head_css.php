@@ -61,6 +61,16 @@ function bb_css_link(string $relPath): void {
 <?php bb_css_link('css/components/xp-bar.css'); ?>
 <?php bb_css_link('css/components/footer.css'); ?>
 <?php bb_css_link('css/components/cookie-banner.css'); ?>
+<?php bb_css_link('css/components/ui-feedback.css'); ?>
 <?php if (in_array('sidebar', $_components, true)) bb_css_link('css/components/sidebar.css'); ?>
+<?php if (in_array('sidebar', $_components, true)) bb_css_link('css/components/dash-layout.css'); ?>
 <?php if (in_array('fab', $_components, true)) bb_css_link('css/components/fab.css'); ?>
 <?php foreach ($_extra as $href) bb_css_link($href); ?>
+<?php
+/* Unified UI feedback helpers (toast + confirm). Deferred so it executes after
+ * the DOM is parsed but before DOMContentLoaded, and is available on every page
+ * that loads CSS through this file. */
+$__uiHelpersPath = PROJECT_ROOT . 'js/ui-helpers.js';
+$__uiHelpersVer = is_file($__uiHelpersPath) ? filemtime($__uiHelpersPath) : '0';
+echo '<script defer src="' . BASE_URL . 'js/ui-helpers.js?v=' . $__uiHelpersVer . '"></script>' . "\n";
+?>

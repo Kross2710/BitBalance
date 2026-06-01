@@ -22,6 +22,14 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Persistent "remember me" auto-login (mirrors include/init.php): re-establish
+// the session from a valid remember cookie BEFORE any endpoint checks auth, so
+// API calls survive an expired session just like full page loads do.
+if (!isset($_SESSION['user']) && !empty($_COOKIE['bb_remember'])) {
+    require_once PROJECT_ROOT . 'include/handlers/remember_token.php';
+    remember_login(api_connect_db());
+}
+
 function api_send($ok, $data = null, $message = null, $statusCode = 200)
 {
     http_response_code($statusCode);
@@ -80,6 +88,11 @@ function api_public_user(array $row)
 
 function api_destroy_session()
 {
+    // Also drop the persistent remember-me cookie so the next request isn't
+    // silently re-authenticated.
+    require_once PROJECT_ROOT . 'include/handlers/remember_token.php';
+    remember_delete_cookie();
+
     $_SESSION = [];
 
     if (ini_get('session.use_cookies')) {
@@ -126,6 +139,8 @@ function api_current_user_row(PDO $pdo)
     }
 
     if ($row['status'] === 'archived' || $row['status'] === 'banned') {
+        require_once PROJECT_ROOT . 'include/handlers/remember_token.php';
+        remember_revoke_all($pdo, (int) $row['user_id']);
         api_destroy_session();
         api_error('This account is not active.', 403);
     }

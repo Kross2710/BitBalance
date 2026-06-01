@@ -108,8 +108,10 @@ function getIntakeLogToday(int $userId, $date = null)
     $date = $date ?: date('Y-m-d');
 
     // Fetch intake log for the user, including local time (hour:minute)
+    // image_path is needed so the "Photo" badge survives a page refresh (rows
+    // logged with a chat-bubble photo render it via views/_intake-row.php).
     $stmt = $pdo->prepare("
-        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, date_intake
+        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, image_path, date_intake
         FROM intakeLog
         WHERE user_id = ?
         AND DATE(date_intake) = ?
@@ -186,8 +188,10 @@ function getUserIntakeHistory($userId)
     global $pdo;
 
     // Fetch intake history for the user
+    // image_path included so the "Photo" badge renders on the full History page
+    // too (same views/_intake-row.php partial as Today's History).
     $stmt = $pdo->prepare("
-        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, date_intake
+        SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, image_path, date_intake
         FROM intakeLog
         WHERE user_id = ?
         ORDER BY date_intake DESC
@@ -361,6 +365,145 @@ function bb_get_beats_collection(PDO $pdo, int $userId): array
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {
         return [];
+    }
+}
+
+/* ===================== The Mirror — identity DB cache ===================== */
+
+/** Create the Mirror identity cache table (lazy, once per session). */
+function bb_ensure_beats_mirror_cache_table(PDO $pdo): void
+{
+    if (!empty($_SESSION['beats_mirror_cache_table_ok'])) {
+        return;
+    }
+    try {
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS `beats_mirror_cache` (
+                `user_id` INT(11) NOT NULL,
+                `lang` VARCHAR(5) NOT NULL DEFAULT 'en',
+                `cache_key` VARCHAR(64) NOT NULL DEFAULT '',
+                `payload_json` MEDIUMTEXT NOT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`user_id`, `lang`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $_SESSION['beats_mirror_cache_table_ok'] = true;
+    } catch (PDOException $e) {
+        // Leave the flag unset so we retry next time; callers tolerate absence.
+    }
+}
+
+/** Read the cached Mirror payload for a user+lang. Returns ['cache_key','payload'] or null. */
+function bb_get_beats_mirror_cache(PDO $pdo, int $userId, string $lang)
+{
+    bb_ensure_beats_mirror_cache_table($pdo);
+    try {
+        $stmt = $pdo->prepare("SELECT cache_key, payload_json FROM `beats_mirror_cache` WHERE user_id = ? AND lang = ? LIMIT 1");
+        $stmt->execute([$userId, $lang]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return null;
+        }
+        $payload = json_decode($row['payload_json'], true);
+        if (!is_array($payload)) {
+            return null;
+        }
+        return ['cache_key' => (string) $row['cache_key'], 'payload' => $payload];
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/** Upsert the cached Mirror payload. Failures are swallowed — caching must never break the response. */
+function bb_save_beats_mirror_cache(PDO $pdo, int $userId, string $lang, string $cacheKey, array $payload): void
+{
+    bb_ensure_beats_mirror_cache_table($pdo);
+    try {
+        $stmt = $pdo->prepare(
+            "INSERT INTO `beats_mirror_cache` (user_id, lang, cache_key, payload_json)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE cache_key = VALUES(cache_key), payload_json = VALUES(payload_json), created_at = CURRENT_TIMESTAMP"
+        );
+        $stmt->execute([$userId, $lang, $cacheKey, json_encode($payload)]);
+    } catch (PDOException $e) {
+        // ignore
+    }
+}
+
+/* ============ The Mirror — global artist→genre cache (Last.fm, #1) ============ */
+// Genres for an artist are the same for everyone, so this cache is shared across all
+// users → most lookups are free and Last.fm is hit only for never-seen artists.
+
+/** Create the shared artist→genre cache table (lazy, once per session). */
+function bb_ensure_beats_artist_genre_table(PDO $pdo): void
+{
+    if (!empty($_SESSION['beats_artist_genre_table_ok'])) {
+        return;
+    }
+    try {
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS `beats_artist_genre_cache` (
+                `artist_key` VARCHAR(190) NOT NULL,
+                `genres_json` VARCHAR(512) NOT NULL DEFAULT '[]',
+                `fetched_at` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                PRIMARY KEY (`artist_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $_SESSION['beats_artist_genre_table_ok'] = true;
+    } catch (PDOException $e) {
+        // Leave the flag unset so we retry next time.
+    }
+}
+
+/**
+ * Bulk-read cached genres for a list of artist names.
+ * Returns map: strtolower(name) => genre[] (an empty array means "fetched, no tags" —
+ * negatively cached). Names absent from the map have never been fetched.
+ */
+function bb_get_artist_genres_bulk(PDO $pdo, array $names): array
+{
+    bb_ensure_beats_artist_genre_table($pdo);
+    $keys = array();
+    foreach ($names as $n) {
+        $k = strtolower(trim((string) $n));
+        if ($k !== '') $keys[$k] = true;
+    }
+    $keys = array_keys($keys);
+    if (empty($keys)) {
+        return array();
+    }
+    try {
+        $place = implode(',', array_fill(0, count($keys), '?'));
+        $stmt = $pdo->prepare("SELECT artist_key, genres_json FROM `beats_artist_genre_cache` WHERE artist_key IN ($place)");
+        $stmt->execute($keys);
+        $out = array();
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $g = json_decode($row['genres_json'], true);
+            $out[$row['artist_key']] = is_array($g) ? $g : array();
+        }
+        return $out;
+    } catch (PDOException $e) {
+        return array();
+    }
+}
+
+/** Cache one artist's genres (store [] too, as a negative cache so we don't re-query). */
+function bb_save_artist_genres(PDO $pdo, string $name, array $genres): void
+{
+    bb_ensure_beats_artist_genre_table($pdo);
+    $key = strtolower(trim($name));
+    if ($key === '') {
+        return;
+    }
+    try {
+        $stmt = $pdo->prepare(
+            "INSERT INTO `beats_artist_genre_cache` (artist_key, genres_json)
+             VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE genres_json = VALUES(genres_json), fetched_at = CURRENT_TIMESTAMP"
+        );
+        $stmt->execute([$key, json_encode(array_values($genres))]);
+    } catch (PDOException $e) {
+        // ignore
     }
 }
 ?>

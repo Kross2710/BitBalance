@@ -429,7 +429,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
             }
 
             function findCard(el) { return el.closest('.friend-card'); }
-            function flashError(msg) { alert(msg); } // simple for MVP
+            function flashError(msg) { showToast(msg, { type: 'error' }); } // simple for MVP
 
             // -------- Leaderboard period toggle --------
             function escapeHtml(value) {
@@ -537,7 +537,7 @@ function fr_render_leaderboard_row(array $row, string $period): void
                     else if (e.target.closest('.js-reject'))    { await postAction('reject', { request_id: reqId }); card.remove(); }
                     else if (e.target.closest('.js-cancel'))    { await postAction('cancel', { request_id: reqId }); card.remove(); }
                     else if (e.target.closest('.js-unfriend')) {
-                        if (!confirm('Remove this friend?')) return;
+                        if (!(await showConfirm({ message: 'Remove this friend?', danger: true }))) return;
                         await postAction('unfriend', { target_id: uid });
                         card.remove();
                     }

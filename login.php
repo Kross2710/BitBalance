@@ -61,10 +61,17 @@ if (isset($_GET['error'])) {
                 </div>
             <?php endif; ?>
 
-            <form action="login.php" method="POST">
+            <form action="login.php" method="POST" class="js-submit-lock">
                 <input type="email" placeholder="Email" name="email" required
                     value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                 <input type="password" placeholder="Password" name="password" required>
+
+                <label class="remember-row">
+                    <input type="checkbox" name="remember" value="1"
+                        <?php echo (!isset($_POST['remember']) || !empty($_POST['remember'])) ? 'checked' : ''; ?>>
+                    <span>Keep me signed in for 30 days</span>
+                </label>
+
                 <button type="submit" class="login-button">Sign In</button>
 
                 <div class="forgot-link">

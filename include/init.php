@@ -31,6 +31,18 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Persistent "remember me" auto-login: when there is no active session but the
+// browser still carries a valid remember-me cookie, transparently re-establish
+// the session so the user is not forced to sign in again (up to 30 days).
+// The 'bb_remember' literal must match REMEMBER_COOKIE in
+// include/handlers/remember_token.php — gating on it here keeps guests (who have
+// no cookie) from paying for a DB connection on every page load.
+if (!isset($_SESSION['user']) && !empty($_COOKIE['bb_remember'])) {
+    require_once __DIR__ . '/db_config.php';
+    require_once __DIR__ . '/handlers/remember_token.php';
+    remember_login($pdo);
+}
+
 // Check if user is logged in
 $isLoggedIn = isset($_SESSION['user']);
 
@@ -46,13 +58,14 @@ if ($isLoggedIn) {
     $stmt->execute();
     $userStatus = $stmt->fetchColumn();
 
-    if ($userStatus === 'archived') {
+    if ($userStatus === 'archived' || $userStatus === 'banned') {
+        // Revoke every remember-me token so a disabled account is not silently
+        // signed back in on the next request.
+        require_once __DIR__ . '/handlers/remember_token.php';
+        remember_revoke_all($pdo, $_SESSION['user']['user_id']);
+        remember_delete_cookie();
         session_destroy();
-        header('Location: ' . BASE_URL . 'login.php?error=Account+archived');
-        exit;
-    } elseif ($userStatus === 'banned') {
-        session_destroy();
-        header('Location: ' . BASE_URL . 'login.php?error=Account+banned');
+        header('Location: ' . BASE_URL . 'login.php?error=Account+' . $userStatus);
         exit;
     }
 }

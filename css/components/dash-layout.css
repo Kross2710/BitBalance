@@ -1,0 +1,86 @@
+/* =========================================================================
+   DASHBOARD LAYOUT PRIMITIVES
+   Single source of truth for the page shell shared by every dashboard page.
+   Goal: a new page only has to pick a container family + use .surface-card,
+   instead of re-deriving max-width / padding / card recipe per file.
+
+   Two intentional content families:
+     .dash-page        Centered narrow column — feeds, leaderboards, articles.
+                       (beats, progress, friends, pt/coach)
+     .dash-page--wide  Full-bleed between the sidebars — wide data tables and
+                       multi-pane dashboards. (intake, history, plan, wiki,
+                       calculator, home)
+   ========================================================================= */
+
+/* ---- Content container ---- */
+.dash-page {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding: 24px var(--page-pad-x) var(--page-pad-bottom);
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.dash-page--wide {
+    max-width: none;
+}
+
+/* Optional vertical-stack helper for simple single-column pages. */
+.dash-page--stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--stack-gap);
+}
+
+/* ---- Surface card ----
+   The canonical "3D tactile" card. Identical recipe to the legacy
+   .dashboard-card so the two can be used interchangeably while pages migrate.
+   New markup should use .surface-card. */
+.surface-card {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: 0 8px 0 var(--color-border-subtle), var(--shadow-sm);
+    box-sizing: border-box;
+}
+
+/* Compact variant — smaller padding + shallower lift (stat tiles, list rows). */
+.surface-card--sm {
+    padding: 16px;
+    box-shadow: 0 6px 0 var(--color-border-subtle), var(--shadow-sm);
+}
+
+/* ---- Page hero / title ----
+   Shared scaffold for a page heading. Existing pages keep their bespoke
+   *-hero designs; new pages should reach for .page-hero so titles, subtitles
+   and the actions row stay consistent. */
+.page-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.page-hero__title {
+    margin: 0;
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--color-text);
+}
+
+.page-hero__subtitle {
+    margin: 4px 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+}
+
+.page-hero__actions {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}

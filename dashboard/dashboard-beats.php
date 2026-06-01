@@ -53,7 +53,29 @@ $texts = [
         'rec_sad_food' => 'Một tô súp ấm hoặc chocolate đắng để xoa dịu tâm hồn',
         'loading_vibe' => 'Đang phân tích cá tính âm nhạc và ẩm thực của bạn...',
         'matched_concept' => 'Cặp đôi Vibe tiêu biểu',
-        
+
+        // The Mirror (personality engine)
+        'mirror_title' => 'Tấm Gương Cá Tính',
+        'mirror_congruence' => 'Độ Đồng Điệu',
+        'mirror_music' => 'Nhạc',
+        'mirror_food' => 'Món ăn',
+        'mirror_top_genre' => 'Genre tủ',
+        'mirror_top_food' => 'Món tủ',
+        'mirror_axis_energy' => 'Năng lượng',
+        'mirror_axis_comfort' => 'An ủi',
+        'mirror_axis_diversity' => 'Đa dạng',
+        'mirror_axis_nocturnal' => 'Cú đêm',
+        'mirror_forming_food_title' => 'Đang hình thành cá tính ăn uống...',
+        'mirror_forming_food_desc' => 'Hãy ghi nhận thêm vài bữa ăn (ít nhất 6 lần trong 30 ngày) để mở khóa Tấm Gương.',
+        'mirror_forming_music_title' => 'Đang chờ gu âm nhạc...',
+        'mirror_forming_music_desc' => 'Mở Spotify nghe vài bài rồi quay lại để AI đọc vị gu nhạc của bạn nhé!',
+        'mirror_reconnect_title' => 'Cần cấp lại quyền Spotify',
+        'mirror_reconnect_desc' => 'Tài khoản Spotify nối từ trước chưa có quyền đọc gu nhạc (genre). Bấm nút dưới để kết nối lại — chỉ mất vài giây.',
+        'mirror_reconnect_btn' => 'Kết nối lại Spotify',
+        'mirror_unavailable_title' => 'Chưa đọc được gu nhạc lúc này',
+        'mirror_unavailable_desc' => 'AI tạm thời chưa phân tích được gu âm nhạc của bạn. Hãy tải lại trang sau giây lát nhé!',
+        'mirror_ai_offline' => 'AI tạm offline — vẫn dựng từ dữ liệu thật của bạn',
+
         // DJ Mixer localization
         'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
         'dj_subtitle' => 'Mix bài hát vừa nghe cùng thực đơn để xem điểm "hợp cạ" từ AI!',
@@ -111,7 +133,29 @@ $texts = [
         'rec_sad_food' => 'A warm bowl of soup or dark chocolate to soothe the soul',
         'loading_vibe' => 'Analyzing your music and culinary vibes...',
         'matched_concept' => 'Featured Vibe Pair',
-        
+
+        // The Mirror (personality engine)
+        'mirror_title' => 'Your Personality Mirror',
+        'mirror_congruence' => 'Congruence',
+        'mirror_music' => 'Music',
+        'mirror_food' => 'Food',
+        'mirror_top_genre' => 'Top genre',
+        'mirror_top_food' => 'Top food',
+        'mirror_axis_energy' => 'Energy',
+        'mirror_axis_comfort' => 'Comfort',
+        'mirror_axis_diversity' => 'Diversity',
+        'mirror_axis_nocturnal' => 'Night-owl',
+        'mirror_forming_food_title' => 'Your eating personality is forming...',
+        'mirror_forming_food_desc' => 'Log a few more meals (at least 6 within 30 days) to unlock The Mirror.',
+        'mirror_forming_music_title' => 'Awaiting your music taste...',
+        'mirror_forming_music_desc' => 'Play some songs on Spotify and come back so the AI can read your vibe!',
+        'mirror_reconnect_title' => 'Spotify needs a quick reconnect',
+        'mirror_reconnect_desc' => 'Your Spotify was linked before genre access was added. Tap below to reconnect — it only takes a few seconds.',
+        'mirror_reconnect_btn' => 'Reconnect Spotify',
+        'mirror_unavailable_title' => "Couldn't read your music right now",
+        'mirror_unavailable_desc' => "The AI couldn't analyze your music taste just now — please reload in a moment!",
+        'mirror_ai_offline' => 'AI offline — still built from your real data',
+
         // DJ Mixer localization
         'dj_title' => 'BitBalance AI DJ Mixer 🎚️',
         'dj_subtitle' => 'Mix your recent tracks with weekly meals to rate AI vibe compatibility!',
@@ -318,7 +362,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                             <a href="dashboard-progress.php?story=open" class="story-btn-primary">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> <?= htmlspecialchars($t['open_story'], ENT_QUOTES) ?>
                             </a>
-                            <a href="handlers/spotify_disconnect.php" class="beats-btn-danger" onclick="return confirm('<?= ($lang === 'vi') ? 'Bạn có chắc chắn muốn hủy liên kết tài khoản Spotify?' : 'Are you sure you want to disconnect your Spotify account?' ?>')">
+                            <a href="handlers/spotify_disconnect.php" class="beats-btn-danger" data-confirm="<?= ($lang === 'vi') ? 'Bạn có chắc chắn muốn hủy liên kết tài khoản Spotify?' : 'Are you sure you want to disconnect your Spotify account?' ?>" data-confirm-danger>
                                 <i class="fa-solid fa-link-slash"></i> <?= htmlspecialchars($t['disconnect'], ENT_QUOTES) ?>
                             </a>
                         </div>
@@ -449,43 +493,63 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                 <div class="beats-dashboard-grid">
                     <!-- LEFT COLUMN: AI VIBE CARD -->
                     <div class="beats-left-col">
-                        <section class="beats-section vibe-card">
-                            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> <?= htmlspecialchars($t['vibe_card_title'], ENT_QUOTES) ?></h2>
-                            
-                            <div id="vibe-loading" class="vibe-loading-box">
+                        <section class="beats-section mirror-card" id="mirrorCard">
+                            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> <?= htmlspecialchars($t['mirror_title'], ENT_QUOTES) ?></h2>
+
+                            <div id="mirror-loading" class="vibe-loading-box">
                                 <div class="beats-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
                                 <p><?= htmlspecialchars($t['loading_vibe'], ENT_QUOTES) ?></p>
                             </div>
 
-                            <div id="vibe-content" class="vibe-content-box" style="display: none;">
-                                <div class="vibe-badge-container">
-                                    <span id="vibe-badge" class="vibe-sparkle-badge"><i class="fa-solid fa-sparkles"></i> <span id="vibe-title">Vibe</span></span>
+                            <div id="mirror-forming" class="vibe-loading-box" style="display: none;">
+                                <div class="beats-empty-icon"><i class="fa-solid fa-seedling"></i></div>
+                                <h3 id="mirror-forming-title"></h3>
+                                <p id="mirror-forming-desc"></p>
+                                <a id="mirror-reconnect-btn" href="handlers/spotify_auth.php" class="story-btn-primary" hidden style="margin-top: 12px;">
+                                    <i class="fa-brands fa-spotify"></i> <?= htmlspecialchars($t['mirror_reconnect_btn'], ENT_QUOTES) ?>
+                                </a>
+                            </div>
+
+                            <div id="mirror-content" class="mirror-content-box" style="display: none;">
+                                <div class="mirror-hero">
+                                    <div class="mirror-ring" id="mirrorRing">
+                                        <div class="mirror-ring-inner">
+                                            <span class="mirror-score-val" id="mirrorScoreVal">0<span class="mirror-pct">%</span></span>
+                                            <span class="mirror-score-label"><?= htmlspecialchars($t['mirror_congruence'], ENT_QUOTES) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="mirror-archetype">
+                                        <span class="mirror-arch-emoji" id="mirrorArchEmoji">🎵</span>
+                                        <strong id="mirrorArchName">—</strong>
+                                        <p class="mirror-tagline" id="mirrorTagline"></p>
+                                    </div>
                                 </div>
-                                <p id="vibe-desc" class="vibe-explanation"></p>
-                                
+
+                                <div class="mirror-axes-legend">
+                                    <span class="mirror-leg music"><i class="fa-solid fa-circle"></i> <?= htmlspecialchars($t['mirror_music'], ENT_QUOTES) ?></span>
+                                    <span class="mirror-leg food"><i class="fa-solid fa-circle"></i> <?= htmlspecialchars($t['mirror_food'], ENT_QUOTES) ?></span>
+                                </div>
+                                <div class="mirror-axes" id="mirrorAxes"></div>
+
                                 <div class="concept-match-box">
-                                    <h4><i class="fa-solid fa-compact-disc"></i> <?= htmlspecialchars($t['matched_concept'], ENT_QUOTES) ?></h4>
                                     <div class="concept-match-row">
                                         <div class="concept-music-side">
-                                            <div class="concept-disc-art">
-                                                <img id="matched-track-art" src="<?= BASE_URL ?>images/default-album.svg" alt="Track Art">
-                                                <div class="vinyl-disc"></div>
-                                            </div>
-                                            <strong id="matched-track-name">Track</strong>
-                                            <span id="matched-track-artist">Artist</span>
+                                            <div class="concept-food-art"><i class="fa-solid fa-compact-disc"></i></div>
+                                            <strong id="mirror-top-genre" class="mirror-cap">—</strong>
+                                            <span><?= htmlspecialchars($t['mirror_top_genre'], ENT_QUOTES) ?></span>
                                         </div>
-                                        <div class="concept-link-icon">
-                                            <i class="fa-solid fa-heart-pulse"></i>
-                                        </div>
+                                        <div class="concept-link-icon"><i class="fa-solid fa-heart-pulse"></i></div>
                                         <div class="concept-food-side">
-                                            <div class="concept-food-art">
-                                                <i class="fa-solid fa-utensils"></i>
-                                            </div>
-                                            <strong id="matched-food-name">Food</strong>
-                                            <span><?= ($lang === 'vi') ? 'Món ăn yêu thích nhất' : 'Most logged fuel' ?></span>
+                                            <div class="concept-food-art"><i class="fa-solid fa-utensils"></i></div>
+                                            <strong id="mirror-top-food" class="mirror-cap">—</strong>
+                                            <span><?= htmlspecialchars($t['mirror_top_food'], ENT_QUOTES) ?></span>
                                         </div>
                                     </div>
                                 </div>
+
+                                <p class="mirror-verdict" id="mirrorVerdict"></p>
+                                <p class="mirror-funfact" id="mirrorFunFact" hidden><i class="fa-solid fa-lightbulb"></i> <span id="mirrorFunFactText"></span></p>
+                                <span class="dj-result-aihint" id="mirrorAiHint" hidden><i class="fa-solid fa-plug-circle-xmark"></i> <?= htmlspecialchars($t['mirror_ai_offline'], ENT_QUOTES) ?></span>
                             </div>
                         </section>
 
@@ -664,82 +728,135 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
             const KEEP_LABEL = <?= json_encode($t['dj_keep_btn']) ?>;
             const KEPT_TOAST = <?= json_encode($t['dj_kept_toast']) ?>;
 
-            // Check if user is connected to load the dynamic AI vibe card
-            const vibeLoading = document.getElementById('vibe-loading');
-            const vibeContent = document.getElementById('vibe-content');
-            
-            if (vibeLoading) {
-                fetch('handlers/story_data.php')
-                    .then(response => response.json())
+            // --- The Mirror: personality congruence card ---
+            const mirrorLoading = document.getElementById('mirror-loading');
+            const mirrorForming = document.getElementById('mirror-forming');
+            const mirrorContent = document.getElementById('mirror-content');
+            const AXIS_LABELS = <?= json_encode([
+                'energy'    => $t['mirror_axis_energy'],
+                'comfort'   => $t['mirror_axis_comfort'],
+                'diversity' => $t['mirror_axis_diversity'],
+                'nocturnal' => $t['mirror_axis_nocturnal'],
+            ], JSON_UNESCAPED_UNICODE) ?>;
+            const MIRROR_MUSIC = <?= json_encode($t['mirror_music'], JSON_UNESCAPED_UNICODE) ?>;
+            const MIRROR_FOOD = <?= json_encode($t['mirror_food'], JSON_UNESCAPED_UNICODE) ?>;
+            const FORMING_TEXT = <?= json_encode([
+                'food'              => ['title' => $t['mirror_forming_food_title'],  'desc' => $t['mirror_forming_food_desc']],
+                'music'             => ['title' => $t['mirror_forming_music_title'], 'desc' => $t['mirror_forming_music_desc']],
+                'music_scope'       => ['title' => $t['mirror_reconnect_title'],     'desc' => $t['mirror_reconnect_desc']],
+                'music_unavailable' => ['title' => $t['mirror_unavailable_title'],   'desc' => $t['mirror_unavailable_desc']],
+            ], JSON_UNESCAPED_UNICODE) ?>;
+
+            if (mirrorLoading) {
+                const mEsc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+                const mCountUp = (el, to) => {
+                    if (!el) return;
+                    const dur = 800; let startT = null;
+                    const step = (now) => {
+                        if (startT === null) startT = now;
+                        const k = Math.min(1, (now - startT) / dur);
+                        const val = Math.round(to * (1 - Math.pow(1 - k, 3)));
+                        el.innerHTML = val + '<span class="mirror-pct">%</span>';
+                        if (k < 1) requestAnimationFrame(step);
+                    };
+                    requestAnimationFrame(step);
+                };
+
+                fetch('handlers/beats_mirror.php')
+                    .then(r => r.json())
                     .then(data => {
-                        if (data.ok && data.spotify) {
-                            vibeLoading.style.display = 'none';
-                            vibeContent.style.display = 'block';
-                            
-                            document.getElementById('vibe-title').textContent = data.spotify.archetype;
-                            document.getElementById('vibe-desc').textContent = data.spotify.desc;
-                            
-                            document.getElementById('matched-track-name').textContent = data.spotify.track;
-                            document.getElementById('matched-track-artist').textContent = data.spotify.artist;
-                            document.getElementById('matched-food-name').textContent = data.spotify.food;
-                            
-                            if (data.spotify.image) {
-                                document.getElementById('matched-track-art').src = data.spotify.image;
-                            }
-                        } else {
-                            vibeLoading.innerHTML = `
-                                <div class="beats-empty-icon"><i class="fa-solid fa-headphones"></i></div>
-                                <h3>${lang === 'vi' ? 'Đang cập nhật gu âm nhạc...' : 'Awaiting music activity...'}</h3>
-                                <p>${lang === 'vi' ? 'Hãy mở Spotify nghe một vài bài hát rồi quay lại đây nhé!' : 'Play some songs on your linked Spotify account and refresh!'}</p>
-                            `;
+                        if (!data.ok || !data.connected) { mirrorLoading.style.display = 'none'; return; }
+
+                        if (data.forming) {
+                            mirrorLoading.style.display = 'none';
+                            const ft = FORMING_TEXT[data.need] || FORMING_TEXT.food;
+                            document.getElementById('mirror-forming-title').textContent = ft.title;
+                            document.getElementById('mirror-forming-desc').textContent = ft.desc;
+                            const reBtn = document.getElementById('mirror-reconnect-btn');
+                            if (reBtn) reBtn.hidden = (data.need !== 'music_scope');
+                            mirrorForming.style.display = 'block';
+                            return;
                         }
+
+                        mirrorLoading.style.display = 'none';
+                        mirrorContent.style.display = 'block';
+
+                        const score = parseInt(data.congruence.score, 10) || 0;
+                        const ring = document.getElementById('mirrorRing');
+                        ring.classList.add(score >= 75 ? 'high' : (score >= 50 ? 'mid' : 'low'));
+                        ring.style.setProperty('--mirror-pct', score);
+                        mCountUp(document.getElementById('mirrorScoreVal'), score);
+
+                        document.getElementById('mirrorArchEmoji').textContent = data.archetype.emoji || '🎵';
+                        document.getElementById('mirrorArchName').textContent = data.archetype.name || '';
+                        document.getElementById('mirrorTagline').textContent = data.narration.tagline || '';
+
+                        // Per-axis mirror bars: music vs food on each shared axis.
+                        // Render at width:0, then grow via the CSS transition on next frame.
+                        const order = ['energy', 'comfort', 'diversity', 'nocturnal'];
+                        const axesEl = document.getElementById('mirrorAxes');
+                        axesEl.innerHTML = order.map(ax => {
+                            const a = data.congruence.per_axis[ax] || { music: 0, food: 0 };
+                            return `
+                            <div class="mirror-axis">
+                                <div class="mirror-axis-label">${mEsc(AXIS_LABELS[ax] || ax)}</div>
+                                <div class="mirror-axis-bars">
+                                    <div class="mirror-axis-track"><div class="mirror-axis-fill music" style="width:0" data-w="${a.music}"></div></div>
+                                    <div class="mirror-axis-track"><div class="mirror-axis-fill food" style="width:0" data-w="${a.food}"></div></div>
+                                </div>
+                            </div>`;
+                        }).join('');
+                        requestAnimationFrame(() => {
+                            axesEl.querySelectorAll('.mirror-axis-fill').forEach(el => {
+                                el.style.width = (parseInt(el.dataset.w, 10) || 0) + '%';
+                            });
+                        });
+
+                        document.getElementById('mirror-top-genre').textContent = data.music.top_genre || '—';
+                        document.getElementById('mirror-top-food').textContent = data.food.top_food || '—';
+                        document.getElementById('mirrorVerdict').textContent = data.narration.verdict || '';
+
+                        if (data.narration.fun_fact) {
+                            document.getElementById('mirrorFunFactText').textContent = data.narration.fun_fact;
+                            document.getElementById('mirrorFunFact').hidden = false;
+                        }
+                        document.getElementById('mirrorAiHint').hidden = (data.ai !== false);
+
+                        // Suggested Fuel is folded into this same response (no separate AI call).
+                        renderFuelGrid(data.fuel_suggestions);
                     })
                     .catch(err => {
-                        console.error('Error loading AI vibe:', err);
-                        vibeLoading.innerHTML = `<p style="color: var(--color-danger); font-weight: 700;">${lang === 'vi' ? 'Không thể tải phân tích Vibe từ AI.' : 'Failed to load AI vibe analysis.'}</p>`;
+                        console.error('Mirror load error:', err);
+                        mirrorLoading.innerHTML = `<p style="color: var(--color-danger); font-weight: 700;">${lang === 'vi' ? 'Không thể tải Tấm Gương Cá Tính.' : 'Failed to load your Personality Mirror.'}</p>`;
                     });
             }
 
-            // --- Suggested Fuel for Your Current Beats (AI, personalized) ---
-            const fuelGrid = document.getElementById('fuelGrid');
-            if (fuelGrid) {
-                let recentTracks = [];
-                try { recentTracks = JSON.parse(fuelGrid.dataset.recentTracks || '[]'); } catch (e) {}
-
-                // No tracks → keep the static fallback cards already in the grid.
-                if (recentTracks.length > 0) {
-                    const moodMap = {
-                        chill:     { cls: 'lofi-theme',    icon: 'fa-headphones' },
-                        energetic: { cls: 'workout-theme', icon: 'fa-bolt' },
-                        sad:       { cls: 'sad-theme',     icon: 'fa-cloud-showers-heavy' },
-                        focus:     { cls: 'lofi-theme',    icon: 'fa-brain' },
-                        happy:     { cls: 'workout-theme', icon: 'fa-face-smile' }
-                    };
-                    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => (
-                        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
-                    ));
-
-                    const fd = new FormData();
-                    fd.append('tracks', JSON.stringify(recentTracks));
-
-                    fetch('handlers/beats_fuel.php', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (!data.ok || !Array.isArray(data.suggestions) || data.suggestions.length === 0) return;
-                            const kcalLabel = lang === 'vi' ? 'kcal' : 'kcal';
-                            fuelGrid.innerHTML = data.suggestions.map(s => {
-                                const m = moodMap[s.mood] || moodMap.chill;
-                                const kcal = s.kcal > 0 ? `<span class="fuel-kcal">~${s.kcal} ${kcalLabel}</span>` : '';
-                                return `
-                                <article class="recommend-card ${m.cls}">
-                                    <div class="recommend-icon"><i class="fa-solid ${m.icon}"></i></div>
-                                    <h4>${esc(s.vibe)}</h4>
-                                    <p><strong>${esc(s.food)}</strong> ${kcal}<br>${esc(s.reason)}</p>
-                                </article>`;
-                            }).join('');
-                        })
-                        .catch(err => console.error('Error loading fuel suggestions:', err));
-                }
+            // --- Suggested Fuel: rendered from The Mirror's deterministic suggestions ---
+            // (folded into beats_mirror.php — no separate AI call). The static fallback
+            // cards already in the grid stay when the user isn't connected / still forming.
+            function renderFuelGrid(suggestions) {
+                const fuelGrid = document.getElementById('fuelGrid');
+                if (!fuelGrid || !Array.isArray(suggestions) || suggestions.length === 0) return;
+                const moodMap = {
+                    chill:     { cls: 'lofi-theme',    icon: 'fa-headphones' },
+                    energetic: { cls: 'workout-theme', icon: 'fa-bolt' },
+                    sad:       { cls: 'sad-theme',     icon: 'fa-cloud-showers-heavy' },
+                    focus:     { cls: 'lofi-theme',    icon: 'fa-brain' },
+                    happy:     { cls: 'workout-theme', icon: 'fa-face-smile' }
+                };
+                const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => (
+                    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+                ));
+                fuelGrid.innerHTML = suggestions.map(s => {
+                    const m = moodMap[s.mood] || moodMap.chill;
+                    const kcal = s.kcal > 0 ? `<span class="fuel-kcal">~${s.kcal} kcal</span>` : '';
+                    return `
+                    <article class="recommend-card ${m.cls}">
+                        <div class="recommend-icon"><i class="fa-solid ${m.icon}"></i></div>
+                        <h4>${esc(s.vibe)}</h4>
+                        <p><strong>${esc(s.food)}</strong> ${kcal}<br>${esc(s.reason)}</p>
+                    </article>`;
+                }).join('');
             }
             // =========================================================================
             // VANILLA JS DJ MIXER CONTROLLER
@@ -1138,7 +1255,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                                     setTimeout(() => animateBar('djBarChaos', 'djBarChaosVal', scores.chaos), 650);
                                     // Note: mixes are saved only when the user taps "Keep".
                                 } else {
-                                    alert(data.error || 'Mixing failed');
+                                    showToast(data.error || 'Mixing failed', { type: 'error' });
                                     djMixBtn.removeAttribute('disabled');
                                 }
                                 
@@ -1150,7 +1267,7 @@ $mixCollection = $spotifyConnected ? bb_get_beats_collection($pdo, $userId) : []
                         .catch(err => {
                             console.error('Mix API error:', err);
                             stopVisualEffects();
-                            alert(lang === 'vi' ? 'Không thể kết nối máy chủ AI.' : 'Failed to reach AI mixer server.');
+                            showToast(lang === 'vi' ? 'Không thể kết nối máy chủ AI.' : 'Failed to reach AI mixer server.', { type: 'error' });
                             djMixBtn.removeAttribute('disabled');
                             loadTrackBtns.forEach(b => b.removeAttribute('disabled'));
                             loadFoodBtns.forEach(b => b.removeAttribute('disabled'));

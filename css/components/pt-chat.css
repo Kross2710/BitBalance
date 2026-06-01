@@ -82,7 +82,10 @@
     border-radius: var(--radius-md);
     padding: 10px 12px;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 16px; /* >=16px stops iOS Safari from zooming in on focus */
+    line-height: 1.4;
+    max-height: 120px; /* JS auto-grows up to here, then it scrolls */
+    overflow-y: auto;
     background: var(--color-surface-alt);
     color: var(--color-text);
     outline: none;

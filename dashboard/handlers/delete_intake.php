@@ -29,6 +29,13 @@ try {
         throw new Exception('Missing intake ID');
     }
 
+    // Snapshot the row BEFORE deleting so the client can offer an Undo that
+    // re-inserts it with its original date/time (see restore_intake.php).
+    $rowStmt = $pdo->prepare("SELECT food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
+                              FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?");
+    $rowStmt->execute([$intakeId, $userId]);
+    $deletedRow = $rowStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
     // Thực hiện Xóa
     $del = $pdo->prepare("DELETE FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?");
     $ok  = $del->execute([$intakeId, $userId]);
@@ -65,7 +72,8 @@ try {
         'total' => $totalCalories,
         'percentage' => $percentage,
         'macros' => $macroTotals,
-        'macro_goals' => $macroGoals
+        'macro_goals' => $macroGoals,
+        'deleted_row' => $deletedRow
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

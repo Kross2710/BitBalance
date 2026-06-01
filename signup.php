@@ -46,7 +46,7 @@ if ($isLoggedIn) {
                 </div>
             <?php endif; ?>
 
-            <form action="signup.php" method="POST">
+            <form action="signup.php" method="POST" class="js-submit-lock">
                 <div class="form-row">
                     <input type="text" placeholder="First Name" name="first_name" required
                         value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
@@ -73,7 +73,7 @@ if ($isLoggedIn) {
                         Solve this math problem: <?php echo htmlspecialchars($captcha_question); ?>
                     </div>
                     <input type="number" name="captcha_answer" class="captcha-input" placeholder="Answer" required>
-                    <button type="button" class="refresh-captcha" onclick="refreshCaptcha()">
+                    <button type="button" class="refresh-captcha" onclick="refreshCaptcha(this)">
                         <i class="fas fa-sync-alt"></i> New Problem
                     </button>
                 </div>
@@ -135,9 +135,25 @@ if ($isLoggedIn) {
             confirmPassword.addEventListener('input', validatePasswords);
         });
 
-        // Refresh CAPTCHA function
-        function refreshCaptcha() {
-            window.location.reload();
+        // Refresh CAPTCHA without reloading the page (preserves everything the
+        // user already typed). Falls back gracefully if the request fails.
+        function refreshCaptcha(btn) {
+            const q = document.querySelector('.captcha-question');
+            const input = document.querySelector('.captcha-input');
+            if (btn) btn.disabled = true;
+            fetch('include/handlers/captcha_refresh.php', { headers: { 'X-Requested-With': 'fetch' } })
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.ok && d.question && q) {
+                        q.innerHTML = '<i class="fas fa-robot"></i> Solve this math problem: ';
+                        q.appendChild(document.createTextNode(d.question));
+                        if (input) { input.value = ''; input.focus(); }
+                    }
+                })
+                .catch(() => {
+                    if (window.showToast) showToast('Could not refresh — please try again.', { type: 'error' });
+                })
+                .finally(() => { if (btn) btn.disabled = false; });
         }
 
         // Password strength indicator

@@ -1,0 +1,206 @@
+/* =============================================================
+   Unified UI feedback — toast stack + confirm modal.
+   Self-contained: depends only on design tokens (tokens.css),
+   NOT on dashboard.css, so it works on every page (auth, ai-coach,
+   admin, dashboard). Driven by js/ui-helpers.js.
+   ============================================================= */
+
+/* ---------- Toast stack ---------- */
+.bb-toast-stack {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: var(--z-toast, 9999);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 92vw;
+    pointer-events: none;
+}
+
+.bb-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 360px;
+    max-width: 92vw;
+    padding: 13px 16px;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #1e2937);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-lg, 20px);
+    box-shadow: var(--shadow-lg, 0 10px 30px rgba(15, 23, 42, 0.18));
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bb-toast.is-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.bb-toast__icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    color: var(--color-success, #58cc02);
+}
+
+.bb-toast--error .bb-toast__icon { color: var(--color-danger, #ef4444); }
+.bb-toast--warning .bb-toast__icon { color: var(--color-warning, #f59e0b); }
+.bb-toast--info .bb-toast__icon { color: var(--color-primary, #58cc02); }
+
+.bb-toast__text {
+    flex: 1;
+    min-width: 0;
+}
+
+.bb-toast__msg {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-text, #1e2937);
+}
+
+.bb-toast__sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-text-secondary, #64748b);
+}
+
+.bb-toast__action {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-primary, #58cc02);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 10px;
+    transition: background 0.15s ease;
+}
+
+.bb-toast__action:hover { background: var(--color-primary-soft, rgba(88, 204, 2, 0.12)); }
+
+.bb-toast__close {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary, #94a3b8);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+    opacity: 0.6;
+}
+
+.bb-toast__close:hover { opacity: 1; }
+
+/* ---------- Confirm modal ---------- */
+.bb-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal, 10001);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--color-overlay, rgba(0, 0, 0, 0.5));
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.bb-confirm-overlay.is-open { display: flex; }
+
+.bb-confirm-box {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #1e2937);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-lg, 20px);
+    box-shadow: var(--shadow-lg, 0 20px 50px rgba(15, 23, 42, 0.25));
+    padding: 26px 24px 22px;
+    transform: translateY(8px) scale(0.98);
+    animation: bbConfirmIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes bbConfirmIn {
+    to { transform: translateY(0) scale(1); }
+}
+
+.bb-confirm-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--color-text-secondary, #94a3b8);
+}
+
+.bb-confirm-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text, #1e2937);
+}
+
+.bb-confirm-msg {
+    margin: 0 0 20px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--color-text-secondary, #64748b);
+}
+
+.bb-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.bb-btn {
+    border: none;
+    cursor: pointer;
+    padding: 11px 20px;
+    border-radius: var(--radius-md, 14px);
+    font-weight: 700;
+    font-size: 14px;
+    transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.bb-btn-cancel {
+    background: var(--color-surface-alt, #f1f5f9);
+    color: var(--color-text, #1e2937);
+}
+
+.bb-btn-cancel:hover { background: var(--color-border, #e2e8f0); }
+
+.bb-btn-confirm {
+    background: var(--color-primary, #58cc02);
+    color: var(--color-text-on-primary, #fff);
+}
+
+.bb-btn-confirm:hover { filter: brightness(1.05); }
+
+.bb-btn-danger {
+    background: var(--color-danger, #ef4444);
+    color: #fff;
+}
+
+body.bb-modal-open { overflow: hidden; }
+
+@media (max-width: 480px) {
+    .bb-confirm-actions { flex-direction: column-reverse; }
+    .bb-btn { width: 100%; }
+}

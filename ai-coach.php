@@ -25,6 +25,7 @@ $csrfToken    = csrf_token();
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
+    <script src="<?= BASE_URL ?>js/image-compress.js?v=<?= @filemtime(PROJECT_ROOT . 'js/image-compress.js') ?>"></script>
 </head>
 
 <body class="ai-coach-body">
@@ -363,12 +364,12 @@ $csrfToken    = csrf_token();
                     } else {
                         btn.disabled = false;
                         btn.innerHTML = originalHtml;
-                        alert(I18N.couldNotLog.replace('{error}', data.error || I18N.unknownError));
+                        showToast(I18N.couldNotLog.replace('{error}', data.error || I18N.unknownError), { type: 'error' });
                     }
                 } catch (err) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
-                    alert(I18N.networkError.replace('{error}', err.message));
+                    showToast(I18N.networkError.replace('{error}', err.message), { type: 'error' });
                 }
             });
         }
@@ -437,7 +438,7 @@ $csrfToken    = csrf_token();
             const delBtn = e.target.closest('.aic-conv-del');
             if (delBtn) {
                 e.stopPropagation();
-                if (!confirm(I18N.confirmDelete)) return;
+                if (!(await showConfirm({ message: I18N.confirmDelete, danger: true }))) return;
                 const fd = new FormData();
                 fd.append('conversation_id', delBtn.dataset.id);
                 const r = await apiPost('delete_conversation', fd);
@@ -496,50 +497,15 @@ $csrfToken    = csrf_token();
             }
         });
 
-        // Re-encode user-picked image into a plain SDR sRGB JPEG via canvas.
-        // Why: iPhones produce HDR photos (gain map metadata) which look
-        // over-saturated on some displays and bloat file size. Drawing
-        // through a 2D canvas drops the gain map and any embedded color
-        // profile, leaving a clean sRGB JPEG. We also down-scale to a
-        // reasonable max edge to keep uploads small + fast.
-        const MAX_EDGE = 1600;
-        const JPEG_QUALITY = 0.85;
+        // Image compression lives in js/image-compress.js (shared with the
+        // calorie-estimate chat on dashboard-intake.php). It re-encodes the
+        // pick into a downscaled sRGB JPEG — drawing through a 2D canvas drops
+        // iPhone HDR gain maps / color profiles. We still cap the *result* size
+        // here and surface a localized message if it's somehow still too big.
         const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-
-        async function processImage(file) {
-            if (!file || !file.type.startsWith('image/')) return file;
-            const blobUrl = URL.createObjectURL(file);
-            try {
-                const img = await new Promise((resolve, reject) => {
-                    const i = new Image();
-                    i.onload  = () => resolve(i);
-                    i.onerror = () => reject(new Error(I18N.decodeFailed));
-                    i.src = blobUrl;
-                });
-                let w = img.naturalWidth, h = img.naturalHeight;
-                if (!w || !h) throw new Error(I18N.emptyImage);
-                if (w > MAX_EDGE || h > MAX_EDGE) {
-                    const r = Math.min(MAX_EDGE / w, MAX_EDGE / h);
-                    w = Math.round(w * r);
-                    h = Math.round(h * r);
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width  = w;
-                canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                const blob = await new Promise((resolve, reject) => {
-                    canvas.toBlob(
-                        (b) => b ? resolve(b) : reject(new Error(I18N.encodeFailed)),
-                        'image/jpeg',
-                        JPEG_QUALITY
-                    );
-                });
-                return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-            } finally {
-                URL.revokeObjectURL(blobUrl);
-            }
-        }
+        const compressImage = (file) => BitBalanceImage.compressImage(file, {
+            messages: { decode: I18N.decodeFailed, empty: I18N.emptyImage, encode: I18N.encodeFailed },
+        });
 
         function clearPreview() {
             $imageIn.value = '';
@@ -557,9 +523,9 @@ $csrfToken    = csrf_token();
 
             $sendBtn.disabled = true;
             try {
-                const processed = await processImage(raw);
+                const processed = await compressImage(raw);
                 if (processed.size > MAX_UPLOAD_BYTES) {
-                    alert(I18N.imageTooBig);
+                    showToast(I18N.imageTooBig, { type: 'error' });
                     clearPreview();
                     return;
                 }
@@ -570,7 +536,7 @@ $csrfToken    = csrf_token();
                 $previewImg.src = URL.createObjectURL(processed);
                 $preview.hidden = false;
             } catch (err) {
-                alert(I18N.imageReadFailed.replace('{error}', err.message));
+                showToast(I18N.imageReadFailed.replace('{error}', err.message), { type: 'error' });
                 clearPreview();
             } finally {
                 $sendBtn.disabled = false;

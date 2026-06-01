@@ -89,7 +89,9 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- ZXing: fallback 1D barcode decoder for browsers without native BarcodeDetector (e.g. iOS Safari) -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js" type="text/javascript"></script>
+    <script src="<?= BASE_URL ?>js/image-compress.js?v=<?= @filemtime(PROJECT_ROOT . 'js/image-compress.js') ?>"></script>
 </head>
 
 <body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES) ?>">
@@ -266,11 +268,15 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 <div class="input-icon-wrapper food-name-wrapper">
                                     <i class="fas fa-utensils input-icon"></i>
                                     <input type="text" id="food_item" name="food_item" placeholder="<?= t('intake.food_name_placeholder') ?>"
-                                        required>
+                                        required autocomplete="off" role="combobox" aria-autocomplete="list"
+                                        aria-expanded="false" aria-controls="foodSuggest">
                                     <button type="button" class="btn-inline-scan" id="openScannerInline" title="<?= t('intake.scan_barcode_inline') ?>">
                                         <i class="fas fa-barcode"></i>
                                     </button>
+                                    <ul class="food-suggest" id="foodSuggest" role="listbox"
+                                        aria-label="<?= t('intake.food_name') ?>" hidden></ul>
                                 </div>
+                                <div class="food-chips" id="foodChips" hidden></div>
                             </div>
 
                             <div class="form-row-split">
@@ -344,6 +350,140 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                 document.getElementById('food_item')?.focus({ preventScroll: false });
                             </script>
                         <?php endif; ?>
+
+                        <script>
+                        // Food suggestions from the user's own history (no master food DB).
+                        // Autocomplete-as-you-type + "recent items" quick chips. Picking one
+                        // pre-fills calories + macros the way the user usually logs that food.
+                        (function () {
+                            const input = document.getElementById('food_item');
+                            const list = document.getElementById('foodSuggest');
+                            const chips = document.getElementById('foodChips');
+                            if (!input || !list) return;
+
+                            const ENDPOINT = '<?= BASE_URL ?>api/intake/suggest.php';
+                            const CHIPS_HEADING = <?= json_encode(t('intake.recent.heading'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+                            const fmt = (n) => (Math.round(n * 10) / 10).toString();
+                            let items = [];
+                            let active = -1;
+                            let debounce = null;
+                            let skipNextInput = false;
+
+                            function setField(id, val) {
+                                const el = document.getElementById(id);
+                                if (el) el.value = (val === 0 || val) ? val : '';
+                            }
+
+                            function fill(item) {
+                                skipNextInput = true;
+                                input.value = item.food_item;
+                                setField('calories', item.calories);
+                                setField('protein', item.protein);
+                                setField('carbs', item.carbs);
+                                setField('fat', item.fat);
+                                close();
+                                hideChips();
+                                const cat = document.getElementById('meal_category');
+                                if (cat && !cat.value) cat.focus();
+                            }
+
+                            function close() {
+                                list.hidden = true;
+                                list.innerHTML = '';
+                                active = -1;
+                                input.setAttribute('aria-expanded', 'false');
+                            }
+
+                            function render() {
+                                list.innerHTML = '';
+                                if (!items.length) { close(); return; }
+                                items.forEach((it, i) => {
+                                    const li = document.createElement('li');
+                                    li.className = 'food-suggest__item';
+                                    li.setAttribute('role', 'option');
+                                    li.id = 'foodSuggest-' + i;
+                                    li.innerHTML =
+                                        '<span class="food-suggest__name"></span>'
+                                        + '<span class="food-suggest__meta">' + it.calories + ' kcal · P' + fmt(it.protein) + ' C' + fmt(it.carbs) + ' F' + fmt(it.fat) + '</span>';
+                                    li.querySelector('.food-suggest__name').textContent = it.food_item;
+                                    li.addEventListener('mousedown', (e) => { e.preventDefault(); fill(it); });
+                                    list.appendChild(li);
+                                });
+                                list.hidden = false;
+                                input.setAttribute('aria-expanded', 'true');
+                            }
+
+                            function highlight() {
+                                Array.from(list.children).forEach((li, i) => {
+                                    li.classList.toggle('is-active', i === active);
+                                    if (i === active) li.scrollIntoView({ block: 'nearest' });
+                                });
+                                input.setAttribute('aria-activedescendant', active >= 0 ? 'foodSuggest-' + active : '');
+                            }
+
+                            function fetchSuggest(q) {
+                                return fetch(ENDPOINT + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'fetch' } })
+                                    .then(r => r.ok ? r.json() : null)
+                                    .then(d => (d && d.ok && d.data && d.data.items) ? d.data.items : [])
+                                    .catch(() => []);
+                            }
+
+                            // ---- Autocomplete ----
+                            input.addEventListener('input', () => {
+                                if (skipNextInput) { skipNextInput = false; return; }
+                                const q = input.value.trim();
+                                if (debounce) clearTimeout(debounce);
+                                if (q.length < 1) { close(); showChips(); return; }
+                                hideChips();
+                                debounce = setTimeout(() => {
+                                    fetchSuggest(q).then(res => {
+                                        if (input.value.trim() !== q) return; // stale response
+                                        items = res;
+                                        render();
+                                    });
+                                }, 200);
+                            });
+
+                            input.addEventListener('keydown', (e) => {
+                                if (list.hidden) return;
+                                if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, items.length - 1); highlight(); }
+                                else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); highlight(); }
+                                else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); fill(items[active]); }
+                                else if (e.key === 'Escape') { close(); }
+                            });
+
+                            input.addEventListener('blur', () => { setTimeout(close, 120); });
+                            input.addEventListener('focus', () => { if (!input.value.trim()) showChips(); });
+
+                            // ---- Recent chips ----
+                            function hideChips() { if (chips) chips.hidden = true; }
+                            function showChips() { if (chips && chips.dataset.ready === '1' && chips.children.length) chips.hidden = false; }
+
+                            function buildChips() {
+                                if (!chips) return;
+                                fetchSuggest('').then(res => {
+                                    chips.innerHTML = '';
+                                    if (!res.length) { chips.dataset.ready = '1'; return; }
+                                    const head = document.createElement('span');
+                                    head.className = 'food-chips__heading';
+                                    head.textContent = CHIPS_HEADING;
+                                    chips.appendChild(head);
+                                    res.slice(0, 6).forEach(it => {
+                                        const b = document.createElement('button');
+                                        b.type = 'button';
+                                        b.className = 'food-chip';
+                                        b.textContent = it.food_item;
+                                        b.title = it.calories + ' kcal';
+                                        b.addEventListener('click', () => fill(it));
+                                        chips.appendChild(b);
+                                    });
+                                    chips.dataset.ready = '1';
+                                    if (!input.value.trim()) chips.hidden = false;
+                                });
+                            }
+                            buildChips();
+                        })();
+                        </script>
                     </section>
                     <?php else: ?>
                     <section class="dashboard-card intake-form-card intake-form-card--demo">
@@ -473,11 +613,36 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             const chipBtn     = document.getElementById('openScannerChip');
             const inlineBtn   = document.getElementById('openScannerInline');
 
-            let html5QrCode   = null;
             let scanning      = false;
             let lastCode      = null;
             let lastCodeTime  = 0;
             let currentProduct = null; // last successful lookup
+
+            // ---- decoder state (we own ONE camera stream; one backend decodes it) ----
+            let videoEl        = null;  // <video> injected into #scannerReader on start
+            let mediaStream    = null;  // the single getUserMedia stream
+            let nativeDetector = null;  // window.BarcodeDetector instance (Android Chrome)
+            let zxingReader    = null;  // ZXing.BrowserMultiFormatReader (iOS Safari fallback)
+            let scanTimer      = null;  // setTimeout handle for the decode loop
+            let scanCanvas     = null;  // offscreen canvas for ZXing frame grabs
+            let scanCtx        = null;
+            let activeBackend  = null;  // 'native' | 'zxing'
+            let frameCount     = 0;
+            let debugEl        = null;  // on-screen diagnostics (temporary)
+
+            const SCAN_FORMATS_NATIVE = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
+            // Request a high-res rear camera: sharper frames decode 1D barcodes far
+            // more reliably. Matters most on iOS Safari, which has no BarcodeDetector
+            // and must lean on ZXing — low-res frames are the #1 cause of missed scans.
+            const VIDEO_CONSTRAINTS = {
+                audio: false,
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width:  { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+            const SCAN_INTERVAL_MS = 120; // ~8 decode attempts/sec — responsive, not CPU-bound
 
             function openModal() {
                 modal.classList.add('active');
@@ -498,38 +663,162 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             });
 
             // ============ Camera ============
-            startBtn.addEventListener('click', async () => {
-                if (scanning || typeof Html5Qrcode === 'undefined') {
-                    if (typeof Html5Qrcode === 'undefined') {
-                        alert(<?= json_encode(t_raw('intake.scanner.lib_failed')) ?>);
-                    }
-                    return;
-                }
-                try {
-                    html5QrCode = new Html5Qrcode("scannerReader");
-                    await html5QrCode.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: { width: 260, height: 140 } },
-                        onScanSuccess,
-                        () => {}
-                    );
-                    scanning = true;
-                    startBtn.style.display = 'none';
-                    stopBtn.style.display = 'block';
-                } catch (err) {
-                    alert("Could not access camera: " + (err.message || err) +
-                          "\n\nMake sure you allowed camera access and are on HTTPS or localhost.");
-                }
-            });
-
+            startBtn.addEventListener('click', startScanner);
             stopBtn.addEventListener('click', stopScanner);
 
+            async function startScanner() {
+                if (scanning) return;
+
+                // Pick the backend up front so we can fail fast if neither is usable.
+                activeBackend = (await useNativeDetector()) ? 'native' : 'zxing';
+                if (activeBackend === 'zxing' && typeof ZXing === 'undefined') {
+                    showToast(<?= json_encode(t_raw('intake.scanner.lib_failed')) ?>, { type: 'error' });
+                    return;
+                }
+
+                // Inject a fresh <video> (+ aiming guide + debug line) now, so the CSS
+                // :empty placeholder stays visible until the camera actually starts.
+                const reader = document.getElementById('scannerReader');
+                videoEl = document.createElement('video');
+                videoEl.setAttribute('playsinline', '');   // iOS: stay inline instead of going fullscreen
+                videoEl.setAttribute('autoplay', '');
+                videoEl.setAttribute('muted', '');
+                videoEl.muted = true;
+                reader.appendChild(videoEl);
+                reader.insertAdjacentHTML('beforeend',
+                    '<div class="scanner-guide"></div><div class="scanner-debug">…</div>');
+                debugEl = reader.querySelector('.scanner-debug');
+
+                try {
+                    // We own the stream for BOTH backends — no library lifecycle surprises.
+                    mediaStream = await navigator.mediaDevices.getUserMedia(VIDEO_CONSTRAINTS);
+                    videoEl.srcObject = mediaStream;
+                    await videoEl.play();
+                    await waitForVideoReady(videoEl);
+
+                    if (activeBackend === 'zxing') setupZxing();
+
+                    scanning = true;
+                    frameCount = 0;
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'block';
+                    scanLoop();
+                } catch (err) {
+                    await teardown();
+                    showToast("Could not access camera: " + ((err && err.message) || err) +
+                          "\n\nMake sure you allowed camera access and are on HTTPS or localhost.", { type: 'error' });
+                }
+            }
+
+            // Native BarcodeDetector is preferred when present (hardware-accelerated,
+            // very reliable on 1D). Available on Android Chrome; absent on iOS Safari.
+            async function useNativeDetector() {
+                if (!('BarcodeDetector' in window)) return false;
+                try {
+                    const supported = await window.BarcodeDetector.getSupportedFormats();
+                    const formats = SCAN_FORMATS_NATIVE.filter(f => supported.includes(f));
+                    if (!formats.length) return false;
+                    nativeDetector = new window.BarcodeDetector({ formats });
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            function setupZxing() {
+                const hints = new Map();
+                hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+                    ZXing.BarcodeFormat.EAN_13,
+                    ZXing.BarcodeFormat.EAN_8,
+                    ZXing.BarcodeFormat.UPC_A,
+                    ZXing.BarcodeFormat.UPC_E
+                ]);
+                hints.set(ZXing.DecodeHintType.TRY_HARDER, true); // spend more effort per frame on 1D
+                zxingReader = new ZXing.BrowserMultiFormatReader(hints, 100);
+                scanCanvas = document.createElement('canvas');
+                scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+            }
+
+            // iOS Safari can report videoWidth === 0 for a beat after play(); decoding
+            // a 0-sized frame never succeeds, so wait for real dimensions first.
+            function waitForVideoReady(v) {
+                return new Promise((resolve) => {
+                    if (v.videoWidth > 0) return resolve();
+                    const done = () => {
+                        v.removeEventListener('loadedmetadata', done);
+                        v.removeEventListener('playing', done);
+                        resolve();
+                    };
+                    v.addEventListener('loadedmetadata', done);
+                    v.addEventListener('playing', done);
+                    setTimeout(done, 1500); // safety net
+                });
+            }
+
+            // Single decode loop, throttled, driving whichever backend is active.
+            async function scanLoop() {
+                if (!scanning || !videoEl) return;
+                frameCount++;
+                const dims = videoEl.videoWidth + '×' + videoEl.videoHeight;
+                try {
+                    if (activeBackend === 'native') {
+                        const codes = await nativeDetector.detect(videoEl);
+                        setDebug('native · #' + frameCount + ' · ' + dims);
+                        if (codes && codes.length) onScanSuccess(codes[0].rawValue);
+                    } else {
+                        const text = decodeZxingFrame();
+                        setDebug('zxing · #' + frameCount + ' · ' + dims + (text ? ' · HIT' : ''));
+                        if (text) onScanSuccess(text);
+                    }
+                } catch (e) {
+                    setDebug(activeBackend + ' · #' + frameCount + ' · ' + dims + ' · ' + ((e && e.name) || 'err'));
+                }
+                if (scanning) scanTimer = setTimeout(scanLoop, SCAN_INTERVAL_MS);
+            }
+
+            // Grab the center band of the current video frame and run ZXing on it.
+            // Cropping to the guide region speeds decoding and ignores background
+            // clutter (logos, table, hands) that throws off the 1D reader.
+            function decodeZxingFrame() {
+                const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+                if (!vw || !vh) return null;
+                const cw = Math.floor(vw * 0.85), ch = Math.floor(vh * 0.5);
+                const sx = Math.floor((vw - cw) / 2), sy = Math.floor((vh - ch) / 2);
+                scanCanvas.width = cw; scanCanvas.height = ch;
+                scanCtx.drawImage(videoEl, sx, sy, cw, ch, 0, 0, cw, ch);
+                const source = new ZXing.HTMLCanvasElementLuminanceSource(scanCanvas);
+                const bitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(source));
+                try {
+                    const result = zxingReader.decodeBitmap(bitmap);
+                    return result ? result.getText() : null;
+                } catch (e) {
+                    return null; // NotFoundException — no barcode in this frame
+                }
+            }
+
+            function setDebug(msg) { if (debugEl) debugEl.textContent = msg; }
+
             async function stopScanner() {
-                if (!scanning || !html5QrCode) return;
-                try { await html5QrCode.stop(); html5QrCode.clear(); } catch (e) {}
-                scanning = false;
+                await teardown();
                 startBtn.style.display = 'block';
                 stopBtn.style.display = 'none';
+            }
+
+            // Tear down the loop + release the single camera stream.
+            async function teardown() {
+                scanning = false;
+                if (scanTimer !== null) { clearTimeout(scanTimer); scanTimer = null; }
+                nativeDetector = null;
+                if (zxingReader) { try { zxingReader.reset(); } catch (e) {} zxingReader = null; }
+                if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+                if (videoEl) {
+                    try { videoEl.pause(); } catch (e) {}
+                    videoEl.srcObject = null;
+                    videoEl = null;
+                }
+                scanCanvas = null; scanCtx = null; debugEl = null;
+                const reader = document.getElementById('scannerReader');
+                if (reader) reader.innerHTML = ''; // restores the :empty placeholder
             }
 
             function onScanSuccess(decodedText) {
@@ -757,6 +1046,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             const chatBody = document.getElementById('chatBody');
             const chatInput = document.getElementById('chatInput');
             let currentImageFile = null;
+            let msgSeq = 0; // ensures unique message IDs even within the same millisecond
 
             // --- VIEWPORT SYNC FOR MOBILE KEYBOARD ---
             // Shrinks and shifts the mobile full-screen chat drawer in real time with the on-screen keyboard,
@@ -934,14 +1224,32 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 });
             }
 
-            function handleImageUpload(input) {
-                if (input.files && input.files[0]) {
-                    currentImageFile = input.files[0];
+            // Image compression is shared with the AI Coach composer — see
+            // js/image-compress.js (loaded in the page <head>). It downscales +
+            // re-encodes to a clean sRGB JPEG; we still cap the *result* size.
+            const CHAT_IMG_MAX_BYTES = 5 * 1024 * 1024;
+
+            async function handleImageUpload(input) {
+                if (!input.files || !input.files[0]) return;
+                const raw = input.files[0];
+                try {
+                    const processed = await BitBalanceImage.compressImage(raw, { filename: 'meal.jpg' });
+                    if (processed.size > CHAT_IMG_MAX_BYTES) {
+                        addMessage('Image is too large (max 5MB after compression). Please choose another.', 'bot');
+                        currentImageFile = null;
+                        input.value = '';
+                        return;
+                    }
+                    currentImageFile = processed;
                     const reader = new FileReader();
                     reader.onload = function (e) {
                         addMessage(`<img src="${e.target.result}" style="max-width:100px; border-radius:8px; display:block; margin-bottom:5px;"> <em>Image selected. Type a message or hit send.</em>`, 'user');
                     }
-                    reader.readAsDataURL(currentImageFile);
+                    reader.readAsDataURL(processed);
+                } catch (err) {
+                    addMessage("Couldn't read that image. Please try another.", 'bot');
+                    currentImageFile = null;
+                    input.value = '';
                 }
             }
 
@@ -1005,7 +1313,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
             function addMessage(html, sender) {
                 const div = document.createElement('div');
                 div.className = `message ${sender}-message`;
-                div.id = 'msg-' + Date.now();
+                div.id = 'msg-' + Date.now() + '-' + (++msgSeq);
                 div.innerHTML = html;
                 chatBody.appendChild(div);
                 scrollToBottom();
@@ -1042,6 +1350,42 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 formCard.style.transition = "box-shadow 0.5s";
                 formCard.style.boxShadow = "0 0 20px rgba(74, 126, 227, 0.5)";
                 setTimeout(() => { formCard.style.boxShadow = ""; }, 1500);
+
+                // Gợi ý chọn bữa: AI chỉ điền món + macro, người dùng vẫn phải chọn bữa.
+                promptMealSelection();
+            }
+
+            // Đoán bữa theo giờ hiện tại để gợi ý sẵn.
+            function suggestMealByTime() {
+                const h = new Date().getHours();
+                if (h >= 4  && h < 10) return 'breakfast';
+                if (h >= 10 && h < 14) return 'lunch';
+                if (h >= 17 && h < 22) return 'dinner';
+                return 'snack';
+            }
+
+            // Sau khi "Add to Log", làm nổi bật ô chọn bữa và đặt sẵn gợi ý theo giờ
+            // để người dùng xác nhận hoặc đổi trước khi lưu.
+            function promptMealSelection() {
+                const select = document.getElementById('meal_category');
+                if (!select) return;
+
+                // Chỉ điền gợi ý khi người dùng chưa tự chọn bữa.
+                if (!select.value) select.value = suggestMealByTime();
+
+                const wrapper = select.closest('.select-wrapper');
+                setTimeout(() => {
+                    if (wrapper) wrapper.classList.add('meal-needs-pick');
+                    select.focus({ preventScroll: true });
+                }, 450);
+
+                // Tắt hiệu ứng khi người dùng đã chọn, hoặc sau vài giây.
+                const clear = () => {
+                    if (wrapper) wrapper.classList.remove('meal-needs-pick');
+                    select.removeEventListener('change', clear);
+                };
+                select.addEventListener('change', clear);
+                setTimeout(clear, 5000);
             }
         </script>
         <?php endif; ?>
@@ -1238,11 +1582,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
                             form.reset();
                         } else {
-                            alert(data.error || 'An error occurred');
+                            showToast(data.error || 'An error occurred', { type: 'error' });
                         }
                     } catch (err) {
                         console.error(err);
-                        alert('Connection error');
+                        showToast('Connection error', { type: 'error' });
                     } finally {
                         btn.innerHTML = originalBtnText;
                         btn.disabled = false;
@@ -1344,11 +1688,11 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                                     }
                                 }
                             } else {
-                                alert(data.error || 'Failed to log entry');
+                                showToast(data.error || 'Failed to log entry', { type: 'error' });
                             }
                         } catch (err) {
                             console.error(err);
-                            alert('Connection error');
+                            showToast('Connection error', { type: 'error' });
                         } finally {
                             logAgainBtn.innerHTML = originalHtml;
                             logAgainBtn.disabled = false;
@@ -1387,6 +1731,52 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                 });
             }
 
+            const __delI18n = {
+                deleted: <?= json_encode($lang === 'vi' ? 'Đã xoá' : 'Entry deleted', JSON_UNESCAPED_UNICODE) ?>,
+                undo: <?= json_encode($lang === 'vi' ? 'Hoàn tác' : 'Undo', JSON_UNESCAPED_UNICODE) ?>,
+                restored: <?= json_encode($lang === 'vi' ? 'Đã khôi phục mục vừa xoá' : 'Entry restored', JSON_UNESCAPED_UNICODE) ?>,
+                restoreFail: <?= json_encode($lang === 'vi' ? 'Không thể khôi phục' : 'Could not restore', JSON_UNESCAPED_UNICODE) ?>,
+                conn: <?= json_encode($lang === 'vi' ? 'Lỗi kết nối' : 'Connection error', JSON_UNESCAPED_UNICODE) ?>
+            };
+
+            // Re-insert a just-deleted entry (Undo). Re-renders the row with its
+            // original date/time and reverts the daily totals.
+            async function undoDeleteEntry(snapshot) {
+                try {
+                    const fd = new FormData();
+                    fd.append('food_item', snapshot.food_item || '');
+                    fd.append('calories', snapshot.calories || 0);
+                    fd.append('protein', snapshot.protein || 0);
+                    fd.append('carbs', snapshot.carbs || 0);
+                    fd.append('fat', snapshot.fat || 0);
+                    fd.append('meal_category', snapshot.meal_category || '');
+                    if (snapshot.image_path) fd.append('image_path', snapshot.image_path);
+                    fd.append('date_intake', snapshot.date_intake || '');
+                    const res = await fetch('handlers/restore_intake.php', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'fetch' },
+                        body: fd
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                        const noRow = document.getElementById('noIntakeRow');
+                        if (noRow) noRow.remove();
+                        body.insertAdjacentHTML('afterbegin', data.new_row);
+                        const newRow = body.firstElementChild;
+                        if (window.applyLocalTime) window.applyLocalTime(newRow);
+                        totalDisplay.textContent = data.total;
+                        progressFill.style.width = data.percentage + '%';
+                        if (pctLabel) pctLabel.textContent = Math.round(data.percentage) + '%';
+                        updateMacrosWidget(data.macros, data.macro_goals);
+                        showToast(__delI18n.restored, { type: 'success' });
+                    } else {
+                        showToast(data.error || __delI18n.restoreFail, { type: 'error' });
+                    }
+                } catch (err) {
+                    showToast(__delI18n.conn, { type: 'error' });
+                }
+            }
+
             if (doConfirmDeleteBtn) {
                 doConfirmDeleteBtn.addEventListener('click', async () => {
                     if (!deleteRowTarget) return;
@@ -1410,6 +1800,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         if (data.ok) {
                             // Grab food name from row BEFORE removal for the toast subtext
                             const deletedFood = row.querySelector('.intake-food-cell, td[data-label="Food"]')?.innerText.trim() || '';
+                            const snapshot = data.deleted_row;
 
                             row.style.opacity = '0';
                             setTimeout(() => {
@@ -1432,15 +1823,22 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
 
                             updateMacrosWidget(data.macros, data.macro_goals);
 
-                            // Toast notification
-                            showLoggingToast('Entry deleted', deletedFood);
+                            // Toast with an Undo action (re-inserts the row with its original time)
+                            showToast(
+                                __delI18n.deleted + (deletedFood ? ' · ' + deletedFood : ''),
+                                {
+                                    type: 'success',
+                                    duration: 9000,
+                                    action: snapshot ? { label: __delI18n.undo, onClick: () => undoDeleteEntry(snapshot) } : null
+                                }
+                            );
 
                             closeDeleteConfirmModal();
                         } else {
-                            alert(data.error);
+                            showToast(data.error, { type: 'error' });
                         }
                     } catch (err) {
-                        alert('Connection error');
+                        showToast('Connection error', { type: 'error' });
                     } finally {
                         doConfirmDeleteBtn.disabled = false;
                     }
@@ -1499,7 +1897,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         const res = await fetch('handlers/edit_intake.php', { method: 'POST', body: fd });
                         const data = await res.json();
                         if (!data.ok) {
-                            alert(data.error || 'Update failed');
+                            showToast(data.error || 'Update failed', { type: 'error' });
                             return;
                         }
 
@@ -1532,7 +1930,7 @@ $success_message = isset($_GET['success']) ? htmlspecialchars($_GET['success']) 
                         IntakeRow.closeModal();
                     } catch (err) {
                         console.error(err);
-                        alert('Error connecting to server');
+                        showToast('Error connecting to server', { type: 'error' });
                     }
                 });
             })();

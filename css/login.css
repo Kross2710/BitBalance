@@ -158,6 +158,30 @@ form {
     text-decoration: underline;
 }
 
+/* ---------- "Keep me signed in" checkbox ---------- */
+.remember-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: -4px 0 2px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.remember-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.remember-row span {
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
 /* ---------- Links under the form ---------- */
 .forgot-link {
     text-align: center;

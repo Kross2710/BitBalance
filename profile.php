@@ -798,8 +798,8 @@ if (($profile['role'] ?? 'regular') === 'regular' && empty($trainer_connection))
                             <span><?= ($lang === 'vi') ? "Bạn đang có <strong>$pt_active_clients</strong> học viên liên kết. Hãy hủy liên kết tất cả ở PT Dashboard trước khi quay lại." : "You have <strong>$pt_active_clients</strong> linked client(s). Disconnect them all in the PT Dashboard first." ?></span>
                         </div>
                     <?php else: ?>
-                        <form method="POST">
-                            <button type="submit" name="revert_regular" class="btn-tactile btn-tactile--ghost coaching-revert-btn" onclick="return confirm('<?= ($lang === 'vi') ? 'Quay lại tài khoản thường? Hồ sơ HLV vẫn được lưu lại.' : 'Switch back to a regular account? Your trainer profile is kept.' ?>');">
+                        <form method="POST" data-confirm="<?= ($lang === 'vi') ? 'Quay lại tài khoản thường? Hồ sơ HLV vẫn được lưu lại.' : 'Switch back to a regular account? Your trainer profile is kept.' ?>">
+                            <button type="submit" name="revert_regular" class="btn-tactile btn-tactile--ghost coaching-revert-btn">
                                 <i class="fas fa-user"></i> <?= ($lang === 'vi') ? 'Quay lại tài khoản thường' : 'Switch back to regular' ?>
                             </button>
                         </form>
@@ -860,8 +860,8 @@ if (($profile['role'] ?? 'regular') === 'regular' && empty($trainer_connection))
                                     </div>
                                 </div>
                             </div>
-                            <form method="POST" class="trainer-conn-card__form">
-                                <button type="submit" name="disconnect_trainer" class="coaching-revert-btn" onclick="return confirm('<?= t_raw('profile.trainer.disconnect_confirm') ?>');">
+                            <form method="POST" class="trainer-conn-card__form" data-confirm="<?= htmlspecialchars(t_raw('profile.trainer.disconnect_confirm'), ENT_QUOTES) ?>" data-confirm-danger>
+                                <button type="submit" name="disconnect_trainer" class="coaching-revert-btn">
                                     <i class="fas fa-unlink"></i> <?= t('profile.trainer.btn_disconnect') ?>
                                 </button>
                             </form>
@@ -980,7 +980,7 @@ if (($profile['role'] ?? 'regular') === 'regular' && empty($trainer_connection))
                     <p class="archive-section__desc">
                         <?= t_raw('profile.archive.desc') ?>
                     </p>
-                    <form method="POST" onsubmit="return confirm(<?= json_encode(t_raw('profile.archive.confirm')) ?>);" class="archive-section__form">
+                    <form method="POST" data-confirm="<?= htmlspecialchars(t_raw('profile.archive.confirm'), ENT_QUOTES) ?>" data-confirm-danger class="archive-section__form">
                         <input type="text" name="confirm_archive" placeholder="<?= t('profile.archive.placeholder') ?>" required
                             class="archive-section__input">
                         <button type="submit" name="archive_account" class="btn-danger"><?= t('profile.archive.btn') ?></button>
