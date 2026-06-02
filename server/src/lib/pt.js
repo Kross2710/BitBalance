@@ -6,6 +6,7 @@
 // workspace can reuse them later; the exported client* wrappers resolve the
 // caller's single accepted trainer.
 import { pool, query } from '../db.js';
+import { todayVN, addDays, weekdayLabel, isValidDate } from './dates.js';
 
 // Thrown for user-facing validation failures (mapped to a 422 by the route).
 export class PtActionError extends Error {}
@@ -249,4 +250,249 @@ export async function clientChatSend(clientId, content) {
   const t = await myTrainer(clientId);
   if (!t) throw new PtActionError('No trainer connected.');
   return chatSend(t.user_id, clientId, 'client', content);
+}
+
+// -----------------------------------------------------------------------------
+// Trainer workspace (role 'pt') — ports dashboard-pt.php + pt_action.php
+// -----------------------------------------------------------------------------
+
+// Guard: the (trainer, client) pair must be an accepted link. Throws otherwise.
+async function requireAcceptedClient(trainerId, clientId) {
+  const rows = await query(
+    `SELECT id FROM trainer_client WHERE trainer_id = ? AND client_id = ? AND status = 'accepted' LIMIT 1`,
+    [trainerId, clientId]
+  );
+  if (!rows.length) throw new PtActionError('Not your client.');
+}
+
+// The trainer's accepted clients + today's stats, unread counts, and a flag for
+// who already has a pending goal proposal. Mirrors the clients/unread/proposals
+// queries in dashboard-pt.php (kept as separate queries + merged, like the PHP).
+export async function trainerClients(trainerId) {
+  const clients = await query(
+    `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
+            us.logging_streak,
+            (SELECT calorie_goal FROM userGoal WHERE user_id = u.user_id ORDER BY date_set DESC LIMIT 1) AS calorie_goal,
+            (SELECT weight FROM weight_log WHERE user_id = u.user_id ORDER BY date_logged DESC LIMIT 1) AS last_weight,
+            COALESCE((SELECT SUM(calories) FROM intakeLog WHERE user_id = u.user_id AND DATE(date_intake) = CURDATE()), 0) AS calories_today,
+            COALESCE((SELECT SUM(protein)  FROM intakeLog WHERE user_id = u.user_id AND DATE(date_intake) = CURDATE()), 0) AS protein_today
+       FROM trainer_client tc
+       JOIN user u ON tc.client_id = u.user_id
+       JOIN userStatus us ON u.user_id = us.user_id
+      WHERE tc.trainer_id = ? AND tc.status = 'accepted'
+      ORDER BY u.first_name ASC`,
+    [trainerId]
+  );
+
+  const unreadRows = await query(
+    `SELECT t.client_id, COUNT(*) AS unread
+       FROM pt_message m
+       JOIN pt_thread t ON m.thread_id = t.thread_id
+      WHERE t.trainer_id = ? AND m.sender_role = 'client' AND m.seen_at IS NULL
+      GROUP BY t.client_id`,
+    [trainerId]
+  );
+  const unread = new Map(unreadRows.map((r) => [Number(r.client_id), Number(r.unread)]));
+
+  const propRows = await query(
+    `SELECT DISTINCT client_id FROM pt_goal_proposal WHERE trainer_id = ? AND status = 'pending'`,
+    [trainerId]
+  );
+  const pending = new Set(propRows.map((r) => Number(r.client_id)));
+
+  return clients.map((c) => ({
+    user_id: Number(c.user_id),
+    user_name: c.user_name ?? '',
+    first_name: c.first_name ?? '',
+    last_name: c.last_name ?? null,
+    profile_image: c.profile_image ?? null,
+    logging_streak: Number(c.logging_streak ?? 0),
+    calorie_goal: c.calorie_goal == null ? null : Number(c.calorie_goal),
+    last_weight: c.last_weight == null ? null : Number(c.last_weight),
+    calories_today: Number(c.calories_today ?? 0),
+    protein_today: Number(c.protein_today ?? 0),
+    unread: unread.get(Number(c.user_id)) ?? 0,
+    has_pending_proposal: pending.has(Number(c.user_id)),
+  }));
+}
+
+// Detail for one client: today's diary, a filled 7-day trend, current calorie
+// goal, and this trainer's feedback history for them (for the editor).
+export async function clientDetail(trainerId, clientId) {
+  await requireAcceptedClient(trainerId, clientId);
+
+  const diary = await query(
+    `SELECT food_item, meal_category, calories, protein, carbs, fat, image_path, date_intake
+       FROM intakeLog
+      WHERE user_id = ? AND DATE(date_intake) = CURDATE()
+      ORDER BY date_intake DESC`,
+    [clientId]
+  );
+
+  const trendRows = await query(
+    `SELECT DATE(date_intake) AS d, SUM(calories) AS cal, SUM(protein) AS pro
+       FROM intakeLog
+      WHERE user_id = ? AND DATE(date_intake) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY DATE(date_intake)`,
+    [clientId]
+  );
+  const byDate = new Map(trendRows.map((r) => [String(r.d), { cal: Number(r.cal ?? 0), pro: Number(r.pro ?? 0) }]));
+  const today = todayVN();
+  const trend = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = addDays(today, -i);
+    const v = byDate.get(date) || { cal: 0, pro: 0 };
+    trend.push({ date, weekday: weekdayLabel(date), cal: v.cal, pro: v.pro });
+  }
+
+  const goalRows = await query(
+    `SELECT calorie_goal FROM userGoal WHERE user_id = ? ORDER BY date_set DESC LIMIT 1`,
+    [clientId]
+  );
+  const calorie_goal = goalRows.length ? Number(goalRows[0].calorie_goal) : null;
+
+  const feedback = await query(
+    `SELECT date_for, content FROM pt_feedback WHERE trainer_id = ? AND client_id = ? ORDER BY date_for DESC LIMIT 60`,
+    [trainerId, clientId]
+  );
+
+  return {
+    diary: diary.map((r) => ({
+      food_item: r.food_item,
+      meal_category: r.meal_category,
+      calories: Number(r.calories ?? 0),
+      protein: Number(r.protein ?? 0),
+      carbs: Number(r.carbs ?? 0),
+      fat: Number(r.fat ?? 0),
+      image_path: r.image_path ?? null,
+      date_intake: r.date_intake,
+    })),
+    trend,
+    calorie_goal,
+    feedback: feedback.map((f) => ({ date_for: f.date_for, content: f.content })),
+  };
+}
+
+// Upsert (or delete when blank) the per-day feedback. Mirrors save_feedback.
+export async function saveFeedback(trainerId, clientId, dateFor, content) {
+  await requireAcceptedClient(trainerId, clientId);
+  if (!isValidDate(String(dateFor))) throw new PtActionError('Invalid date.');
+  const text = String(content ?? '').trim();
+
+  if (text === '') {
+    await query(`DELETE FROM pt_feedback WHERE trainer_id = ? AND client_id = ? AND date_for = ?`, [
+      trainerId,
+      clientId,
+      dateFor,
+    ]);
+    return { saved: false };
+  }
+
+  await query(
+    `INSERT INTO pt_feedback (trainer_id, client_id, date_for, content)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE content = ?, updated_at = NOW()`,
+    [trainerId, clientId, dateFor, text, text]
+  );
+  return { saved: true };
+}
+
+// Propose a calorie (+ optional all-or-none macros) goal. Supersedes any prior
+// pending proposal for the pair. Mirrors propose_goal.
+export async function proposeGoal(trainerId, clientId, payload) {
+  await requireAcceptedClient(trainerId, clientId);
+
+  const calorie = Number(payload?.calorie_goal);
+  if (!Number.isInteger(calorie) || calorie < 800 || calorie > 10000) {
+    throw new PtActionError('Calorie goal must be between 800 and 10000.');
+  }
+
+  const macros = {};
+  let macroSet = 0;
+  for (const key of ['protein', 'carbs', 'fat']) {
+    const raw = payload?.[key];
+    if (raw === '' || raw === null || raw === undefined) {
+      macros[key] = null;
+      continue;
+    }
+    const iv = Number(raw);
+    if (!Number.isInteger(iv) || iv < 0 || iv > 999) {
+      throw new PtActionError('Macro values must be whole numbers between 0 and 999.');
+    }
+    macros[key] = iv;
+    macroSet++;
+  }
+  if (macroSet > 0 && macroSet < 3) {
+    throw new PtActionError('Provide all three macros (protein, carbs, fat) or leave them all empty.');
+  }
+
+  let note = String(payload?.note ?? '').trim();
+  if (note.length > 255) note = note.slice(0, 255);
+
+  await query(
+    `UPDATE pt_goal_proposal SET status = 'superseded', responded_at = NOW()
+      WHERE trainer_id = ? AND client_id = ? AND status = 'pending'`,
+    [trainerId, clientId]
+  );
+  await query(
+    `INSERT INTO pt_goal_proposal (trainer_id, client_id, calorie_goal, protein_goal, carbs_goal, fat_goal, note, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [trainerId, clientId, calorie, macros.protein, macros.carbs, macros.fat, note === '' ? null : note]
+  );
+  return { proposed: true };
+}
+
+// Pending connection requests addressed to this trainer.
+export async function pendingRequests(trainerId) {
+  const rows = await query(
+    `SELECT tc.id AS request_id, tc.created_at,
+            u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
+            us.logging_streak
+       FROM trainer_client tc
+       JOIN user u ON tc.client_id = u.user_id
+       JOIN userStatus us ON u.user_id = us.user_id
+      WHERE tc.trainer_id = ? AND tc.status = 'pending'
+      ORDER BY tc.created_at DESC`,
+    [trainerId]
+  );
+  return rows.map((r) => ({
+    request_id: Number(r.request_id),
+    created_at: r.created_at,
+    user_id: Number(r.user_id),
+    user_name: r.user_name ?? '',
+    first_name: r.first_name ?? '',
+    last_name: r.last_name ?? null,
+    profile_image: r.profile_image ?? null,
+    logging_streak: Number(r.logging_streak ?? 0),
+  }));
+}
+
+// Accept (UPDATE) or reject (DELETE) a pending request. Mirrors accept/reject.
+export async function respondRequest(trainerId, requestId, action) {
+  let r;
+  if (action === 'accept') {
+    r = await query(
+      `UPDATE trainer_client SET status = 'accepted', responded_at = NOW()
+        WHERE id = ? AND trainer_id = ? AND status = 'pending'`,
+      [requestId, trainerId]
+    );
+  } else {
+    r = await query(`DELETE FROM trainer_client WHERE id = ? AND trainer_id = ? AND status = 'pending'`, [
+      requestId,
+      trainerId,
+    ]);
+  }
+  if (!r.affectedRows) throw new PtActionError('Request not found or already handled.');
+  return { [action === 'accept' ? 'accepted' : 'rejected']: true };
+}
+
+// Trainer-perspective chat wrappers (role 'trainer', explicit client).
+export async function trainerChatFetch(trainerId, clientId, since = 0) {
+  await requireAcceptedClient(trainerId, clientId);
+  return chatFetch(trainerId, clientId, 'trainer', since);
+}
+
+export async function trainerChatSend(trainerId, clientId, content) {
+  await requireAcceptedClient(trainerId, clientId);
+  return chatSend(trainerId, clientId, 'trainer', content);
 }

@@ -9,7 +9,7 @@
 // to reach them. The PT workspace endpoints (slice 4) get their own role checks
 // and reuse the role-agnostic chat helpers in lib/pt.js.
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePt } from '../middleware/auth.js';
 import {
   PtActionError,
   myTrainer,
@@ -19,6 +19,14 @@ import {
   respondProposal,
   clientChatFetch,
   clientChatSend,
+  trainerClients,
+  clientDetail,
+  saveFeedback,
+  proposeGoal,
+  pendingRequests,
+  respondRequest,
+  trainerChatFetch,
+  trainerChatSend,
 } from '../lib/pt.js';
 
 const router = Router();
@@ -87,6 +95,100 @@ router.post(
     }
     const data = await respondProposal(req.user.user_id, proposalId, decision);
     ok(res, data, decision === 'accept' ? 'Goal updated.' : 'Proposal declined.');
+  })
+);
+
+// -----------------------------------------------------------------------------
+// Trainer workspace (role 'pt' only) — the /trainer route's data.
+// -----------------------------------------------------------------------------
+
+router.get(
+  '/clients',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    ok(res, { clients: await trainerClients(req.user.user_id) });
+  })
+);
+
+router.get(
+  '/clients/:id',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    ok(res, await clientDetail(req.user.user_id, clientId));
+  })
+);
+
+router.get(
+  '/clients/:id/messages',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    ok(res, await trainerChatFetch(req.user.user_id, clientId, intParam(req.query.since)));
+  })
+);
+
+router.post(
+  '/clients/:id/messages',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    ok(res, await trainerChatSend(req.user.user_id, clientId, String(req.body?.content ?? '')));
+  })
+);
+
+router.post(
+  '/clients/:id/feedback',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    const data = await saveFeedback(req.user.user_id, clientId, req.body?.date_for, req.body?.content);
+    ok(res, data, data.saved ? 'Feedback saved.' : 'Feedback cleared.');
+  })
+);
+
+router.post(
+  '/clients/:id/propose-goal',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    const data = await proposeGoal(req.user.user_id, clientId, req.body || {});
+    ok(res, data, 'Goal proposed.');
+  })
+);
+
+router.get(
+  '/requests',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    ok(res, { requests: await pendingRequests(req.user.user_id) });
+  })
+);
+
+router.post(
+  '/requests/:id/respond',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const requestId = intParam(req.params.id);
+    const action = req.body?.action;
+    if (requestId <= 0 || (action !== 'accept' && action !== 'reject')) {
+      return res.status(422).json({ ok: false, data: null, message: 'Invalid request.' });
+    }
+    const data = await respondRequest(req.user.user_id, requestId, action);
+    ok(res, data, action === 'accept' ? 'Request accepted.' : 'Request declined.');
   })
 );
 

@@ -1,15 +1,11 @@
 <script setup>
 // "My Trainer" segment of the Coach Hub — the client's view of their personal
 // trainer: a trainer card, a pending goal-proposal to accept/decline, two-way
-// chat, and advice (feedback) history. Ports dashboard-coach.php +
-// pt_chat.php + respond_goal_proposal.php to the /api/pt/* endpoints.
-//
-// Chat is inlined here for now; once the PT workspace (slice 4) needs the same
-// room it can be extracted into a shared ChatRoom.vue.
-import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
+// chat (shared ChatRoom), and advice (feedback) history. Ports dashboard-coach.php
+// + respond_goal_proposal.php to the /api/pt/* client endpoints.
+import { ref, computed, onMounted } from 'vue';
 import { api } from '../lib/api.js';
-
-const POLL_MS = 12000; // mirrors pt-chat.js
+import ChatRoom from './ChatRoom.vue';
 
 const loading = ref(true);
 const error = ref('');
@@ -17,15 +13,8 @@ const trainer = ref(null);
 const feedback = ref([]);
 const proposal = ref(null);
 const tab = ref('chat'); // 'chat' | 'advice'
-
-// Chat state
-const messages = ref([]);
-const input = ref('');
-const sending = ref(false);
 const proposalBusy = ref(false);
 const goalDone = ref(false); // brief confirmation after accepting
-const threadEl = ref(null);
-let pollTimer = null;
 
 const trainerName = computed(() => {
   const t = trainer.value;
@@ -39,13 +28,6 @@ const specialties = computed(() =>
     .map((s) => s.trim())
     .filter(Boolean)
 );
-const lastId = computed(() => messages.value.reduce((max, m) => (m.message_id > max ? m.message_id : max), 0));
-
-function scrollToBottom() {
-  nextTick(() => {
-    if (threadEl.value) threadEl.value.scrollTop = threadEl.value.scrollHeight;
-  });
-}
 
 async function load() {
   loading.value = true;
@@ -55,61 +37,10 @@ async function load() {
     trainer.value = data.trainer;
     feedback.value = data.feedback || [];
     proposal.value = data.proposal;
-    if (trainer.value) await loadMessages();
   } catch (e) {
     error.value = e.message;
   } finally {
     loading.value = false;
-  }
-}
-
-async function loadMessages() {
-  try {
-    const data = await api.get('/api/pt/messages');
-    messages.value = data.messages;
-    scrollToBottom();
-  } catch (e) {
-    error.value = e.message;
-  }
-}
-
-// Incremental poll: only pull messages after the latest we hold.
-async function pollMessages() {
-  if (!trainer.value || document.hidden || tab.value !== 'chat') return;
-  try {
-    const data = await api.get(`/api/pt/messages?since=${lastId.value}`);
-    if (data.messages.length) {
-      messages.value.push(...data.messages);
-      scrollToBottom();
-    }
-  } catch {
-    /* transient poll failure — ignore, next tick retries */
-  }
-}
-
-async function send() {
-  const text = input.value.trim();
-  if (text === '' || sending.value) return;
-  error.value = '';
-  sending.value = true;
-
-  const optimistic = { message_id: `tmp-${Date.now()}`, sender_role: 'client', content: text };
-  messages.value.push(optimistic);
-  input.value = '';
-  scrollToBottom();
-
-  try {
-    const data = await api.post('/api/pt/messages', { content: text });
-    const i = messages.value.indexOf(optimistic);
-    if (i !== -1) messages.value.splice(i, 1, data.message);
-    else messages.value.push(data.message);
-  } catch (e) {
-    const i = messages.value.indexOf(optimistic);
-    if (i !== -1) messages.value.splice(i, 1);
-    input.value = text;
-    error.value = e.message;
-  } finally {
-    sending.value = false;
   }
 }
 
@@ -133,11 +64,7 @@ function macroLine(p) {
   return `P ${p.protein_goal}g · C ${p.carbs_goal}g · F ${p.fat_goal}g`;
 }
 
-onMounted(() => {
-  load();
-  pollTimer = setInterval(pollMessages, POLL_MS);
-});
-onBeforeUnmount(() => clearInterval(pollTimer));
+onMounted(load);
 </script>
 
 <template>
@@ -148,9 +75,7 @@ onBeforeUnmount(() => clearInterval(pollTimer));
     <div v-else-if="!trainer" class="placeholder">
       <div class="avatar empty"><i class="fa-solid fa-user-tie" /></div>
       <h2>No trainer yet</h2>
-      <p class="muted">
-        Connect with a personal trainer to get feedback, chat, and tailored goals.
-      </p>
+      <p class="muted">Connect with a personal trainer to get feedback, chat, and tailored goals.</p>
       <RouterLink to="/profile" class="btn-link">Find a trainer</RouterLink>
     </div>
 
@@ -195,31 +120,14 @@ onBeforeUnmount(() => clearInterval(pollTimer));
 
       <!-- Tabs -->
       <div class="mt-tabs" role="tablist">
-        <button class="mt-tab" :class="{ on: tab === 'chat' }" @click="tab = 'chat'; scrollToBottom()">Chat</button>
+        <button class="mt-tab" :class="{ on: tab === 'chat' }" @click="tab = 'chat'">Chat</button>
         <button class="mt-tab" :class="{ on: tab === 'advice' }" @click="tab = 'advice'">
           Advice<span v-if="feedback.length" class="count">{{ feedback.length }}</span>
         </button>
       </div>
 
-      <!-- Chat -->
-      <div v-show="tab === 'chat'" class="chat">
-        <div ref="threadEl" class="messages">
-          <p v-if="!messages.length" class="muted center pad">No messages yet. Say hello to your trainer.</p>
-          <div v-for="m in messages" :key="m.message_id" class="msg" :class="m.sender_role === 'client' ? 'me' : 'them'">
-            <div class="bubble">{{ m.content }}</div>
-          </div>
-        </div>
-        <form class="composer" @submit.prevent="send">
-          <textarea
-            v-model="input"
-            rows="1"
-            placeholder="Message your trainer…"
-            :disabled="sending"
-            @keydown.enter.exact.prevent="send"
-          />
-          <button type="submit" :disabled="sending || !input.trim()"><i class="fa-solid fa-paper-plane" /></button>
-        </form>
-      </div>
+      <!-- Chat (shared room) -->
+      <ChatRoom v-show="tab === 'chat'" path="/api/pt/messages" my-role="client" placeholder="Message your trainer…" />
 
       <!-- Advice -->
       <div v-show="tab === 'advice'" class="advice">
@@ -307,20 +215,6 @@ onBeforeUnmount(() => clearInterval(pollTimer));
   min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
   background: #2a2e37; color: var(--text); font-size: 11px; display: grid; place-items: center;
 }
-
-/* Chat */
-.chat { flex: 1; min-height: 0; display: flex; flex-direction: column;
-  background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-.messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.msg { display: flex; max-width: 82%; }
-.msg.me { align-self: flex-end; }
-.msg.them { align-self: flex-start; }
-.bubble { padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
-.msg.me .bubble { background: var(--accent); color: #04210f; border-bottom-right-radius: 4px; }
-.msg.them .bubble { background: #12151b; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-.composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
-.composer textarea { flex: 1; resize: none; max-height: 120px; font-family: inherit; }
-.composer button { flex: none; padding: 10px 14px; }
 
 /* Advice */
 .advice { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }

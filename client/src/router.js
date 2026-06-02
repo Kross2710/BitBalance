@@ -24,6 +24,8 @@ const routes = [
       { path: 'profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
       { path: 'coach', name: 'coach', component: () => import('./views/CoachView.vue') },
       { path: 'friends', name: 'friends', component: () => import('./views/FriendsView.vue') },
+      // PT workspace — reached via the topbar avatar menu, not the bottom nav.
+      { path: 'trainer', name: 'trainer', component: () => import('./views/TrainerView.vue') },
     ],
   },
 ];

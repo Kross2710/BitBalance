@@ -18,3 +18,12 @@ export async function requireAuth(req, res, next) {
     next(err);
   }
 }
+
+// Role guard for the trainer workspace. Runs AFTER requireAuth (needs req.user).
+// Mirrors the `role !== 'pt'` gate in dashboard-pt.php / pt_action.php.
+export function requirePt(req, res, next) {
+  if (!req.user || req.user.role !== 'pt') {
+    return res.status(403).json({ ok: false, data: null, message: 'Trainer access only.' });
+  }
+  next();
+}

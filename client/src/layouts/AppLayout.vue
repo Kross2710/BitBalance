@@ -1,12 +1,17 @@
 <script setup>
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-import { computed, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
 
 const auth = useAuthStore();
 const route = useRoute();
 const badgesStore = useBadgesStore();
+
+// Avatar dropdown (Profile / Trainer workspace / …). Trainer workspace is the
+// only entry point to /trainer — it stays off the bottom nav by design.
+const menuOpen = ref(false);
+watch(() => route.fullPath, () => (menuOpen.value = false));
 
 // Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
 // the PHP app's Font Awesome set (fa-solid). Profile is intentionally NOT here:
@@ -59,10 +64,32 @@ watch(
           <span class="brand-mark">B</span>
           <span class="brand-name">BitBalance</span>
         </RouterLink>
-        <RouterLink to="/profile" class="avatar-link" :class="{ active: route.name === 'profile' }" aria-label="Profile">
-          <img v-if="auth.user?.profile_image" :src="auth.user.profile_image" class="topbar-avatar" alt="" />
-          <span v-else class="topbar-avatar fallback">{{ userInitial }}</span>
-        </RouterLink>
+        <div class="avatar-wrap">
+          <button
+            class="avatar-link"
+            :class="{ active: route.name === 'profile' || route.name === 'trainer' }"
+            aria-label="Account menu"
+            aria-haspopup="true"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = !menuOpen"
+          >
+            <img v-if="auth.user?.profile_image" :src="auth.user.profile_image" class="topbar-avatar" alt="" />
+            <span v-else class="topbar-avatar fallback">{{ userInitial }}</span>
+          </button>
+          <div v-if="menuOpen" class="avatar-backdrop" @click="menuOpen = false" />
+          <div v-if="menuOpen" class="avatar-menu" role="menu">
+            <div class="am-head">
+              <strong>{{ auth.user?.first_name || auth.user?.handle }}</strong>
+              <span class="am-handle">@{{ auth.user?.handle }}</span>
+            </div>
+            <RouterLink v-if="auth.user?.role === 'pt'" to="/trainer" class="am-item" role="menuitem">
+              <i class="fa-solid fa-user-tie" /> Trainer workspace
+            </RouterLink>
+            <RouterLink to="/profile" class="am-item" role="menuitem">
+              <i class="fa-solid fa-user" /> Profile
+            </RouterLink>
+          </div>
+        </div>
       </header>
       <div class="content">
         <RouterView v-slot="{ Component }">
@@ -248,6 +275,7 @@ watch(
 
 /* Topbar avatar (right) — the entry point to Profile / settings / logout.
    44x44 hit area around the 36px avatar for a comfortable tap target. */
+.avatar-wrap { position: relative; }
 .avatar-link {
   flex: none;
   width: 44px;
@@ -255,6 +283,11 @@ watch(
   display: grid;
   place-items: center;
   border-radius: 50%;
+  /* It's a <button> now — strip the global button skin. */
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-height: 0;
 }
 .topbar-avatar {
   width: 36px;
@@ -269,6 +302,34 @@ watch(
   font-size: 15px;
 }
 .avatar-link.active .topbar-avatar { box-shadow: 0 0 0 2px var(--accent); }
+
+/* Avatar dropdown menu */
+.avatar-backdrop { position: fixed; inset: 0; z-index: 45; }
+.avatar-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 46;
+  min-width: 200px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.am-head { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 1px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.am-head strong { font-size: 14px; }
+.am-handle { font-size: 12px; color: var(--muted); }
+.am-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px; border-radius: 8px;
+  color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;
+}
+.am-item i { width: 18px; text-align: center; color: var(--muted); }
+.am-item:hover { background: #12151b; }
+.am-item.router-link-active { color: var(--accent); }
+.am-item.router-link-active i { color: var(--accent); }
+
 .content {
   padding: 4px 0 32px;
 }
