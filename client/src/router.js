@@ -20,6 +20,7 @@ const routes = [
     children: [
       { path: '', redirect: '/dashboard' },
       { path: 'dashboard', name: 'dashboard', component: () => import('./views/DashboardView.vue') },
+      { path: 'intake', name: 'intake', component: () => import('./views/IntakeView.vue') },
       { path: 'profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
       { path: 'coach', name: 'coach', component: () => import('./views/CoachView.vue') },
     ],

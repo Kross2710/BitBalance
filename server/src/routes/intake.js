@@ -37,6 +37,46 @@ router.get('/history', requireAuth, async (req, res, next) => {
   }
 });
 
+// Ports api/intake/suggest.php. The app has no master food DB, so suggestions
+// come from the user's own intakeLog. q empty -> most-frequently logged foods
+// (recent chips); q present -> name contains q (autocomplete). Each item carries
+// macros from the MOST RECENT time that food was logged (MAX(intakeLog_id)).
+router.get('/suggest', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+    const q = String(req.query.q ?? '').trim().slice(0, 100);
+    // Escape LIKE wildcards so % and _ match literally.
+    const like = '%' + q.replace(/[\\%_]/g, (ch) => '\\' + ch) + '%';
+
+    const rows = await query(
+      `SELECT i.food_item, i.calories, i.protein, i.carbs, i.fat, c.freq
+         FROM intakeLog i
+         JOIN (
+            SELECT food_item, COUNT(*) AS freq, MAX(intakeLog_id) AS last_id
+              FROM intakeLog
+             WHERE user_id = ? AND food_item LIKE ?
+             GROUP BY food_item
+         ) c ON c.last_id = i.intakeLog_id
+        ORDER BY c.freq DESC, i.intakeLog_id DESC
+        LIMIT 8`,
+      [userId, like]
+    );
+
+    const items = rows.map((row) => ({
+      food_item: row.food_item,
+      calories: Number(row.calories) || 0,
+      protein: Math.round((Number(row.protein) || 0) * 10) / 10,
+      carbs: Math.round((Number(row.carbs) || 0) * 10) / 10,
+      fat: Math.round((Number(row.fat) || 0) * 10) / 10,
+      freq: Number(row.freq) || 0,
+    }));
+
+    res.json({ ok: true, data: { items }, message: null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/create', requireAuth, async (req, res, next) => {
   try {
     const payload = validateIntake(req.body, false);

@@ -11,6 +11,7 @@ const router = useRouter();
 // Font Awesome set (fa-solid).
 const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
+  { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
   { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: false },
   { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
@@ -232,8 +233,8 @@ async function onLogout() {
     align-items: center;
     justify-content: center;
     gap: 3px;
-    /* >= 44px tap target (icon + label + padding). */
-    min-height: 52px;
+    /* >= 44px tap target; 56px gives comfortable icon + label spacing. */
+    min-height: 56px;
     padding: 8px 0;
     color: var(--muted);
     text-decoration: none;
