@@ -60,7 +60,11 @@ gần như port 1-1.
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
 | Profile – get | `api/profile/get.php` | ✅ `GET /api/profile` | ✅ ProfileView | Payload `{user, bio, status, goal, physical}` |
 | Profile – update | `api/profile/update.php` | ✅ `POST /api/profile/update` | ✅ ProfileView | Account/bio/theme/goal/physical trong 1 transaction; check trùng email/handle; đồng bộ session. Chưa port: upload ảnh + đổi ngôn ngữ + `log_attempt` (legacy update.php cũng không xử lý ảnh/ngôn ngữ) |
-| AI Coach | `api/ai-coach/*` | ⬜ | ⬜ | tích hợp OpenRouter |
+| AI Coach – conversations | `api/ai-coach/conversations.php` | ✅ `GET /api/ai-coach/conversations` | ✅ CoachView | List 100 hội thoại mới nhất |
+| AI Coach – messages | `api/ai-coach/messages.php` | ✅ `GET /api/ai-coach/messages?conversation_id=` | ✅ CoachView | Trả conversation + messages, unpack food-log suggestions |
+| AI Coach – send | `api/ai-coach/send.php` | ✅ `POST /api/ai-coach/send` | ✅ CoachView | Rate limit ngày, build context, gọi LLM, tách `[[FOOD_LOG]]`, auto-title, bump usage |
+| AI Coach – delete | `api/ai-coach/delete.php` | ✅ `POST /api/ai-coach/delete` | ✅ CoachView | Xoá hội thoại (ai_message cascade qua FK) |
+| AI Coach – provider | `call_gemini()` | ✅ `lib/aiProvider.js` | — | Trừu tượng hoá: `AI_PROVIDER=gemini\|openrouter` chọn qua env. Chưa port: **upload ảnh/vision** (text-only v1) — xem nợ kỹ thuật |
 | Social/Friends | `api/social/action.php` | ⬜ | ⬜ | |
 | Admin panel | `admin/*.php` | ⬜ | ⬜ | module riêng, có auth riêng |
 | Captcha | `captcha_image.php` (GD) | ⬜ | ⬜ | thay bằng svg-captcha (Node) |
@@ -80,6 +84,11 @@ gần như port 1-1.
       store bền (Redis hoặc MySQL session store).
 - [ ] **CSRF**: app PHP có `include/csrf.php`. SPA dùng cookie → cân nhắc
       double-submit token hoặc SameSite=strict cho các mutation.
+- [ ] **AI Coach vision (ảnh)**: bản port hiện chỉ text. PHP `send.php` nhận
+      multipart `image`, lưu `images/ai_coach/{userId}/`, gửi base64 inline cho
+      Gemini, và `delete.php` xoá ảnh trên đĩa. Cần thêm: multer cho upload,
+      static serve thư mục ảnh, nhánh image trong `lib/aiProvider.js` (Gemini
+      `inline_data` / OpenRouter `image_url`), và cleanup ảnh khi xoá hội thoại.
 - [ ] **Captcha** signup/login: thay GD image bằng thư viện Node.
 - [ ] **Password hash**: PHP dùng `password_hash` (bcrypt `$2y$`). `bcryptjs`
       verify được hash `$2y$` sẵn có — đăng ký mới cũng dùng bcryptjs để đồng nhất.

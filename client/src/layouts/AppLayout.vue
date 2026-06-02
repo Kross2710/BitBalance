@@ -11,7 +11,7 @@ const router = useRouter();
 // Font Awesome set (fa-solid).
 const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
-  { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: false },
+  { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
   { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: false },
   { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
 ];
