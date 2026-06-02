@@ -18,8 +18,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email, password) {
-    user.value = await api.post('/api/auth/login', { email, password });
+  async function login(email, password, remember = false) {
+    user.value = await api.post('/api/auth/login', { email, password, remember });
     return user.value;
   }
 

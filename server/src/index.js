@@ -7,6 +7,12 @@ import authRoutes from './routes/auth.js';
 import intakeRoutes from './routes/intake.js';
 import onboardingRoutes from './routes/onboarding.js';
 import dashboardRoutes from './routes/dashboard.js';
+import profileRoutes from './routes/profile.js';
+import aiCoachRoutes from './routes/aiCoach.js';
+import friendsRoutes from './routes/friends.js';
+import reminderRoutes from './routes/reminders.js';
+import { UPLOADS_ROOT } from './lib/uploads.js';
+import { tryRememberLogin } from './lib/remember.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -42,12 +48,33 @@ app.use(
   })
 );
 
+// Auto-login from a "remember me" cookie when the session has lapsed. Mirrors
+// PHP's remember_login() in init.php: only touches the DB when a guest request
+// actually carries the cookie, so it's a no-op for normal traffic.
+app.use(async (req, res, next) => {
+  try {
+    if (!req.session?.user) await tryRememberLogin(req, res);
+  } catch {
+    /* a remember-me failure must never break the request */
+  }
+  next();
+});
+
 app.get('/api/health', (req, res) => res.json({ ok: true, data: { status: 'up' }, message: null }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/intake', intakeRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/ai-coach', aiCoachRoutes);
+app.use('/api/social', friendsRoutes);
+app.use('/api/reminders', reminderRoutes);
+
+// Serve logged food photos read-only. Under /api so the Vite dev proxy forwards
+// it and it stays same-origin in production. maxAge: these files are immutable
+// (unique filename per upload).
+app.use('/api/uploads', express.static(UPLOADS_ROOT, { maxAge: '7d', index: false }));
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
 app.use((req, res) => {

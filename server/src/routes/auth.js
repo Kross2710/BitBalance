@@ -1,12 +1,12 @@
-// Auth routes — ports api/auth/login.php, logout.php and api/me.php.
-// NOTE: persistent "remember me" tokens are intentionally NOT ported yet
-// (they need include/handlers/remember_token.php + its DB table). Tracked in
-// MIGRATION.md. Everything else mirrors the legacy lockout behaviour.
+// Auth routes — ports api/auth/login.php, logout.php and api/me.php, including
+// persistent "remember me" tokens (see lib/remember.js). Mirrors the legacy
+// lockout behaviour.
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { publicUser, currentUserRow } from '../lib/users.js';
 import { generateHandle } from '../lib/handle.js';
+import { createRemember, forgetRemember } from '../lib/remember.js';
 
 const router = Router();
 
@@ -20,6 +20,7 @@ router.post('/login', async (req, res, next) => {
   try {
     const email = (req.body?.email ?? '').trim();
     const password = req.body?.password ?? '';
+    const remember = req.body?.remember === true || req.body?.remember === 'true' || req.body?.remember === 1;
 
     if (email === '' || password === '') {
       return res.status(422).json({ ok: false, data: null, message: 'Please fill in all fields.' });
@@ -84,9 +85,11 @@ router.post('/login', async (req, res, next) => {
     await query('UPDATE user SET last_login = NOW() WHERE user_id = ?', [user.user_id]);
 
     // Mirror session_regenerate_id(true): rotate the session id on privilege change.
-    req.session.regenerate((err) => {
+    req.session.regenerate(async (err) => {
       if (err) return next(err);
       req.session.user = publicUser(user);
+      // Opt-in 30-day persistent login (never blocks the response on failure).
+      if (remember) await createRemember(res, user.user_id, req.headers['user-agent']);
       res.json({ ok: true, data: publicUser(user), message: null });
     });
   } catch (err) {
@@ -158,7 +161,9 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
+  // Revoke + drop the remember-me token (if any) before tearing the session down.
+  await forgetRemember(req, res);
   req.session.destroy(() => {
     res.clearCookie('bb.sid');
     res.json({ ok: true, data: null, message: null });
