@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +29,12 @@ const PORT = Number(process.env.PORT || 3000);
 // X-Forwarded-Proto, so secure cookies are sent when COOKIE_SECURE=true. Set
 // TRUST_PROXY=0 to disable (e.g. when exposed directly without a proxy).
 if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
+
+// Gzip every text response (API JSON + the built SPA's JS/CSS/HTML). The Vue
+// bundles are ~550KB uncompressed; gzip cuts that ~75%, which dominates
+// first-load time over the ngrok tunnel. Negligible CPU at this traffic level,
+// and it skips already-compressed types (images, etc.) automatically.
+app.use(compression());
 
 app.use(express.json());
 
@@ -101,12 +108,25 @@ const CLIENT_DIST = path.resolve(
   '../../client/dist'
 );
 if (fs.existsSync(CLIENT_DIST)) {
-  app.use(express.static(CLIENT_DIST));
-  // SPA history fallback: any non-/api GET returns index.html so client-side
-  // routing (vue-router) works on hard refresh / deep links.
-  app.get(/^\/(?!api\/).*/, (req, res) =>
-    res.sendFile(path.join(CLIENT_DIST, 'index.html'))
+  // Content-hashed bundles under /assets are safe to cache forever: Vite puts a
+  // content hash in every filename, so changed content always gets a new URL.
+  // `immutable` tells the browser never to revalidate, killing repeat
+  // round-trips over the tunnel. Previously these were served with max-age=0.
+  app.use(
+    '/assets',
+    express.static(path.join(CLIENT_DIST, 'assets'), { immutable: true, maxAge: '1y' })
   );
+  // Other static files (favicon, etc.). index.html is intentionally excluded
+  // (index:false) so the fallback below serves it with its own no-cache header.
+  app.use(express.static(CLIENT_DIST, { index: false }));
+  // SPA history fallback: any non-/api GET returns index.html so client-side
+  // routing (vue-router) works on hard refresh / deep links. index.html must
+  // NOT be cached — it references the latest hashed bundles, so a stale copy
+  // would pin users to old assets after a deploy.
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+  });
 }
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
