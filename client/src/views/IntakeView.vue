@@ -3,7 +3,7 @@
 // of the PHP Food Intake page minus barcode/AI photo, which come later).
 // Big food field with history-backed autocomplete + recent chips, calories,
 // meal, optional macros, and a full-width Log Entry button.
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { api } from '../lib/api.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
@@ -109,7 +109,156 @@ async function onSubmit() {
   }
 }
 
+// ---- Barcode scanner ----
+// Uses the native BarcodeDetector (Android Chrome) when available; otherwise the
+// user types the number manually. Either way the code is resolved server-side
+// (cache -> OpenFoodFacts) and used to prefill the form. (iOS Safari has no
+// BarcodeDetector; a ZXing fallback for live camera decode is a future add.)
+const showScanner = ref(false);
+const manualCode = ref('');
+const scanBusy = ref(false);
+const scanError = ref('');
+const scanResult = ref(null);
+const cameraOn = ref(false);
+const videoEl = ref(null);
+let mediaStream = null;
+let detector = null;
+let rafId = null;
+
+async function openScanner() {
+  showScanner.value = true;
+  scanError.value = '';
+  scanResult.value = null;
+  manualCode.value = '';
+  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+    await startCamera();
+  }
+}
+
+function closeScanner() {
+  stopCamera();
+  showScanner.value = false;
+}
+
+async function startCamera() {
+  try {
+    detector = new window.BarcodeDetector({
+      formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'],
+    });
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    cameraOn.value = true;
+    await new Promise((r) => setTimeout(r, 0)); // let the <video> mount
+    if (videoEl.value) {
+      videoEl.value.srcObject = mediaStream;
+      await videoEl.value.play().catch(() => {});
+    }
+    detectLoop();
+  } catch (e) {
+    cameraOn.value = false;
+    scanError.value = 'Camera unavailable — enter the barcode number below.';
+  }
+}
+
+function stopCamera() {
+  cameraOn.value = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((t) => t.stop());
+    mediaStream = null;
+  }
+}
+
+async function detectLoop() {
+  if (!cameraOn.value || !detector || !videoEl.value) return;
+  try {
+    const codes = await detector.detect(videoEl.value);
+    if (codes.length && codes[0].rawValue) {
+      stopCamera();
+      lookupBarcode(codes[0].rawValue);
+      return;
+    }
+  } catch {
+    /* transient decode error — keep looping */
+  }
+  rafId = requestAnimationFrame(detectLoop);
+}
+
+async function lookupBarcode(code) {
+  const barcode = String(code).trim();
+  if (!/^\d{6,20}$/.test(barcode)) {
+    scanError.value = 'Enter a valid barcode (6-20 digits).';
+    return;
+  }
+  scanError.value = '';
+  scanResult.value = null;
+  scanBusy.value = true;
+  try {
+    const data = await api.post('/api/intake/lookup-barcode', { barcode });
+    if (data.found) scanResult.value = data;
+    else scanError.value = `No product found for ${barcode}.`;
+  } catch (e) {
+    scanError.value = e.message;
+  } finally {
+    scanBusy.value = false;
+  }
+}
+
+function useProduct() {
+  const p = scanResult.value;
+  if (!p) return;
+  form.food_item = [p.brand, p.product_name].filter(Boolean).join(' ').slice(0, 80) || 'Scanned item';
+  form.calories = p.kcal_per_serving ?? (p.kcal_per_100g != null ? Math.round(p.kcal_per_100g) : '');
+  if (p.protein != null || p.carbs != null || p.fat != null) {
+    form.protein = p.protein ?? '';
+    form.carbs = p.carbs ?? '';
+    form.fat = p.fat ?? '';
+    showMacros.value = true;
+  }
+  closeScanner();
+}
+
+// ---- AI Photo estimate ----
+const photoInput = ref(null);
+const photoBusy = ref(false);
+const photoAdvice = ref('');
+
+function openPhoto() {
+  photoInput.value?.click();
+}
+
+async function onPhotoPicked(e) {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // allow re-picking the same file
+  if (!file) return;
+  error.value = '';
+  success.value = '';
+  photoAdvice.value = '';
+  photoBusy.value = true;
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    // FormData must NOT go through the JSON api helper — post it directly.
+    const res = await fetch('/api/intake/estimate-photo', { method: 'POST', credentials: 'include', body: fd });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.message || 'Could not estimate the photo.');
+    const est = json.data;
+    form.food_item = est.food_name || '';
+    form.calories = est.calories || '';
+    form.protein = est.protein ?? '';
+    form.carbs = est.carbs ?? '';
+    form.fat = est.fat ?? '';
+    if (est.protein || est.carbs || est.fat) showMacros.value = true;
+    photoAdvice.value = est.short_advice || '';
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    photoBusy.value = false;
+  }
+}
+
 onMounted(loadRecent);
+onBeforeUnmount(stopCamera);
 </script>
 
 <template>
@@ -117,6 +266,17 @@ onMounted(loadRecent);
     <h1>Log food</h1>
 
     <form class="card" @submit.prevent="onSubmit">
+      <!-- Capture shortcuts -->
+      <div class="io-actions">
+        <button type="button" class="io-chip" @click="openScanner">
+          <i class="fa-solid fa-barcode" /> Scan barcode
+        </button>
+        <button type="button" class="io-chip" :disabled="photoBusy" @click="openPhoto">
+          <i class="fa-solid" :class="photoBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
+          {{ photoBusy ? 'Analyzing…' : 'AI Photo' }}
+        </button>
+      </div>
+
       <!-- Food name + autocomplete -->
       <label for="intake-food">What did you eat?</label>
       <div class="food-field">
@@ -182,12 +342,59 @@ onMounted(loadRecent);
         </div>
       </div>
 
+      <p v-if="photoAdvice" class="advice"><i class="fa-solid fa-lightbulb" /> {{ photoAdvice }}</p>
+
       <button type="submit" class="log-btn" :disabled="!canSubmit || saving">
         {{ saving ? 'Logging…' : 'Log Entry' }}
       </button>
       <p v-if="success" class="ok">{{ success }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </form>
+
+    <!-- Barcode scanner modal -->
+    <div v-if="showScanner" class="overlay" @click.self="closeScanner">
+      <div class="modal">
+        <div class="modal-head">
+          <strong><i class="fa-solid fa-barcode" /> Scan barcode</strong>
+          <button type="button" class="x" @click="closeScanner" aria-label="Close"><i class="fa-solid fa-xmark" /></button>
+        </div>
+        <div v-if="cameraOn" class="cam"><video ref="videoEl" muted playsinline /></div>
+        <label for="manual-code">Barcode number</label>
+        <div class="scan-row">
+          <input
+            id="manual-code"
+            v-model="manualCode"
+            inputmode="numeric"
+            placeholder="e.g. 737628064502"
+            @keydown.enter.prevent="lookupBarcode(manualCode)"
+          />
+          <button type="button" :disabled="scanBusy" @click="lookupBarcode(manualCode)">
+            {{ scanBusy ? '…' : 'Look up' }}
+          </button>
+        </div>
+        <div v-if="scanResult" class="scan-result">
+          <strong>{{ scanResult.product_name || 'Unnamed product' }}</strong>
+          <p v-if="scanResult.brand" class="muted">{{ scanResult.brand }}</p>
+          <p class="muted">
+            {{ scanResult.kcal_per_serving ?? scanResult.kcal_per_100g ?? '—' }} kcal
+            <span v-if="scanResult.kcal_per_serving">/ serving</span>
+            <span v-else-if="scanResult.kcal_per_100g">/ 100g</span>
+          </p>
+          <button type="button" class="use-btn" @click="useProduct">Use this</button>
+        </div>
+        <p v-if="scanError" class="error">{{ scanError }}</p>
+      </div>
+    </div>
+
+    <!-- AI Photo: hidden file input triggered by the AI Photo chip -->
+    <input
+      ref="photoInput"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      style="display: none"
+      @change="onPhotoPicked"
+    />
   </main>
 </template>
 
@@ -253,6 +460,59 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .ql-toggle:hover { color: var(--text); }
 
 .log-btn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
+.advice { margin: 14px 0 0; font-size: 13px; color: #c4b5fd; }
+.advice i { margin-right: 6px; }
+
+/* Capture shortcut chips (Scan barcode / AI Photo) */
+.io-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.io-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #12151b;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+}
+.io-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Scanner modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 60;
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.modal-head .x { background: transparent; color: var(--muted); min-height: 0; padding: 4px 8px; }
+.cam { border-radius: 10px; overflow: hidden; margin-bottom: 14px; background: #000; aspect-ratio: 4 / 3; }
+.cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-row { display: flex; gap: 8px; margin-top: 6px; }
+.scan-row input { flex: 1; }
+.scan-row button { flex: none; }
+.scan-result {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.scan-result p { margin: 4px 0; }
+.use-btn { width: 100%; margin-top: 10px; }
 
 @media (max-width: 480px) {
   .three { grid-template-columns: 1fr; }

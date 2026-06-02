@@ -56,7 +56,8 @@ gần như port 1-1.
 | Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
 | Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
 | Intake – suggest | `api/intake/suggest.php` | ✅ `GET /api/intake/suggest?q=` | ✅ IntakeView | Recent chips (món hay log) + autocomplete từ chính lịch sử user; macro lấy từ lần log gần nhất |
-| Intake – barcode | `lookup_barcode.php` | ⬜ | ⬜ | gọi API barcode ngoài |
+| Intake – barcode | `api/intake/lookup_barcode.php` | ✅ `POST /api/intake/lookup-barcode` | ✅ IntakeView | Cache `barcode_products` → OpenFoodFacts fallback → ghi `barcode_scan_log`. UI: camera + native BarcodeDetector + nhập tay (fallback). Chưa có: ZXing decode cho iOS Safari |
+| Intake – AI photo | `dashboard/handlers/ai_chat.php` (nhánh ảnh) | ✅ `POST /api/intake/estimate-photo` | ✅ IntakeView | multer upload → vision (Gemini/OpenRouter) → ước lượng `{food_name,calories,P/C/F,advice}` → prefill form. Ảnh không lưu đĩa |
 | Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + meal theo giờ + macros optional + Log Entry full-width. Chưa có: Scan Barcode, AI Photo |
 | Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
@@ -86,11 +87,13 @@ gần như port 1-1.
       store bền (Redis hoặc MySQL session store).
 - [ ] **CSRF**: app PHP có `include/csrf.php`. SPA dùng cookie → cân nhắc
       double-submit token hoặc SameSite=strict cho các mutation.
-- [ ] **AI Coach vision (ảnh)**: bản port hiện chỉ text. PHP `send.php` nhận
-      multipart `image`, lưu `images/ai_coach/{userId}/`, gửi base64 inline cho
-      Gemini, và `delete.php` xoá ảnh trên đĩa. Cần thêm: multer cho upload,
-      static serve thư mục ảnh, nhánh image trong `lib/aiProvider.js` (Gemini
-      `inline_data` / OpenRouter `image_url`), và cleanup ảnh khi xoá hội thoại.
+- [ ] **AI Coach chat vision (ảnh)**: `lib/aiProvider.js` ĐÃ hỗ trợ ảnh (Gemini
+      `inline_data` / OpenRouter `image_url`) và `/api/intake/estimate-photo` đã
+      dùng. Còn nợ: gắn ảnh vào **chat** AI Coach (`routes/aiCoach.js` `send`) như
+      PHP `send.php` — multer upload + lưu `images/ai_coach/{userId}/` + static
+      serve + cleanup ảnh khi xoá hội thoại (estimate-photo hiện không lưu ảnh).
+- [ ] **Barcode iOS**: scanner dùng native `BarcodeDetector` (Android Chrome) +
+      nhập tay. iOS Safari không có BarcodeDetector → thêm ZXing để decode camera.
 - [ ] **Captcha** signup/login: thay GD image bằng thư viện Node.
 - [ ] **Password hash**: PHP dùng `password_hash` (bcrypt `$2y$`). `bcryptjs`
       verify được hash `$2y$` sẵn có — đăng ký mới cũng dùng bcryptjs để đồng nhất.

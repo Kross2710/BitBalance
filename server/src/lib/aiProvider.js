@@ -4,8 +4,8 @@
 // { ok, text } or { ok: false, error }. Ports the call_gemini() of
 // api/ai-coach/_helpers.php and adds an OpenAI-compatible OpenRouter path.
 //
-// Image/vision input is intentionally NOT wired in this version (text-only) —
-// tracked in MIGRATION.md. Non-streaming, mirroring the legacy PHP behaviour.
+// Supports an optional image (base64) attached to the latest user turn for
+// vision (food-photo estimation). Non-streaming, mirroring the legacy PHP.
 
 const TIMEOUT_MS = 60_000;
 const TEMPERATURE = 0.7;
@@ -37,16 +37,26 @@ async function postJson(url, { headers = {}, body }) {
   }
 }
 
+// Index of the last user-role message (where an image attaches).
+function lastUserIndex(history) {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].role !== 'assistant') return i;
+  }
+  return -1;
+}
+
 // ---- Gemini (Google Generative Language API) ----
-async function callGemini({ system, history }) {
+async function callGemini({ system, history, image }) {
   const key = process.env.GEMINI_API_KEY || '';
   if (key === '') return { ok: false, error: 'Gemini API key not configured' };
   const model = process.env.AI_COACH_MODEL || 'gemini-3.1-flash-lite';
 
-  const contents = history.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content?.trim() ? m.content : '(empty)' }],
-  }));
+  const imgIdx = image ? lastUserIndex(history) : -1;
+  const contents = history.map((m, i) => {
+    const parts = [{ text: m.content?.trim() ? m.content : '(empty)' }];
+    if (i === imgIdx) parts.push({ inline_data: { mime_type: image.mime, data: image.data } });
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts };
+  });
 
   const body = {
     system_instruction: { parts: [{ text: system }] },
@@ -78,17 +88,28 @@ async function callGemini({ system, history }) {
 }
 
 // ---- OpenRouter (OpenAI-compatible chat completions) ----
-async function callOpenRouter({ system, history }) {
+async function callOpenRouter({ system, history, image }) {
   const key = process.env.OPENROUTER_API_KEY || '';
   if (key === '') return { ok: false, error: 'OpenRouter API key not configured' };
   const model = process.env.OPENROUTER_MODEL || 'google/gemma-4-31b-it:free';
 
+  const imgIdx = image ? lastUserIndex(history) : -1;
   const messages = [
     { role: 'system', content: system },
-    ...history.map((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content?.trim() ? m.content : '(empty)',
-    })),
+    ...history.map((m, i) => {
+      const text = m.content?.trim() ? m.content : '(empty)';
+      const role = m.role === 'assistant' ? 'assistant' : 'user';
+      if (i === imgIdx) {
+        return {
+          role,
+          content: [
+            { type: 'text', text },
+            { type: 'image_url', image_url: { url: `data:${image.mime};base64,${image.data}` } },
+          ],
+        };
+      }
+      return { role, content: text };
+    }),
   ];
 
   let res;
@@ -115,8 +136,8 @@ async function callOpenRouter({ system, history }) {
   return { ok: true, text };
 }
 
-export async function chatCompletion({ system, history }) {
+export async function chatCompletion({ system, history, image }) {
   return provider() === 'openrouter'
-    ? callOpenRouter({ system, history })
-    : callGemini({ system, history });
+    ? callOpenRouter({ system, history, image })
+    : callGemini({ system, history, image });
 }
