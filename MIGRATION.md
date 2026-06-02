@@ -46,9 +46,10 @@ gần như port 1-1.
 | Auth – me | `api/me.php` | ✅ `GET /api/auth/me` | ✅ store | |
 | Intake – history | `api/intake/history.php` | ✅ `GET /api/intake/history` | ✅ Dashboard | Kèm daily_summary + macro |
 | Intake – create | `api/intake/create.php` | ✅ `POST /api/intake/create` | ✅ Dashboard | **Chưa port XP/streak** (xem TODO) |
-| Auth – register | `api/auth/register.php` | ⬜ | ⬜ | |
-| Onboarding | `api/onboarding/save.php` | ⬜ | ⬜ | |
-| Intake – update/delete | `api/intake/update.php`, `delete.php` | ⬜ | ⬜ | |
+| Auth – register | `api/auth/register.php` | ✅ `POST /api/auth/register` | ✅ SignupView | Tự sinh handle `Tên#1234`, auto-login |
+| Onboarding | `api/onboarding/save.php` | ✅ `POST /api/onboarding/save` | ✅ OnboardingView | Port BMR/TDEE/macro + lưu transaction |
+| Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
+| Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
 | Intake – suggest/barcode | `suggest.php`, `lookup_barcode.php` | ⬜ | ⬜ | gọi AI / barcode ngoài |
 | Dashboard – day/summary | `api/dashboard/*` | ⬜ | ⬜ | |
 | Profile | `api/profile/*` | ⬜ | ⬜ | `profile.php` rất lớn (61KB) |

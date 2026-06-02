@@ -47,6 +47,52 @@ async function addEntry() {
   }
 }
 
+// --- Edit / delete -------------------------------------------------------
+const editingId = ref(null);
+const editForm = ref({});
+
+function startEdit(e) {
+  editingId.value = e.id;
+  editForm.value = {
+    intake_id: e.id,
+    food_item: e.food_item,
+    calories: e.calories,
+    meal_category: e.meal_category,
+    protein: e.protein,
+    carbs: e.carbs,
+    fat: e.fat,
+  };
+}
+
+function cancelEdit() {
+  editingId.value = null;
+}
+
+async function saveEdit() {
+  error.value = '';
+  try {
+    const data = await api.post('/api/intake/update', editForm.value);
+    const i = entries.value.findIndex((x) => x.id === data.entry.id);
+    if (i !== -1) entries.value[i] = data.entry;
+    summary.value = data.daily_summary;
+    editingId.value = null;
+  } catch (e) {
+    error.value = e.message;
+  }
+}
+
+async function removeEntry(e) {
+  if (!confirm(`Delete "${e.food_item}"?`)) return;
+  error.value = '';
+  try {
+    const data = await api.post('/api/intake/delete', { intake_id: e.id });
+    entries.value = entries.value.filter((x) => x.id !== data.deleted_id);
+    summary.value = data.daily_summary;
+  } catch (err) {
+    error.value = err.message;
+  }
+}
+
 async function onLogout() {
   await auth.logout();
   router.push({ name: 'login' });
@@ -103,9 +149,34 @@ onMounted(load);
       <p v-if="loading" class="muted">Loading…</p>
       <p v-else-if="!entries.length" class="muted">No entries yet.</p>
       <ul v-else style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px">
-        <li v-for="e in entries" :key="e.id" class="card" style="display: flex; justify-content: space-between; padding: 12px 16px">
-          <span>{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
-          <strong>{{ e.calories }} kcal</strong>
+        <li v-for="e in entries" :key="e.id" class="card" style="padding: 12px 16px">
+          <!-- Inline edit mode -->
+          <div v-if="editingId === e.id" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px">
+            <input v-model="editForm.food_item" />
+            <input v-model="editForm.calories" type="number" min="1" />
+            <select v-model="editForm.meal_category">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+            <input v-model="editForm.protein" type="number" min="0" placeholder="P" />
+            <input v-model="editForm.carbs" type="number" min="0" placeholder="C" />
+            <input v-model="editForm.fat" type="number" min="0" placeholder="F" />
+            <div style="grid-column: 1 / -1; display: flex; gap: 8px">
+              <button @click="saveEdit">Save</button>
+              <button @click="cancelEdit" style="background: #2a2e37; color: var(--text)">Cancel</button>
+            </div>
+          </div>
+          <!-- Display mode -->
+          <div v-else style="display: flex; justify-content: space-between; align-items: center">
+            <span>{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
+            <span style="display: flex; gap: 10px; align-items: center">
+              <strong>{{ e.calories }} kcal</strong>
+              <button @click="startEdit(e)" class="icon-btn">Edit</button>
+              <button @click="removeEntry(e)" class="icon-btn danger">Delete</button>
+            </span>
+          </div>
         </li>
       </ul>
     </section>
@@ -114,4 +185,12 @@ onMounted(load);
 
 <style scoped>
 .muted { color: var(--muted); }
+.icon-btn {
+  background: #2a2e37;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.icon-btn.danger { color: #f87171; }
 </style>

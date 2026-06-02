@@ -5,6 +5,7 @@ import cors from 'cors';
 
 import authRoutes from './routes/auth.js';
 import intakeRoutes from './routes/intake.js';
+import onboardingRoutes from './routes/onboarding.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -44,6 +45,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true, data: { status: 'up' }
 
 app.use('/api/auth', authRoutes);
 app.use('/api/intake', intakeRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
 app.use((req, res) => {

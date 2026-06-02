@@ -23,10 +23,20 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value;
   }
 
+  async function register(payload) {
+    user.value = await api.post('/api/auth/register', payload);
+    return user.value;
+  }
+
+  // Called after onboarding completes so the guard stops redirecting back to it.
+  function markOnboarded() {
+    if (user.value) user.value.needs_onboarding = false;
+  }
+
   async function logout() {
     await api.post('/api/auth/logout');
     user.value = null;
   }
 
-  return { user, ready, bootstrap, login, logout };
+  return { user, ready, bootstrap, login, register, logout, markOnboarded };
 });

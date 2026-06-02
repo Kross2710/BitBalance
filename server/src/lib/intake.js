@@ -56,14 +56,25 @@ export function shapeEntry(row) {
   };
 }
 
-// 30% protein / 45% carbs / 25% fat split — identical formula to PHP.
-function macroGoalsFromCalories(goal) {
+// 30% protein / 45% carbs / 25% fat split — identical formula to PHP
+// getMacroGoalsFromCalorieGoal(). Exported so the plan builder reuses it.
+export function macroGoalsFromCalories(goal) {
   if (!goal || goal <= 0) return { protein: 0, carbs: 0, fat: 0 };
   return {
     protein: Math.round((goal * 0.3) / 4),
     carbs: Math.round((goal * 0.45) / 4),
     fat: Math.round((goal * 0.25) / 9),
   };
+}
+
+// Mirrors api_intake_fetch(): one entry scoped to its owner.
+export async function fetchEntry(userId, intakeId) {
+  const rows = await query(
+    `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, date_intake
+       FROM intakeLog WHERE user_id = ? AND intakeLog_id = ? LIMIT 1`,
+    [userId, intakeId]
+  );
+  return rows[0] ?? null;
 }
 
 // Mirrors api_intake_daily_summary().

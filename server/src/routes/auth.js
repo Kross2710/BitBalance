@@ -6,11 +6,15 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { publicUser, currentUserRow } from '../lib/users.js';
+import { generateHandle } from '../lib/handle.js';
 
 const router = Router();
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 60;
+const BCRYPT_ROUNDS = 10;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
 router.post('/login', async (req, res, next) => {
   try {
@@ -84,6 +88,70 @@ router.post('/login', async (req, res, next) => {
       if (err) return next(err);
       req.session.user = publicUser(user);
       res.json({ ok: true, data: publicUser(user), message: null });
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Ports api/auth/register.php. CAPTCHA is intentionally dropped for the API
+// (mirrors the PHP note) — add token-based abuse control later. bcryptjs hashes
+// with $2b$, which the legacy PHP password_verify reads fine, and vice versa.
+router.post('/register', async (req, res, next) => {
+  try {
+    const firstName = (req.body?.first_name ?? '').trim();
+    const lastName = (req.body?.last_name ?? '').trim();
+    const email = (req.body?.email ?? '').trim();
+    const password = req.body?.password ?? '';
+    const confirmPassword = req.body?.confirm_password ?? '';
+
+    const fail = (msg, code) => res.status(code).json({ ok: false, data: null, message: msg });
+
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      return fail('Please fill in all fields.', 422);
+    }
+    if (password !== confirmPassword) return fail('Passwords do not match.', 422);
+    if (password.length < 8) return fail('Password must be at least 8 characters long.', 422);
+    if (!PASSWORD_RE.test(password)) {
+      return fail('Password must contain at least one uppercase letter, one lowercase letter, and one number.', 422);
+    }
+    if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.', 422);
+
+    const existing = await query('SELECT user_id FROM user WHERE email = ?', [email]);
+    if (existing.length) return fail('An account with this email already exists.', 409);
+
+    const username = await generateHandle(firstName);
+    const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    const result = await query(
+      `INSERT INTO user (user_name, first_name, last_name, email, password, role, created_at)
+       VALUES (?, ?, ?, ?, ?, 'regular', NOW())`,
+      [username, firstName, lastName, email, hashed]
+    );
+    const userId = result.insertId;
+
+    await query(
+      `INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until)
+       VALUES (?, 'active', 'system', 0, NULL)`,
+      [userId]
+    );
+
+    const userRow = {
+      user_id: userId,
+      user_name: username,
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      role: 'regular',
+      profile_image: null,
+      theme_preference: 'system',
+      needs_onboarding: 1,
+    };
+
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+      req.session.user = publicUser(userRow);
+      res.json({ ok: true, data: publicUser(userRow), message: null });
     });
   } catch (err) {
     next(err);

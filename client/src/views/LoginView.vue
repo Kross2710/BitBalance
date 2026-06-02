@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
 
 const auth = useAuthStore();
@@ -38,6 +38,14 @@ async function onSubmit() {
         {{ busy ? 'Signing in…' : 'Sign in' }}
       </button>
       <p v-if="error" class="error">{{ error }}</p>
+      <p class="muted" style="text-align: center; margin: 14px 0 0">
+        No account? <RouterLink to="/signup">Sign up</RouterLink>
+      </p>
     </form>
   </main>
 </template>
+
+<style scoped>
+.muted { color: var(--muted); font-size: 13px; }
+a { color: var(--accent); }
+</style>

@@ -4,6 +4,13 @@ import { useAuthStore } from './stores/auth.js';
 const routes = [
   { path: '/', redirect: '/dashboard' },
   { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
+  { path: '/signup', name: 'signup', component: () => import('./views/SignupView.vue') },
+  {
+    path: '/onboarding',
+    name: 'onboarding',
+    component: () => import('./views/OnboardingView.vue'),
+    meta: { requiresAuth: true },
+  },
   {
     path: '/dashboard',
     name: 'dashboard',
@@ -26,7 +33,14 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth && !auth.user) {
     return { name: 'login', query: { redirect: to.fullPath } };
   }
-  if (to.name === 'login' && auth.user) {
+  if ((to.name === 'login' || to.name === 'signup') && auth.user) {
+    return { name: 'dashboard' };
+  }
+  // New accounts must finish onboarding before reaching the dashboard.
+  if (auth.user?.needs_onboarding && to.name !== 'onboarding') {
+    return { name: 'onboarding' };
+  }
+  if (!auth.user?.needs_onboarding && to.name === 'onboarding') {
     return { name: 'dashboard' };
   }
 });

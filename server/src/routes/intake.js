@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateIntake, shapeEntry, dailySummary, ValidationError } from '../lib/intake.js';
+import { validateIntake, shapeEntry, dailySummary, fetchEntry, ValidationError } from '../lib/intake.js';
 
 const router = Router();
 
@@ -64,6 +64,71 @@ router.post('/create', requireAuth, async (req, res, next) => {
     if (err instanceof ValidationError) {
       return res.status(err.status).json({ ok: false, data: null, message: err.message });
     }
+    next(err);
+  }
+});
+
+// Ports api/intake/update.php (POST for parity with the legacy contract).
+router.post('/update', requireAuth, async (req, res, next) => {
+  try {
+    const payload = validateIntake(req.body, true);
+    const userId = req.user.user_id;
+
+    await query(
+      `UPDATE intakeLog
+          SET food_item = ?, calories = ?, protein = ?, carbs = ?, fat = ?, meal_category = ?
+        WHERE intakeLog_id = ? AND user_id = ?`,
+      [payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.id, userId]
+    );
+
+    const entry = await fetchEntry(userId, payload.id);
+    if (!entry) {
+      return res.status(404).json({ ok: false, data: null, message: 'Intake entry not found.' });
+    }
+
+    res.json({
+      ok: true,
+      data: { entry: shapeEntry(entry), daily_summary: await dailySummary(userId) },
+      message: null,
+    });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(err.status).json({ ok: false, data: null, message: err.message });
+    }
+    next(err);
+  }
+});
+
+// Ports api/intake/delete.php. Returns the deleted row so the client can offer Undo.
+router.post('/delete', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+    const intakeId = req.body?.intake_id ? parseInt(req.body.intake_id, 10) : 0;
+    if (!intakeId || intakeId <= 0) {
+      return res.status(422).json({ ok: false, data: null, message: 'Missing intake ID.' });
+    }
+
+    const snapshot = await query(
+      `SELECT food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
+         FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?`,
+      [intakeId, userId]
+    );
+
+    const result = await query('DELETE FROM intakeLog WHERE intakeLog_id = ? AND user_id = ?', [intakeId, userId]);
+    if (result.affectedRows < 1) {
+      return res.status(404).json({ ok: false, data: null, message: 'Intake entry not found.' });
+    }
+
+    res.json({
+      ok: true,
+      data: {
+        deleted_id: intakeId,
+        deleted_row: snapshot[0] ?? null,
+        daily_summary: await dailySummary(userId),
+      },
+      message: null,
+    });
+  } catch (err) {
     next(err);
   }
 });
