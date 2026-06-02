@@ -3,7 +3,7 @@
 // of the PHP Food Intake page minus barcode/AI photo, which come later).
 // Big food field with history-backed autocomplete + recent chips, calories,
 // meal, optional macros, and a full-width Log Entry button.
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 import { api } from '../lib/api.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
@@ -110,10 +110,10 @@ async function onSubmit() {
 }
 
 // ---- Barcode scanner ----
-// Uses the native BarcodeDetector (Android Chrome) when available; otherwise the
-// user types the number manually. Either way the code is resolved server-side
-// (cache -> OpenFoodFacts) and used to prefill the form. (iOS Safari has no
-// BarcodeDetector; a ZXing fallback for live camera decode is a future add.)
+// Prefers the native BarcodeDetector (Android Chrome: hardware-accelerated);
+// falls back to a lazily-loaded ZXing decoder for browsers without it (notably
+// iOS Safari). If no camera is available the user types the number manually.
+// Either way the code is resolved server-side (cache -> OpenFoodFacts).
 const showScanner = ref(false);
 const manualCode = ref('');
 const scanBusy = ref(false);
@@ -124,15 +124,14 @@ const videoEl = ref(null);
 let mediaStream = null;
 let detector = null;
 let rafId = null;
+let zxingControls = null; // ZXing IScannerControls (owns its own camera stream)
 
 async function openScanner() {
   showScanner.value = true;
   scanError.value = '';
   scanResult.value = null;
   manualCode.value = '';
-  if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
-    await startCamera();
-  }
+  await startCamera();
 }
 
 function closeScanner() {
@@ -141,22 +140,50 @@ function closeScanner() {
 }
 
 async function startCamera() {
+  scanError.value = '';
+  cameraOn.value = true;
+  await nextTick(); // ensure the <video> element is mounted before attaching
   try {
-    detector = new window.BarcodeDetector({
-      formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'],
-    });
-    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    cameraOn.value = true;
-    await new Promise((r) => setTimeout(r, 0)); // let the <video> mount
-    if (videoEl.value) {
-      videoEl.value.srcObject = mediaStream;
-      await videoEl.value.play().catch(() => {});
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+      await startNativeDetector();
+    } else {
+      await startZxing();
     }
-    detectLoop();
   } catch (e) {
     cameraOn.value = false;
     scanError.value = 'Camera unavailable — enter the barcode number below.';
   }
+}
+
+// Native path (throws if camera is denied/unavailable -> caller shows manual entry).
+async function startNativeDetector() {
+  detector = new window.BarcodeDetector({
+    formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'],
+  });
+  mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  if (videoEl.value) {
+    videoEl.value.srcObject = mediaStream;
+    await videoEl.value.play().catch(() => {});
+  }
+  detectLoop();
+}
+
+// ZXing fallback (iOS Safari). Lazily imported so it stays out of the main
+// bundle; ZXing manages its own getUserMedia stream + continuous decode.
+async function startZxing() {
+  const { BrowserMultiFormatReader } = await import('@zxing/browser');
+  const reader = new BrowserMultiFormatReader();
+  zxingControls = await reader.decodeFromConstraints(
+    { video: { facingMode: 'environment' } },
+    videoEl.value,
+    (result) => {
+      if (result) {
+        const code = result.getText();
+        stopCamera();
+        lookupBarcode(code);
+      }
+    }
+  );
 }
 
 function stopCamera() {
@@ -166,6 +193,10 @@ function stopCamera() {
   if (mediaStream) {
     mediaStream.getTracks().forEach((t) => t.stop());
     mediaStream = null;
+  }
+  if (zxingControls) {
+    zxingControls.stop();
+    zxingControls = null;
   }
 }
 
