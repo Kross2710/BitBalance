@@ -13,11 +13,13 @@ const loading = ref(true);
 const error = ref('');
 const trainer = ref(null);
 const pending = ref(null); // outgoing request awaiting approval
+const invites = ref([]); // incoming invites from trainers (PT-initiated)
 const feedback = ref([]);
 const proposal = ref(null);
 const tab = ref('chat'); // 'chat' | 'advice'
 const proposalBusy = ref(false);
 const reqBusy = ref(false);
+const inviteBusy = ref(false);
 const goalDone = ref(false); // brief confirmation after accepting
 const confirmingDisconnect = ref(false);
 const disconnectBusy = ref(false);
@@ -48,6 +50,7 @@ async function load() {
     const data = await api.get('/api/pt/my-trainer');
     trainer.value = data.trainer;
     pending.value = data.pending;
+    invites.value = data.invites || [];
     feedback.value = data.feedback || [];
     proposal.value = data.proposal;
   } catch (e) {
@@ -91,6 +94,25 @@ async function cancelRequest() {
   }
 }
 
+function inviteName(inv) {
+  return inv.trainer_name || inv.user_name;
+}
+
+async function respondInvite(inv, action) {
+  if (inviteBusy.value) return;
+  inviteBusy.value = true;
+  error.value = '';
+  try {
+    await api.post('/api/pt/invites/respond', { request_id: inv.request_id, action });
+    if (action === 'accept') await load(); // now connected
+    else invites.value = invites.value.filter((i) => i.request_id !== inv.request_id);
+  } catch (e) {
+    error.value = e.message;
+  } finally {
+    inviteBusy.value = false;
+  }
+}
+
 async function disconnect() {
   if (disconnectBusy.value) return;
   disconnectBusy.value = true;
@@ -122,8 +144,26 @@ onMounted(load);
       <button class="ghost" :disabled="reqBusy" @click="cancelRequest">{{ $t('coach.my_trainer.cancel_request') }}</button>
     </div>
 
-    <!-- No trainer → browse the directory -->
-    <TrainerDirectory v-else-if="!trainer" @requested="load" />
+    <!-- No trainer → incoming invites (if any) + browse the directory -->
+    <div v-else-if="!trainer" class="no-trainer">
+      <div v-if="invites.length" class="invites">
+        <div v-for="inv in invites" :key="inv.request_id" class="invite-card">
+          <span class="inv-avatar">
+            <img v-if="inv.profile_image" :src="inv.profile_image" alt="" />
+            <span v-else>{{ inviteName(inv).charAt(0).toUpperCase() }}</span>
+          </span>
+          <div class="inv-meta">
+            <strong>{{ $t('coach.my_trainer.invite.wants', { name: inviteName(inv) }) }}</strong>
+            <span class="muted">@{{ inv.user_name }}</span>
+          </div>
+          <div class="inv-actions">
+            <button class="accept" :disabled="inviteBusy" @click="respondInvite(inv, 'accept')">{{ $t('coach.my_trainer.accept') }}</button>
+            <button class="ghost-sm" :disabled="inviteBusy" @click="respondInvite(inv, 'decline')">{{ $t('coach.my_trainer.decline') }}</button>
+          </div>
+        </div>
+      </div>
+      <TrainerDirectory @requested="load" />
+    </div>
 
     <!-- Trainer connected -->
     <template v-else>
@@ -229,6 +269,24 @@ onMounted(load);
   padding: 10px 18px; border-radius: 8px;
 }
 .ghost { margin-top: 14px; background: var(--card); color: var(--text); border: 1px solid var(--border); }
+
+/* No-trainer state: incoming invites stacked above the directory */
+.no-trainer { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.invites { flex: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.invite-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px;
+}
+.inv-avatar {
+  flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
+  display: grid; place-items: center; background: var(--accent); color: #04210f; font-weight: 800;
+}
+.inv-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.inv-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.inv-meta strong { font-size: 14px; }
+.inv-actions { flex: none; display: flex; gap: 8px; }
+.inv-actions button { min-height: 36px; padding: 7px 14px; font-size: 13px; }
+.no-trainer :deep(.dir) { flex: 1; min-height: 0; }
 
 /* Hero */
 .hero { flex: none; display: flex; gap: 12px; align-items: center; padding: 4px 2px 12px; }

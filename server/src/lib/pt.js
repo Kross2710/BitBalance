@@ -265,6 +265,7 @@ export async function pendingTrainer(clientId) {
        FROM trainer_client tc
        JOIN user u ON tc.trainer_id = u.user_id
       WHERE tc.client_id = ? AND tc.status = 'pending'
+        AND (tc.initiated_by = 'client' OR tc.initiated_by IS NULL)
       ORDER BY tc.created_at DESC
       LIMIT 1`,
     [clientId]
@@ -278,6 +279,71 @@ export async function pendingTrainer(clientId) {
     last_name: r.last_name ?? null,
     profile_image: normalizeProfileImage(r.profile_image),
   };
+}
+
+// Incoming INVITES from trainers awaiting the client's accept/decline
+// (PT-initiated pending links). Counterpart of pendingTrainer.
+export async function incomingInvites(clientId) {
+  const rows = await query(
+    `SELECT tc.id AS request_id, u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
+            p.specialties, p.experience_years
+       FROM trainer_client tc
+       JOIN user u ON tc.trainer_id = u.user_id
+       LEFT JOIN pt_profile p ON p.user_id = u.user_id
+      WHERE tc.client_id = ? AND tc.status = 'pending' AND tc.initiated_by = 'trainer'
+      ORDER BY tc.created_at DESC`,
+    [clientId]
+  );
+  return rows.map((r) => ({
+    request_id: Number(r.request_id),
+    trainer_id: Number(r.user_id),
+    user_name: r.user_name ?? '',
+    trainer_name: trainerName(r),
+    profile_image: normalizeProfileImage(r.profile_image),
+    specialties: r.specialties ?? null,
+    experience_years: r.experience_years == null ? null : Number(r.experience_years),
+  }));
+}
+
+// Client accepts / declines a trainer's invite. Accept flips to accepted (and
+// clears any other in-flight links so the one-trainer rule holds); decline deletes.
+export async function respondInvite(clientId, requestId, action) {
+  const rows = await query(
+    `SELECT id FROM trainer_client
+      WHERE id = ? AND client_id = ? AND status = 'pending' AND initiated_by = 'trainer'
+      LIMIT 1`,
+    [requestId, clientId]
+  );
+  if (!rows.length) throw new PtActionError('Invite not found or no longer active.');
+
+  if (action === 'decline') {
+    await query(`DELETE FROM trainer_client WHERE id = ?`, [requestId]);
+    return { accepted: false };
+  }
+
+  const accepted = await query(
+    `SELECT id FROM trainer_client WHERE client_id = ? AND status = 'accepted' LIMIT 1`,
+    [clientId]
+  );
+  if (accepted.length) throw new PtActionError('You already have a trainer.');
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    await conn.query(`UPDATE trainer_client SET status = 'accepted', responded_at = NOW() WHERE id = ?`, [requestId]);
+    // Drop any other in-flight links for this client (their own requests / other invites).
+    await conn.query(`DELETE FROM trainer_client WHERE client_id = ? AND status = 'pending' AND id <> ?`, [
+      clientId,
+      requestId,
+    ]);
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+  return { accepted: true };
 }
 
 // Browsable directory of onboarded trainers (role 'pt' WITH a pt_profile), least
@@ -348,9 +414,9 @@ export async function sendTrainerRequest(clientId, trainerId) {
   }
 
   await query(
-    `INSERT INTO trainer_client (trainer_id, client_id, status)
-     VALUES (?, ?, 'pending')
-     ON DUPLICATE KEY UPDATE status = 'pending', responded_at = NULL`,
+    `INSERT INTO trainer_client (trainer_id, client_id, status, initiated_by)
+     VALUES (?, ?, 'pending', 'client')
+     ON DUPLICATE KEY UPDATE status = 'pending', initiated_by = 'client', responded_at = NULL`,
     [tid, clientId]
   );
   return { requested: true };
@@ -568,6 +634,7 @@ export async function pendingRequests(trainerId) {
        JOIN user u ON tc.client_id = u.user_id
        JOIN userStatus us ON u.user_id = us.user_id
       WHERE tc.trainer_id = ? AND tc.status = 'pending'
+        AND (tc.initiated_by = 'client' OR tc.initiated_by IS NULL)
       ORDER BY tc.created_at DESC`,
     [trainerId]
   );
@@ -621,4 +688,122 @@ export async function trainerChatFetch(trainerId, clientId, since = 0) {
 export async function trainerChatSend(trainerId, clientId, content) {
   await requireAcceptedClient(trainerId, clientId);
   return chatSend(trainerId, clientId, 'trainer', content);
+}
+
+// -----------------------------------------------------------------------------
+// Trainer-initiated invites (PT connects with a client; client must accept)
+// -----------------------------------------------------------------------------
+
+// Search regular users the trainer can invite, annotated with their relationship
+// to THIS trainer (and whether they already have a trainer elsewhere) so the UI
+// can show the right action.
+export async function searchInvitableClients(trainerId, q) {
+  const term = String(q ?? '').trim();
+  if (term.length < 2) return [];
+  const like = '%' + term.replace(/([%_\\])/g, '\\$1') + '%';
+
+  const rows = await query(
+    `SELECT u.user_id, u.user_name, u.profile_image,
+            tc.status AS my_status, tc.initiated_by AS my_init,
+            (SELECT COUNT(*) FROM trainer_client x WHERE x.client_id = u.user_id AND x.status = 'accepted') AS any_accepted,
+            (SELECT COUNT(*) FROM trainer_client x WHERE x.client_id = u.user_id AND x.status = 'pending')  AS any_pending
+       FROM user u
+       LEFT JOIN trainer_client tc
+         ON tc.client_id = u.user_id AND tc.trainer_id = ? AND tc.status IN ('accepted','pending')
+      WHERE u.user_name LIKE ? ESCAPE '\\\\' AND u.user_id <> ? AND u.role = 'regular'
+      ORDER BY (u.user_name = ?) DESC, u.user_name ASC
+      LIMIT 20`,
+    [trainerId, like, trainerId, term]
+  );
+
+  return rows.map((r) => {
+    let state;
+    if (r.my_status === 'accepted') state = 'client';
+    else if (r.my_status === 'pending' && r.my_init === 'trainer') state = 'invited';
+    else if (r.my_status === 'pending') state = 'requested_me'; // they requested me
+    else if (Number(r.any_accepted) > 0) state = 'has_trainer';
+    else if (Number(r.any_pending) > 0) state = 'busy'; // pending elsewhere
+    else state = 'invitable';
+    return {
+      user_id: Number(r.user_id),
+      user_name: r.user_name ?? '',
+      profile_image: normalizeProfileImage(r.profile_image),
+      state,
+    };
+  });
+}
+
+// Invite a client (PT-initiated). One relationship in flight per client, plus a
+// capacity guard on the trainer. Writes a pending link with initiated_by='trainer'.
+export async function inviteClient(trainerId, clientId) {
+  const cid = Number(clientId);
+  if (!Number.isInteger(cid) || cid <= 0) throw new PtActionError('Invalid client.');
+  if (cid === trainerId) throw new PtActionError('You cannot invite yourself.');
+
+  const userRows = await query(`SELECT user_id, role FROM user WHERE user_id = ? LIMIT 1`, [cid]);
+  if (!userRows.length) throw new PtActionError('User not found.');
+  if (userRows[0].role !== 'regular') throw new PtActionError('Only regular users can be invited as clients.');
+
+  const links = await query(
+    `SELECT trainer_id, status, initiated_by FROM trainer_client WHERE client_id = ? AND status IN ('accepted','pending')`,
+    [cid]
+  );
+  if (links.some((l) => l.status === 'accepted')) throw new PtActionError('This user already has a trainer.');
+  const pending = links.find((l) => l.status === 'pending');
+  if (pending) {
+    if (Number(pending.trainer_id) === trainerId) {
+      throw new PtActionError(
+        pending.initiated_by === 'client' ? 'They already requested you — accept it in Requests.' : 'Already invited.'
+      );
+    }
+    throw new PtActionError('This user already has a pending connection.');
+  }
+
+  // Capacity: trainer's own accepted clients vs their max_clients.
+  const capRows = await query(
+    `SELECT p.max_clients,
+            (SELECT COUNT(*) FROM trainer_client tc WHERE tc.trainer_id = ? AND tc.status = 'accepted') AS cnt
+       FROM pt_profile p WHERE p.user_id = ? LIMIT 1`,
+    [trainerId, trainerId]
+  );
+  const cap = capRows[0];
+  if (cap && cap.max_clients != null && Number(cap.cnt) >= Number(cap.max_clients)) {
+    throw new PtActionError("You're at capacity.");
+  }
+
+  await query(
+    `INSERT INTO trainer_client (trainer_id, client_id, status, initiated_by)
+     VALUES (?, ?, 'pending', 'trainer')
+     ON DUPLICATE KEY UPDATE status = 'pending', initiated_by = 'trainer', responded_at = NULL`,
+    [trainerId, cid]
+  );
+  return { invited: true };
+}
+
+// Trainer cancels their own outgoing invite.
+export async function cancelInvite(trainerId, clientId) {
+  await query(
+    `DELETE FROM trainer_client WHERE trainer_id = ? AND client_id = ? AND status = 'pending' AND initiated_by = 'trainer'`,
+    [trainerId, Number(clientId)]
+  );
+  return { cancelled: true };
+}
+
+// The trainer's pending outgoing invites (for the Find-clients tab).
+export async function outgoingInvites(trainerId) {
+  const rows = await query(
+    `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image
+       FROM trainer_client tc
+       JOIN user u ON tc.client_id = u.user_id
+      WHERE tc.trainer_id = ? AND tc.status = 'pending' AND tc.initiated_by = 'trainer'
+      ORDER BY tc.created_at DESC`,
+    [trainerId]
+  );
+  return rows.map((r) => ({
+    user_id: Number(r.user_id),
+    user_name: r.user_name ?? '',
+    first_name: r.first_name ?? '',
+    last_name: r.last_name ?? null,
+    profile_image: normalizeProfileImage(r.profile_image),
+  }));
 }

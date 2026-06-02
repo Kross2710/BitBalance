@@ -20,10 +20,16 @@ import {
   clientChatFetch,
   clientChatSend,
   pendingTrainer,
+  incomingInvites,
+  respondInvite,
   ptDirectory,
   sendTrainerRequest,
   cancelTrainerRequest,
   disconnectTrainer,
+  searchInvitableClients,
+  inviteClient,
+  cancelInvite,
+  outgoingInvites,
   trainerClients,
   clientDetail,
   saveFeedback,
@@ -65,15 +71,30 @@ router.get(
     const me = req.user.user_id;
     const trainer = await myTrainer(me);
     if (!trainer) {
-      // No accepted trainer — surface a pending outgoing request if there is one,
-      // so the panel can show "awaiting approval" instead of the directory.
-      const pending = await pendingTrainer(me);
-      return ok(res, { trainer: null, pending, feedback: [], proposal: null });
+      // No accepted trainer — surface a pending outgoing request and any incoming
+      // invites from trainers, so the panel can show the right thing vs the directory.
+      const [pending, invites] = await Promise.all([pendingTrainer(me), incomingInvites(me)]);
+      return ok(res, { trainer: null, pending, invites, feedback: [], proposal: null });
     }
 
     const [feedback, proposal] = await Promise.all([feedbackHistory(me), pendingProposal(me)]);
     await markFeedbackSeen(me);
-    ok(res, { trainer, pending: null, feedback, proposal });
+    ok(res, { trainer, pending: null, invites: [], feedback, proposal });
+  })
+);
+
+// Client responds to a trainer's invite (accept = connect, decline = remove).
+router.post(
+  '/invites/respond',
+  requireAuth,
+  handle(async (req, res) => {
+    const requestId = intParam(req.body?.request_id);
+    const action = req.body?.action;
+    if (requestId <= 0 || (action !== 'accept' && action !== 'decline')) {
+      return res.status(422).json({ ok: false, data: null, message: 'Invalid request.' });
+    }
+    const data = await respondInvite(req.user.user_id, requestId, action);
+    ok(res, data, action === 'accept' ? 'Trainer connected.' : 'Invite declined.');
   })
 );
 
@@ -246,6 +267,50 @@ router.post(
     }
     const data = await respondRequest(req.user.user_id, requestId, action);
     ok(res, data, action === 'accept' ? 'Request accepted.' : 'Request declined.');
+  })
+);
+
+// Trainer-initiated invites (PT searches + invites a client; client accepts).
+router.get(
+  '/invitable',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const q = String(req.query.q ?? '').trim();
+    if (q.length < 2) {
+      return res.status(422).json({ ok: false, data: null, message: 'Query must be at least 2 characters.' });
+    }
+    ok(res, { clients: await searchInvitableClients(req.user.user_id, q) });
+  })
+);
+
+router.get(
+  '/invites/sent',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    ok(res, { invites: await outgoingInvites(req.user.user_id) });
+  })
+);
+
+router.post(
+  '/invite',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const data = await inviteClient(req.user.user_id, intParam(req.body?.client_id));
+    ok(res, data, 'Invite sent.');
+  })
+);
+
+router.post(
+  '/invite/cancel',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.body?.client_id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    ok(res, await cancelInvite(req.user.user_id, clientId), 'Invite cancelled.');
   })
 );
 

@@ -8,11 +8,12 @@ import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
 import TrainerClientDetail from '../components/TrainerClientDetail.vue';
+import TrainerFindClients from '../components/TrainerFindClients.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
 
-const tab = ref('clients'); // 'clients' | 'requests'
+const tab = ref('clients'); // 'clients' | 'requests' | 'find'
 const clients = ref([]);
 const requests = ref([]);
 const selected = ref(null);
@@ -102,6 +103,7 @@ onMounted(load);
       <button class="tv-tab" :class="{ on: tab === 'requests' }" @click="tab = 'requests'">
         {{ $t('trainer.tab.requests') }}<span v-if="requests.length" class="count alert">{{ requests.length }}</span>
       </button>
+      <button class="tv-tab" :class="{ on: tab === 'find' }" @click="tab = 'find'">{{ $t('trainer.tab.find') }}</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -168,6 +170,11 @@ onMounted(load);
         </div>
       </div>
     </div>
+
+    <!-- FIND CLIENTS (PT-initiated invites) -->
+    <div v-show="tab === 'find' && !loading" class="find-wrap">
+      <TrainerFindClients />
+    </div>
   </div>
 </template>
 
@@ -230,6 +237,9 @@ onMounted(load);
 
 .detail-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
 .detail-empty i { font-size: 26px; opacity: 0.5; }
+
+/* Find clients */
+.find-wrap { flex: 1; min-height: 0; }
 
 /* Requests */
 .requests { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
