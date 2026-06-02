@@ -51,7 +51,8 @@ gần như port 1-1.
 | Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
 | Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
 | Intake – suggest/barcode | `suggest.php`, `lookup_barcode.php` | ⬜ | ⬜ | gọi AI / barcode ngoài |
-| Dashboard – day/summary | `api/dashboard/*` | ⬜ | ⬜ | |
+| Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa. XP trả default |
+| Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay. XP trả default |
 | Profile | `api/profile/*` | ⬜ | ⬜ | `profile.php` rất lớn (61KB) |
 | AI Coach | `api/ai-coach/*` | ⬜ | ⬜ | tích hợp OpenRouter |
 | Social/Friends | `api/social/action.php` | ⬜ | ⬜ | |
