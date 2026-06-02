@@ -90,6 +90,7 @@ app.use('/api/wrapped', wrappedRoutes);
 // (unique filename per upload).
 app.use('/api/uploads', express.static(UPLOADS_ROOT, { maxAge: '7d', index: false }));
 app.use('/uploads', express.static(LEGACY_UPLOADS_ROOT, { maxAge: '7d', index: false }));
+app.use('/uploads', (_req, res) => res.status(404).end());
 
 // Serve the built Vue SPA so production runs on a SINGLE origin (one ngrok
 // tunnel, same-origin cookies). Guarded by existsSync: in dev the client is
