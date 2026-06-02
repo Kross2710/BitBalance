@@ -15,6 +15,15 @@ function mealFromHour() {
   return 'snack';
 }
 
+// Meal segmented selector — four big pills instead of a <select>, each showing
+// how much has already been logged for that meal today. Icons mirror the meal.
+const MEALS = [
+  { key: 'breakfast', label: 'Breakfast', icon: 'fa-mug-saucer' },
+  { key: 'lunch', label: 'Lunch', icon: 'fa-bowl-food' },
+  { key: 'dinner', label: 'Dinner', icon: 'fa-utensils' },
+  { key: 'snack', label: 'Snack', icon: 'fa-cookie-bite' },
+];
+
 const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
 const showMacros = ref(false);
 const recent = ref([]);
@@ -43,6 +52,15 @@ async function loadRecent() {
 // "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
 const entries = ref([]);
 const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
+// Today's kcal per meal, for the segmented selector's status line.
+const mealKcal = computed(() => {
+  const out = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+  for (const e of entries.value) {
+    if (out[e.meal_category] != null) out[e.meal_category] += e.calories;
+  }
+  return out;
+});
 const editingId = ref(null);
 const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_category: 'snack', protein: '', carbs: '', fat: '' });
 
@@ -465,22 +483,27 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- Calories + meal -->
-      <div class="two">
-        <div>
-          <label for="intake-kcal">Calories</label>
-          <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" placeholder="kcal" required />
-        </div>
-        <div>
-          <label for="intake-meal">Meal</label>
-          <select id="intake-meal" v-model="form.meal_category">
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="dinner">Dinner</option>
-            <option value="snack">Snack</option>
-          </select>
-        </div>
+      <!-- Meal: segmented selector with today's logged kcal per meal -->
+      <label>Meal</label>
+      <div class="meal-seg" role="group" aria-label="Meal">
+        <button
+          v-for="m in MEALS"
+          :key="m.key"
+          type="button"
+          class="meal-pill"
+          :class="{ active: form.meal_category === m.key, logged: mealKcal[m.key] > 0 }"
+          :aria-pressed="form.meal_category === m.key"
+          @click="form.meal_category = m.key"
+        >
+          <i class="fa-solid" :class="m.icon" />
+          <span class="meal-name">{{ m.label }}</span>
+          <small class="meal-stat">{{ mealKcal[m.key] > 0 ? mealKcal[m.key] + ' kcal' : '—' }}</small>
+        </button>
       </div>
+
+      <!-- Calories -->
+      <label for="intake-kcal">Calories</label>
+      <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" placeholder="kcal" required />
 
       <!-- Optional macros -->
       <button type="button" class="ql-toggle" @click="showMacros = !showMacros">
@@ -644,8 +667,35 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
 .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+
+/* Meal segmented selector */
+.meal-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
+.meal-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 64px; /* comfortable tap target */
+  padding: 8px 4px;
+  background: #12151b;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-weight: 600;
+}
+.meal-pill i { font-size: 16px; }
+.meal-name { font-size: 12px; }
+.meal-stat { font-size: 10px; opacity: 0.85; }
+/* Logged-but-not-selected meals read as "done" without stealing focus. */
+.meal-pill.logged { color: var(--text); border-color: #2a2e37; }
+.meal-pill.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(74, 222, 128, 0.08);
+}
+#intake-kcal { width: 100%; }
 
 .ql-toggle {
   background: transparent;
