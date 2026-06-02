@@ -1,0 +1,58 @@
+:root {
+  --bg: #0f1115;
+  --card: #1a1d24;
+  --accent: #4ade80;
+  --text: #e8eaed;
+  --muted: #9aa0a6;
+  --border: #2a2e37;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Page transition — small fade so SPA navigation feels smooth, not abrupt. */
+.fade-enter-active,
+.fade-leave-active { transition: opacity 0.18s ease; }
+.fade-enter-from,
+.fade-leave-to { opacity: 0; }
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #04210f;
+}
+button:disabled { opacity: 0.6; cursor: default; }
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #12151b;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.error {
+  color: #f87171;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
