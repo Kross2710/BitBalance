@@ -1,11 +1,12 @@
 <script setup>
 import { RouterLink, RouterView, useRoute } from 'vue-router';
-import { reactive, computed, watch, onMounted } from 'vue';
+import { computed, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
-import { api } from '../lib/api.js';
+import { useBadgesStore } from '../stores/badges.js';
 
 const auth = useAuthStore();
 const route = useRoute();
+const badgesStore = useBadgesStore();
 
 // Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
 // the PHP app's Font Awesome set (fa-solid). Profile is intentionally NOT here:
@@ -20,48 +21,16 @@ const navItems = [
 // Initial for the avatar fallback when the user has no profile image.
 const userInitial = computed(() => (auth.user?.first_name || auth.user?.handle || 'U').trim().charAt(0).toUpperCase());
 
-// Per-tab numeric badges (FB-style):
-//   /intake  → meal-reminder nudges that are currently "due": only when the
-//              user has reminders enabled, counting each reminder-enabled meal
-//              whose time has passed today (Asia/Bangkok) and isn't logged yet.
-//              Matches the dashboard nudge's trigger conditions; 0 when
-//              reminders are off. From dashboard summary + reminder prefs.
-//   /friends → incoming friend requests awaiting a response.
-const badges = reactive({ '/intake': 0, '/friends': 0 });
+// Per-tab numeric badges (FB-style) live in a shared store so Profile (after
+// saving reminder prefs) can refresh them instantly — see stores/badges.js.
+const badges = badgesStore.counts;
 
-async function refreshBadges() {
-  // Independent sources; a failure on one must not blank the others.
-  const [summary, pending, reminders] = await Promise.allSettled([
-    api.get('/api/dashboard/summary'),
-    api.get('/api/social/pending-count'),
-    api.get('/api/reminders'),
-  ]);
-  if (summary.status === 'fulfilled' && reminders.status === 'fulfilled') {
-    const meals = summary.value.meal_categories || {}; // capitalized keys
-    const r = reminders.value;
-    if (r?.enabled) {
-      const nowHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false }).slice(0, 5);
-      badges['/intake'] = ['breakfast', 'lunch', 'dinner', 'snack'].filter((m) => {
-        const cfg = r.meals?.[m];
-        if (!cfg?.enabled || nowHM < cfg.time) return false; // off or not due yet
-        const cap = m.charAt(0).toUpperCase() + m.slice(1);
-        return !(Number(meals[cap]) > 0); // not logged today
-      }).length;
-    } else {
-      badges['/intake'] = 0; // reminders off → no nudge badge
-    }
-  }
-  if (pending.status === 'fulfilled') {
-    badges['/friends'] = Number(pending.value.count) || 0;
-  }
-}
-
-onMounted(refreshBadges);
+onMounted(() => badgesStore.refresh());
 // Re-check after the user has likely changed today's log (landing on these tabs).
 watch(
   () => route.name,
   (name) => {
-    if (name === 'dashboard' || name === 'intake' || name === 'friends') refreshBadges();
+    if (name === 'dashboard' || name === 'intake' || name === 'friends') badgesStore.refresh();
   }
 );
 

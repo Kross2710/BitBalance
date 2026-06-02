@@ -6,9 +6,11 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
+import { useBadgesStore } from '../stores/badges.js';
 
 const auth = useAuthStore();
 const router = useRouter();
+const badgesStore = useBadgesStore();
 
 async function onLogout() {
   await auth.logout();
@@ -121,6 +123,8 @@ async function saveReminders() {
     reminders.enabled = d.enabled;
     reminders.meals = d.meals;
     remindersMsg.value = 'Reminders saved.';
+    badgesStore.refresh(); // reflect the change in the nav badge immediately
+
   } catch (e) {
     remindersMsg.value = e.message;
   } finally {
