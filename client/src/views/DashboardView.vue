@@ -1,11 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
-import { useAuthStore } from '../stores/auth.js';
-
-const auth = useAuthStore();
-const router = useRouter();
 
 const day = ref(null); // full /api/dashboard/day payload
 const selectedDate = ref(new Date().toISOString().slice(0, 10));
@@ -22,10 +17,10 @@ const maxHistory = computed(() => Math.max(1, ...(day.value?.history?.calories ?
 const form = ref({ food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' });
 const saving = ref(false);
 
-// Transient toast for XP gained / level-ups.
+// Transient toast for XP gained / level-ups ({ icon, text }).
 const toast = ref(null);
-function showToast(msg) {
-  toast.value = msg;
+function showToast(icon, text) {
+  toast.value = { icon, text };
   setTimeout(() => (toast.value = null), 2800);
 }
 
@@ -58,9 +53,9 @@ async function addEntry() {
     form.value = { food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' };
     await loadDay(); // refresh aggregates (calories, macros, chart, streak, XP)
     if (data.xp?.levelup) {
-      showToast(`🎉 Level up! ${data.xp.levelup.from} → ${data.xp.levelup.to}`);
+      showToast('fa-trophy', `Level up! ${data.xp.levelup.from} → ${data.xp.levelup.to}`);
     } else if (data.xp?.added > 0) {
-      showToast(`+${data.xp.added} XP`);
+      showToast('fa-arrow-up', `+${data.xp.added} XP`);
     }
   } catch (e) {
     error.value = e.message;
@@ -101,11 +96,6 @@ async function removeEntry(e) {
   }
 }
 
-async function onLogout() {
-  await auth.logout();
-  router.push({ name: 'login' });
-}
-
 const prettyDate = computed(() =>
   new Date(selectedDate.value + 'T00:00:00Z').toLocaleDateString('en-US', {
     timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
@@ -116,17 +106,12 @@ onMounted(loadDay);
 </script>
 
 <template>
-  <main style="max-width: 820px; margin: 0 auto; padding: 24px 16px">
-    <header style="display: flex; justify-content: space-between; align-items: center">
-      <h1 style="margin: 0">Hi, {{ auth.user?.first_name || auth.user?.handle }}</h1>
-      <button @click="onLogout" style="background: #2a2e37; color: var(--text)">Log out</button>
-    </header>
-
+  <main style="max-width: 820px; margin: 0 auto; padding: 8px 16px">
     <!-- Date navigation -->
     <div class="datenav">
-      <button @click="shiftDay(-1)" class="icon-btn">‹</button>
+      <button @click="shiftDay(-1)" class="icon-btn" aria-label="Previous day"><i class="fa-solid fa-chevron-left" /></button>
       <span>{{ isToday ? 'Today' : prettyDate }}</span>
-      <button @click="shiftDay(1)" class="icon-btn" :disabled="isToday">›</button>
+      <button @click="shiftDay(1)" class="icon-btn" :disabled="isToday" aria-label="Next day"><i class="fa-solid fa-chevron-right" /></button>
     </div>
 
     <p v-if="loading" class="muted">Loading…</p>
@@ -153,7 +138,7 @@ onMounted(loadDay);
 
       <!-- Stat tiles -->
       <section class="tiles">
-        <div class="card tile"><span class="muted">Streak</span><strong>🔥 {{ day.streak.current }}d</strong><small class="muted">best {{ day.streak.longest }}</small></div>
+        <div class="card tile"><span class="muted">Streak</span><strong><i class="fa-solid fa-fire" style="color: #fb923c" /> {{ day.streak.current }}d</strong><small class="muted">best {{ day.streak.longest }}</small></div>
         <div class="card tile"><span class="muted">BMI</span><strong>{{ day.bmi.value ?? '—' }}</strong><small class="muted">{{ day.bmi.category ?? 'no data' }}</small></div>
         <div class="card tile"><span class="muted">7-day avg</span><strong>{{ day.average_calories ?? '—' }}</strong><small class="muted">kcal/day</small></div>
       </section>
@@ -245,7 +230,7 @@ onMounted(loadDay);
 
     <!-- XP / level-up toast -->
     <Transition name="fade">
-      <div v-if="toast" class="toast">{{ toast }}</div>
+      <div v-if="toast" class="toast"><i class="fa-solid" :class="toast.icon" /> {{ toast.text }}</div>
     </Transition>
   </main>
 </template>

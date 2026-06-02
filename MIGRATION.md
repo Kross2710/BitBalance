@@ -58,9 +58,11 @@ gần như port 1-1.
 | Profile | `api/profile/*` | ⬜ | ⬜ | `profile.php` rất lớn (61KB) |
 | AI Coach | `api/ai-coach/*` | ⬜ | ⬜ | tích hợp OpenRouter |
 | Social/Friends | `api/social/action.php` | ⬜ | ⬜ | |
-| Forum | `forum/*.php` | ⬜ | ⬜ | module riêng |
 | Admin panel | `admin/*.php` | ⬜ | ⬜ | module riêng, có auth riêng |
 | Captcha | `captcha_image.php` (GD) | ⬜ | ⬜ | thay bằng svg-captcha (Node) |
+| App shell / nav | `dashboard/views/sidebar.php` | — | ✅ AppLayout | Sidebar (desktop, hover mở rộng) + bottom tab (mobile), icon Font Awesome 6 |
+
+> **Forum**: bỏ hoàn toàn theo yêu cầu — không port (đang là dead code bên PHP).
 
 ## TODO / nợ kỹ thuật cần xử lý khi tiếp tục
 

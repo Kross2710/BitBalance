@@ -2,20 +2,25 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth.js';
 
 const routes = [
-  { path: '/', redirect: '/dashboard' },
   { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
   { path: '/signup', name: 'signup', component: () => import('./views/SignupView.vue') },
+  // Onboarding is full-screen (no app chrome).
   {
     path: '/onboarding',
     name: 'onboarding',
     component: () => import('./views/OnboardingView.vue'),
     meta: { requiresAuth: true },
   },
+  // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,
+  // so switching tabs never remounts the chrome — navigation stays seamless.
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: () => import('./views/DashboardView.vue'),
+    path: '/',
+    component: () => import('./layouts/AppLayout.vue'),
     meta: { requiresAuth: true },
+    children: [
+      { path: '', redirect: '/dashboard' },
+      { path: 'dashboard', name: 'dashboard', component: () => import('./views/DashboardView.vue') },
+    ],
   },
 ];
 
