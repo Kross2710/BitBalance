@@ -253,6 +253,115 @@ export async function clientChatSend(clientId, content) {
 }
 
 // -----------------------------------------------------------------------------
+// Trainer discovery + request (client-initiated) — ports profile.php
+// -----------------------------------------------------------------------------
+
+// The client's pending OUTGOING request (trainer they asked but who hasn't
+// responded), or null. Mirrors the trainer_connection lookup in profile.php.
+export async function pendingTrainer(clientId) {
+  const rows = await query(
+    `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image
+       FROM trainer_client tc
+       JOIN user u ON tc.trainer_id = u.user_id
+      WHERE tc.client_id = ? AND tc.status = 'pending'
+      ORDER BY tc.created_at DESC
+      LIMIT 1`,
+    [clientId]
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    user_id: Number(r.user_id),
+    user_name: r.user_name ?? '',
+    first_name: r.first_name ?? '',
+    last_name: r.last_name ?? null,
+    profile_image: r.profile_image ?? null,
+  };
+}
+
+// Browsable directory of onboarded trainers (role 'pt' WITH a pt_profile), least
+// busy first. Mirrors the $pt_directory query in profile.php.
+export async function ptDirectory(clientId) {
+  const rows = await query(
+    `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
+            p.bio, p.specialties, p.experience_years, p.max_clients,
+            (SELECT COUNT(*) FROM trainer_client tc WHERE tc.trainer_id = u.user_id AND tc.status = 'accepted') AS client_count
+       FROM user u
+       JOIN pt_profile p ON p.user_id = u.user_id
+      WHERE u.role = 'pt' AND u.user_id != ?
+      ORDER BY client_count ASC, u.first_name ASC
+      LIMIT 60`,
+    [clientId]
+  );
+  return rows.map((r) => {
+    const max = r.max_clients == null ? null : Number(r.max_clients);
+    const count = Number(r.client_count ?? 0);
+    return {
+      user_id: Number(r.user_id),
+      user_name: r.user_name ?? '',
+      first_name: r.first_name ?? '',
+      last_name: r.last_name ?? null,
+      profile_image: r.profile_image ?? null,
+      bio: r.bio ?? null,
+      specialties: r.specialties ?? null,
+      experience_years: r.experience_years == null ? null : Number(r.experience_years),
+      client_count: count,
+      max_clients: max,
+      is_full: max != null && count >= max,
+    };
+  });
+}
+
+// Send a pending connection request to a trainer. Ports send_trainer_request,
+// plus a capacity guard and a "already have a trainer" guard the PHP lacked.
+export async function sendTrainerRequest(clientId, trainerId) {
+  const tid = Number(trainerId);
+  if (!Number.isInteger(tid) || tid <= 0) throw new PtActionError('Invalid trainer.');
+  if (tid === clientId) throw new PtActionError('You cannot link with yourself.');
+
+  const trainerRows = await query(`SELECT user_id, role FROM user WHERE user_id = ? LIMIT 1`, [tid]);
+  if (!trainerRows.length) throw new PtActionError('Trainer not found.');
+  if (trainerRows[0].role !== 'pt') throw new PtActionError('This user is not a personal trainer.');
+
+  // Already have (or pending with) a trainer? Keep it to one at a time.
+  const existing = await query(
+    `SELECT status FROM trainer_client WHERE client_id = ? AND status IN ('accepted','pending') LIMIT 1`,
+    [clientId]
+  );
+  if (existing.length) {
+    throw new PtActionError(
+      existing[0].status === 'accepted' ? 'You already have a trainer.' : 'You already have a pending request.'
+    );
+  }
+
+  // Capacity guard.
+  const capRows = await query(
+    `SELECT p.max_clients,
+            (SELECT COUNT(*) FROM trainer_client tc WHERE tc.trainer_id = ? AND tc.status = 'accepted') AS cnt
+       FROM pt_profile p WHERE p.user_id = ? LIMIT 1`,
+    [tid, tid]
+  );
+  const cap = capRows[0];
+  if (cap && cap.max_clients != null && Number(cap.cnt) >= Number(cap.max_clients)) {
+    throw new PtActionError('This trainer is at capacity.');
+  }
+
+  await query(
+    `INSERT INTO trainer_client (trainer_id, client_id, status)
+     VALUES (?, ?, 'pending')
+     ON DUPLICATE KEY UPDATE status = 'pending', responded_at = NULL`,
+    [tid, clientId]
+  );
+  return { requested: true };
+}
+
+// Cancel the client's own pending request(s).
+export async function cancelTrainerRequest(clientId) {
+  await query(`DELETE FROM trainer_client WHERE client_id = ? AND status = 'pending'`, [clientId]);
+  return { cancelled: true };
+}
+
+// -----------------------------------------------------------------------------
 // Trainer workspace (role 'pt') — ports dashboard-pt.php + pt_action.php
 // -----------------------------------------------------------------------------
 

@@ -19,6 +19,10 @@ import {
   respondProposal,
   clientChatFetch,
   clientChatSend,
+  pendingTrainer,
+  ptDirectory,
+  sendTrainerRequest,
+  cancelTrainerRequest,
   trainerClients,
   clientDetail,
   saveFeedback,
@@ -58,11 +62,43 @@ router.get(
   handle(async (req, res) => {
     const me = req.user.user_id;
     const trainer = await myTrainer(me);
-    if (!trainer) return ok(res, { trainer: null, feedback: [], proposal: null });
+    if (!trainer) {
+      // No accepted trainer — surface a pending outgoing request if there is one,
+      // so the panel can show "awaiting approval" instead of the directory.
+      const pending = await pendingTrainer(me);
+      return ok(res, { trainer: null, pending, feedback: [], proposal: null });
+    }
 
     const [feedback, proposal] = await Promise.all([feedbackHistory(me), pendingProposal(me)]);
     await markFeedbackSeen(me);
-    ok(res, { trainer, feedback, proposal });
+    ok(res, { trainer, pending: null, feedback, proposal });
+  })
+);
+
+// Browsable trainer directory + send/cancel a connection request (client-side).
+router.get(
+  '/directory',
+  requireAuth,
+  handle(async (req, res) => {
+    ok(res, { trainers: await ptDirectory(req.user.user_id) });
+  })
+);
+
+router.post(
+  '/request',
+  requireAuth,
+  handle(async (req, res) => {
+    const trainerId = intParam(req.body?.trainer_id);
+    const data = await sendTrainerRequest(req.user.user_id, trainerId);
+    ok(res, data, 'Request sent — awaiting approval.');
+  })
+);
+
+router.post(
+  '/request/cancel',
+  requireAuth,
+  handle(async (req, res) => {
+    ok(res, await cancelTrainerRequest(req.user.user_id), 'Request cancelled.');
   })
 );
 

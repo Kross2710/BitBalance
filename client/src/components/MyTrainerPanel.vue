@@ -6,15 +6,24 @@
 import { ref, computed, onMounted } from 'vue';
 import { api } from '../lib/api.js';
 import ChatRoom from './ChatRoom.vue';
+import TrainerDirectory from './TrainerDirectory.vue';
 
 const loading = ref(true);
 const error = ref('');
 const trainer = ref(null);
+const pending = ref(null); // outgoing request awaiting approval
 const feedback = ref([]);
 const proposal = ref(null);
 const tab = ref('chat'); // 'chat' | 'advice'
 const proposalBusy = ref(false);
+const reqBusy = ref(false);
 const goalDone = ref(false); // brief confirmation after accepting
+
+const pendingName = computed(() => {
+  const p = pending.value;
+  if (!p) return '';
+  return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || p.user_name;
+});
 
 const trainerName = computed(() => {
   const t = trainer.value;
@@ -35,6 +44,7 @@ async function load() {
   try {
     const data = await api.get('/api/pt/my-trainer');
     trainer.value = data.trainer;
+    pending.value = data.pending;
     feedback.value = data.feedback || [];
     proposal.value = data.proposal;
   } catch (e) {
@@ -64,6 +74,20 @@ function macroLine(p) {
   return `P ${p.protein_goal}g · C ${p.carbs_goal}g · F ${p.fat_goal}g`;
 }
 
+async function cancelRequest() {
+  if (reqBusy.value) return;
+  reqBusy.value = true;
+  error.value = '';
+  try {
+    await api.post('/api/pt/request/cancel');
+    await load(); // back to the directory
+  } catch (e) {
+    error.value = e.message;
+  } finally {
+    reqBusy.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -71,13 +95,17 @@ onMounted(load);
   <div class="trainer">
     <p v-if="loading" class="muted center pad">Loading…</p>
 
-    <!-- No trainer yet -->
-    <div v-else-if="!trainer" class="placeholder">
-      <div class="avatar empty"><i class="fa-solid fa-user-tie" /></div>
-      <h2>No trainer yet</h2>
-      <p class="muted">Connect with a personal trainer to get feedback, chat, and tailored goals.</p>
-      <RouterLink to="/profile" class="btn-link">Find a trainer</RouterLink>
+    <!-- Pending outgoing request -->
+    <div v-else-if="pending" class="placeholder">
+      <div class="avatar empty"><i class="fa-solid fa-hourglass-half" /></div>
+      <h2>Request sent</h2>
+      <p class="muted">Waiting for <strong>{{ pendingName }}</strong> to accept your request.</p>
+      <p v-if="error" class="error">{{ error }}</p>
+      <button class="ghost" :disabled="reqBusy" @click="cancelRequest">Cancel request</button>
     </div>
+
+    <!-- No trainer → browse the directory -->
+    <TrainerDirectory v-else-if="!trainer" @requested="load" />
 
     <!-- Trainer connected -->
     <template v-else>
@@ -170,6 +198,7 @@ onMounted(load);
   background: var(--accent); color: #04210f; font-weight: 700;
   padding: 10px 18px; border-radius: 8px;
 }
+.ghost { margin-top: 14px; background: var(--card); color: var(--text); border: 1px solid var(--border); }
 
 /* Hero */
 .hero { flex: none; display: flex; gap: 12px; align-items: center; padding: 4px 2px 12px; }
