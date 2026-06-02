@@ -1,9 +1,20 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
+import WrappedStory from '../components/WrappedStory.vue';
 
 const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+
+// BitBalance Wrapped story overlay. Opened by the hero button or a ?wrapped=open
+// deep-link (e.g. from a future share link); the query is stripped once consumed.
+const showWrapped = ref(false);
+function openWrapped() {
+  showWrapped.value = true;
+}
 
 const day = ref(null); // full /api/dashboard/day payload
 const selectedDate = ref(new Date().toISOString().slice(0, 10));
@@ -101,6 +112,10 @@ function dismissNudge() {
 onMounted(() => {
   loadDay();
   loadReminders();
+  if (route.query.wrapped === 'open') {
+    showWrapped.value = true;
+    router.replace({ query: { ...route.query, wrapped: undefined } });
+  }
 });
 </script>
 
@@ -130,6 +145,16 @@ onMounted(() => {
         <i class="fa-solid fa-fire" /> {{ day.streak.current }}
       </span>
     </div>
+
+    <!-- BitBalance Wrapped entry -->
+    <button type="button" class="wrapped-cta" @click="openWrapped">
+      <span class="wc-ic"><i class="fa-solid fa-wand-magic-sparkles" /></span>
+      <span class="wc-txt">
+        <strong>Your Wrapped</strong>
+        <small>Tap for your week in food</small>
+      </span>
+      <i class="fa-solid fa-chevron-right wc-arrow" />
+    </button>
 
     <!-- Compact date strip (last 7 days) -->
     <div class="datestrip">
@@ -238,6 +263,9 @@ onMounted(() => {
     <div v-if="lightbox" class="lightbox" @click="lightbox = ''">
       <img :src="lightbox" alt="Food photo" />
     </div>
+
+    <!-- BitBalance Wrapped story overlay -->
+    <WrappedStory v-if="showWrapped" @close="showWrapped = false" />
   </main>
 </template>
 
@@ -303,6 +331,39 @@ onMounted(() => {
 .xp-bar > div { height: 100%; background: #a78bfa; transition: width 0.3s; }
 .level-pill small { display: block; margin-top: 3px; font-size: 11px; }
 .streak-flame { font-weight: 800; color: #fb923c; white-space: nowrap; }
+
+/* BitBalance Wrapped entry — a playful gradient CTA. */
+.wrapped-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid #3a3550;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(167, 139, 250, 0.25), transparent 60%),
+    radial-gradient(120% 140% at 100% 100%, rgba(74, 222, 128, 0.18), transparent 60%),
+    var(--card);
+  color: var(--text);
+}
+.wrapped-cta .wc-ic {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #a78bfa, #4ade80);
+  color: #04210f;
+  font-size: 17px;
+}
+.wrapped-cta .wc-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.wrapped-cta .wc-txt strong { font-size: 15px; font-weight: 800; }
+.wrapped-cta .wc-txt small { color: var(--muted); font-size: 12px; }
+.wrapped-cta .wc-arrow { color: var(--muted); font-size: 13px; }
 
 /* Compact date strip — scrollable on narrow screens but no visible scrollbar
    (7 chips fit a phone width; scroll is a safety net, not a feature). */
