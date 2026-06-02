@@ -83,9 +83,11 @@ Changing `server/.env` (e.g. enabling Google/AI keys) needs only a
    option does NOT do this). The box is on AEST; without the SET, `NOW()`/
    `CURDATE()` use AEST while the app computes "today" at +07:00 (`todayVN`), so
    logged food lands on the wrong day and appears to vanish near the day boundary.
-5. **Sessions are MemoryStore** → a restart drops active sessions, but the 30-day
-   remember-me cookie re-logs users in. Acceptable for now; swap to Redis/MySQL
-   store for real durability.
+5. **Sessions persist in MariaDB** (`express-mysql-session`, `sessions` table,
+   auto-created on boot, expired rows swept hourly). A service restart no longer
+   drops active logins; the 30-day remember-me cookie is the fallback only when a
+   session genuinely expires. Store errors log as `Session store error:` and are
+   never fatal.
 6. **Tailscale needs BOTH ends on the tailnet.** The box is fine
    (`100.127.38.40`, online). The *controlling* machine must also run Tailscale,
    logged into the same account. On macOS the system extension must be approved:

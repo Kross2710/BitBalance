@@ -263,9 +263,10 @@ bạn xử lý tay, không tự ghi đè.
 
 ## Ghi chú quan trọng
 
-- **Session store vẫn là MemoryStore (dev):** mỗi lần restart service → mất
-  session đang đăng nhập, nhưng cookie remember-me (30 ngày) tự đăng nhập lại.
-  Muốn bền hẳn thì chuyển sang Redis/MySQL store (HANDOFF.md mục 4.3).
+- **Session store: MariaDB** (`express-mysql-session`, bảng `sessions` tự tạo
+  khi khởi động, tự quét row hết hạn mỗi giờ). Restart service KHÔNG còn mất
+  session đang đăng nhập; cookie remember-me (30 ngày) chỉ là fallback khi
+  session hết hạn thật.
 - **`client/vite.config.js`** cố ý để uncommitted; production không dùng Vite dev
   nên không sao. `allowedHosts` trong đó chỉ liên quan khi chạy `npm run dev`.
 - **Không commit `server/.env`** (đã gitignore). Secrets sống trên máy CachyOS.
