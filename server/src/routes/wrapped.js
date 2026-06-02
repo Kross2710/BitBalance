@@ -9,7 +9,8 @@ const router = Router();
 
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const data = await buildWrapped(req.user.user_id, req.user.user_name);
+    const requestedLang = req.query?.lang === 'vi' ? 'vi' : req.user.language_preference;
+    const data = await buildWrapped(req.user.user_id, req.user.user_name, requestedLang);
     res.json({ ok: true, data, message: null });
   } catch (err) {
     next(err);

@@ -208,6 +208,7 @@ export function topBadge(achievements) {
   const unlocked = achievements.filter((a) => a.level > 0).sort((a, b) => b.level - a.level);
   const top = unlocked[0];
   return {
+    id: top?.id ?? 'first_bite',
     name: top?.name ?? 'First Bite',
     icon: top?.icon ?? 'fa-star',
     tone: top?.tone ?? 'primary',

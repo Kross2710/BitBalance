@@ -7,7 +7,7 @@ import { ref, computed, onMounted } from 'vue';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useStoryCarousel } from '../composables/useStoryCarousel.js';
-import { t } from '../i18n/index.js';
+import { locale, t } from '../i18n/index.js';
 
 const emit = defineEmits(['close']);
 const auth = useAuthStore();
@@ -32,7 +32,7 @@ const car = useStoryCarousel({
 
 onMounted(async () => {
   try {
-    data.value = await api.get('/api/wrapped');
+    data.value = await api.get(`/api/wrapped?lang=${encodeURIComponent(locale.value)}`);
   } catch (e) {
     error.value = e.message || t('wrapped.load_error');
   } finally {

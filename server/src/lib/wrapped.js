@@ -3,9 +3,8 @@
 // (deferred to the Beats epic; payload keeps a `spotify: null` slot for it).
 //
 // Fork decisions (see docs/wrapped-vue-port.md): the recap is ON-DEMAND over the
-// last 7/30 days, cached once per Bangkok-day per lang (one AI call/day/user) in
-// weekly_wrapped_cache — no ISO-week freeze. v1 narrates in English only; the
-// cache key carries lang so 'vi' can be added later.
+// last 7/30 days, cached once per ISO week per lang (matching the PHP runtime)
+// in weekly_wrapped_cache.
 import { query } from '../db.js';
 import { chatCompletion } from './aiProvider.js';
 import { achievementsProgress, topBadge } from './achievements.js';
@@ -13,7 +12,15 @@ import { leaderboard } from './friends.js';
 import { todayVN } from './dates.js';
 
 // Bump when the payload shape or prompt changes so stale caches regenerate.
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
+
+function isoWeekYear(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${String(week).padStart(2, '0')}-${d.getUTCFullYear()}`;
+}
 
 function readCache(userId, periodKey, lang) {
   return query(
@@ -32,15 +39,16 @@ function writeCache(userId, periodKey, lang, json) {
 }
 
 // Top 15 most-logged foods over the last 30 days → "name: n times, ..." for the prompt.
-async function foodListString(userId) {
+async function foodListString(userId, lang) {
   const rows = await query(
     `SELECT food_item, COUNT(*) AS c FROM intakeLog
       WHERE user_id = ? AND date_intake >= DATE_SUB(NOW(), INTERVAL 30 DAY)
       GROUP BY food_item ORDER BY c DESC, food_item ASC LIMIT 15`,
     [userId]
   );
-  if (!rows.length) return 'No foods logged yet';
-  return rows.map((r) => `${r.food_item}: ${Number(r.c)} times`).join(', ');
+  if (!rows.length) return lang === 'vi' ? 'Chưa có món ăn nào được ghi nhận' : 'No foods logged yet';
+  const unit = lang === 'vi' ? 'lần' : 'times';
+  return rows.map((r) => `${r.food_item}: ${Number(r.c)} ${unit}`).join(', ');
 }
 
 // Extract the first JSON object from an LLM reply (tolerates ``` fences / prose).
@@ -65,11 +73,43 @@ function parseAiJson(text) {
   return null;
 }
 
-function buildPrompt(username, stats, favoriteFood, topBadgeName, foodList) {
+function buildPrompt(username, stats, favoriteFood, topBadgeName, foodList, lang) {
+  if (lang === 'vi') {
+    const system =
+      'Bạn là trợ lý AI kể chuyện thông minh, dí dỏm của ứng dụng theo dõi calo BitBalance. ' +
+      'Chỉ trả về một đối tượng JSON thuần, không markdown, không wrapper. ' +
+      'Không body shaming, không phán xét cân nặng/calo; giữ giọng vui, tích cực, trẻ trung kiểu Việt Nam.';
+
+    const user =
+      `Dữ liệu dinh dưỡng và thói quen ăn uống của người dùng "${username}":\n` +
+      `- Cấp độ hiện tại: ${stats.level}\n` +
+      `- Điểm kinh nghiệm hiện có: ${stats.total_xp} XP\n` +
+      `- Tổng số món ăn đã ghi nhận: ${stats.total_foods} món\n` +
+      `- Chuỗi ghi bữa liên tục: ${stats.streak} ngày\n` +
+      `- Xếp hạng bạn bè: ${stats.leaderboard_rank}\n` +
+      `- Món ăn yêu thích nhất: ${favoriteFood}\n` +
+      `- Huy hiệu nổi bật tuần này: ${topBadgeName}\n` +
+      `- Danh sách món ăn đã log trong 30 ngày qua: [${foodList}]\n\n` +
+      'Nhiệm vụ:\n' +
+      '1. Phân tích danh sách món ăn để đặt một "Hình mẫu ẩm thực" thật hài hước ' +
+      '(ví dụ: "Chiến binh ức gà nửa mùa", "Đại sứ bánh mì kẹp", "Chúa tể hảo ngọt trà sữa").\n' +
+      '2. Viết 1 dòng ngắn giải thích lý do hài hước cho hình mẫu này.\n' +
+      '3. Viết caption ngắn dưới 20 từ bằng tiếng Việt cho các slide:\n' +
+      '   - slide1_aura: Hào quang tuần qua\n' +
+      '   - slide2_topfood: Món ăn hoặc huy hiệu nổi bật nhất\n' +
+      '   - slide3_streak: Chuỗi streak hoặc kỷ luật rực lửa\n' +
+      '   - slide4_leaderboard: Cạnh tranh xếp hạng bạn bè đầy tính tấu hài\n\n' +
+      'Trả về đúng JSON shape này:\n' +
+      '{ "diet_archetype": "", "archetype_desc": "", "slide1_aura": "", "slide2_topfood": "", ' +
+      '"slide3_streak": "", "slide4_leaderboard": "" }';
+
+    return { system, history: [{ role: 'user', content: user }] };
+  }
+
   const system =
     "You are the witty, smart AI Storyteller of the BitBalance calorie tracking app. " +
     'Return ONLY a raw JSON object (no markdown, no ``` wrappers). ' +
-    'RULES: no body shaming, no judging weight/calories — keep it playful and positive.';
+    'RULES: no body shaming, no judging weight/calories; keep it playful and positive.';
 
   const user =
     `Nutrition and habits for user "${username}":\n` +
@@ -97,7 +137,17 @@ function buildPrompt(username, stats, favoriteFood, topBadgeName, foodList) {
   return { system, history: [{ role: 'user', content: user }] };
 }
 
-function fallbackCaptions(stats, topBadgeName) {
+function fallbackCaptions(stats, topBadgeName, lang) {
+  if (lang === 'vi') {
+    return {
+      diet_archetype: 'Tín Đồ Ăn Uống Độc Lập',
+      archetype_desc: 'Ghi calo đều đặn và kiên trì chinh phục mọi đỉnh cao ẩm thực.',
+      slide1_aura: 'Hào quang kỷ luật đang tỏa sáng khắp căn bếp của bạn tuần này.',
+      slide2_topfood: `Huy hiệu ${topBadgeName} đã sẵn sàng tỏa sáng trên story của bạn.`,
+      slide3_streak: `Giữ lửa cực tốt với chuỗi ${stats.streak} ngày ghi bữa.`,
+      slide4_leaderboard: `Đứng hạng ${stats.leaderboard_rank} trên bảng xếp hạng. Rất đáng gờm.`,
+    };
+  }
   return {
     diet_archetype: 'Dedicated Food Tracker',
     archetype_desc: 'Consistently logging meals and building habits every single day!',
@@ -108,11 +158,31 @@ function fallbackCaptions(stats, topBadgeName) {
   };
 }
 
+const VI_BADGE_NAMES = {
+  first_bite: 'Miếng đầu tiên',
+  daily_logger: 'Ghi đều mỗi ngày',
+  streak_cooker: 'Giữ lửa chuỗi ngày',
+  full_plate: 'Mâm đầy đủ',
+  balanced_bowl: 'Tô cân bằng',
+  xp_grinder: 'Thợ cày XP',
+  rice_goddess: 'Nữ thần cơm',
+  pho_real: 'Phở thứ thiệt',
+  banh_mi_baron: 'Trùm bánh mì',
+  friend_fuel: 'Nhiên liệu bạn bè',
+  leaderboard_menace: 'Khắc tinh bảng xếp hạng',
+  comeback_meal: 'Bữa trở lại',
+};
+
+function localizeBadge(badge, lang) {
+  if (lang !== 'vi') return badge;
+  return { ...badge, name: VI_BADGE_NAMES[badge.id] || badge.name };
+}
+
 // Build (or serve cached) the Wrapped payload for a user.
 // Returns the payload merged with { cached: boolean }.
 export async function buildWrapped(userId, username, lang = 'en') {
   lang = lang === 'vi' ? 'vi' : 'en';
-  const periodKey = todayVN(); // 'YYYY-MM-DD' (Bangkok) — recap regenerates once/day
+  const periodKey = isoWeekYear(todayVN()); // PHP-compatible "W-Y" cache key
 
   // 1. Cache hit (same day + lang + payload version) → serve as-is.
   const cachedRows = await readCache(userId, periodKey, lang);
@@ -128,8 +198,8 @@ export async function buildWrapped(userId, username, lang = 'en') {
   // 2. Gather stats from the already-ported libs.
   const { summary, records, achievements } = await achievementsProgress(userId);
   const favoriteRecord = records.find((r) => r.key === 'favorite_food');
-  const favoriteFood = favoriteRecord?.value || 'Not enough data';
-  const badge = topBadge(achievements);
+  const favoriteFood = favoriteRecord?.value || (lang === 'vi' ? 'Chưa đủ dữ liệu' : 'Not enough data');
+  const badge = localizeBadge(topBadge(achievements), lang);
 
   // leaderboard() always includes the caller; no friends → they're rank 1.
   const board = await leaderboard(userId, 'weekly', 500);
@@ -147,14 +217,14 @@ export async function buildWrapped(userId, username, lang = 'en') {
   };
 
   // 3. One AI call for archetype + slide captions, with a deterministic fallback.
-  const foodList = await foodListString(userId);
-  const { system, history } = buildPrompt(username, stats, favoriteFood, badge.name, foodList);
+  const foodList = await foodListString(userId, lang);
+  const { system, history } = buildPrompt(username, stats, favoriteFood, badge.name, foodList, lang);
 
   let captions = null;
   const ai = await chatCompletion({ system, history });
   if (ai.ok) captions = parseAiJson(ai.text);
   const aiOk = captions !== null && typeof captions.diet_archetype === 'string' && captions.diet_archetype !== '';
-  if (!aiOk) captions = fallbackCaptions(stats, badge.name);
+  if (!aiOk) captions = fallbackCaptions(stats, badge.name, lang);
 
   // 4. Assemble payload (slide 6 Spotify deferred → null).
   const payload = {
