@@ -64,16 +64,16 @@ onMounted(load);
 <template>
   <div class="dir">
     <div class="dir-head">
-      <h2>Find a trainer</h2>
-      <p class="muted">Connect with a personal trainer for feedback, chat, and tailored goals.</p>
+      <h2>{{ $t('coach.directory.title') }}</h2>
+      <p class="muted">{{ $t('coach.directory.subtitle') }}</p>
     </div>
 
-    <input v-model="q" class="dir-search" type="search" placeholder="Search by name or specialty…" />
+    <input v-model="q" class="dir-search" type="search" :placeholder="$t('coach.directory.search_placeholder')" />
     <p v-if="error" class="error">{{ error }}</p>
 
-    <p v-if="loading" class="muted center pad">Loading trainers…</p>
-    <p v-else-if="!trainers.length" class="muted center pad">No trainers are available yet.</p>
-    <p v-else-if="!filtered.length" class="muted center pad">No trainers match “{{ q }}”.</p>
+    <p v-if="loading" class="muted center pad">{{ $t('coach.directory.loading') }}</p>
+    <p v-else-if="!trainers.length" class="muted center pad">{{ $t('coach.directory.empty') }}</p>
+    <p v-else-if="!filtered.length" class="muted center pad">{{ $t('coach.directory.no_match', { q }) }}</p>
 
     <div v-else class="grid">
       <article v-for="t in filtered" :key="t.user_id" class="pt-card">
@@ -95,11 +95,11 @@ onMounted(load);
 
         <div class="pt-foot">
           <span class="meta muted">
-            <template v-if="t.experience_years != null">{{ t.experience_years }}y exp · </template>
-            <span :class="{ full: t.is_full }">{{ t.client_count }}<template v-if="t.max_clients != null">/{{ t.max_clients }}</template> clients</span>
+            <template v-if="t.experience_years != null">{{ $t('coach.my_trainer.exp_years', { n: t.experience_years }) }} · </template>
+            <span :class="{ full: t.is_full }">{{ t.client_count }}<template v-if="t.max_clients != null">/{{ t.max_clients }}</template> {{ $t('coach.directory.clients') }}</span>
           </span>
           <button class="connect" :disabled="t.is_full || busyId === t.user_id" @click="connect(t)">
-            <i class="fa-solid fa-link" /> {{ t.is_full ? 'Full' : 'Connect' }}
+            <i class="fa-solid fa-link" /> {{ t.is_full ? $t('coach.directory.full') : $t('coach.directory.connect') }}
           </button>
         </div>
       </article>

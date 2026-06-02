@@ -4,6 +4,7 @@
 // and the save_feedback / propose_goal actions to /api/pt/clients/:id/*.
 import { ref, computed, watch, onMounted } from 'vue';
 import { api } from '../lib/api.js';
+import { t } from '../i18n/index.js';
 import ChatRoom from './ChatRoom.vue';
 
 const props = defineProps({
@@ -81,7 +82,7 @@ async function saveFeedback() {
     if (r.saved) list.push({ date_for: fbDate.value, content: fbContent.value.trim() });
     list.sort((a, b) => (a.date_for < b.date_for ? 1 : -1));
     detail.value.feedback = list;
-    fbMsg.value = r.saved ? 'Saved.' : 'Cleared.';
+    fbMsg.value = r.saved ? t('trainer.detail.saved') : t('trainer.detail.cleared');
   } catch (e) {
     fbMsg.value = e.message;
   } finally {
@@ -101,7 +102,7 @@ async function proposeGoal() {
       fat: goal.value.fat === '' ? '' : Number(goal.value.fat),
       note: goal.value.note,
     });
-    goalMsg.value = 'Proposal sent — awaiting client approval.';
+    goalMsg.value = t('trainer.detail.proposal_sent');
     emit('updated');
   } catch (e) {
     goalMsg.value = e.message;
@@ -134,7 +135,7 @@ onMounted(load);
 <template>
   <section class="detail">
     <header class="d-head">
-      <button class="back" aria-label="Back to clients" @click="emit('back')"><i class="fa-solid fa-arrow-left" /></button>
+      <button class="back" :aria-label="$t('trainer.detail.back')" @click="emit('back')"><i class="fa-solid fa-arrow-left" /></button>
       <span class="avatar">
         <img v-if="client.profile_image" :src="client.profile_image" alt="" />
         <span v-else>{{ initial }}</span>
@@ -143,21 +144,21 @@ onMounted(load);
         <strong>{{ name }}</strong>
         <span class="muted">@{{ client.user_name }}</span>
       </div>
-      <button class="remove" aria-label="Remove client" title="Remove client" @click="confirmingRemove = true">
+      <button class="remove" :aria-label="$t('trainer.detail.remove_label')" :title="$t('trainer.detail.remove_label')" @click="confirmingRemove = true">
         <i class="fa-solid fa-user-xmark" />
       </button>
     </header>
 
     <!-- Inline confirm before removing the client -->
     <div v-if="confirmingRemove" class="confirm-bar">
-      <span>Remove <strong>{{ name }}</strong>? They'll lose access to your chat, advice, and goals.</span>
+      <span>{{ $t('trainer.detail.confirm_remove', { name }) }}</span>
       <div class="confirm-actions">
-        <button class="danger" :disabled="removeBusy" @click="terminate">Remove</button>
-        <button class="ghost-sm" :disabled="removeBusy" @click="confirmingRemove = false">Cancel</button>
+        <button class="danger" :disabled="removeBusy" @click="terminate">{{ $t('trainer.detail.remove') }}</button>
+        <button class="ghost-sm" :disabled="removeBusy" @click="confirmingRemove = false">{{ $t('common.cancel') }}</button>
       </div>
     </div>
 
-    <p v-if="loading" class="muted center pad">Loading…</p>
+    <p v-if="loading" class="muted center pad">{{ $t('common.loading') }}</p>
     <p v-else-if="error" class="error pad">{{ error }}</p>
 
     <template v-else>
@@ -171,25 +172,25 @@ onMounted(load);
         </div>
       </div>
       <p class="trend-cap muted">
-        Goal: {{ detail.calorie_goal ?? '—' }} kcal · today {{ detail.trend[detail.trend.length - 1].cal }} kcal
+        {{ $t('trainer.detail.trend_caption', { goal: detail.calorie_goal ?? '—', today: detail.trend[detail.trend.length - 1].cal }) }}
       </p>
 
       <!-- Tabs -->
       <div class="d-tabs" role="tablist">
-        <button v-for="t in ['diary','chat','feedback','goal']" :key="t" class="d-tab" :class="{ on: tab === t }" @click="tab = t">
-          {{ t.charAt(0).toUpperCase() + t.slice(1) }}
+        <button v-for="tabKey in ['diary','chat','feedback','goal']" :key="tabKey" class="d-tab" :class="{ on: tab === tabKey }" @click="tab = tabKey">
+          {{ $t('trainer.detail.tab.' + tabKey) }}
         </button>
       </div>
 
       <!-- Diary -->
       <div v-show="tab === 'diary'" class="pane diary">
-        <p v-if="!detail.diary.length" class="muted center pad">No meals logged today.</p>
+        <p v-if="!detail.diary.length" class="muted center pad">{{ $t('trainer.detail.no_meals') }}</p>
         <div v-for="(m, i) in detail.diary" :key="i" class="log-row">
           <div class="log-main">
             <strong>{{ m.food_item }}</strong>
             <span class="cat muted">{{ m.meal_category }}</span>
           </div>
-          <div class="log-macros muted">{{ m.calories }} kcal · P{{ m.protein }} C{{ m.carbs }} F{{ m.fat }}</div>
+          <div class="log-macros muted">{{ m.calories }} {{ $t('common.kcal') }} · {{ $t('intake.macro_abbr.protein') }}{{ m.protein }} {{ $t('intake.macro_abbr.carbs') }}{{ m.carbs }} {{ $t('intake.macro_abbr.fat') }}{{ m.fat }}</div>
         </div>
       </div>
 
@@ -198,26 +199,26 @@ onMounted(load);
         v-show="tab === 'chat'"
         :path="`/api/pt/clients/${client.user_id}/messages`"
         my-role="trainer"
-        :placeholder="`Message ${name}…`"
+        :placeholder="$t('trainer.detail.chat_placeholder', { name })"
         @sent="emit('updated')"
       />
 
       <!-- Feedback editor -->
       <div v-show="tab === 'feedback'" class="pane feedback">
         <label class="fld">
-          <span class="fld-lbl">Date</span>
+          <span class="fld-lbl">{{ $t('trainer.detail.date') }}</span>
           <input type="date" v-model="fbDate" :max="today" />
         </label>
         <label class="fld">
-          <span class="fld-lbl">Advice for this day</span>
-          <textarea v-model="fbContent" rows="4" placeholder="Write feedback the client will see…" />
+          <span class="fld-lbl">{{ $t('trainer.detail.advice_for_day') }}</span>
+          <textarea v-model="fbContent" rows="4" :placeholder="$t('trainer.detail.feedback_placeholder')" />
         </label>
         <div class="row">
-          <button :disabled="fbBusy" @click="saveFeedback">Save</button>
+          <button :disabled="fbBusy" @click="saveFeedback">{{ $t('common.save') }}</button>
           <span v-if="fbMsg" class="muted">{{ fbMsg }}</span>
         </div>
         <div v-if="detail.feedback.length" class="fb-history">
-          <span class="fld-lbl">History</span>
+          <span class="fld-lbl">{{ $t('trainer.detail.history') }}</span>
           <button v-for="f in detail.feedback" :key="f.date_for" class="chip" :class="{ on: f.date_for === fbDate }" @click="fbDate = f.date_for">
             {{ f.date_for }}
           </button>
@@ -226,23 +227,23 @@ onMounted(load);
 
       <!-- Goal proposer -->
       <div v-show="tab === 'goal'" class="pane goal">
-        <p class="muted">Current goal: <strong>{{ detail.calorie_goal ?? '—' }}</strong> kcal/day</p>
+        <p class="muted">{{ $t('trainer.detail.current_goal') }} <strong>{{ detail.calorie_goal ?? '—' }}</strong> {{ $t('dashboard.tile.kcal_day') }}</p>
         <label class="fld">
-          <span class="fld-lbl">Propose calories (800–10000)</span>
-          <input type="number" v-model="goal.calorie_goal" min="800" max="10000" placeholder="e.g. 2200" />
+          <span class="fld-lbl">{{ $t('trainer.detail.propose_calories') }}</span>
+          <input type="number" v-model="goal.calorie_goal" min="800" max="10000" :placeholder="$t('trainer.detail.calorie_placeholder')" />
         </label>
         <div class="macro-row">
-          <label class="fld"><span class="fld-lbl">Protein (g)</span><input type="number" v-model="goal.protein" min="0" max="999" /></label>
-          <label class="fld"><span class="fld-lbl">Carbs (g)</span><input type="number" v-model="goal.carbs" min="0" max="999" /></label>
-          <label class="fld"><span class="fld-lbl">Fat (g)</span><input type="number" v-model="goal.fat" min="0" max="999" /></label>
+          <label class="fld"><span class="fld-lbl">{{ $t('trainer.detail.protein_g') }}</span><input type="number" v-model="goal.protein" min="0" max="999" /></label>
+          <label class="fld"><span class="fld-lbl">{{ $t('trainer.detail.carbs_g') }}</span><input type="number" v-model="goal.carbs" min="0" max="999" /></label>
+          <label class="fld"><span class="fld-lbl">{{ $t('trainer.detail.fat_g') }}</span><input type="number" v-model="goal.fat" min="0" max="999" /></label>
         </div>
-        <p class="hint muted">Leave all three macros blank, or fill all three.</p>
+        <p class="hint muted">{{ $t('trainer.detail.macro_hint') }}</p>
         <label class="fld">
-          <span class="fld-lbl">Note (optional)</span>
-          <input type="text" v-model="goal.note" maxlength="255" placeholder="Why this target?" />
+          <span class="fld-lbl">{{ $t('trainer.detail.note_optional') }}</span>
+          <input type="text" v-model="goal.note" maxlength="255" :placeholder="$t('trainer.detail.note_placeholder')" />
         </label>
         <div class="row">
-          <button :disabled="goalBusy || !goal.calorie_goal" @click="proposeGoal">Propose goal</button>
+          <button :disabled="goalBusy || !goal.calorie_goal" @click="proposeGoal">{{ $t('trainer.detail.propose_goal') }}</button>
           <span v-if="goalMsg" class="muted">{{ goalMsg }}</span>
         </div>
       </div>

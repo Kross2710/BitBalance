@@ -16,10 +16,10 @@ const tab = ref('ai'); // 'ai' | 'trainer'
   <div class="coach-hub">
     <div class="hub-tabs" role="tablist">
       <button class="tab" :class="{ on: tab === 'ai' }" role="tab" :aria-selected="tab === 'ai'" @click="tab = 'ai'">
-        <i class="fa-solid fa-robot" /> AI Coach
+        <i class="fa-solid fa-robot" /> {{ $t('coach.tab.ai') }}
       </button>
       <button class="tab" :class="{ on: tab === 'trainer' }" role="tab" :aria-selected="tab === 'trainer'" @click="tab = 'trainer'">
-        <i class="fa-solid fa-user-tie" /> My Trainer
+        <i class="fa-solid fa-user-tie" /> {{ $t('coach.tab.trainer') }}
       </button>
     </div>
 

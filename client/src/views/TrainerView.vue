@@ -86,31 +86,31 @@ onMounted(load);
 <template>
   <div class="tv">
     <header class="tv-head">
-      <h1 class="title">Trainer</h1>
+      <h1 class="title">{{ $t('trainer.title') }}</h1>
       <div class="statstrip">
-        <span>{{ clients.length }} clients</span>
-        <span v-if="unreadTotal" class="hot">{{ unreadTotal }} unread</span>
-        <span v-if="noLogCount" class="warn">{{ noLogCount }} no log</span>
-        <span v-if="requests.length" class="warn">{{ requests.length }} requests</span>
+        <span>{{ $t('trainer.clients_count', { n: clients.length }) }}</span>
+        <span v-if="unreadTotal" class="hot">{{ $t('trainer.unread_count', { n: unreadTotal }) }}</span>
+        <span v-if="noLogCount" class="warn">{{ $t('trainer.no_log_count', { n: noLogCount }) }}</span>
+        <span v-if="requests.length" class="warn">{{ $t('trainer.requests_count', { n: requests.length }) }}</span>
       </div>
     </header>
 
     <div class="tv-tabs" role="tablist">
       <button class="tv-tab" :class="{ on: tab === 'clients' }" @click="tab = 'clients'">
-        Clients<span v-if="clients.length" class="count">{{ clients.length }}</span>
+        {{ $t('trainer.tab.clients') }}<span v-if="clients.length" class="count">{{ clients.length }}</span>
       </button>
       <button class="tv-tab" :class="{ on: tab === 'requests' }" @click="tab = 'requests'">
-        Requests<span v-if="requests.length" class="count alert">{{ requests.length }}</span>
+        {{ $t('trainer.tab.requests') }}<span v-if="requests.length" class="count alert">{{ requests.length }}</span>
       </button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-if="loading" class="muted center pad">Loading…</p>
+    <p v-if="loading" class="muted center pad">{{ $t('common.loading') }}</p>
 
     <!-- CLIENTS: master-detail -->
     <div v-show="tab === 'clients' && !loading" class="workspace" :class="{ 'has-detail': selected }">
       <div class="list-col">
-        <p v-if="!clients.length" class="muted center pad">No clients yet. Accept a request to get started.</p>
+        <p v-if="!clients.length" class="muted center pad">{{ $t('trainer.empty.clients') }}</p>
         <button
           v-for="c in clients"
           :key="c.user_id"
@@ -125,12 +125,12 @@ onMounted(load);
           <span class="c-meta">
             <span class="c-name">{{ clientName(c) }}<span v-if="c.unread" class="c-unread">{{ c.unread }}</span></span>
             <span class="c-sub muted">
-              <template v-if="c.calorie_goal">{{ c.calories_today }}/{{ c.calorie_goal }} kcal · {{ pct(c) }}%</template>
-              <template v-else>{{ c.calories_today }} kcal today</template>
+              <template v-if="c.calorie_goal">{{ c.calories_today }}/{{ c.calorie_goal }} {{ $t('common.kcal') }} · {{ pct(c) }}%</template>
+              <template v-else>{{ $t('trainer.client.kcal_today', { calories: c.calories_today }) }}</template>
             </span>
             <span v-if="c.calorie_goal" class="c-bar"><span class="c-fill" :class="{ over: pct(c) >= 110 }" :style="{ width: Math.min(pct(c), 100) + '%' }" /></span>
           </span>
-          <span v-if="c.calories_today <= 0" class="flag">No log</span>
+          <span v-if="c.calories_today <= 0" class="flag">{{ $t('trainer.flag.no_log') }}</span>
         </button>
       </div>
 
@@ -145,14 +145,14 @@ onMounted(load);
         />
         <div v-else class="detail-empty muted">
           <i class="fa-solid fa-hand-pointer" />
-          <p>Select a client to see their day, chat, advice, and goals.</p>
+          <p>{{ $t('trainer.empty.detail') }}</p>
         </div>
       </div>
     </div>
 
     <!-- REQUESTS -->
     <div v-show="tab === 'requests' && !loading" class="requests">
-      <p v-if="!requests.length" class="muted center pad">No pending requests.</p>
+      <p v-if="!requests.length" class="muted center pad">{{ $t('trainer.empty.requests') }}</p>
       <div v-for="r in requests" :key="r.request_id" class="req-card">
         <span class="c-avatar">
           <img v-if="r.profile_image" :src="r.profile_image" alt="" />
@@ -160,11 +160,11 @@ onMounted(load);
         </span>
         <div class="req-meta">
           <strong>{{ clientName(r) }}</strong>
-          <span class="muted">@{{ r.user_name }} · streak {{ r.logging_streak }}</span>
+          <span class="muted">@{{ r.user_name }} · {{ $t('trainer.request.streak', { n: r.logging_streak }) }}</span>
         </div>
         <div class="req-actions">
-          <button class="accept" :disabled="busyReq === r.request_id" @click="respondRequest(r, 'accept')">Accept</button>
-          <button class="decline" :disabled="busyReq === r.request_id" @click="respondRequest(r, 'reject')">Decline</button>
+          <button class="accept" :disabled="busyReq === r.request_id" @click="respondRequest(r, 'accept')">{{ $t('trainer.request.accept') }}</button>
+          <button class="decline" :disabled="busyReq === r.request_id" @click="respondRequest(r, 'reject')">{{ $t('trainer.request.decline') }}</button>
         </div>
       </div>
     </div>

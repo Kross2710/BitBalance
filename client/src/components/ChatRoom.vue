@@ -12,7 +12,7 @@ const props = defineProps({
   // Base path without query, e.g. '/api/pt/messages' or '/api/pt/clients/5/messages'.
   path: { type: String, required: true },
   myRole: { type: String, required: true }, // 'client' | 'trainer'
-  placeholder: { type: String, default: 'Message…' },
+  placeholder: { type: String, default: '' },
 });
 const emit = defineEmits(['sent']);
 
@@ -107,7 +107,7 @@ defineExpose({ scrollToBottom });
 <template>
   <div class="chat">
     <div ref="threadEl" class="messages">
-      <p v-if="!messages.length" class="empty muted">No messages yet.</p>
+      <p v-if="!messages.length" class="empty muted">{{ $t('chat.empty') }}</p>
       <div v-for="m in messages" :key="m.message_id" class="msg" :class="m.sender_role === myRole ? 'me' : 'them'">
         <div class="bubble">{{ m.content }}</div>
       </div>
@@ -117,7 +117,7 @@ defineExpose({ scrollToBottom });
       <textarea
         v-model="input"
         rows="1"
-        :placeholder="placeholder"
+        :placeholder="placeholder || $t('chat.placeholder')"
         :disabled="sending"
         @keydown.enter.exact.prevent="send"
       />

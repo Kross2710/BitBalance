@@ -11,7 +11,7 @@ defineEmits(['select', 'new', 'delete']);
 
 <template>
   <div class="convo-list">
-    <button class="newchat" @click="$emit('new')"><i class="fa-solid fa-plus" /> New chat</button>
+    <button class="newchat" @click="$emit('new')"><i class="fa-solid fa-plus" /> {{ $t('coach.chat.new') }}</button>
     <ul>
       <li
         v-for="c in conversations"
@@ -20,11 +20,11 @@ defineEmits(['select', 'new', 'delete']);
         @click="$emit('select', c.id)"
       >
         <span class="title">{{ c.title }}</span>
-        <button class="del" title="Delete" @click.stop="$emit('delete', c.id)">
+        <button class="del" :title="$t('coach.chat.delete')" @click.stop="$emit('delete', c.id)">
           <i class="fa-solid fa-trash" />
         </button>
       </li>
-      <li v-if="!conversations.length" class="empty muted">No conversations yet</li>
+      <li v-if="!conversations.length" class="empty muted">{{ $t('coach.chat.empty') }}</li>
     </ul>
   </div>
 </template>

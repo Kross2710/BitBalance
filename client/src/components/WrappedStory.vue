@@ -7,6 +7,7 @@ import { ref, computed, onMounted } from 'vue';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useStoryCarousel } from '../composables/useStoryCarousel.js';
+import { t } from '../i18n/index.js';
 
 const emit = defineEmits(['close']);
 const auth = useAuthStore();
@@ -33,7 +34,7 @@ onMounted(async () => {
   try {
     data.value = await api.get('/api/wrapped');
   } catch (e) {
-    error.value = e.message || 'Could not load your Wrapped.';
+    error.value = e.message || t('wrapped.load_error');
   } finally {
     loading.value = false;
     if (data.value) car.start();
@@ -105,10 +106,10 @@ const avatarInitial = computed(() =>
 const bentoCells = computed(() => {
   const s = data.value?.stats || {};
   return [
-    { label: 'Foods logged', value: s.total_foods ?? 0 },
-    { label: 'Days logged', value: s.logged_days ?? 0 },
-    { label: 'Day streak', value: s.streak ?? 0 },
-    { label: 'Top fuel', value: s.favorite_food ?? '—', small: true },
+    { label: t('wrapped.summary.foods_logged'), value: s.total_foods ?? 0 },
+    { label: t('wrapped.summary.days_logged'), value: s.logged_days ?? 0 },
+    { label: t('wrapped.summary.day_streak'), value: s.streak ?? 0 },
+    { label: t('wrapped.summary.top_fuel'), value: s.favorite_food ?? '—', small: true },
   ];
 });
 </script>
@@ -126,16 +127,16 @@ const bentoCells = computed(() => {
         </div>
       </div>
 
-      <button class="close" type="button" aria-label="Close" @click="close"><i class="fa-solid fa-xmark" /></button>
+      <button class="close" type="button" :aria-label="$t('common.close')" @click="close"><i class="fa-solid fa-xmark" /></button>
 
       <!-- Loading / error -->
       <div v-if="loading" class="state">
         <div class="spinner" />
-        <p>Building your Wrapped…</p>
+        <p>{{ $t('wrapped.loading') }}</p>
       </div>
       <div v-else-if="error" class="state">
         <p>{{ error }}</p>
-        <button class="state-btn" type="button" @click="close">Close</button>
+        <button class="state-btn" type="button" @click="close">{{ $t('wrapped.close') }}</button>
       </div>
 
       <!-- Slides (gesture surface) -->
@@ -148,7 +149,7 @@ const bentoCells = computed(() => {
       >
         <!-- 1. Aura / archetype -->
         <section v-show="slides[car.index.value] === 'aura'" class="slide aura" :style="{ backgroundImage: auraGradient }">
-          <span class="kicker">Your eating archetype</span>
+          <span class="kicker">{{ $t('wrapped.aura.kicker') }}</span>
           <h1 class="title">{{ data.diet_archetype }}</h1>
           <p class="desc">{{ data.archetype_desc }}</p>
           <p class="caption">{{ data.slide1_aura }}</p>
@@ -159,7 +160,7 @@ const bentoCells = computed(() => {
           <div class="badge-burst" :style="{ borderColor: toneColor(data.badge.tone), boxShadow: `0 12px 0 ${toneColor(data.badge.tone)}33` }">
             <i :class="['fa-solid', data.badge.icon]" :style="{ color: toneColor(data.badge.tone) }" />
           </div>
-          <span class="kicker">Top badge</span>
+          <span class="kicker">{{ $t('wrapped.badge.kicker') }}</span>
           <h2 class="big-name">{{ data.badge.name }}</h2>
           <p class="caption">{{ data.slide2_topfood }}</p>
         </section>
@@ -167,8 +168,8 @@ const bentoCells = computed(() => {
         <!-- 3. Streak -->
         <section v-show="slides[car.index.value] === 'streak'" class="slide center streak">
           <div class="flame"><i class="fa-solid fa-fire" /></div>
-          <div class="streak-num">{{ data.stats.streak }}<span>d</span></div>
-          <span class="kicker">Day streak</span>
+          <div class="streak-num">{{ data.stats.streak }}<span>{{ $t('wrapped.streak.day_suffix') }}</span></div>
+          <span class="kicker">{{ $t('wrapped.streak.kicker') }}</span>
           <p class="caption">{{ data.slide3_streak }}</p>
         </section>
 
@@ -182,17 +183,17 @@ const bentoCells = computed(() => {
             </div>
             <div class="pedestal p3" />
           </div>
-          <span class="kicker">Friends leaderboard</span>
+          <span class="kicker">{{ $t('wrapped.leaderboard.kicker') }}</span>
           <p class="caption">{{ data.slide4_leaderboard }}</p>
         </section>
 
         <!-- 5. Bento summary -->
         <section v-show="slides[car.index.value] === 'summary'" class="slide summary">
-          <h2 class="sum-title">{{ data.user.username }}'s week</h2>
+          <h2 class="sum-title">{{ $t('wrapped.summary.week_title', { name: data.user.username }) }}</h2>
           <div class="featured">
             <div>
               <span class="arch-tag">{{ data.diet_archetype }}</span>
-              <div class="lvl">Level {{ data.user.level }}</div>
+              <div class="lvl">{{ $t('wrapped.summary.level', { n: data.user.level }) }}</div>
             </div>
             <div class="xp">
               <div class="xp-bar"><div :style="{ width: (data.user.progress_pct || 0) + '%' }" /></div>
@@ -205,7 +206,7 @@ const bentoCells = computed(() => {
               <strong class="cell-val" :class="{ sm: c.small }">{{ c.value }}</strong>
             </div>
           </div>
-          <button class="done" type="button" @click="close">Done</button>
+          <button class="done" type="button" @click="close">{{ $t('wrapped.done') }}</button>
         </section>
       </div>
     </div>

@@ -40,11 +40,11 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <Transition name="sheet">
       <div v-if="open" class="sheet" @click.self="emit('close')">
-        <div class="sheet__panel" role="dialog" aria-modal="true" :aria-label="title || 'Sheet'">
+        <div class="sheet__panel" role="dialog" aria-modal="true" :aria-label="title || $t('coach.sheet.label')">
           <span class="sheet__handle" aria-hidden="true" />
           <header v-if="title || $slots.header" class="sheet__head">
             <slot name="header"><h3 class="sheet__title">{{ title }}</h3></slot>
-            <button class="sheet__close" aria-label="Close" @click="emit('close')">
+            <button class="sheet__close" :aria-label="$t('common.close')" @click="emit('close')">
               <i class="fa-solid fa-xmark" />
             </button>
           </header>

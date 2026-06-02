@@ -5,6 +5,7 @@
 // + respond_goal_proposal.php to the /api/pt/* client endpoints.
 import { ref, computed, onMounted } from 'vue';
 import { api } from '../lib/api.js';
+import { t } from '../i18n/index.js';
 import ChatRoom from './ChatRoom.vue';
 import TrainerDirectory from './TrainerDirectory.vue';
 
@@ -73,7 +74,7 @@ async function respondProposal(decision) {
 
 function macroLine(p) {
   if (p.protein_goal == null || p.carbs_goal == null || p.fat_goal == null) return null;
-  return `P ${p.protein_goal}g · C ${p.carbs_goal}g · F ${p.fat_goal}g`;
+  return `${t('intake.macro_abbr.protein')} ${p.protein_goal}g · ${t('intake.macro_abbr.carbs')} ${p.carbs_goal}g · ${t('intake.macro_abbr.fat')} ${p.fat_goal}g`;
 }
 
 async function cancelRequest() {
@@ -110,15 +111,15 @@ onMounted(load);
 
 <template>
   <div class="trainer">
-    <p v-if="loading" class="muted center pad">Loading…</p>
+    <p v-if="loading" class="muted center pad">{{ $t('common.loading') }}</p>
 
     <!-- Pending outgoing request -->
     <div v-else-if="pending" class="placeholder">
       <div class="avatar empty"><i class="fa-solid fa-hourglass-half" /></div>
-      <h2>Request sent</h2>
-      <p class="muted">Waiting for <strong>{{ pendingName }}</strong> to accept your request.</p>
+      <h2>{{ $t('coach.my_trainer.request_sent') }}</h2>
+      <p class="muted">{{ $t('coach.my_trainer.waiting_for', { name: pendingName }) }}</p>
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="ghost" :disabled="reqBusy" @click="cancelRequest">Cancel request</button>
+      <button class="ghost" :disabled="reqBusy" @click="cancelRequest">{{ $t('coach.my_trainer.cancel_request') }}</button>
     </div>
 
     <!-- No trainer → browse the directory -->
@@ -133,62 +134,62 @@ onMounted(load);
           <span v-else class="initial">{{ trainerInitial }}</span>
         </span>
         <div class="hero-meta">
-          <span class="kicker">Your trainer</span>
+          <span class="kicker">{{ $t('coach.my_trainer.your_trainer') }}</span>
           <strong class="name">{{ trainerName }}</strong>
           <span class="handle muted">@{{ trainer.user_name }}</span>
           <div v-if="specialties.length || trainer.experience_years != null" class="chips">
             <span v-for="s in specialties" :key="s" class="chip">{{ s }}</span>
-            <span v-if="trainer.experience_years != null" class="chip alt">{{ trainer.experience_years }}y exp</span>
+            <span v-if="trainer.experience_years != null" class="chip alt">{{ $t('coach.my_trainer.exp_years', { n: trainer.experience_years }) }}</span>
           </div>
         </div>
-        <button class="hero-action" aria-label="Disconnect trainer" title="Disconnect" @click="confirmingDisconnect = true">
+        <button class="hero-action" :aria-label="$t('coach.my_trainer.disconnect_label')" :title="$t('coach.my_trainer.disconnect_title')" @click="confirmingDisconnect = true">
           <i class="fa-solid fa-link-slash" />
         </button>
       </div>
 
       <!-- Inline confirm before leaving the trainer -->
       <div v-if="confirmingDisconnect" class="confirm-bar">
-        <span>Leave <strong>{{ trainerName }}</strong>? You'll lose the chat and advice history.</span>
+        <span>{{ $t('coach.my_trainer.confirm_disconnect', { name: trainerName }) }}</span>
         <div class="confirm-actions">
-          <button class="danger" :disabled="disconnectBusy" @click="disconnect">Disconnect</button>
-          <button class="ghost-sm" :disabled="disconnectBusy" @click="confirmingDisconnect = false">Cancel</button>
+          <button class="danger" :disabled="disconnectBusy" @click="disconnect">{{ $t('coach.my_trainer.disconnect') }}</button>
+          <button class="ghost-sm" :disabled="disconnectBusy" @click="confirmingDisconnect = false">{{ $t('common.cancel') }}</button>
         </div>
       </div>
 
       <p v-if="error" class="error pad">{{ error }}</p>
-      <p v-if="goalDone" class="note pad"><i class="fa-solid fa-check" /> Goal updated from your trainer.</p>
+      <p v-if="goalDone" class="note pad"><i class="fa-solid fa-check" /> {{ $t('coach.my_trainer.goal_updated') }}</p>
 
       <!-- Pending goal proposal -->
       <div v-if="proposal" class="proposal">
         <div class="proposal-head">
           <i class="fa-solid fa-bullseye" />
-          <strong>Goal proposal</strong>
+          <strong>{{ $t('coach.my_trainer.goal_proposal') }}</strong>
         </div>
         <p class="proposal-body">
-          {{ trainerName }} suggests <strong>{{ proposal.calorie_goal }} kcal/day</strong>
+          <strong>{{ $t('coach.my_trainer.suggests_goal', { name: trainerName, calories: proposal.calorie_goal }) }}</strong>
           <span v-if="macroLine(proposal)" class="muted"> · {{ macroLine(proposal) }}</span>
         </p>
         <p v-if="proposal.note" class="proposal-note muted">“{{ proposal.note }}”</p>
         <div class="proposal-actions">
-          <button class="accept" :disabled="proposalBusy" @click="respondProposal('accept')">Accept</button>
-          <button class="decline" :disabled="proposalBusy" @click="respondProposal('decline')">Decline</button>
+          <button class="accept" :disabled="proposalBusy" @click="respondProposal('accept')">{{ $t('coach.my_trainer.accept') }}</button>
+          <button class="decline" :disabled="proposalBusy" @click="respondProposal('decline')">{{ $t('coach.my_trainer.decline') }}</button>
         </div>
       </div>
 
       <!-- Tabs -->
       <div class="mt-tabs" role="tablist">
-        <button class="mt-tab" :class="{ on: tab === 'chat' }" @click="tab = 'chat'">Chat</button>
+        <button class="mt-tab" :class="{ on: tab === 'chat' }" @click="tab = 'chat'">{{ $t('coach.my_trainer.chat') }}</button>
         <button class="mt-tab" :class="{ on: tab === 'advice' }" @click="tab = 'advice'">
-          Advice<span v-if="feedback.length" class="count">{{ feedback.length }}</span>
+          {{ $t('coach.my_trainer.advice') }}<span v-if="feedback.length" class="count">{{ feedback.length }}</span>
         </button>
       </div>
 
       <!-- Chat (shared room) -->
-      <ChatRoom v-show="tab === 'chat'" path="/api/pt/messages" my-role="client" placeholder="Message your trainer…" />
+      <ChatRoom v-show="tab === 'chat'" path="/api/pt/messages" my-role="client" :placeholder="$t('coach.my_trainer.chat_placeholder')" />
 
       <!-- Advice -->
       <div v-show="tab === 'advice'" class="advice">
-        <p v-if="!feedback.length" class="muted center pad">No advice from your trainer yet.</p>
+        <p v-if="!feedback.length" class="muted center pad">{{ $t('coach.my_trainer.no_advice') }}</p>
         <article v-for="(f, i) in feedback" :key="i" class="advice-item">
           <div class="advice-date">{{ f.date_for }}</div>
           <p class="advice-content">{{ f.content }}</p>

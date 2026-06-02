@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
+import { locale } from '../i18n/index.js';
 import WrappedStory from '../components/WrappedStory.vue';
 
 const auth = useAuthStore();
@@ -36,7 +37,7 @@ const dateStrip = computed(() => {
     const iso = d.toISOString().slice(0, 10);
     out.push({
       iso,
-      weekday: d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short' }),
+      weekday: d.toLocaleDateString(locale.value === 'vi' ? 'vi-VN' : 'en-US', { timeZone: 'UTC', weekday: 'short' }),
       dayNum: d.getUTCDate(),
       isToday: iso === today,
     });
@@ -247,7 +248,7 @@ onMounted(() => {
                   :alt="$t('dashboard.entry.photo_alt')"
                   @click="lightbox = e.image_path"
                 />
-                <span style="min-width: 0">{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
+                <span style="min-width: 0">{{ e.food_item }} <small class="muted">· {{ $t('dashboard.meal.' + e.meal_category) }}</small></span>
               </span>
               <strong style="flex: none">{{ $t('dashboard.kcal_value', { n: e.calories }) }}</strong>
             </div>

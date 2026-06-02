@@ -8,6 +8,7 @@
 // strip eating vertical space.
 import { ref, reactive, computed, nextTick, onMounted } from 'vue';
 import { api } from '../lib/api.js';
+import { t } from '../i18n/index.js';
 import ConversationList from './ConversationList.vue';
 import BottomSheet from './BottomSheet.vue';
 
@@ -27,9 +28,9 @@ const limitReached = computed(() => usage.limit != null && usage.used != null &&
 
 // Title shown in the mobile thread header so the user knows which chat they're in.
 const activeTitle = computed(() => {
-  if (activeId.value === 0) return 'New chat';
+  if (activeId.value === 0) return t('coach.chat.new');
   const c = conversations.value.find((c) => c.id === activeId.value);
-  return c ? c.title : 'Chat';
+  return c ? c.title : t('coach.chat.title_fallback');
 });
 
 function scrollToBottom() {
@@ -187,21 +188,21 @@ onMounted(loadConversations);
       <header class="thread-head">
         <span class="th-title">{{ activeTitle }}</span>
         <div class="th-actions">
-          <button class="icon-btn" aria-label="New chat" @click="newChat"><i class="fa-solid fa-plus" /></button>
-          <button class="icon-btn" aria-label="Conversations" @click="sheetOpen = true">
+          <button class="icon-btn" :aria-label="$t('coach.chat.new')" @click="newChat"><i class="fa-solid fa-plus" /></button>
+          <button class="icon-btn" :aria-label="$t('coach.chat.conversations')" @click="sheetOpen = true">
             <i class="fa-solid fa-clock-rotate-left" />
           </button>
         </div>
       </header>
 
       <div ref="threadEl" class="thread">
-        <p v-if="loadingMsgs" class="muted center">Loading…</p>
+        <p v-if="loadingMsgs" class="muted center">{{ $t('common.loading') }}</p>
 
         <div v-else-if="!messages.length" class="welcome">
           <div class="avatar"><i class="fa-solid fa-dumbbell" /></div>
-          <h2>AI Coach</h2>
+          <h2>{{ $t('coach.chat.welcome_title') }}</h2>
           <p class="muted">
-            Ask about nutrition or fitness, or tell me what you ate and I'll prep a log card for you.
+            {{ $t('coach.chat.welcome_body') }}
           </p>
         </div>
 
@@ -212,10 +213,10 @@ onMounted(loadConversations);
             <div v-for="(item, idx) in m.food_log_suggestions" :key="idx" class="food-card">
               <div class="food-head">
                 <strong>{{ item.food_name }}</strong>
-                <span class="cat">{{ item.meal_category }}</span>
+                <span class="cat">{{ $t('dashboard.meal.' + item.meal_category) }}</span>
               </div>
               <div class="macros muted">
-                {{ item.calories }} kcal · P {{ item.protein }}g · C {{ item.carbs }}g · F {{ item.fat }}g
+                {{ item.calories }} {{ $t('common.kcal') }} · {{ $t('intake.macro_abbr.protein') }} {{ item.protein }}g · {{ $t('intake.macro_abbr.carbs') }} {{ item.carbs }}g · {{ $t('intake.macro_abbr.fat') }} {{ item.fat }}g
               </div>
               <button
                 class="addbtn"
@@ -223,9 +224,9 @@ onMounted(loadConversations);
                 :disabled="added[`${m.id}:${idx}`] === 'done' || added[`${m.id}:${idx}`] === 'busy'"
                 @click="addToLog(item, m.id, idx)"
               >
-                <template v-if="added[`${m.id}:${idx}`] === 'done'"><i class="fa-solid fa-check" /> Added</template>
-                <template v-else-if="added[`${m.id}:${idx}`] === 'busy'">Adding…</template>
-                <template v-else><i class="fa-solid fa-plus" /> Add to Log</template>
+                <template v-if="added[`${m.id}:${idx}`] === 'done'"><i class="fa-solid fa-check" /> {{ $t('coach.chat.added') }}</template>
+                <template v-else-if="added[`${m.id}:${idx}`] === 'busy'">{{ $t('coach.chat.adding') }}</template>
+                <template v-else><i class="fa-solid fa-plus" /> {{ $t('coach.chat.add_to_log') }}</template>
               </button>
             </div>
           </div>
@@ -235,12 +236,12 @@ onMounted(loadConversations);
       <!-- Composer -->
       <form class="composer" @submit.prevent="send">
         <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="limitReached" class="muted center">Daily limit reached ({{ usage.limit }}). Try again tomorrow.</p>
+        <p v-if="limitReached" class="muted center">{{ $t('coach.chat.limit_reached', { limit: usage.limit }) }}</p>
         <div class="row">
           <textarea
             v-model="input"
             rows="1"
-            placeholder="Message your coach…"
+            :placeholder="$t('coach.chat.placeholder')"
             :disabled="sending || limitReached"
             @keydown.enter.exact.prevent="send"
           />
@@ -248,12 +249,12 @@ onMounted(loadConversations);
             <i class="fa-solid fa-paper-plane" />
           </button>
         </div>
-        <p v-if="usage.used != null" class="usage muted">{{ usage.used }} / {{ usage.limit }} messages today</p>
+        <p v-if="usage.used != null" class="usage muted">{{ $t('coach.chat.usage', { used: usage.used, limit: usage.limit }) }}</p>
       </form>
     </section>
 
     <!-- Conversation list: bottom sheet on mobile -->
-    <BottomSheet :open="sheetOpen" title="Conversations" @close="sheetOpen = false">
+    <BottomSheet :open="sheetOpen" :title="$t('coach.chat.conversations')" @close="sheetOpen = false">
       <ConversationList
         :conversations="conversations"
         :active-id="activeId"
