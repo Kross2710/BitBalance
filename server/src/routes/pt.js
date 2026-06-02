@@ -23,12 +23,14 @@ import {
   ptDirectory,
   sendTrainerRequest,
   cancelTrainerRequest,
+  disconnectTrainer,
   trainerClients,
   clientDetail,
   saveFeedback,
   proposeGoal,
   pendingRequests,
   respondRequest,
+  terminateClient,
   trainerChatFetch,
   trainerChatSend,
 } from '../lib/pt.js';
@@ -99,6 +101,14 @@ router.post(
   requireAuth,
   handle(async (req, res) => {
     ok(res, await cancelTrainerRequest(req.user.user_id), 'Request cancelled.');
+  })
+);
+
+router.post(
+  '/disconnect',
+  requireAuth,
+  handle(async (req, res) => {
+    ok(res, await disconnectTrainer(req.user.user_id), 'Disconnected from your trainer.');
   })
 );
 
@@ -201,6 +211,17 @@ router.post(
     if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
     const data = await proposeGoal(req.user.user_id, clientId, req.body || {});
     ok(res, data, 'Goal proposed.');
+  })
+);
+
+router.post(
+  '/clients/:id/terminate',
+  requireAuth,
+  requirePt,
+  handle(async (req, res) => {
+    const clientId = intParam(req.params.id);
+    if (clientId <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid client id.' });
+    ok(res, await terminateClient(req.user.user_id, clientId), 'Client removed.');
   })
 );
 

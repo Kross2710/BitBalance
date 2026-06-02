@@ -18,6 +18,8 @@ const tab = ref('chat'); // 'chat' | 'advice'
 const proposalBusy = ref(false);
 const reqBusy = ref(false);
 const goalDone = ref(false); // brief confirmation after accepting
+const confirmingDisconnect = ref(false);
+const disconnectBusy = ref(false);
 
 const pendingName = computed(() => {
   const p = pending.value;
@@ -88,6 +90,21 @@ async function cancelRequest() {
   }
 }
 
+async function disconnect() {
+  if (disconnectBusy.value) return;
+  disconnectBusy.value = true;
+  error.value = '';
+  try {
+    await api.post('/api/pt/disconnect');
+    confirmingDisconnect.value = false;
+    await load(); // back to the directory
+  } catch (e) {
+    error.value = e.message;
+  } finally {
+    disconnectBusy.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -123,6 +140,18 @@ onMounted(load);
             <span v-for="s in specialties" :key="s" class="chip">{{ s }}</span>
             <span v-if="trainer.experience_years != null" class="chip alt">{{ trainer.experience_years }}y exp</span>
           </div>
+        </div>
+        <button class="hero-action" aria-label="Disconnect trainer" title="Disconnect" @click="confirmingDisconnect = true">
+          <i class="fa-solid fa-link-slash" />
+        </button>
+      </div>
+
+      <!-- Inline confirm before leaving the trainer -->
+      <div v-if="confirmingDisconnect" class="confirm-bar">
+        <span>Leave <strong>{{ trainerName }}</strong>? You'll lose the chat and advice history.</span>
+        <div class="confirm-actions">
+          <button class="danger" :disabled="disconnectBusy" @click="disconnect">Disconnect</button>
+          <button class="ghost-sm" :disabled="disconnectBusy" @click="confirmingDisconnect = false">Cancel</button>
         </div>
       </div>
 
@@ -218,6 +247,23 @@ onMounted(load);
   border-radius: 999px; padding: 2px 9px;
 }
 .chip.alt { color: var(--muted); }
+.hero-action {
+  flex: none; align-self: flex-start; margin-left: auto;
+  width: 38px; height: 38px; min-height: 0; padding: 0;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+}
+.hero-action:hover { color: #f87171; border-color: #f87171; }
+
+/* Inline disconnect confirm */
+.confirm-bar {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--card); border: 1px solid #f87171; border-radius: 12px;
+  padding: 10px 14px; margin-bottom: 10px; font-size: 13px;
+}
+.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions button { min-height: 36px; padding: 7px 14px; font-size: 13px; }
+.danger { background: #ef4444; color: #fff; }
+.ghost-sm { background: var(--card); color: var(--text); border: 1px solid var(--border); }
 
 /* Proposal */
 .proposal {

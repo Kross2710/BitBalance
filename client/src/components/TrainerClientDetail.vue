@@ -9,12 +9,14 @@ import ChatRoom from './ChatRoom.vue';
 const props = defineProps({
   client: { type: Object, required: true }, // from the clients list (user_id, names, …)
 });
-const emit = defineEmits(['back', 'updated']);
+const emit = defineEmits(['back', 'updated', 'terminated']);
 
 const loading = ref(true);
 const error = ref('');
 const detail = ref(null);
 const tab = ref('diary'); // 'diary' | 'chat' | 'feedback' | 'goal'
+const confirmingRemove = ref(false);
+const removeBusy = ref(false);
 
 const name = computed(() => `${props.client.first_name ?? ''} ${props.client.last_name ?? ''}`.trim() || props.client.user_name);
 const initial = computed(() => (name.value || 'C').trim().charAt(0).toUpperCase());
@@ -108,8 +110,24 @@ async function proposeGoal() {
   }
 }
 
+async function terminate() {
+  if (removeBusy.value) return;
+  removeBusy.value = true;
+  error.value = '';
+  try {
+    await api.post(`/api/pt/clients/${props.client.user_id}/terminate`);
+    emit('terminated', props.client.user_id);
+  } catch (e) {
+    error.value = e.message;
+    removeBusy.value = false;
+  }
+}
+
 watch(fbDate, prefillFeedback);
-watch(() => props.client.user_id, load);
+watch(() => props.client.user_id, () => {
+  confirmingRemove.value = false;
+  load();
+});
 onMounted(load);
 </script>
 
@@ -125,7 +143,19 @@ onMounted(load);
         <strong>{{ name }}</strong>
         <span class="muted">@{{ client.user_name }}</span>
       </div>
+      <button class="remove" aria-label="Remove client" title="Remove client" @click="confirmingRemove = true">
+        <i class="fa-solid fa-user-xmark" />
+      </button>
     </header>
+
+    <!-- Inline confirm before removing the client -->
+    <div v-if="confirmingRemove" class="confirm-bar">
+      <span>Remove <strong>{{ name }}</strong>? They'll lose access to your chat, advice, and goals.</span>
+      <div class="confirm-actions">
+        <button class="danger" :disabled="removeBusy" @click="terminate">Remove</button>
+        <button class="ghost-sm" :disabled="removeBusy" @click="confirmingRemove = false">Cancel</button>
+      </div>
+    </div>
 
     <p v-if="loading" class="muted center pad">Loading…</p>
     <p v-else-if="error" class="error pad">{{ error }}</p>
@@ -239,6 +269,20 @@ onMounted(load);
 .d-head .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .d-meta { display: flex; flex-direction: column; min-width: 0; }
 .d-meta strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.remove {
+  flex: none; margin-left: auto; width: 38px; height: 38px; min-height: 0; padding: 0;
+  background: transparent; border: 1px solid var(--border); color: var(--muted);
+}
+.remove:hover { color: #f87171; border-color: #f87171; }
+.confirm-bar {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--card); border: 1px solid #f87171; border-radius: 12px;
+  padding: 10px 14px; margin-bottom: 10px; font-size: 13px;
+}
+.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions button { min-height: 36px; padding: 7px 14px; font-size: 13px; }
+.danger { background: #ef4444; color: #fff; }
+.ghost-sm { background: var(--card); color: var(--text); border: 1px solid var(--border); }
 
 /* Trend */
 .trend { flex: none; display: flex; gap: 6px; align-items: flex-end; height: 72px; padding: 0 2px; }

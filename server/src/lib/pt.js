@@ -361,6 +361,12 @@ export async function cancelTrainerRequest(clientId) {
   return { cancelled: true };
 }
 
+// Client leaves their (accepted) trainer. Mirrors disconnect_trainer in profile.php.
+export async function disconnectTrainer(clientId) {
+  await query(`DELETE FROM trainer_client WHERE client_id = ? AND status = 'accepted'`, [clientId]);
+  return { disconnected: true };
+}
+
 // -----------------------------------------------------------------------------
 // Trainer workspace (role 'pt') — ports dashboard-pt.php + pt_action.php
 // -----------------------------------------------------------------------------
@@ -593,6 +599,16 @@ export async function respondRequest(trainerId, requestId, action) {
   }
   if (!r.affectedRows) throw new PtActionError('Request not found or already handled.');
   return { [action === 'accept' ? 'accepted' : 'rejected']: true };
+}
+
+// Trainer removes an accepted client. Mirrors pt_action.php action=terminate.
+export async function terminateClient(trainerId, clientId) {
+  await requireAcceptedClient(trainerId, clientId);
+  await query(`DELETE FROM trainer_client WHERE trainer_id = ? AND client_id = ? AND status = 'accepted'`, [
+    trainerId,
+    clientId,
+  ]);
+  return { terminated: true };
 }
 
 // Trainer-perspective chat wrappers (role 'trainer', explicit client).

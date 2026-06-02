@@ -60,6 +60,12 @@ async function load() {
   loading.value = false;
 }
 
+// A client was removed from the trainer detail — drop them and clear selection.
+function onTerminated(clientId) {
+  clients.value = clients.value.filter((c) => c.user_id !== clientId);
+  selected.value = null;
+}
+
 async function respondRequest(req, action) {
   if (busyReq.value) return;
   busyReq.value = req.request_id;
@@ -135,6 +141,7 @@ onMounted(load);
           :client="selected"
           @back="selected = null"
           @updated="loadClients"
+          @terminated="onTerminated"
         />
         <div v-else class="detail-empty muted">
           <i class="fa-solid fa-hand-pointer" />
