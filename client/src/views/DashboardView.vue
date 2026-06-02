@@ -22,6 +22,13 @@ const maxHistory = computed(() => Math.max(1, ...(day.value?.history?.calories ?
 const form = ref({ food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' });
 const saving = ref(false);
 
+// Transient toast for XP gained / level-ups.
+const toast = ref(null);
+function showToast(msg) {
+  toast.value = msg;
+  setTimeout(() => (toast.value = null), 2800);
+}
+
 async function loadDay() {
   loading.value = true;
   error.value = '';
@@ -47,9 +54,14 @@ async function addEntry() {
   saving.value = true;
   error.value = '';
   try {
-    await api.post('/api/intake/create', form.value);
+    const data = await api.post('/api/intake/create', form.value);
     form.value = { food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' };
-    await loadDay(); // refresh aggregates (calories, macros, chart, streak)
+    await loadDay(); // refresh aggregates (calories, macros, chart, streak, XP)
+    if (data.xp?.levelup) {
+      showToast(`🎉 Level up! ${data.xp.levelup.from} → ${data.xp.levelup.to}`);
+    } else if (data.xp?.added > 0) {
+      showToast(`+${data.xp.added} XP`);
+    }
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -146,6 +158,15 @@ onMounted(loadDay);
         <div class="card tile"><span class="muted">7-day avg</span><strong>{{ day.average_calories ?? '—' }}</strong><small class="muted">kcal/day</small></div>
       </section>
 
+      <!-- Level / XP -->
+      <section class="card" style="margin-top: 14px">
+        <div style="display: flex; justify-content: space-between">
+          <strong>Level {{ day.current_level }}</strong>
+          <span class="muted">{{ day.xp_into_level }} / {{ day.xp_for_next }} XP · {{ day.total_xp }} total</span>
+        </div>
+        <div class="bar"><div :style="{ width: day.xp_progress_percentage + '%', background: '#a78bfa' }" /></div>
+      </section>
+
       <!-- 7-day calorie chart -->
       <section class="card" style="margin-top: 14px">
         <strong>Last 7 days</strong>
@@ -221,6 +242,11 @@ onMounted(loadDay);
         </ul>
       </section>
     </template>
+
+    <!-- XP / level-up toast -->
+    <Transition name="fade">
+      <div v-if="toast" class="toast">{{ toast }}</div>
+    </Transition>
   </main>
 </template>
 
@@ -238,4 +264,17 @@ onMounted(loadDay);
 .icon-btn { background: #2a2e37; color: var(--text); padding: 6px 10px; font-size: 12px; font-weight: 600; }
 .icon-btn.danger { color: #f87171; }
 .icon-btn:disabled { opacity: 0.4; }
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #a78bfa;
+  color: #1a1030;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+}
 </style>

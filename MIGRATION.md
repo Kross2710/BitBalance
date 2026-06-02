@@ -45,14 +45,16 @@ gần như port 1-1.
 | Auth – logout | `api/auth/logout.php` | ✅ `POST /api/auth/logout` | ✅ | |
 | Auth – me | `api/me.php` | ✅ `GET /api/auth/me` | ✅ store | |
 | Intake – history | `api/intake/history.php` | ✅ `GET /api/intake/history` | ✅ Dashboard | Kèm daily_summary + macro |
-| Intake – create | `api/intake/create.php` | ✅ `POST /api/intake/create` | ✅ Dashboard | **Chưa port XP/streak** (xem TODO) |
+| Intake – create | `api/intake/create.php` | ✅ `POST /api/intake/create` | ✅ Dashboard | Kèm XP award + cập nhật streak + level-up flash |
+| XP & Level | `include/handlers/xp.php` | ✅ `lib/xp.js` | ✅ Dashboard | Level curve, award theo state, milestone, finalize hôm qua |
+| Logging streak | `updateLoggingStreak()` | ✅ `lib/streak.js` | ✅ Dashboard | Tăng/đóng băng/reset chuỗi |
 | Auth – register | `api/auth/register.php` | ✅ `POST /api/auth/register` | ✅ SignupView | Tự sinh handle `Tên#1234`, auto-login |
 | Onboarding | `api/onboarding/save.php` | ✅ `POST /api/onboarding/save` | ✅ OnboardingView | Port BMR/TDEE/macro + lưu transaction |
 | Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
 | Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
 | Intake – suggest/barcode | `suggest.php`, `lookup_barcode.php` | ⬜ | ⬜ | gọi AI / barcode ngoài |
-| Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa. XP trả default |
-| Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay. XP trả default |
+| Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
+| Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
 | Profile | `api/profile/*` | ⬜ | ⬜ | `profile.php` rất lớn (61KB) |
 | AI Coach | `api/ai-coach/*` | ⬜ | ⬜ | tích hợp OpenRouter |
 | Social/Friends | `api/social/action.php` | ⬜ | ⬜ | |
@@ -62,8 +64,10 @@ gần như port 1-1.
 
 ## TODO / nợ kỹ thuật cần xử lý khi tiếp tục
 
-- [ ] **XP + logging streak**: port `include/handlers/xp.php` + `updateLoggingStreak()`
-      (hiện `POST /api/intake/create` trả `xp.added = 0`).
+- [x] **XP + logging streak**: đã port `include/handlers/xp.php` (`lib/xp.js`) +
+      `updateLoggingStreak()` (`lib/streak.js`). Còn nợ nhỏ: chưa ghi `log_attempt`
+      (activity_log) cho sự kiện streak/award — chỉ là audit, không ảnh hưởng hành vi.
+      `xp_award_weight_log` đã port nhưng chưa được gọi (chờ endpoint weight-log).
 - [ ] **Remember-me token**: port `include/handlers/remember_token.php` + bảng token
       (login hiện chưa cấp cookie ghi nhớ dài hạn).
 - [ ] **Session store production**: thay MemoryStore của express-session bằng

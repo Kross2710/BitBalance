@@ -6,6 +6,9 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validateIntake, shapeEntry, dailySummary, fetchEntry, ValidationError } from '../lib/intake.js';
+import { awardIntakeLog, awardStreakMilestone, getSummary, consumeLevelupFlash } from '../lib/xp.js';
+import { updateLoggingStreak } from '../lib/streak.js';
+import { loggingStreak } from '../lib/dashboard.js';
 
 const router = Router();
 
@@ -51,12 +54,37 @@ router.post('/create', requireAuth, async (req, res, next) => {
       [userId, result.insertId]
     );
 
+    // XP + streak side effects (ports api/intake/create.php). Each step is
+    // best-effort: a failure here must not fail the log itself.
+    let xpAdded = 0;
+    try {
+      const r = await awardIntakeLog(userId, req.session);
+      xpAdded += r.xp_added ?? 0;
+    } catch (e) {
+      console.error('intake xp award error:', e);
+    }
+    try {
+      await updateLoggingStreak(userId);
+      const streak = await loggingStreak(userId);
+      const m = await awardStreakMilestone(userId, streak.current, req.session);
+      xpAdded += m.xp_added ?? 0;
+    } catch (e) {
+      console.error('intake streak update error:', e);
+    }
+
+    let xpSummary = null;
+    try {
+      xpSummary = await getSummary(userId);
+    } catch (e) {
+      console.error('intake xp summary error:', e);
+    }
+
     res.status(201).json({
       ok: true,
       data: {
         entry: entry ? shapeEntry(entry) : null,
         daily_summary: await dailySummary(userId),
-        xp: { added: 0, summary: null, levelup: null }, // TODO: port include/handlers/xp.php
+        xp: { added: xpAdded, summary: xpSummary, levelup: consumeLevelupFlash(req.session) },
       },
       message: null,
     });

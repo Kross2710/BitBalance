@@ -2,10 +2,10 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { macroGoalsFromCalories, shapeEntry } from '../lib/intake.js';
+import { todayVN, isValidDate } from '../lib/dates.js';
+import { finalizeYesterdayGoals, awardStreakMilestone, getSummary } from '../lib/xp.js';
 import {
   DEFAULT_XP_SUMMARY,
-  todayVN,
-  isValidDate,
   totalCaloriesForDate,
   macroTotalsForDate,
   calorieGoal,
@@ -24,6 +24,20 @@ const router = Router();
 
 const round2 = (n) => Math.round(n * 100) / 100;
 const clampPct = (n) => Math.min(100, Math.max(0, n));
+
+// Run the read-time XP side effects (finalize yesterday's goals, catch up streak
+// milestones) and return the summary. Falls back to defaults on error, exactly
+// like the try/catch in the PHP dashboard endpoints.
+async function computeXp(userId, streakCurrent, session) {
+  try {
+    await finalizeYesterdayGoals(userId, session);
+    await awardStreakMilestone(userId, streakCurrent, session);
+    return await getSummary(userId);
+  } catch (e) {
+    console.error('dashboard XP error:', e);
+    return DEFAULT_XP_SUMMARY;
+  }
+}
 
 // GET /api/dashboard/day?date=YYYY-MM-DD — full day view (defaults to today).
 router.get('/day', requireAuth, async (req, res, next) => {
@@ -89,6 +103,7 @@ router.get('/day', requireAuth, async (req, res, next) => {
     }
 
     const avg = calorieAverage(history.calories);
+    const xp = await computeXp(userId, streak.current, req.session);
 
     res.json({
       ok: true,
@@ -104,11 +119,11 @@ router.get('/day', requireAuth, async (req, res, next) => {
         average_calories: avg || null,
         meal_categories: mealCategories,
         entries,
-        current_level: DEFAULT_XP_SUMMARY.current_level,
-        total_xp: DEFAULT_XP_SUMMARY.total_xp,
-        xp_into_level: DEFAULT_XP_SUMMARY.xp_into_level,
-        xp_for_next: DEFAULT_XP_SUMMARY.xp_for_next,
-        xp_progress_percentage: DEFAULT_XP_SUMMARY.progress_pct,
+        current_level: xp.current_level,
+        total_xp: xp.total_xp,
+        xp_into_level: xp.xp_into_level,
+        xp_for_next: xp.xp_for_next,
+        xp_progress_percentage: xp.progress_pct,
         streak,
         focus: {
           tone: focusTone,
@@ -146,6 +161,7 @@ router.get('/summary', requireAuth, async (req, res, next) => {
     // NOTE: summary.php uses Capitalized meal keys (vs lowercase in day.php) —
     // preserved for contract parity.
     const mealCategories = await mealCategoryTotals(userId, today, 'capital');
+    const xp = await computeXp(userId, streak.current, req.session);
 
     res.json({
       ok: true,
@@ -157,11 +173,11 @@ router.get('/summary', requireAuth, async (req, res, next) => {
         carbs: macros.carbs,
         fat: macros.fat,
         macro_goals: macroGoals,
-        current_level: DEFAULT_XP_SUMMARY.current_level,
-        total_xp: DEFAULT_XP_SUMMARY.total_xp,
-        xp_into_level: DEFAULT_XP_SUMMARY.xp_into_level,
-        xp_for_next: DEFAULT_XP_SUMMARY.xp_for_next,
-        xp_progress_percentage: DEFAULT_XP_SUMMARY.progress_pct,
+        current_level: xp.current_level,
+        total_xp: xp.total_xp,
+        xp_into_level: xp.xp_into_level,
+        xp_for_next: xp.xp_for_next,
+        xp_progress_percentage: xp.progress_pct,
         streak,
         history,
         meal_categories: mealCategories,

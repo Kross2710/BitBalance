@@ -7,7 +7,10 @@
 // contract is stable until XP lands. See MIGRATION.md.
 import { query } from '../db.js';
 import { macroGoalsFromCalories } from './intake.js';
+import { addDays, weekdayLabel } from './dates.js';
 
+// XP fallback shape, mirroring the catch block in the PHP dashboard endpoints.
+// Used only when the XP subsystem throws; otherwise real XP data is returned.
 export const DEFAULT_XP_SUMMARY = {
   total_xp: 0,
   current_level: 1,
@@ -15,35 +18,6 @@ export const DEFAULT_XP_SUMMARY = {
   xp_for_next: 100,
   progress_pct: 0,
 };
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-// "Today" in the app's timezone (DB runs at +07:00, matching include/db_config.php).
-export function todayVN() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-}
-
-// Date math on YYYY-MM-DD via UTC so it never drifts with the local timezone.
-export function addDays(dateStr, delta) {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
-
-export function weekdayLabel(dateStr) {
-  return WEEKDAYS[new Date(dateStr + 'T00:00:00Z').getUTCDay()];
-}
-
-export function isValidDate(dateStr) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
-  const d = new Date(dateStr + 'T00:00:00Z');
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === dateStr;
-}
 
 export async function totalCaloriesForDate(userId, date) {
   const rows = await query(
