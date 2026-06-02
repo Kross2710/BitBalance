@@ -87,6 +87,9 @@ watch(
             <RouterLink v-if="auth.user?.role === 'pt'" to="/trainer" class="am-item" role="menuitem">
               <i class="fa-solid fa-user-tie" /> {{ $t('nav.trainer_workspace') }}
             </RouterLink>
+            <RouterLink v-if="auth.user?.role === 'admin'" to="/admin" class="am-item" role="menuitem">
+              <i class="fa-solid fa-shield-halved" /> {{ $t('nav.admin') }}
+            </RouterLink>
             <RouterLink to="/profile" class="am-item" role="menuitem">
               <i class="fa-solid fa-user" /> {{ $t('nav.profile') }}
             </RouterLink>

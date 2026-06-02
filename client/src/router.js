@@ -11,6 +11,17 @@ const routes = [
     component: () => import('./views/OnboardingView.vue'),
     meta: { requiresAuth: true },
   },
+  // Admin panel — its own layout + sidebar, gated by role at the router guard
+  // below (requiresAdmin) AND server-side on every /api/admin call. Reached only
+  // from the avatar menu when role === 'admin'.
+  {
+    path: '/admin',
+    component: () => import('./layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      { path: '', name: 'admin', component: () => import('./views/admin/AdminHomeView.vue') },
+    ],
+  },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,
   // so switching tabs never remounts the chrome — navigation stays seamless.
   {
@@ -53,6 +64,10 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.user) {
     return { name: 'login', query: { redirect: to.fullPath } };
+  }
+  // Admin area is role-gated at the router level (not just hidden in the UI).
+  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+    return { name: 'dashboard' };
   }
   if ((to.name === 'login' || to.name === 'signup') && auth.user) {
     return { name: 'dashboard' };

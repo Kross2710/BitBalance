@@ -35,6 +35,20 @@ export default {
   'nav.account_menu': 'Menu tài khoản',
   'nav.trainer_workspace': 'Bàn làm việc PT',
   'nav.profile': 'Hồ sơ',
+  'nav.admin': 'Quản trị',
+
+  // ---- admin panel (AdminLayout.vue + admin views) ----
+  'admin.title': 'Quản trị',
+  'admin.nav.overview': 'Tổng quan',
+  'admin.nav.users': 'Người dùng',
+  'admin.nav.logs': 'Nhật ký',
+  'admin.coming_soon': 'Sắp có',
+  'admin.back_to_app': 'Về ứng dụng',
+  'admin.overview.title': 'Tổng quan quản trị',
+  'admin.overview.intro': 'Quản lý người dùng và nhật ký kiểm toán sẽ có ở các phase sau.',
+  'admin.overview.users': 'Tổng người dùng',
+  'admin.overview.admins': 'Quản trị viên',
+  'admin.overview.logs': 'Số dòng nhật ký',
 
   // ---- auth: login + signup ----
   'auth.tagline': 'Đếm calo. Giữ chuỗi ngày. Đạt mục tiêu.',

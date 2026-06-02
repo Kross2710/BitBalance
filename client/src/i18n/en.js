@@ -36,6 +36,20 @@ export default {
   'nav.account_menu': 'Account menu',
   'nav.trainer_workspace': 'Trainer workspace',
   'nav.profile': 'Profile',
+  'nav.admin': 'Admin',
+
+  // ---- admin panel (AdminLayout.vue + admin views) ----
+  'admin.title': 'Admin',
+  'admin.nav.overview': 'Overview',
+  'admin.nav.users': 'Users',
+  'admin.nav.logs': 'Logs',
+  'admin.coming_soon': 'Soon',
+  'admin.back_to_app': 'Back to app',
+  'admin.overview.title': 'Admin overview',
+  'admin.overview.intro': 'User management and audit logs arrive in the next phases.',
+  'admin.overview.users': 'Total users',
+  'admin.overview.admins': 'Admins',
+  'admin.overview.logs': 'Activity log rows',
 
   // ---- auth: login + signup (net-new, no PHP equivalent) ----
   'auth.tagline': 'Track calories. Build streaks. Hit your goals.',
