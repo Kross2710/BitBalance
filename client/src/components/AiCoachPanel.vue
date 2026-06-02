@@ -273,7 +273,8 @@ onMounted(loadConversations);
   max-width: 1000px;
   margin: 0 auto;
   padding: 8px 16px;
-  height: calc(100vh - 60px);
+  /* Fills the Coach Hub's panel area (the hub owns the viewport-height math). */
+  height: 100%;
 }
 .muted { color: var(--muted); font-size: 13px; }
 .center { text-align: center; }
@@ -393,7 +394,6 @@ onMounted(loadConversations);
 @media (max-width: 767px) {
   .coach {
     grid-template-columns: 1fr;
-    height: calc(100vh - 130px);
     padding: 8px 12px;
   }
   /* Sidebar gives way to the thread header + bottom sheet on mobile. */
