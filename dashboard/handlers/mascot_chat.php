@@ -191,23 +191,23 @@ if (!$success || $caption === '') {
     $source = 'static_fallback';
     if ($lang === 'vi') {
         if ($vibeState === 'healthy') {
-            $caption = "Bạn đang làm rất tốt! Tiếp tục duy trì phong độ ăn uống lành mạnh này nhé! 🌟";
+            $caption = "Bạn đang làm rất tốt! Tiếp tục duy trì phong độ ăn uống lành mạnh này nhé!";
         } elseif ($vibeState === 'overlimit') {
-            $caption = "Cơ thể bạn đã no nê rồi. Đừng lo lắng về calo nữa, hãy ngủ một giấc thật ngon nhé! 🌙";
+            $caption = "Cơ thể bạn đã no nê rồi. Đừng lo lắng về calo nữa, hãy ngủ một giấc thật ngon nhé!";
         } elseif ($vibeState === 'deficit') {
-            $caption = "Bạn cần thêm một chút protein để cơ bắp ta khỏe mạnh hơn. Thêm trứng hoặc ức gà nhé! 💪";
+            $caption = "Bạn cần thêm một chút protein để cơ bắp ta khỏe mạnh hơn. Thêm trứng hoặc ức gà nhé!";
         } else {
-            $caption = "Chào ngày mới! Bắt đầu ngày tuyệt vời bằng việc ghi nhận bữa ăn đầu tiên nhé! 🍳";
+            $caption = "Chào ngày mới! Bắt đầu ngày tuyệt vời bằng việc ghi nhận bữa ăn đầu tiên nhé!";
         }
     } else {
         if ($vibeState === 'healthy') {
-            $caption = "You are doing amazing! Keep up this great, healthy eating momentum! 🌟";
+            $caption = "You are doing amazing! Keep up this great, healthy eating momentum!";
         } elseif ($vibeState === 'overlimit') {
-            $caption = "Your body is well-fueled. Don't stress, relax and get some beautiful sleep! 🌙";
+            $caption = "Your body is well-fueled. Don't stress, relax and get some beautiful sleep!";
         } elseif ($vibeState === 'deficit') {
-            $caption = "We need some quality protein to stay strong. Grab some eggs or chicken! 💪";
+            $caption = "We need some quality protein to stay strong. Grab some eggs or chicken!";
         } else {
-            $caption = "Rise and shine! Let's start this beautiful day by logging your first bite! 🍳";
+            $caption = "Rise and shine! Let's start this beautiful day by logging your first bite!";
         }
     }
 }

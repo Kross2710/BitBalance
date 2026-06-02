@@ -2,7 +2,16 @@
 <div id="cookie-banner" class="cookie-banner" style="display: none;">
     <div class="cookie-content">
         <div class="cookie-text">
-            <div class="cookie-icon">🍪</div>
+            <div class="cookie-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48" focusable="false">
+                    <circle cx="24" cy="24" r="18" fill="currentColor" opacity="0.18"></circle>
+                    <circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="4"></circle>
+                    <circle cx="18" cy="18" r="2.5" fill="currentColor"></circle>
+                    <circle cx="29" cy="17" r="2" fill="currentColor"></circle>
+                    <circle cx="30" cy="30" r="2.5" fill="currentColor"></circle>
+                    <circle cx="19" cy="31" r="2" fill="currentColor"></circle>
+                </svg>
+            </div>
             <div class="cookie-message">
                 <h4><?= t('cookie.title') ?></h4>
                 <p><?= t('cookie.body') ?>
@@ -221,30 +230,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function enableAllCookies() {
-        console.log('All cookies enabled - you can initialize analytics, tracking, etc.');
         // Add your analytics initialization code here
         // Example: gtag('config', 'GA_MEASUREMENT_ID');
     }
     
     function enableEssentialCookies() {
-        console.log('Only essential cookies enabled');
         // Disable analytics and other non-essential tracking
     }
     
     function applyCookiePreferences(preferences) {
         if (preferences.analytics) {
-            console.log('Analytics cookies enabled');
             // Initialize analytics
         } else {
-            console.log('Analytics cookies disabled');
             // Disable analytics
         }
         
         if (preferences.preferences) {
-            console.log('Preference cookies enabled');
             // Enable preference storage
         } else {
-            console.log('Preference cookies disabled');
             // Disable preference storage
         }
     }

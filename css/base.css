@@ -29,7 +29,7 @@ body {
 /* -----------------------------------------------------------------------
    Mobile layout tightening.
    Several pages set `main { min-height: 80vh }` (dashboard, admin,
-   calculator, new-topic, thread, set-goal…) plus the body itself uses
+   calculator, set-goal…) plus the body itself uses
    `min-height: 100vh`. On a phone where the content is short, this
    combination forces a big block of empty space ABOVE the footer (inside
    main) and another below the footer (between content end and body end).

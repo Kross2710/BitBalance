@@ -2,7 +2,7 @@
 
 BitBalance is a modular full-stack web application designed to help users track daily calorie intake, manage nutrition goals, and monitor progress over time.
 
-The system integrates AI-powered food image analysis via Gemini API and includes multi-role access control (User/Admin), forum interaction, and product management features.
+The system integrates AI-powered food image analysis via Gemini API and includes multi-role access control (User/Admin), social features, and progress tracking.
 
 > ⚠️ To enable AI functionality, create `include/secrets.php` and add your Gemini API key (see [Setup & Installation](#setup--installation)).
 
@@ -53,7 +53,7 @@ The CSS is organized as a layered design system to keep page styles consistent a
 | Tokens | `css/tokens.css` | Single source of truth for design variables: `--color-*`, `--shadow-*`, `--radius-*`, `--font-*`, `--z-*`. Includes a full dark-theme override and backward-compatible aliases for legacy variable names. |
 | Base | `css/base.css` | Reset, typography, body, utility classes. |
 | Components | `css/components/*.css` | `header`, `footer`, `sidebar`, `forms`, `cookie-banner`. Token-driven so dark mode adapts automatically. |
-| Pages | `css/dashboard.css`, `css/forum.css`, `css/products.css`, … | Page-specific styles loaded after components. |
+| Pages | `css/dashboard.css`, `css/pages/*.css` | Page-specific styles loaded after components. |
 | Loader | `views/head_css.php` | A single include each page uses to pull tokens + base + components in the correct order. |
 
 A page only needs:
@@ -93,7 +93,7 @@ The schema enforces structured relationships through foreign key constraints and
 - Foreign key constraints with cascading rules ensure referential integrity
 - Unique constraints (e.g., user email) prevent duplication
 - ENUM fields are used for controlled status values
-- Indexed columns improve performance for frequent queries (login attempts, orders, forum interactions)
+- Indexed columns improve performance for frequent queries (login attempts, orders, and activity logs)
 
 The database supports modular expansion and aligns with the application's multi-role architecture.
 
@@ -116,7 +116,6 @@ The database supports modular expansion and aligns with the application's multi-
 - Calorie intake logging with 7-day progress chart
 - Set and update daily calorie goals
 - CRUD operations for intake records
-- Forum with posts, comments, and likes
 - Product listing with basket functionality
 - Admin dashboard for user and content management
 - Light / dark theme toggle (user preference persisted)

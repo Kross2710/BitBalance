@@ -355,7 +355,7 @@
         min-width: 0;
     }
 
-    /* Emoji prefix on the badge (replaces a separate "Category" label) */
+    /* Compact category badges replace the separate "Category" label on mobile. */
     .modern-table td.intake-category-cell .cat-badge,
     .modern-table td[data-label="Category"] .cat-badge {
         font-size: 0.75rem;
@@ -366,13 +366,13 @@
         overflow-wrap: anywhere;
     }
     .modern-table td.intake-category-cell .cat-badge.cat-breakfast::before,
-    .modern-table td[data-label="Category"] .cat-badge.cat-breakfast::before { content: "🌅 "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-breakfast::before { content: ""; }
     .modern-table td.intake-category-cell .cat-badge.cat-lunch::before,
-    .modern-table td[data-label="Category"] .cat-badge.cat-lunch::before     { content: "☀️ "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-lunch::before     { content: ""; }
     .modern-table td.intake-category-cell .cat-badge.cat-dinner::before,
-    .modern-table td[data-label="Category"] .cat-badge.cat-dinner::before    { content: "🌙 "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-dinner::before    { content: ""; }
     .modern-table td.intake-category-cell .cat-badge.cat-snack::before,
-    .modern-table td[data-label="Category"] .cat-badge.cat-snack::before     { content: "🍪 "; }
+    .modern-table td[data-label="Category"] .cat-badge.cat-snack::before     { content: ""; }
 
     .modern-table td.intake-time-cell,
     .modern-table td[data-label="Time"] {
@@ -384,7 +384,7 @@
     }
     .modern-table td.intake-time-cell::before,
     .modern-table td[data-label="Time"]::before {
-        content: "🕐 ";
+        content: "Time: ";
         font-size: 0.8rem;
         margin-right: 2px;
     }

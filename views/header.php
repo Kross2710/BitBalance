@@ -35,8 +35,6 @@ if ($isLoggedIn) {
                             <i class="fas fa-sparkles"></i> <?= t('header.nav.ai_coach') ?>
                         </a>
                     <?php endif; ?>
-                    <!-- <a href="<?= BASE_URL ?>forum.php"
-                        class="nav-item <?php echo ($activeHeader == 'forum') ? 'active' : ''; ?>"><?= t('header.nav.forum') ?></a> -->
                     <a href="<?= BASE_URL ?>about.php"
                         class="nav-item <?php echo ($activeHeader == 'about') ? 'active' : ''; ?>"><?= t('header.nav.about') ?></a>
                 </div>

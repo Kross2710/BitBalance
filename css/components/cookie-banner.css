@@ -44,8 +44,16 @@
 }
 
 .cookie-icon {
-    font-size: 3rem;
+    color: var(--color-accent);
+    flex: 0 0 48px;
+    height: 48px;
     animation: cookie-bounce 2s infinite;
+}
+
+.cookie-icon svg {
+    display: block;
+    width: 48px;
+    height: 48px;
 }
 
 @keyframes cookie-bounce {

@@ -62,19 +62,9 @@ ssh_hint() {
   warn "Wrong host? try: ${DIM}DEPLOY_HOST=s3974781@coreteaching04.csit.rmit.edu.au $0${N}"
 }
 
-# ---- PHP-7.4 prod-landmine guard ---------------------------------------------
-# Functions/operators that exist on local XAMPP (PHP 8.2 + mbstring) but FATAL
-# on RMIT (PHP 7.4.33, no mbstring, posix disabled). See AGENTS.md "PHP
-# extensions / functions disabled". We match call-sites only (name followed by
-# "(", plus the literal "?->") and drop two safe cases: comment lines, and calls
-# guarded by function_exists() (the correct mb_* polyfill pattern).
-PHP74_PATTERN='(\b(str_contains|str_starts_with|str_ends_with|mb_[a-z_]+|posix_[a-z_]+)[[:space:]]*\()|(\?->)'
-
 php74_guard() {
-  git ls-files '*.php' -z 2>/dev/null \
-    | xargs -0 grep -nE "$PHP74_PATTERN" 2>/dev/null \
-    | grep -vE ':[0-9]+:[[:space:]]*(//|#|\*|/\*)' \
-    | grep -v 'function_exists' || true
+  local out
+  out="$(php scripts/php74-lint.php 2>&1)" || printf '%s\n' "$out"
 }
 
 print_guard_hits() {
