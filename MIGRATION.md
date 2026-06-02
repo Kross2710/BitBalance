@@ -55,7 +55,9 @@ gần như port 1-1.
 | Onboarding | `api/onboarding/save.php` | ✅ `POST /api/onboarding/save` | ✅ OnboardingView | Port BMR/TDEE/macro + lưu transaction |
 | Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
 | Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
-| Intake – suggest/barcode | `suggest.php`, `lookup_barcode.php` | ⬜ | ⬜ | gọi AI / barcode ngoài |
+| Intake – suggest | `api/intake/suggest.php` | ✅ `GET /api/intake/suggest?q=` | ✅ IntakeView | Recent chips (món hay log) + autocomplete từ chính lịch sử user; macro lấy từ lần log gần nhất |
+| Intake – barcode | `lookup_barcode.php` | ⬜ | ⬜ | gọi API barcode ngoài |
+| Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + meal theo giờ + macros optional + Log Entry full-width. Chưa có: Scan Barcode, AI Photo |
 | Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
 | Profile – get | `api/profile/get.php` | ✅ `GET /api/profile` | ✅ ProfileView | Payload `{user, bio, status, goal, physical}` |

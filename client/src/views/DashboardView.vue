@@ -13,18 +13,27 @@ const entries = computed(() => day.value?.entries ?? []);
 const progress = computed(() => (day.value?.progress_percentage ?? 0) + '%');
 const maxHistory = computed(() => Math.max(1, ...(day.value?.history?.calories ?? [0])));
 
-// Quick-log form (today only)
-const form = ref({ food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' });
-const saving = ref(false);
-// Macros are optional and hidden by default so the common path (name + kcal +
-// meal) stays a short, single-column form — important on a 375px screen.
-const showMacros = ref(false);
+// Compact date strip: the last 7 days ending today, tappable to switch day.
+const dateStrip = computed(() => {
+  const out = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    out.push({
+      iso,
+      weekday: d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short' }),
+      dayNum: d.getUTCDate(),
+      isToday: iso === today,
+    });
+  }
+  return out;
+});
 
-// Transient toast for XP gained / level-ups ({ icon, text }).
-const toast = ref(null);
-function showToast(icon, text) {
-  toast.value = { icon, text };
-  setTimeout(() => (toast.value = null), 2800);
+function selectDate(iso) {
+  if (iso === selectedDate.value) return;
+  selectedDate.value = iso;
+  loadDay();
 }
 
 async function loadDay() {
@@ -36,34 +45,6 @@ async function loadDay() {
     error.value = e.message;
   } finally {
     loading.value = false;
-  }
-}
-
-function shiftDay(delta) {
-  const d = new Date(selectedDate.value + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + delta);
-  const next = d.toISOString().slice(0, 10);
-  if (next > today) return; // no future
-  selectedDate.value = next;
-  loadDay();
-}
-
-async function addEntry() {
-  saving.value = true;
-  error.value = '';
-  try {
-    const data = await api.post('/api/intake/create', form.value);
-    form.value = { food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' };
-    await loadDay(); // refresh aggregates (calories, macros, chart, streak, XP)
-    if (data.xp?.levelup) {
-      showToast('fa-trophy', `Level up! ${data.xp.levelup.from} → ${data.xp.levelup.to}`);
-    } else if (data.xp?.added > 0) {
-      showToast('fa-arrow-up', `+${data.xp.added} XP`);
-    }
-  } catch (e) {
-    error.value = e.message;
-  } finally {
-    saving.value = false;
   }
 }
 
@@ -99,22 +80,37 @@ async function removeEntry(e) {
   }
 }
 
-const prettyDate = computed(() =>
-  new Date(selectedDate.value + 'T00:00:00Z').toLocaleDateString('en-US', {
-    timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
-  })
-);
-
 onMounted(loadDay);
 </script>
 
 <template>
   <main style="max-width: 820px; margin: 0 auto; padding: 8px 16px">
-    <!-- Date navigation -->
-    <div class="datenav">
-      <button @click="shiftDay(-1)" class="icon-btn" aria-label="Previous day"><i class="fa-solid fa-chevron-left" /></button>
-      <span>{{ isToday ? 'Today' : prettyDate }}</span>
-      <button @click="shiftDay(1)" class="icon-btn" :disabled="isToday" aria-label="Next day"><i class="fa-solid fa-chevron-right" /></button>
+    <!-- Level / XP pill -->
+    <div v-if="day" class="hero">
+      <div class="level-pill">
+        <span class="lvl">Lv {{ day.current_level }}</span>
+        <div class="xp">
+          <div class="xp-bar"><div :style="{ width: day.xp_progress_percentage + '%' }" /></div>
+          <small class="muted">{{ day.xp_into_level }} / {{ day.xp_for_next }} XP</small>
+        </div>
+      </div>
+      <span class="streak-flame" title="Logging streak">
+        <i class="fa-solid fa-fire" /> {{ day.streak.current }}
+      </span>
+    </div>
+
+    <!-- Compact date strip (last 7 days) -->
+    <div class="datestrip">
+      <button
+        v-for="d in dateStrip"
+        :key="d.iso"
+        class="day-chip"
+        :class="{ active: d.iso === selectedDate }"
+        @click="selectDate(d.iso)"
+      >
+        <small>{{ d.isToday ? 'Today' : d.weekday }}</small>
+        <strong>{{ d.dayNum }}</strong>
+      </button>
     </div>
 
     <p v-if="loading" class="muted">Loading…</p>
@@ -146,15 +142,6 @@ onMounted(loadDay);
         <div class="card tile"><span class="muted">7-day avg</span><strong>{{ day.average_calories ?? '—' }}</strong><small class="muted">kcal/day</small></div>
       </section>
 
-      <!-- Level / XP -->
-      <section class="card" style="margin-top: 14px">
-        <div style="display: flex; justify-content: space-between">
-          <strong>Level {{ day.current_level }}</strong>
-          <span class="muted">{{ day.xp_into_level }} / {{ day.xp_for_next }} XP · {{ day.total_xp }} total</span>
-        </div>
-        <div class="bar"><div :style="{ width: day.xp_progress_percentage + '%', background: '#a78bfa' }" /></div>
-      </section>
-
       <!-- 7-day calorie chart -->
       <section class="card" style="margin-top: 14px">
         <strong>Last 7 days</strong>
@@ -174,35 +161,15 @@ onMounted(loadDay);
         </div>
       </section>
 
-      <!-- Quick log (today only) -->
-      <section v-if="isToday" class="card" style="margin-top: 14px">
-        <strong>Quick log</strong>
-        <form class="quicklog" @submit.prevent="addEntry">
-          <input v-model="form.food_item" placeholder="Food item" required />
-          <div class="ql-row">
-            <input v-model="form.calories" type="number" placeholder="kcal" min="1" required />
-            <select v-model="form.meal_category">
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
-              <option value="snack">Snack</option>
-            </select>
-          </div>
-
-          <button type="button" class="ql-toggle" @click="showMacros = !showMacros">
-            <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
-            {{ showMacros ? 'Hide macros' : 'Add macros (optional)' }}
-          </button>
-          <div v-if="showMacros" class="ql-macros">
-            <input v-model="form.protein" type="number" placeholder="Protein g" min="0" />
-            <input v-model="form.carbs" type="number" placeholder="Carbs g" min="0" />
-            <input v-model="form.fat" type="number" placeholder="Fat g" min="0" />
-          </div>
-
-          <button type="submit" :disabled="saving">{{ saving ? 'Adding…' : 'Add entry' }}</button>
-        </form>
+      <!-- Quick actions -->
+      <section class="actions">
+        <RouterLink to="/intake" class="action primary">
+          <i class="fa-solid fa-utensils" /> Log food
+        </RouterLink>
+        <RouterLink to="/coach" class="action">
+          <i class="fa-solid fa-dumbbell" /> Ask Coach
+        </RouterLink>
       </section>
-      <p v-else class="muted" style="margin-top: 14px; text-align: center">Viewing a past day — logging is available on Today only.</p>
 
       <p v-if="error" class="error">{{ error }}</p>
 
@@ -240,11 +207,6 @@ onMounted(loadDay);
         </ul>
       </section>
     </template>
-
-    <!-- XP / level-up toast -->
-    <Transition name="fade">
-      <div v-if="toast" class="toast"><i class="fa-solid" :class="toast.icon" /> {{ toast.text }}</div>
-    </Transition>
   </main>
 </template>
 
@@ -252,7 +214,62 @@ onMounted(loadDay);
 .muted { color: var(--muted); }
 .bar { height: 10px; background: #12151b; border-radius: 6px; margin-top: 10px; overflow: hidden; }
 .bar > div { height: 100%; transition: width 0.3s; }
-.datenav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; font-weight: 600; }
+
+/* Level / XP pill + streak flame */
+.hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.level-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px 8px 14px;
+  flex: 1;
+  min-width: 0;
+}
+.level-pill .lvl { font-weight: 800; color: #c4b5fd; white-space: nowrap; }
+.level-pill .xp { flex: 1; min-width: 0; }
+.xp-bar { height: 6px; background: #12151b; border-radius: 4px; overflow: hidden; }
+.xp-bar > div { height: 100%; background: #a78bfa; transition: width 0.3s; }
+.level-pill small { display: block; margin-top: 3px; font-size: 11px; }
+.streak-flame { font-weight: 800; color: #fb923c; white-space: nowrap; }
+
+/* Compact date strip */
+.datestrip { display: flex; gap: 6px; margin-top: 14px; overflow-x: auto; }
+.day-chip {
+  flex: 1;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+}
+.day-chip small { font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+.day-chip strong { font-size: 15px; }
+.day-chip.active { border-color: var(--accent); color: var(--accent); background: #12151b; }
+
+/* Quick actions */
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  background: #2a2e37;
+  color: var(--text);
+}
+.action.primary { background: var(--accent); color: #04210f; }
+
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
 .tile { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }
 .tile strong { font-size: 20px; }
@@ -262,37 +279,4 @@ onMounted(loadDay);
 .icon-btn { background: #2a2e37; color: var(--text); padding: 6px 10px; font-size: 12px; font-weight: 600; }
 .icon-btn.danger { color: #f87171; }
 .icon-btn:disabled { opacity: 0.4; }
-
-/* Quick log — single column with a comfortable kcal+meal row; macros are
-   collapsed by default (progressive disclosure) to keep the form short. */
-.quicklog { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-.ql-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.ql-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.ql-toggle {
-  background: transparent;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  font-size: 13px;
-  font-weight: 600;
-  align-self: flex-start;
-  padding: 8px 12px;
-  min-height: 0;
-}
-.ql-toggle:hover { color: var(--text); }
-@media (max-width: 480px) {
-  .ql-macros { grid-template-columns: 1fr; }
-}
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #a78bfa;
-  color: #1a1030;
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-weight: 700;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 50;
-}
 </style>
