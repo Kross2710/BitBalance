@@ -1,0 +1,93 @@
+// Personal Trainer routes — CLIENT-facing side of the PT feature.
+//   GET  /api/pt/my-trainer            → { trainer|null, feedback[], proposal|null }
+//   GET  /api/pt/messages?since=        → { messages[], my_role:'client' }
+//   POST /api/pt/messages               → { message }                ({ content })
+//   POST /api/pt/goal-proposal/respond  → { accepted, calorie_goal? } ({ proposal_id, decision })
+//
+// Guards are PER-ENDPOINT, not per-prefix: every endpoint here is the client's
+// view of their own trainer, so a regular user (the client of a PT) must be able
+// to reach them. The PT workspace endpoints (slice 4) get their own role checks
+// and reuse the role-agnostic chat helpers in lib/pt.js.
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.js';
+import {
+  PtActionError,
+  myTrainer,
+  feedbackHistory,
+  markFeedbackSeen,
+  pendingProposal,
+  respondProposal,
+  clientChatFetch,
+  clientChatSend,
+} from '../lib/pt.js';
+
+const router = Router();
+
+function handle(fn) {
+  return async (req, res, next) => {
+    try {
+      await fn(req, res);
+    } catch (err) {
+      if (err instanceof PtActionError) {
+        return res.status(422).json({ ok: false, data: null, message: err.message });
+      }
+      next(err);
+    }
+  };
+}
+
+const ok = (res, data, message = null) => res.json({ ok: true, data, message });
+const intParam = (v) => {
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Bootstrap for the My Trainer panel. No trainer → trainer:null (empty state),
+// not a 4xx: "you have no trainer" is a normal state, not an error.
+router.get(
+  '/my-trainer',
+  requireAuth,
+  handle(async (req, res) => {
+    const me = req.user.user_id;
+    const trainer = await myTrainer(me);
+    if (!trainer) return ok(res, { trainer: null, feedback: [], proposal: null });
+
+    const [feedback, proposal] = await Promise.all([feedbackHistory(me), pendingProposal(me)]);
+    await markFeedbackSeen(me);
+    ok(res, { trainer, feedback, proposal });
+  })
+);
+
+router.get(
+  '/messages',
+  requireAuth,
+  handle(async (req, res) => {
+    const since = intParam(req.query.since);
+    ok(res, await clientChatFetch(req.user.user_id, since));
+  })
+);
+
+router.post(
+  '/messages',
+  requireAuth,
+  handle(async (req, res) => {
+    const content = String(req.body?.content ?? '');
+    ok(res, await clientChatSend(req.user.user_id, content));
+  })
+);
+
+router.post(
+  '/goal-proposal/respond',
+  requireAuth,
+  handle(async (req, res) => {
+    const proposalId = intParam(req.body?.proposal_id);
+    const decision = req.body?.decision;
+    if (proposalId <= 0 || (decision !== 'accept' && decision !== 'decline')) {
+      return res.status(422).json({ ok: false, data: null, message: 'Invalid request.' });
+    }
+    const data = await respondProposal(req.user.user_id, proposalId, decision);
+    ok(res, data, decision === 'accept' ? 'Goal updated.' : 'Proposal declined.');
+  })
+);
+
+export default router;

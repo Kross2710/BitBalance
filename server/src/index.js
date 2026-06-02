@@ -11,6 +11,7 @@ import profileRoutes from './routes/profile.js';
 import aiCoachRoutes from './routes/aiCoach.js';
 import friendsRoutes from './routes/friends.js';
 import reminderRoutes from './routes/reminders.js';
+import ptRoutes from './routes/pt.js';
 import { UPLOADS_ROOT } from './lib/uploads.js';
 import { tryRememberLogin } from './lib/remember.js';
 
@@ -70,6 +71,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
 app.use('/api/social', friendsRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/pt', ptRoutes);
 
 // Serve logged food photos read-only. Under /api so the Vite dev proxy forwards
 // it and it stays same-origin in production. maxAge: these files are immutable
