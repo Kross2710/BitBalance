@@ -9,9 +9,11 @@ import { requireAuth } from '../middleware/auth.js';
 import { validateIntake, shapeEntry, dailySummary, fetchEntry, ValidationError } from '../lib/intake.js';
 import { lookupBarcode, BarcodeError } from '../lib/barcode.js';
 import { chatCompletion } from '../lib/aiProvider.js';
+import { saveIntakeImage } from '../lib/uploads.js';
 
-// In-memory upload for AI photo estimation (we forward the bytes to the model,
-// never persist them). 5MB cap mirrors the legacy AI_COACH_MAX_IMAGE_BYTES.
+// In-memory upload for AI photo estimation: we forward the bytes to the model
+// AND persist a copy so the logged entry can show the photo later. 5MB cap
+// mirrors the legacy AI_COACH_MAX_IMAGE_BYTES.
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -40,7 +42,7 @@ router.get('/history', requireAuth, async (req, res, next) => {
     limit = Math.max(1, Math.min(100, Number.isNaN(limit) ? 50 : limit));
 
     const rows = await query(
-      `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, date_intake
+      `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
          FROM intakeLog
         WHERE user_id = ?
         ORDER BY date_intake DESC, intakeLog_id DESC
@@ -150,6 +152,16 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
       return res.status(502).json({ ok: false, data: null, message: 'AI returned an unreadable estimate.' });
     }
 
+    // Persist the photo so the user can review it on the logged entry. The
+    // client passes this image_path back on /create. Best-effort: if saving
+    // fails we still return the estimate (just without a reviewable photo).
+    let imagePath = null;
+    try {
+      imagePath = saveIntakeImage(req.user.user_id, req.file.buffer, req.file.mimetype);
+    } catch (e) {
+      console.error('intake photo save error:', e);
+    }
+
     res.json({
       ok: true,
       data: {
@@ -160,6 +172,7 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
         fat: round1(parsed.fat),
         unit: parsed.unit ? String(parsed.unit).slice(0, 40) : null,
         short_advice: parsed.short_advice ? String(parsed.short_advice).slice(0, 200) : null,
+        image_path: imagePath,
       },
       message: null,
     });
@@ -174,13 +187,13 @@ router.post('/create', requireAuth, async (req, res, next) => {
     const userId = req.user.user_id;
 
     const result = await query(
-      `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category]
+      `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path]
     );
 
     const [entry] = await query(
-      `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, date_intake
+      `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
          FROM intakeLog WHERE user_id = ? AND intakeLog_id = ? LIMIT 1`,
       [userId, result.insertId]
     );

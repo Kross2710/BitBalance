@@ -52,6 +52,9 @@ async function loadDay() {
 const editingId = ref(null);
 const editForm = ref({});
 
+// Full-screen viewer for a logged food photo (AI Photo entries).
+const lightbox = ref('');
+
 function startEdit(e) {
   editingId.value = e.id;
   editForm.value = { intake_id: e.id, food_item: e.food_item, calories: e.calories, meal_category: e.meal_category, protein: e.protein, carbs: e.carbs, fat: e.fat };
@@ -180,24 +183,33 @@ onMounted(loadDay);
           <li v-for="e in entries" :key="e.id" class="card" style="padding: 12px 16px">
             <div v-if="editingId === e.id" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px">
               <input v-model="editForm.food_item" />
-              <input v-model="editForm.calories" type="number" min="1" />
+              <input v-model="editForm.calories" type="number" min="1" step="any" />
               <select v-model="editForm.meal_category">
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>
                 <option value="dinner">Dinner</option>
                 <option value="snack">Snack</option>
               </select>
-              <input v-model="editForm.protein" type="number" min="0" placeholder="P" />
-              <input v-model="editForm.carbs" type="number" min="0" placeholder="C" />
-              <input v-model="editForm.fat" type="number" min="0" placeholder="F" />
+              <input v-model="editForm.protein" type="number" min="0" step="any" placeholder="P" />
+              <input v-model="editForm.carbs" type="number" min="0" step="any" placeholder="C" />
+              <input v-model="editForm.fat" type="number" min="0" step="any" placeholder="F" />
               <div style="grid-column: 1 / -1; display: flex; gap: 8px">
                 <button @click="saveEdit">Save</button>
                 <button @click="cancelEdit" style="background: #2a2e37; color: var(--text)">Cancel</button>
               </div>
             </div>
-            <div v-else style="display: flex; justify-content: space-between; align-items: center">
-              <span>{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
-              <span style="display: flex; gap: 10px; align-items: center">
+            <div v-else style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+              <span style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                <img
+                  v-if="e.image_path"
+                  :src="e.image_path"
+                  class="entry-thumb"
+                  alt="Food photo"
+                  @click="lightbox = e.image_path"
+                />
+                <span style="min-width: 0">{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
+              </span>
+              <span style="display: flex; gap: 10px; align-items: center; flex: none">
                 <strong>{{ e.calories }} kcal</strong>
                 <button @click="startEdit(e)" class="icon-btn">Edit</button>
                 <button @click="removeEntry(e)" class="icon-btn danger">Delete</button>
@@ -207,6 +219,11 @@ onMounted(loadDay);
         </ul>
       </section>
     </template>
+
+    <!-- Food photo viewer -->
+    <div v-if="lightbox" class="lightbox" @click="lightbox = ''">
+      <img :src="lightbox" alt="Food photo" />
+    </div>
   </main>
 </template>
 
@@ -278,6 +295,12 @@ onMounted(loadDay);
 .chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 12px; }
 .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; justify-content: flex-end; }
 .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
+.entry-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; cursor: pointer; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.85);
+  display: grid; place-items: center; padding: 24px;
+}
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; }
 .icon-btn { background: #2a2e37; color: var(--text); padding: 6px 10px; font-size: 12px; font-weight: 600; }
 .icon-btn.danger { color: #f87171; }
 .icon-btn:disabled { opacity: 0.4; }

@@ -15,7 +15,7 @@ function mealFromHour() {
   return 'snack';
 }
 
-const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '' });
+const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
 const showMacros = ref(false);
 const recent = ref([]);
 const suggestions = ref([]);
@@ -43,6 +43,7 @@ function applyItem(item) {
   form.protein = item.protein ?? '';
   form.carbs = item.carbs ?? '';
   form.fat = item.fat ?? '';
+  removePhoto(); // a chosen-from-history item has no photo of its own
   if (item.protein || item.carbs || item.fat) showMacros.value = true;
   showSuggest.value = false;
   suggestions.value = [];
@@ -98,6 +99,7 @@ async function onSubmit() {
     form.protein = '';
     form.carbs = '';
     form.fat = '';
+    removePhoto(); // clears form.image_path + the preview thumbnail
     showMacros.value = false;
     suggestions.value = [];
     showSuggest.value = false;
@@ -246,6 +248,7 @@ function useProduct() {
     form.fat = p.fat ?? '';
     showMacros.value = true;
   }
+  removePhoto(); // a scanned product isn't the AI photo
   closeScanner();
 }
 
@@ -253,9 +256,48 @@ function useProduct() {
 const photoInput = ref(null);
 const photoBusy = ref(false);
 const photoAdvice = ref('');
+// Object URL of the (compressed) image so the user can review what they picked
+// — mirrors the PHP intake page's inline thumbnail.
+const photoPreview = ref('');
 
 function openPhoto() {
   photoInput.value?.click();
+}
+
+// Downscale large photos (especially iPhone shots, which routinely exceed the
+// 5MB server cap) and re-encode to JPEG, which also strips the color profiles
+// that oversaturate on iOS. Falls back to the original file if anything fails.
+async function compressImage(file) {
+  try {
+    if (!file.type?.startsWith('image/') || typeof createImageBitmap !== 'function') return file;
+    const bitmap = await createImageBitmap(file);
+    const MAX = 1600;
+    const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    return blob ? new File([blob], 'meal.jpg', { type: 'image/jpeg' }) : file;
+  } catch {
+    return file;
+  }
+}
+
+function clearPhotoPreview() {
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+  photoPreview.value = '';
+}
+
+// Remove the reviewed photo + its advice (leaves the filled fields so the user
+// can still log the estimate, or edit it).
+function removePhoto() {
+  clearPhotoPreview();
+  photoAdvice.value = '';
+  form.image_path = '';
 }
 
 async function onPhotoPicked(e) {
@@ -265,10 +307,14 @@ async function onPhotoPicked(e) {
   error.value = '';
   success.value = '';
   photoAdvice.value = '';
+  clearPhotoPreview();
   photoBusy.value = true;
   try {
+    const compressed = await compressImage(file);
+    // Preview exactly what we send to the model.
+    photoPreview.value = URL.createObjectURL(compressed);
     const fd = new FormData();
-    fd.append('image', file);
+    fd.append('image', compressed);
     // FormData must NOT go through the JSON api helper — post it directly.
     const res = await fetch('/api/intake/estimate-photo', { method: 'POST', credentials: 'include', body: fd });
     const json = await res.json();
@@ -279,17 +325,22 @@ async function onPhotoPicked(e) {
     form.protein = est.protein ?? '';
     form.carbs = est.carbs ?? '';
     form.fat = est.fat ?? '';
+    form.image_path = est.image_path || ''; // travels to /create so the entry keeps the photo
     if (est.protein || est.carbs || est.fat) showMacros.value = true;
     photoAdvice.value = est.short_advice || '';
   } catch (err) {
     error.value = err.message;
+    clearPhotoPreview(); // drop the preview if the estimate failed
   } finally {
     photoBusy.value = false;
   }
 }
 
 onMounted(loadRecent);
-onBeforeUnmount(stopCamera);
+onBeforeUnmount(() => {
+  stopCamera();
+  clearPhotoPreview();
+});
 </script>
 
 <template>
@@ -305,6 +356,27 @@ onBeforeUnmount(stopCamera);
         <button type="button" class="io-chip" :disabled="photoBusy" @click="openPhoto">
           <i class="fa-solid" :class="photoBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
           {{ photoBusy ? 'Analyzing…' : 'AI Photo' }}
+        </button>
+      </div>
+
+      <!-- AI Photo review: shows the picked image so the user can confirm it. -->
+      <div v-if="photoPreview || photoBusy" class="photo-review">
+        <img v-if="photoPreview" :src="photoPreview" alt="Selected food photo" />
+        <div class="photo-review-body">
+          <span v-if="photoBusy" class="muted"><i class="fa-solid fa-spinner fa-spin" /> Analyzing photo…</span>
+          <template v-else>
+            <strong>Photo added</strong>
+            <small class="muted">Estimate filled in below — adjust if needed.</small>
+          </template>
+        </div>
+        <button
+          v-if="!photoBusy"
+          type="button"
+          class="photo-x"
+          @click="removePhoto"
+          aria-label="Remove photo"
+        >
+          <i class="fa-solid fa-xmark" />
         </button>
       </div>
 
@@ -340,7 +412,7 @@ onBeforeUnmount(stopCamera);
       <div class="two">
         <div>
           <label for="intake-kcal">Calories</label>
-          <input id="intake-kcal" v-model="form.calories" type="number" min="1" placeholder="kcal" required />
+          <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" placeholder="kcal" required />
         </div>
         <div>
           <label for="intake-meal">Meal</label>
@@ -361,15 +433,15 @@ onBeforeUnmount(stopCamera);
       <div v-if="showMacros" class="three">
         <div>
           <label for="intake-p">Protein g</label>
-          <input id="intake-p" v-model="form.protein" type="number" min="0" />
+          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" />
         </div>
         <div>
           <label for="intake-c">Carbs g</label>
-          <input id="intake-c" v-model="form.carbs" type="number" min="0" />
+          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" />
         </div>
         <div>
           <label for="intake-f">Fat g</label>
-          <input id="intake-f" v-model="form.fat" type="number" min="0" />
+          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" />
         </div>
       </div>
 
@@ -417,12 +489,13 @@ onBeforeUnmount(stopCamera);
       </div>
     </div>
 
-    <!-- AI Photo: hidden file input triggered by the AI Photo chip -->
+    <!-- AI Photo: hidden file input triggered by the AI Photo chip. No `capture`
+         attribute, so iOS offers Photo Library / Take Photo / Choose File rather
+         than forcing the camera (matches the PHP intake page). -->
     <input
       ref="photoInput"
       type="file"
       accept="image/*"
-      capture="environment"
       style="display: none"
       @change="onPhotoPicked"
     />
@@ -510,6 +583,38 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-weight: 600;
 }
 .io-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* AI Photo review card */
+.photo-review {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 16px;
+  background: #12151b;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.photo-review img {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.photo-review-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.photo-review-body small { font-size: 12px; }
+.photo-x {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #2a2e37;
+  color: var(--text);
+  border: none;
+  border-radius: 10px;
+}
 
 /* Scanner modal */
 .overlay {

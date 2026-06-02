@@ -1,6 +1,7 @@
 // Intake helpers — ports api/intake/_helpers.php and the macro functions from
 // dashboard/handlers/functions.php (getMacroTotalsToday / getMacroGoalsFromCalorieGoal).
 import { query } from '../db.js';
+import { sanitizeImagePath } from './uploads.js';
 
 const ALLOWED_CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -38,7 +39,11 @@ export function validateIntake(data, requireId = false) {
     }
   }
 
-  return { id, food_item: foodItem, calories, meal_category: category, protein, carbs, fat };
+  // Optional reviewable photo from the AI-photo flow; sanitised so a stored
+  // row can only ever reference our own uploads path.
+  const imagePath = sanitizeImagePath(data.image_path);
+
+  return { id, food_item: foodItem, calories, meal_category: category, protein, carbs, fat, image_path: imagePath };
 }
 
 // Mirrors api_intake_entry(). date_intake comes back as a string (dateStrings:true).
@@ -51,6 +56,7 @@ export function shapeEntry(row) {
     carbs: Number(row.carbs ?? 0),
     fat: Number(row.fat ?? 0),
     meal_category: row.meal_category ?? '',
+    image_path: row.image_path ?? null,
     date_intake: row.date_intake ?? null,
     iso_date: row.date_intake ? new Date(row.date_intake.replace(' ', 'T') + '+07:00').toISOString() : null,
   };
@@ -70,7 +76,7 @@ export function macroGoalsFromCalories(goal) {
 // Mirrors api_intake_fetch(): one entry scoped to its owner.
 export async function fetchEntry(userId, intakeId) {
   const rows = await query(
-    `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, date_intake
+    `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
        FROM intakeLog WHERE user_id = ? AND intakeLog_id = ? LIMIT 1`,
     [userId, intakeId]
   );

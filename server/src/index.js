@@ -10,6 +10,7 @@ import dashboardRoutes from './routes/dashboard.js';
 import profileRoutes from './routes/profile.js';
 import aiCoachRoutes from './routes/aiCoach.js';
 import friendsRoutes from './routes/friends.js';
+import { UPLOADS_ROOT } from './lib/uploads.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -54,6 +55,11 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
 app.use('/api/social', friendsRoutes);
+
+// Serve logged food photos read-only. Under /api so the Vite dev proxy forwards
+// it and it stays same-origin in production. maxAge: these files are immutable
+// (unique filename per upload).
+app.use('/api/uploads', express.static(UPLOADS_ROOT, { maxAge: '7d', index: false }));
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
 app.use((req, res) => {
