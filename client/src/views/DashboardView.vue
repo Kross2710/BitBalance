@@ -16,6 +16,9 @@ const maxHistory = computed(() => Math.max(1, ...(day.value?.history?.calories ?
 // Quick-log form (today only)
 const form = ref({ food_item: '', calories: '', meal_category: 'breakfast', protein: '', carbs: '', fat: '' });
 const saving = ref(false);
+// Macros are optional and hidden by default so the common path (name + kcal +
+// meal) stays a short, single-column form — important on a 375px screen.
+const showMacros = ref(false);
 
 // Transient toast for XP gained / level-ups ({ icon, text }).
 const toast = ref(null);
@@ -174,19 +177,29 @@ onMounted(loadDay);
       <!-- Quick log (today only) -->
       <section v-if="isToday" class="card" style="margin-top: 14px">
         <strong>Quick log</strong>
-        <form @submit.prevent="addEntry" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-top: 12px">
+        <form class="quicklog" @submit.prevent="addEntry">
           <input v-model="form.food_item" placeholder="Food item" required />
-          <input v-model="form.calories" type="number" placeholder="kcal" min="1" required />
-          <select v-model="form.meal_category">
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="dinner">Dinner</option>
-            <option value="snack">Snack</option>
-          </select>
-          <input v-model="form.protein" type="number" placeholder="Protein g" min="0" />
-          <input v-model="form.carbs" type="number" placeholder="Carbs g" min="0" />
-          <input v-model="form.fat" type="number" placeholder="Fat g" min="0" />
-          <button type="submit" :disabled="saving" style="grid-column: 1 / -1">{{ saving ? 'Adding…' : 'Add entry' }}</button>
+          <div class="ql-row">
+            <input v-model="form.calories" type="number" placeholder="kcal" min="1" required />
+            <select v-model="form.meal_category">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+          </div>
+
+          <button type="button" class="ql-toggle" @click="showMacros = !showMacros">
+            <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
+            {{ showMacros ? 'Hide macros' : 'Add macros (optional)' }}
+          </button>
+          <div v-if="showMacros" class="ql-macros">
+            <input v-model="form.protein" type="number" placeholder="Protein g" min="0" />
+            <input v-model="form.carbs" type="number" placeholder="Carbs g" min="0" />
+            <input v-model="form.fat" type="number" placeholder="Fat g" min="0" />
+          </div>
+
+          <button type="submit" :disabled="saving">{{ saving ? 'Adding…' : 'Add entry' }}</button>
         </form>
       </section>
       <p v-else class="muted" style="margin-top: 14px; text-align: center">Viewing a past day — logging is available on Today only.</p>
@@ -249,6 +262,26 @@ onMounted(loadDay);
 .icon-btn { background: #2a2e37; color: var(--text); padding: 6px 10px; font-size: 12px; font-weight: 600; }
 .icon-btn.danger { color: #f87171; }
 .icon-btn:disabled { opacity: 0.4; }
+
+/* Quick log — single column with a comfortable kcal+meal row; macros are
+   collapsed by default (progressive disclosure) to keep the form short. */
+.quicklog { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.ql-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ql-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ql-toggle {
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  align-self: flex-start;
+  padding: 8px 12px;
+  min-height: 0;
+}
+.ql-toggle:hover { color: var(--text); }
+@media (max-width: 480px) {
+  .ql-macros { grid-template-columns: 1fr; }
+}
 .toast {
   position: fixed;
   bottom: 24px;

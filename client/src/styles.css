@@ -27,6 +27,7 @@ button {
   border: none;
   border-radius: 8px;
   padding: 10px 16px;
+  min-height: 44px; /* comfortable touch target */
   font-size: 14px;
   font-weight: 600;
   background: var(--accent);
@@ -34,14 +35,22 @@ button {
 }
 button:disabled { opacity: 0.6; cursor: default; }
 
-input, select {
+input, select, textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 12px;
+  min-height: 44px; /* comfortable touch target */
   border-radius: 8px;
-  border: 1px solid var(--border);
+  /* Lighter than --border for clearer field edges on the dark background. */
+  border: 1px solid #3a414e;
   background: #12151b;
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px; /* >=16px stops iOS Safari auto-zoom on focus */
+}
+input::placeholder, textarea::placeholder { color: #7b828e; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.25);
 }
 
 .card {

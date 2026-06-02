@@ -31,21 +31,21 @@ async function onSubmit() {
     <form class="card" @submit.prevent="onSubmit">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
         <div>
-          <label>First name</label>
-          <input v-model="form.first_name" required />
+          <label for="signup-first">First name</label>
+          <input id="signup-first" v-model="form.first_name" autocomplete="given-name" required />
         </div>
         <div>
-          <label>Last name</label>
-          <input v-model="form.last_name" required />
+          <label for="signup-last">Last name</label>
+          <input id="signup-last" v-model="form.last_name" autocomplete="family-name" required />
         </div>
       </div>
-      <label style="display: block; margin-top: 12px">Email</label>
-      <input v-model="form.email" type="email" autocomplete="email" required />
-      <label style="display: block; margin-top: 12px">Password</label>
-      <input v-model="form.password" type="password" autocomplete="new-password" required />
+      <label for="signup-email" style="display: block; margin-top: 12px">Email</label>
+      <input id="signup-email" v-model="form.email" type="email" autocomplete="email" required />
+      <label for="signup-password" style="display: block; margin-top: 12px">Password</label>
+      <input id="signup-password" v-model="form.password" type="password" autocomplete="new-password" required />
       <small class="muted">Min 8 chars, with upper, lower and a number.</small>
-      <label style="display: block; margin-top: 12px">Confirm password</label>
-      <input v-model="form.confirm_password" type="password" autocomplete="new-password" required />
+      <label for="signup-confirm" style="display: block; margin-top: 12px">Confirm password</label>
+      <input id="signup-confirm" v-model="form.confirm_password" type="password" autocomplete="new-password" required />
       <button type="submit" :disabled="busy" style="width: 100%; margin-top: 18px">
         {{ busy ? 'Creating…' : 'Sign up' }}
       </button>

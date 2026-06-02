@@ -210,7 +210,8 @@ async function onLogout() {
     margin-left: 0;
   }
   .content {
-    padding-bottom: 76px; /* clear the fixed tab bar */
+    /* Clear the fixed tab bar (height + bottom safe-area inset). */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
   .tabbar {
     position: fixed;
@@ -221,14 +222,19 @@ async function onLogout() {
     background: var(--card);
     border-top: 1px solid var(--border);
     z-index: 40;
+    /* Keep tabs above the iOS home indicator / Android gesture bar. */
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .tab {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
-    padding: 9px 0 10px;
+    /* >= 44px tap target (icon + label + padding). */
+    min-height: 52px;
+    padding: 8px 0;
     color: var(--muted);
     text-decoration: none;
     font-size: 11px;

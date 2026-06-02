@@ -30,10 +30,10 @@ async function onSubmit() {
   <main style="max-width: 380px; margin: 12vh auto; padding: 0 16px">
     <h1 style="text-align: center">BitBalance</h1>
     <form class="card" @submit.prevent="onSubmit">
-      <label>Email</label>
-      <input v-model="email" type="email" autocomplete="email" required />
-      <label style="display: block; margin-top: 14px">Password</label>
-      <input v-model="password" type="password" autocomplete="current-password" required />
+      <label for="login-email">Email</label>
+      <input id="login-email" v-model="email" type="email" autocomplete="email" required />
+      <label for="login-password" style="display: block; margin-top: 14px">Password</label>
+      <input id="login-password" v-model="password" type="password" autocomplete="current-password" required />
       <button type="submit" :disabled="busy" style="width: 100%; margin-top: 18px">
         {{ busy ? 'Signing in…' : 'Sign in' }}
       </button>
