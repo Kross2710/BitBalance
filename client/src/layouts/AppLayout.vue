@@ -21,20 +21,35 @@ const navItems = [
 const userInitial = computed(() => (auth.user?.first_name || auth.user?.handle || 'U').trim().charAt(0).toUpperCase());
 
 // Per-tab numeric badges (FB-style):
-//   /intake  → today's unlogged main meals (breakfast/lunch/dinner), a nudge
-//              that clears as you log. From the existing dashboard summary.
+//   /intake  → meal-reminder nudges that are currently "due": only when the
+//              user has reminders enabled, counting each reminder-enabled meal
+//              whose time has passed today (Asia/Bangkok) and isn't logged yet.
+//              Matches the dashboard nudge's trigger conditions; 0 when
+//              reminders are off. From dashboard summary + reminder prefs.
 //   /friends → incoming friend requests awaiting a response.
 const badges = reactive({ '/intake': 0, '/friends': 0 });
 
 async function refreshBadges() {
-  // Independent sources; a failure on one must not blank the other.
-  const [summary, pending] = await Promise.allSettled([
+  // Independent sources; a failure on one must not blank the others.
+  const [summary, pending, reminders] = await Promise.allSettled([
     api.get('/api/dashboard/summary'),
     api.get('/api/social/pending-count'),
+    api.get('/api/reminders'),
   ]);
-  if (summary.status === 'fulfilled') {
-    const meals = summary.value.meal_categories || {};
-    badges['/intake'] = ['Breakfast', 'Lunch', 'Dinner'].filter((m) => !(Number(meals[m]) > 0)).length;
+  if (summary.status === 'fulfilled' && reminders.status === 'fulfilled') {
+    const meals = summary.value.meal_categories || {}; // capitalized keys
+    const r = reminders.value;
+    if (r?.enabled) {
+      const nowHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false }).slice(0, 5);
+      badges['/intake'] = ['breakfast', 'lunch', 'dinner', 'snack'].filter((m) => {
+        const cfg = r.meals?.[m];
+        if (!cfg?.enabled || nowHM < cfg.time) return false; // off or not due yet
+        const cap = m.charAt(0).toUpperCase() + m.slice(1);
+        return !(Number(meals[cap]) > 0); // not logged today
+      }).length;
+    } else {
+      badges['/intake'] = 0; // reminders off → no nudge badge
+    }
   }
   if (pending.status === 'fulfilled') {
     badges['/friends'] = Number(pending.value.count) || 0;
