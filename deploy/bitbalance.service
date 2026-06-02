@@ -1,0 +1,27 @@
+# systemd unit for the BitBalance Express API (serves /api + built Vue SPA).
+# Install as a USER service (no root needed):
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/bitbalance.service ~/.config/systemd/user/bitbalance.service
+#   # edit WorkingDirectory below to your real repo path, then:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now bitbalance
+#   loginctl enable-linger $USER   # keep it running after you log out
+#
+# Logs:  journalctl --user -u bitbalance -f
+[Unit]
+Description=BitBalance Express server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# >>> EDIT THIS to where you cloned the repo <<<
+WorkingDirectory=%h/BitBalance-2.0---Calorie-Tracker/server
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=3
+# Env lives in server/.env (loaded by dotenv). Keep secrets out of this unit.
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target

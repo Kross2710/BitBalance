@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import authRoutes from './routes/auth.js';
 import intakeRoutes from './routes/intake.js';
@@ -79,6 +82,23 @@ app.use('/api/wrapped', wrappedRoutes);
 // it and it stays same-origin in production. maxAge: these files are immutable
 // (unique filename per upload).
 app.use('/api/uploads', express.static(UPLOADS_ROOT, { maxAge: '7d', index: false }));
+
+// Serve the built Vue SPA so production runs on a SINGLE origin (one ngrok
+// tunnel, same-origin cookies). Guarded by existsSync: in dev the client is
+// served by Vite on :5173 and client/dist doesn't exist, so this is a no-op.
+// `npm run build` in client/ emits client/dist.
+const CLIENT_DIST = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../client/dist'
+);
+if (fs.existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST));
+  // SPA history fallback: any non-/api GET returns index.html so client-side
+  // routing (vue-router) works on hard refresh / deep links.
+  app.get(/^\/(?!api\/).*/, (req, res) =>
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'))
+  );
+}
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
 app.use((req, res) => {
