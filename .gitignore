@@ -1,5 +1,5 @@
 include/secrets.php
-include/db_config.php
+include/db_config.local.php
 .claude/
 .DS_Store
 AGENTS.md
