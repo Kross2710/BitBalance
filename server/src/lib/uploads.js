@@ -10,6 +10,10 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // <repo>/server/uploads/intake
 export const UPLOADS_ROOT = path.resolve(__dirname, '../../uploads');
+// <repo>/uploads — legacy PHP upload paths are still stored in MySQL as
+// uploads/profile_*. These are served separately at /uploads/* for migration
+// compatibility.
+export const LEGACY_UPLOADS_ROOT = path.resolve(__dirname, '../../../uploads');
 const INTAKE_DIR = path.join(UPLOADS_ROOT, 'intake');
 
 // The public URL prefix the static mount lives under (see index.js).

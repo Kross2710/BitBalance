@@ -16,7 +16,7 @@ import friendsRoutes from './routes/friends.js';
 import reminderRoutes from './routes/reminders.js';
 import ptRoutes from './routes/pt.js';
 import wrappedRoutes from './routes/wrapped.js';
-import { UPLOADS_ROOT } from './lib/uploads.js';
+import { LEGACY_UPLOADS_ROOT, UPLOADS_ROOT } from './lib/uploads.js';
 import { tryRememberLogin } from './lib/remember.js';
 
 const app = express();
@@ -89,6 +89,7 @@ app.use('/api/wrapped', wrappedRoutes);
 // it and it stays same-origin in production. maxAge: these files are immutable
 // (unique filename per upload).
 app.use('/api/uploads', express.static(UPLOADS_ROOT, { maxAge: '7d', index: false }));
+app.use('/uploads', express.static(LEGACY_UPLOADS_ROOT, { maxAge: '7d', index: false }));
 
 // Serve the built Vue SPA so production runs on a SINGLE origin (one ngrok
 // tunnel, same-origin cookies). Guarded by existsSync: in dev the client is

@@ -7,6 +7,7 @@
 // caller's single accepted trainer.
 import { pool, query } from '../db.js';
 import { todayVN, addDays, weekdayLabel, isValidDate } from './dates.js';
+import { normalizeProfileImage } from './users.js';
 
 // Thrown for user-facing validation failures (mapped to a 422 by the route).
 export class PtActionError extends Error {}
@@ -44,7 +45,7 @@ export async function myTrainer(clientId) {
     user_name: r.user_name ?? '',
     first_name: r.first_name ?? '',
     last_name: r.last_name ?? null,
-    profile_image: r.profile_image ?? null,
+    profile_image: normalizeProfileImage(r.profile_image),
     bio: r.bio ?? null,
     specialties: r.specialties ?? null,
     experience_years: r.experience_years == null ? null : Number(r.experience_years),
@@ -275,7 +276,7 @@ export async function pendingTrainer(clientId) {
     user_name: r.user_name ?? '',
     first_name: r.first_name ?? '',
     last_name: r.last_name ?? null,
-    profile_image: r.profile_image ?? null,
+    profile_image: normalizeProfileImage(r.profile_image),
   };
 }
 
@@ -301,7 +302,7 @@ export async function ptDirectory(clientId) {
       user_name: r.user_name ?? '',
       first_name: r.first_name ?? '',
       last_name: r.last_name ?? null,
-      profile_image: r.profile_image ?? null,
+      profile_image: normalizeProfileImage(r.profile_image),
       bio: r.bio ?? null,
       specialties: r.specialties ?? null,
       experience_years: r.experience_years == null ? null : Number(r.experience_years),
@@ -420,7 +421,7 @@ export async function trainerClients(trainerId) {
     user_name: c.user_name ?? '',
     first_name: c.first_name ?? '',
     last_name: c.last_name ?? null,
-    profile_image: c.profile_image ?? null,
+    profile_image: normalizeProfileImage(c.profile_image),
     logging_streak: Number(c.logging_streak ?? 0),
     calorie_goal: c.calorie_goal == null ? null : Number(c.calorie_goal),
     last_weight: c.last_weight == null ? null : Number(c.last_weight),
@@ -577,7 +578,7 @@ export async function pendingRequests(trainerId) {
     user_name: r.user_name ?? '',
     first_name: r.first_name ?? '',
     last_name: r.last_name ?? null,
-    profile_image: r.profile_image ?? null,
+    profile_image: normalizeProfileImage(r.profile_image),
     logging_streak: Number(r.logging_streak ?? 0),
   }));
 }
