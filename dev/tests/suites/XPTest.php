@@ -3,7 +3,7 @@
  * Test suite for gamified XP and leveling system.
  */
 
-require_once __DIR__ . '/../../include/handlers/xp.php';
+require_once __DIR__ . '/../../../include/handlers/xp.php';
 
 class XPTest {
     public $useDatabase = true; // Use transactional isolation

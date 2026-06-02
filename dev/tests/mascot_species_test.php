@@ -8,7 +8,7 @@
  *     php tests/mascot_species_test.php
  */
 
-require __DIR__ . '/../include/handlers/mascot_species.php';
+require __DIR__ . '/../../include/handlers/mascot_species.php';
 
 $pass = 0; $fail = 0;
 function check($label, $cond)

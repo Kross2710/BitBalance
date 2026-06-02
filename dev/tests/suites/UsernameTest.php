@@ -3,7 +3,7 @@
  * Test suite for username handle generation logic.
  */
 
-require_once __DIR__ . '/../../include/handlers/username.php';
+require_once __DIR__ . '/../../../include/handlers/username.php';
 
 class UsernameTest {
     public $useDatabase = true; // Use transactional rollback

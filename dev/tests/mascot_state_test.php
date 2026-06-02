@@ -12,7 +12,7 @@
  * The DB helpers (get/set name) are exercised by the live app, not here.
  */
 
-require __DIR__ . '/../include/handlers/mascot_state.php';
+require __DIR__ . '/../../include/handlers/mascot_state.php';
 
 $pass = 0; $fail = 0;
 

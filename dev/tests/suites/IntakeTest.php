@@ -3,7 +3,7 @@
  * Test suite for food logging intake, macro calculations, and CRUD logic.
  */
 
-require_once __DIR__ . '/../../dashboard/handlers/functions.php';
+require_once __DIR__ . '/../../../dashboard/handlers/functions.php';
 
 class IntakeTest {
     public $useDatabase = true; // Safe transactional database logic

@@ -3,7 +3,7 @@
  * Test suite for the custom Anti-Spam Captcha system.
  */
 
-require_once __DIR__ . '/../../include/handlers/captcha.php';
+require_once __DIR__ . '/../../../include/handlers/captcha.php';
 
 class CaptchaTest {
     public $useDatabase = false; // Pure unit test (uses sessions, no DB needed)

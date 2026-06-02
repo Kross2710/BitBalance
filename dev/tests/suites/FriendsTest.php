@@ -3,7 +3,7 @@
  * Test suite for the social Friends relationship system.
  */
 
-require_once __DIR__ . '/../../include/handlers/friends.php';
+require_once __DIR__ . '/../../../include/handlers/friends.php';
 
 class FriendsTest {
     public $useDatabase = true; // Use transactional isolation

@@ -11,7 +11,7 @@
  * scores high; opposite profiles score low; archetypes land where expected).
  */
 
-require __DIR__ . '/../include/handlers/beats_identity.php';
+require __DIR__ . '/../../include/handlers/beats_identity.php';
 
 $pass = 0; $fail = 0;
 

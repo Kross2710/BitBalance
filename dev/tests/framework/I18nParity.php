@@ -31,8 +31,8 @@ class I18nParity
 
     public function __construct($i18nDir = null, $fallback = 'en')
     {
-        // tests/framework -> project root -> include/i18n
-        $this->dir = $i18nDir ?: dirname(__DIR__, 2) . '/include/i18n';
+        // dev/tests/framework -> project root -> include/i18n
+        $this->dir = $i18nDir ?: dirname(__DIR__, 3) . '/include/i18n';
         $this->fallback = $fallback;
     }
 

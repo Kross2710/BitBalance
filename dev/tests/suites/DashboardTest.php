@@ -3,7 +3,7 @@
  * Test suite for dashboard summaries, timezones, logging streaks, and Gemini API.
  */
 
-require_once __DIR__ . '/../../dashboard/handlers/functions.php';
+require_once __DIR__ . '/../../../dashboard/handlers/functions.php';
 
 class DashboardTest {
     public $useDatabase = true; // Use transactional isolation for streak DB updates
@@ -107,7 +107,7 @@ class DashboardTest {
 
     public function testGeminiApiStatus() {
         // Load helpers containing call_gemini
-        require_once __DIR__ . '/../../api/ai-coach/_helpers.php';
+        require_once __DIR__ . '/../../../api/ai-coach/_helpers.php';
         
         // Verify key is defined
         Assert::true(defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '', "GEMINI_API_KEY is missing or empty in secrets.php");

@@ -9,7 +9,7 @@
  * is usable and how it is cleaned before reaching the user.
  */
 
-require_once __DIR__ . '/../../dashboard/handlers/mascot_ai.php';
+require_once __DIR__ . '/../../../dashboard/handlers/mascot_ai.php';
 
 class MascotOpenRouterTest {
     public $useDatabase = false; // Pure unit test — no DB needed

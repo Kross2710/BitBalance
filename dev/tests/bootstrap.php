@@ -74,7 +74,7 @@ $port = 3306;
 
 // Load standard configuration variables, catching any connection errors thrown during inclusion
 try {
-    @include __DIR__ . '/../include/db_config.php';
+    @include __DIR__ . '/../../include/db_config.php';
 } catch (PDOException $ignore) {
     // Connection exception is expected on CLI local mac due to socket path, we will recreate using TestPDO below.
 }

@@ -29,8 +29,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'run') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BitBalance — Test Laboratory</title>
-    <link rel="stylesheet" href="../css/tokens.css">
-    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../../css/tokens.css">
+    <link rel="stylesheet" href="../../css/base.css">
     <style>
         :root {
             --lab-gradient: linear-gradient(135deg, #1CB0F6, #0079b8);
