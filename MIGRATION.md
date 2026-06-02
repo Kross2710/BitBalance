@@ -16,6 +16,9 @@ DB       → MySQL (giữ nguyên, không đổi).
 Dev: client chạy ở `:5173`, gọi `/api/...` và Vite proxy sang Express `:3000`
 → same-origin, session cookie chạy ngon, không vướng CORS.
 
+> **Ngôn ngữ thiết kế** của frontend (màu, component, icon, app shell responsive,
+> pattern cho page mới): xem [`DESIGN.md`](./DESIGN.md). Đọc trước khi dựng view mới.
+
 ## Chạy thử (dev)
 
 ```bash
