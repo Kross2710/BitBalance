@@ -86,7 +86,17 @@ Changing `server/.env` (e.g. enabling Google/AI keys) needs only a
 5. **Sessions are MemoryStore** → a restart drops active sessions, but the 30-day
    remember-me cookie re-logs users in. Acceptable for now; swap to Redis/MySQL
    store for real durability.
-6. **No password reset in Express/Vue yet.** To reset/unlock an account, run a
+6. **Tailscale needs BOTH ends on the tailnet.** The box is fine
+   (`100.127.38.40`, online). The *controlling* machine must also run Tailscale,
+   logged into the same account. On macOS the system extension must be approved:
+   `systemextensionsctl list | grep tailscale` must show `[activated enabled]`,
+   not `[activated waiting for user]` — until approved (System Settings > General
+   > Login Items & Extensions > Network Extensions), the CLI **hangs** and the GUI
+   says "Invalid response from local Tailscale service". The macsys CLI is
+   `/usr/local/bin/tailscale` (wraps `Tailscale.app/Contents/MacOS/tailscale`).
+   If the controlling machine is on the same LAN as the box, just use
+   `192.168.0.194` and skip Tailscale.
+7. **No password reset in Express/Vue yet.** To reset/unlock an account, run a
    one-off Node script in `server/` (so it resolves `node_modules` + `.env`):
    `bcrypt.hash(pw,10)` → `UPDATE user SET password=?` and
    `UPDATE userStatus SET failed_attempts=0, locked_until=NULL, status='active'`.
