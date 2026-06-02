@@ -58,6 +58,7 @@ export default {
 
   // ---- profile ----
   'profile.title': 'Hồ sơ',
+  'profile.avatar.alt': 'Ảnh đại diện',
   'profile.role.regular': 'thường',
   'profile.role.pt': 'huấn luyện viên',
   'profile.account': 'Tài khoản',

@@ -59,6 +59,7 @@ export default {
 
   // ---- profile (reuses PHP profile.* values where they overlap) ----
   'profile.title': 'Profile',
+  'profile.avatar.alt': 'Profile image',
   'profile.role.regular': 'regular',
   'profile.role.pt': 'trainer',
   'profile.account': 'Account',

@@ -147,7 +147,7 @@ const initials = () =>
       <!-- Identity header -->
       <section class="card" style="display: flex; align-items: center; gap: 16px">
         <div class="avatar">
-          <img v-if="meta.image" :src="meta.image" alt="Profile image" />
+          <img v-if="meta.image" :src="meta.image" :alt="$t('profile.avatar.alt')" />
           <span v-else>{{ initials() }}</span>
         </div>
         <div>
