@@ -53,13 +53,13 @@ gần như port 1-1.
 | Logging streak | `updateLoggingStreak()` | ✅ `lib/streak.js` | ✅ Dashboard | Tăng/đóng băng/reset chuỗi |
 | Auth – register | `api/auth/register.php` | ✅ `POST /api/auth/register` | ✅ SignupView | Tự sinh handle `Tên#1234`, auto-login |
 | Onboarding | `api/onboarding/save.php` | ✅ `POST /api/onboarding/save` | ✅ OnboardingView | Port BMR/TDEE/macro + lưu transaction |
-| Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ Dashboard | Sửa inline |
-| Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ Dashboard | Trả deleted_row cho Undo |
+| Intake – update | `api/intake/update.php` | ✅ `POST /api/intake/update` | ✅ IntakeView | Sửa inline trong "Today's entries" (đã chuyển khỏi Dashboard) |
+| Intake – delete | `api/intake/delete.php` | ✅ `POST /api/intake/delete` | ✅ IntakeView | Xoá trong "Today's entries"; trả deleted_row cho Undo |
 | Intake – suggest | `api/intake/suggest.php` | ✅ `GET /api/intake/suggest?q=` | ✅ IntakeView | Recent chips (món hay log) + autocomplete từ chính lịch sử user; macro lấy từ lần log gần nhất |
 | Intake – barcode | `api/intake/lookup_barcode.php` | ✅ `POST /api/intake/lookup-barcode` | ✅ IntakeView | Cache `barcode_products` → OpenFoodFacts fallback → ghi `barcode_scan_log`. UI: native BarcodeDetector (Android) → **ZXing** fallback (iOS Safari, lazy-load) → nhập tay |
 | Intake – AI photo | `dashboard/handlers/ai_chat.php` (nhánh ảnh) | ✅ `POST /api/intake/estimate-photo` | ✅ IntakeView | multer upload → vision (Gemini/OpenRouter) → ước lượng `{food_name,calories,P/C/F,advice}` → prefill form. Chọn từ **thư viện** (bỏ `capture`) + nén ảnh client-side (canvas, ≤1600px) + **preview** ảnh đã chọn. **Lưu ảnh** vào `server/uploads/intake/` (serve `/api/uploads/*`), trả `image_path`, lưu vào `intakeLog.image_path` khi log → Dashboard hiện thumbnail + lightbox xem lại |
-| Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + autocomplete + **Scan Barcode** + **AI Photo** + meal theo giờ + macros optional + Log Entry full-width |
-| Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
+| Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + autocomplete + **Scan Barcode** + **AI Photo** + meal theo giờ + macros optional + Log Entry full-width + **"Today's entries"** (sửa/xoá inline, thumbnail) |
+| Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Overview: BMI, **Focus tile** (macro cần bù), 7-day avg, biểu đồ 7 ngày, theo bữa, XP/level. Entries hiển thị **read-only** (thumbnail + lightbox) — quản lý chuyển sang Intake |
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
 | Profile – get | `api/profile/get.php` | ✅ `GET /api/profile` | ✅ ProfileView | Payload `{user, bio, status, goal, physical}` |
 | Profile – update | `api/profile/update.php` | ✅ `POST /api/profile/update` | ✅ ProfileView | Account/bio/theme/goal/physical trong 1 transaction; check trùng email/handle; đồng bộ session. Chưa port: upload ảnh + đổi ngôn ngữ + `log_attempt` (legacy update.php cũng không xử lý ảnh/ngôn ngữ) |

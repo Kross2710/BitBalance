@@ -48,40 +48,9 @@ async function loadDay() {
   }
 }
 
-// --- Edit / delete ---
-const editingId = ref(null);
-const editForm = ref({});
-
-// Full-screen viewer for a logged food photo (AI Photo entries).
+// Full-screen viewer for a logged food photo (AI Photo entries). The dashboard
+// is a read-only overview; editing/deleting entries lives on the Intake page.
 const lightbox = ref('');
-
-function startEdit(e) {
-  editingId.value = e.id;
-  editForm.value = { intake_id: e.id, food_item: e.food_item, calories: e.calories, meal_category: e.meal_category, protein: e.protein, carbs: e.carbs, fat: e.fat };
-}
-function cancelEdit() {
-  editingId.value = null;
-}
-async function saveEdit() {
-  error.value = '';
-  try {
-    await api.post('/api/intake/update', editForm.value);
-    editingId.value = null;
-    await loadDay();
-  } catch (e) {
-    error.value = e.message;
-  }
-}
-async function removeEntry(e) {
-  if (!confirm(`Delete "${e.food_item}"?`)) return;
-  error.value = '';
-  try {
-    await api.post('/api/intake/delete', { intake_id: e.id });
-    await loadDay();
-  } catch (err) {
-    error.value = err.message;
-  }
-}
 
 onMounted(loadDay);
 </script>
@@ -131,16 +100,19 @@ onMounted(loadDay);
           <span>C {{ day.macros.carbs }} / {{ day.macro_goals.carbs }}g</span>
           <span>F {{ day.macros.fat }} / {{ day.macro_goals.fat }}g</span>
         </div>
-        <p v-if="day.focus" class="muted" style="margin: 10px 0 0; font-size: 13px">
-          <template v-if="day.focus.calorie_remaining != null">{{ day.focus.calorie_remaining }} kcal left ·</template>
-          <template v-else-if="day.focus.calorie_over_by != null">{{ day.focus.calorie_over_by }} kcal over ·</template>
-          Focus: {{ day.focus.macro_focus.label }}<template v-if="day.focus.macro_focus.gap"> ({{ day.focus.macro_focus.gap }}g)</template>
+        <p v-if="day.focus && (day.focus.calorie_remaining != null || day.focus.calorie_over_by != null)" class="muted" style="margin: 10px 0 0; font-size: 13px">
+          <template v-if="day.focus.calorie_remaining != null">{{ day.focus.calorie_remaining }} kcal left</template>
+          <template v-else>{{ day.focus.calorie_over_by }} kcal over</template>
         </p>
       </section>
 
       <!-- Stat tiles -->
       <section class="tiles">
-        <div class="card tile"><span class="muted">Streak</span><strong><i class="fa-solid fa-fire" style="color: #fb923c" /> {{ day.streak.current }}d</strong><small class="muted">best {{ day.streak.longest }}</small></div>
+        <div class="card tile">
+          <span class="muted">Focus</span>
+          <strong>{{ day.focus?.macro_focus?.label ?? '—' }}</strong>
+          <small class="muted">{{ day.focus?.macro_focus?.gap ? day.focus.macro_focus.gap + 'g left' : 'on track' }}</small>
+        </div>
         <div class="card tile"><span class="muted">BMI</span><strong>{{ day.bmi.value ?? '—' }}</strong><small class="muted">{{ day.bmi.category ?? 'no data' }}</small></div>
         <div class="card tile"><span class="muted">7-day avg</span><strong>{{ day.average_calories ?? '—' }}</strong><small class="muted">kcal/day</small></div>
       </section>
@@ -176,29 +148,12 @@ onMounted(loadDay);
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <!-- Entries -->
+      <!-- Entries (read-only overview; manage them on the Intake page) -->
       <section style="margin-top: 14px">
         <p v-if="!entries.length" class="muted">No entries for this day.</p>
         <ul v-else style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px">
           <li v-for="e in entries" :key="e.id" class="card" style="padding: 12px 16px">
-            <div v-if="editingId === e.id" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px">
-              <input v-model="editForm.food_item" />
-              <input v-model="editForm.calories" type="number" min="1" step="any" />
-              <select v-model="editForm.meal_category">
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-                <option value="snack">Snack</option>
-              </select>
-              <input v-model="editForm.protein" type="number" min="0" step="any" placeholder="P" />
-              <input v-model="editForm.carbs" type="number" min="0" step="any" placeholder="C" />
-              <input v-model="editForm.fat" type="number" min="0" step="any" placeholder="F" />
-              <div style="grid-column: 1 / -1; display: flex; gap: 8px">
-                <button @click="saveEdit">Save</button>
-                <button @click="cancelEdit" style="background: #2a2e37; color: var(--text)">Cancel</button>
-              </div>
-            </div>
-            <div v-else style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
               <span style="display: flex; align-items: center; gap: 10px; min-width: 0">
                 <img
                   v-if="e.image_path"
@@ -209,14 +164,13 @@ onMounted(loadDay);
                 />
                 <span style="min-width: 0">{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
               </span>
-              <span style="display: flex; gap: 10px; align-items: center; flex: none">
-                <strong>{{ e.calories }} kcal</strong>
-                <button @click="startEdit(e)" class="icon-btn">Edit</button>
-                <button @click="removeEntry(e)" class="icon-btn danger">Delete</button>
-              </span>
+              <strong style="flex: none">{{ e.calories }} kcal</strong>
             </div>
           </li>
         </ul>
+        <RouterLink v-if="isToday && entries.length" to="/intake" class="manage-link">
+          <i class="fa-solid fa-pen" /> Edit today's entries
+        </RouterLink>
       </section>
     </template>
 
@@ -301,7 +255,9 @@ onMounted(loadDay);
   display: grid; place-items: center; padding: 24px;
 }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; }
-.icon-btn { background: #2a2e37; color: var(--text); padding: 6px 10px; font-size: 12px; font-weight: 600; }
-.icon-btn.danger { color: #f87171; }
-.icon-btn:disabled { opacity: 0.4; }
+.manage-link {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+  min-height: 44px; padding: 0 4px;
+  color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none;
+}
 </style>

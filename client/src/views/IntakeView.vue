@@ -37,6 +37,60 @@ async function loadRecent() {
   }
 }
 
+// ---- Today's entries (manage what was logged today) ----
+// The dashboard shows entries read-only; editing/deleting lives here. We pull
+// recent history and keep only today's rows (server tz is +07:00, so compute
+// "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
+const entries = ref([]);
+const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+const editingId = ref(null);
+const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_category: 'snack', protein: '', carbs: '', fat: '' });
+
+async function loadEntries() {
+  try {
+    const data = await api.get('/api/intake/history');
+    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === todayLocal);
+  } catch {
+    /* non-fatal: section just stays empty */
+  }
+}
+
+function startEdit(e) {
+  editingId.value = e.id;
+  Object.assign(editForm, {
+    intake_id: e.id,
+    food_item: e.food_item,
+    calories: e.calories,
+    meal_category: e.meal_category,
+    protein: e.protein || '',
+    carbs: e.carbs || '',
+    fat: e.fat || '',
+  });
+}
+function cancelEdit() {
+  editingId.value = null;
+}
+async function saveEdit() {
+  error.value = '';
+  try {
+    await api.post('/api/intake/update', { ...editForm });
+    editingId.value = null;
+    await Promise.all([loadEntries(), loadRecent()]);
+  } catch (e) {
+    error.value = e.message;
+  }
+}
+async function removeEntry(e) {
+  if (!confirm(`Delete "${e.food_item}"?`)) return;
+  error.value = '';
+  try {
+    await api.post('/api/intake/delete', { intake_id: e.id });
+    await Promise.all([loadEntries(), loadRecent()]);
+  } catch (err) {
+    error.value = err.message;
+  }
+}
+
 function applyItem(item) {
   form.food_item = item.food_item;
   form.calories = item.calories;
@@ -103,7 +157,7 @@ async function onSubmit() {
     showMacros.value = false;
     suggestions.value = [];
     showSuggest.value = false;
-    await loadRecent();
+    await Promise.all([loadRecent(), loadEntries()]);
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -336,7 +390,10 @@ async function onPhotoPicked(e) {
   }
 }
 
-onMounted(loadRecent);
+onMounted(() => {
+  loadRecent();
+  loadEntries();
+});
 onBeforeUnmount(() => {
   stopCamera();
   clearPhotoPreview();
@@ -453,6 +510,43 @@ onBeforeUnmount(() => {
       <p v-if="success" class="ok">{{ success }}</p>
       <p v-if="error" class="error">{{ error }}</p>
     </form>
+
+    <!-- Today's entries: review + edit/delete what was logged today -->
+    <section v-if="entries.length" class="entries card">
+      <h2>Today's entries</h2>
+      <ul>
+        <li v-for="e in entries" :key="e.id">
+          <div v-if="editingId === e.id" class="edit-grid">
+            <input v-model="editForm.food_item" aria-label="Food" />
+            <input v-model="editForm.calories" type="number" min="1" step="any" aria-label="Calories" />
+            <select v-model="editForm.meal_category" aria-label="Meal">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Snack</option>
+            </select>
+            <input v-model="editForm.protein" type="number" min="0" step="any" placeholder="P" aria-label="Protein" />
+            <input v-model="editForm.carbs" type="number" min="0" step="any" placeholder="C" aria-label="Carbs" />
+            <input v-model="editForm.fat" type="number" min="0" step="any" placeholder="F" aria-label="Fat" />
+            <div class="edit-actions">
+              <button type="button" @click="saveEdit">Save</button>
+              <button type="button" class="ghost" @click="cancelEdit">Cancel</button>
+            </div>
+          </div>
+          <div v-else class="entry-row">
+            <span class="entry-main">
+              <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" alt="Food photo" />
+              <span class="entry-name">{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
+            </span>
+            <span class="entry-end">
+              <strong>{{ e.calories }} kcal</strong>
+              <button type="button" class="icon-btn" @click="startEdit(e)" aria-label="Edit entry"><i class="fa-solid fa-pen" /></button>
+              <button type="button" class="icon-btn danger" @click="removeEntry(e)" aria-label="Delete entry"><i class="fa-solid fa-trash" /></button>
+            </span>
+          </div>
+        </li>
+      </ul>
+    </section>
 
     <!-- Barcode scanner modal -->
     <div v-if="showScanner" class="overlay" @click.self="closeScanner">
@@ -662,6 +756,29 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 }
 .scan-result p { margin: 4px 0; }
 .use-btn { width: 100%; margin-top: 10px; }
+
+/* Today's entries list */
+.entries { margin-top: 18px; }
+.entries h2 { font-size: 16px; margin: 0 0 12px; }
+.entries ul { list-style: none; margin: 0; padding: 0; }
+.entries li { padding: 10px 0; border-top: 1px solid var(--border); }
+.entries li:first-child { border-top: none; padding-top: 0; }
+.entry-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.entry-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+.entry-end { display: flex; align-items: center; gap: 6px; flex: none; }
+.icon-btn {
+  width: 44px; height: 44px; min-height: 44px;
+  display: grid; place-items: center;
+  background: #2a2e37; color: var(--text); border: none; border-radius: 10px;
+  font-size: 14px;
+}
+.icon-btn.danger { color: #f87171; }
+.edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+.edit-grid input, .edit-grid select { width: 100%; }
+.edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+.edit-actions .ghost { background: #2a2e37; color: var(--text); }
 
 @media (max-width: 480px) {
   .three { grid-template-columns: 1fr; }
