@@ -235,8 +235,10 @@ onMounted(loadDay);
 .level-pill small { display: block; margin-top: 3px; font-size: 11px; }
 .streak-flame { font-weight: 800; color: #fb923c; white-space: nowrap; }
 
-/* Compact date strip */
-.datestrip { display: flex; gap: 6px; margin-top: 14px; overflow-x: auto; }
+/* Compact date strip — scrollable on narrow screens but no visible scrollbar
+   (7 chips fit a phone width; scroll is a safety net, not a feature). */
+.datestrip { display: flex; gap: 6px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.datestrip::-webkit-scrollbar { display: none; }
 .day-chip {
   flex: 1;
   min-width: 44px;

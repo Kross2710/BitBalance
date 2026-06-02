@@ -13,8 +13,9 @@ const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
   { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
-  { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: false },
   { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
+  // Friends is hidden until its backend is ported (a greyed-out tab read as
+  // "unfinished" to end users). Re-add when /api/social is available.
 ];
 
 async function onLogout() {

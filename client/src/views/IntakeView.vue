@@ -464,12 +464,14 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
+  display: inline-flex;
+  align-items: center;
   background: #12151b;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 7px 14px;
-  min-height: 0;
+  min-height: 44px; /* tap target — recent chips are a primary action */
   font-size: 13px;
   font-weight: 600;
 }
@@ -486,7 +488,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-weight: 600;
   margin-top: 14px;
   padding: 8px 12px;
-  min-height: 0;
+  min-height: 44px;
 }
 .ql-toggle:hover { color: var(--text); }
 
@@ -529,7 +531,18 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.modal-head .x { background: transparent; color: var(--muted); min-height: 0; padding: 4px 8px; }
+.modal-head .x {
+  background: transparent;
+  color: var(--muted);
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+.modal-head .x:hover { color: var(--text); }
 .cam { border-radius: 10px; overflow: hidden; margin-bottom: 14px; background: #000; aspect-ratio: 4 / 3; }
 .cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scan-row { display: flex; gap: 8px; margin-top: 6px; }

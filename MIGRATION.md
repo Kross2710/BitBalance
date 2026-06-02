@@ -58,7 +58,7 @@ gần như port 1-1.
 | Intake – suggest | `api/intake/suggest.php` | ✅ `GET /api/intake/suggest?q=` | ✅ IntakeView | Recent chips (món hay log) + autocomplete từ chính lịch sử user; macro lấy từ lần log gần nhất |
 | Intake – barcode | `api/intake/lookup_barcode.php` | ✅ `POST /api/intake/lookup-barcode` | ✅ IntakeView | Cache `barcode_products` → OpenFoodFacts fallback → ghi `barcode_scan_log`. UI: native BarcodeDetector (Android) → **ZXing** fallback (iOS Safari, lazy-load) → nhập tay |
 | Intake – AI photo | `dashboard/handlers/ai_chat.php` (nhánh ảnh) | ✅ `POST /api/intake/estimate-photo` | ✅ IntakeView | multer upload → vision (Gemini/OpenRouter) → ước lượng `{food_name,calories,P/C/F,advice}` → prefill form. Ảnh không lưu đĩa |
-| Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + meal theo giờ + macros optional + Log Entry full-width. Chưa có: Scan Barcode, AI Photo |
+| Intake – page | `intake.php` (trang Food Intake) | — | ✅ IntakeView (`/intake`) | Trang log food hạng nhất: input lớn + recent chips + autocomplete + **Scan Barcode** + **AI Photo** + meal theo giờ + macros optional + Log Entry full-width |
 | Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
 | Profile – get | `api/profile/get.php` | ✅ `GET /api/profile` | ✅ ProfileView | Payload `{user, bio, status, goal, physical}` |
