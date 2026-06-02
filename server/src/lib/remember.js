@@ -135,6 +135,16 @@ export async function tryRememberLogin(req, res) {
   }
 }
 
+// Revoke every remember-me token for a user — for a future "log out of all
+// devices" action (or on ban/password change). Backlog: no UI wired yet.
+export async function revokeAllForUser(userId) {
+  try {
+    await query('DELETE FROM auth_token WHERE user_id = ?', [userId]);
+  } catch (e) {
+    console.error('revokeAllForUser failed:', e.message);
+  }
+}
+
 // Revoke the token referenced by the current request's cookie (logout) and drop
 // the cookie from the browser.
 export async function forgetRemember(req, res) {

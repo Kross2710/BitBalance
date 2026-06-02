@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { api } from '../lib/api.js';
+import { useAuthStore } from '../stores/auth.js';
+
+const auth = useAuthStore();
 
 const day = ref(null); // full /api/dashboard/day payload
 const selectedDate = ref(new Date().toISOString().slice(0, 10));
@@ -57,6 +60,9 @@ onMounted(loadDay);
 
 <template>
   <main style="max-width: 820px; margin: 0 auto; padding: 8px 16px">
+    <!-- Greeting (moved here from the topbar, which now shows brand + avatar). -->
+    <p v-if="auth.user" class="greet">Hi, {{ auth.user.first_name || auth.user.handle }}</p>
+
     <!-- Level / XP pill -->
     <div v-if="day" class="hero">
       <div class="level-pill">
@@ -185,6 +191,8 @@ onMounted(loadDay);
 .muted { color: var(--muted); }
 .bar { height: 10px; background: #12151b; border-radius: 6px; margin-top: 10px; overflow: hidden; }
 .bar > div { height: 100%; transition: width 0.3s; }
+
+.greet { font-weight: 800; font-size: 18px; margin: 2px 0 10px; }
 
 /* Level / XP pill + streak flame */
 .hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }

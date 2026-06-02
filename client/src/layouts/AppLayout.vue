@@ -1,22 +1,24 @@
 <script setup>
-import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router';
-import { reactive, watch, onMounted } from 'vue';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { reactive, computed, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
 import { api } from '../lib/api.js';
 
 const auth = useAuthStore();
-const router = useRouter();
 const route = useRoute();
 
 // Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
-// the PHP app's Font Awesome set (fa-solid).
+// the PHP app's Font Awesome set (fa-solid). Profile is intentionally NOT here:
+// it's reached via the avatar in the topbar, keeping the bottom bar to 4 tabs.
 const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
   { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
   { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: true },
-  { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
 ];
+
+// Initial for the avatar fallback when the user has no profile image.
+const userInitial = computed(() => (auth.user?.first_name || auth.user?.handle || 'U').trim().charAt(0).toUpperCase());
 
 // Per-tab numeric badges (FB-style):
 //   /intake  → today's unlogged main meals (breakfast/lunch/dinner), a nudge
@@ -48,10 +50,6 @@ watch(
   }
 );
 
-async function onLogout() {
-  await auth.logout();
-  router.push({ name: 'login' });
-}
 </script>
 
 <template>
@@ -62,13 +60,7 @@ async function onLogout() {
       <nav class="side-nav">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-link">
           <span class="nav-ico">
-            <img
-              v-if="item.to === '/profile' && auth.user?.profile_image"
-              :src="auth.user.profile_image"
-              class="nav-avatar"
-              alt=""
-            />
-            <i v-else class="fa-solid" :class="item.icon" />
+            <i class="fa-solid" :class="item.icon" />
             <span v-if="badges[item.to]" class="badge">{{ badges[item.to] }}</span>
           </span>
           <span class="nav-label">{{ item.label }}</span>
@@ -79,8 +71,14 @@ async function onLogout() {
     <!-- Main column -->
     <div class="main">
       <header class="topbar">
-        <span class="greeting">Hi, {{ auth.user?.first_name || auth.user?.handle }}</span>
-        <button class="logout" @click="onLogout"><i class="fa-solid fa-right-from-bracket" /> Log out</button>
+        <RouterLink to="/dashboard" class="brand-link" aria-label="BitBalance home">
+          <span class="brand-mark">B</span>
+          <span class="brand-name">BitBalance</span>
+        </RouterLink>
+        <RouterLink to="/profile" class="avatar-link" :class="{ active: route.name === 'profile' }" aria-label="Profile">
+          <img v-if="auth.user?.profile_image" :src="auth.user.profile_image" class="topbar-avatar" alt="" />
+          <span v-else class="topbar-avatar fallback">{{ userInitial }}</span>
+        </RouterLink>
       </header>
       <div class="content">
         <RouterView v-slot="{ Component }">
@@ -95,13 +93,7 @@ async function onLogout() {
     <nav class="tabbar">
       <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="tab">
         <span class="tab-ico">
-          <img
-            v-if="item.to === '/profile' && auth.user?.profile_image"
-            :src="auth.user.profile_image"
-            class="nav-avatar"
-            alt=""
-          />
-          <i v-else class="fa-solid" :class="item.icon" />
+          <i class="fa-solid" :class="item.icon" />
           <span v-if="badges[item.to]" class="badge">{{ badges[item.to] }}</span>
         </span>
         <span>{{ item.label }}</span>
@@ -214,18 +206,6 @@ async function onLogout() {
   place-items: center;
 }
 .nav-ico { flex: none; width: 20px; }
-.nav-avatar {
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-}
-.nav-ico .nav-avatar { width: 22px; height: 22px; }
-.tab-ico .nav-avatar { width: 24px; height: 24px; }
-/* Ring the avatar on the active tab (FB-style). */
-.nav-link.router-link-active .nav-avatar,
-.tab.router-link-active .nav-avatar {
-  box-shadow: 0 0 0 2px var(--accent);
-}
 .badge {
   position: absolute;
   top: -6px;
@@ -261,14 +241,50 @@ async function onLogout() {
   border-bottom: 1px solid var(--border);
   z-index: 30;
 }
-.greeting {
-  font-weight: 700;
-}
-.logout {
-  background: #2a2e37;
+/* Topbar brand (left) — app identity, links home. */
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
   color: var(--text);
-  font-size: 13px;
 }
+.brand-link .brand-mark {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #04210f;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+.brand-name { font-weight: 800; font-size: 17px; letter-spacing: 0.01em; }
+
+/* Topbar avatar (right) — the entry point to Profile / settings / logout.
+   44x44 hit area around the 36px avatar for a comfortable tap target. */
+.avatar-link {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.topbar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #04210f;
+  font-weight: 800;
+  font-size: 15px;
+}
+.avatar-link.active .topbar-avatar { box-shadow: 0 0 0 2px var(--accent); }
 .content {
   padding: 4px 0 32px;
 }

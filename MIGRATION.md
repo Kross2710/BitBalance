@@ -71,7 +71,7 @@ gần như port 1-1.
 | Social/Friends | `api/social/action.php` | ✅ `/api/social/*` | ✅ FriendsView | `poll`/`leaderboard`/`pending-count` (GET) + `search`/`send`/`accept`/`reject`/`cancel`/`unfriend` (POST). Cap 20 lời mời pending/24h; upsert lại row rejected/cancelled; weekly_xp tính từ `xp_event` 7 ngày. UI 4 tab (Friends/Pending/Ranks/Find), poll 15s khi mở tab, tab nav thứ 5 + badge lời mời đến. Chưa port: **block** + enforce `profile_visibility` (PHP cũng chưa enforce); `log_attempt` audit (đồng bộ với các route khác) |
 | Admin panel | `admin/*.php` | ⬜ | ⬜ | module riêng, có auth riêng |
 | Captcha | `captcha_image.php` (GD) | ⬜ | ⬜ | thay bằng svg-captcha (Node) |
-| App shell / nav | `dashboard/views/sidebar.php` | — | ✅ AppLayout | Sidebar (desktop, hover mở rộng) + bottom tab (mobile), icon Font Awesome 6 |
+| App shell / nav | `dashboard/views/sidebar.php` | — | ✅ AppLayout | Sidebar (desktop, hover mở rộng) + bottom tab (mobile) **4 tab** (Home/Intake/Coach/Friends), icon Font Awesome 6. Topbar = logo "BitBalance" (trái) + avatar (phải, vào Profile); Log out đã chuyển vào Profile; greeting "Hi, {name}" nằm ở Dashboard |
 
 > **Forum**: bỏ hoàn toàn theo yêu cầu — không port (đang là dead code bên PHP).
 
@@ -87,6 +87,9 @@ gần như port 1-1.
       tự đăng nhập lại khi session hết hạn; logout thu hồi token + xoá cookie.
       UI: checkbox "Keep me signed in for 30 days" ở Login + nút Log out trong
       Profile. Còn nợ nhỏ: "Log out of all devices" (revoke_all đã có sẵn hàm).
+- [ ] **Log out of all devices**: gắn UI gọi revoke-all (hàm thu hồi mọi
+      `auth_token` của user đã có sẵn trong `lib/remember.js`) — ví dụ nút trong
+      Profile + endpoint `POST /api/auth/logout-all`. Backlog từ nhát auth bundle.
 - [ ] **Session store production**: thay MemoryStore của express-session bằng
       store bền (Redis hoặc MySQL session store).
 - [ ] **CSRF**: app PHP có `include/csrf.php`. SPA dùng cookie → cân nhắc
