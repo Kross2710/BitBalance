@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
+import expressMySQLSession from 'express-mysql-session';
 import cors from 'cors';
 import compression from 'compression';
 import path from 'node:path';
@@ -49,12 +50,29 @@ app.use(
 );
 
 // Session — the Express equivalent of PHP's session_start() + hardened cookie.
-// NOTE: the default MemoryStore is for DEV ONLY (leaks memory, single process).
-// For production swap in a persistent store (e.g. connect-redis or a MySQL
-// session store) — tracked in MIGRATION.md.
+// Persisted in MariaDB (express-mysql-session) instead of the default
+// MemoryStore, which leaks memory on a long-running process and drops every
+// active session on restart. The store owns a `sessions` table (created on first
+// run) and sweeps expired rows, so logins now survive a service restart.
+const MySQLStore = expressMySQLSession(session);
+const sessionStore = new MySQLStore({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  createDatabaseTable: true,
+  clearExpired: true,
+  checkExpirationInterval: 1000 * 60 * 60, // sweep expired sessions hourly
+  expiration: 1000 * 60 * 60 * 24, // 1 day — matches the cookie maxAge below
+});
+// A store error (DB blip, etc.) must be logged, never take down the process.
+sessionStore.on('error', (err) => console.error('Session store error:', err));
+
 app.use(
   session({
     name: 'bb.sid',
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'dev-insecure-secret',
     resave: false,
     saveUninitialized: false,
