@@ -22,6 +22,13 @@ import { tryRememberLogin } from './lib/remember.js';
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
+// Behind a TLS-terminating proxy (ngrok, nginx, a PaaS) the connection to this
+// process is plain HTTP, so Express sees req.secure=false and a Secure session
+// cookie would be silently dropped. Trusting the proxy lets Express read
+// X-Forwarded-Proto, so secure cookies are sent when COOKIE_SECURE=true. Set
+// TRUST_PROXY=0 to disable (e.g. when exposed directly without a proxy).
+if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
+
 app.use(express.json());
 
 // CORS for dev when the Vue client talks to the API cross-origin. When the
