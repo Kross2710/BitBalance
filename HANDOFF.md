@@ -2,7 +2,7 @@
 
 File này gom mọi thứ cần để **resume công việc migration ở máy local**. Chi tiết
 sâu hơn nằm ở [`MIGRATION.md`](./MIGRATION.md) (trạng thái port từng endpoint) và
-[`DESIGN.md`](./DESIGN.md) (design system). Cập nhật: 2026-06-02.
+[`DESIGN.md`](./DESIGN.md) (design system). Cập nhật: 2026-06-03.
 
 ## 1. Kéo code về
 
@@ -15,18 +15,19 @@ git merge origin/main                             # nếu nhánh tụt sau main
 **Branch & PR state:**
 - Nhánh làm việc: `claude/express-vue-migration-XoMbE` (tái dùng qua nhiều PR).
 - **PR #12, #13, #14 đã MERGED** vào `main` (tới merge commit `d8a5b44`, PR #14).
-- **Nhánh hiện đi TRƯỚC `origin/main` 7 commit và CHƯA mở PR.** Đã push lên
-  `origin/claude/express-vue-migration-XoMbE` rồi. **Việc cần làm: mở 1 PR mới** gộp
-  7 commit này vào `main` — gồm PT epic (slice 1-5 + disconnect) và Sign in with Google:
-  - `74e005f` refactor(coach): tách AiCoachPanel + bottom-sheet convo list
-  - `6b50040` feat(coach): Coach Hub (segmented AI Coach / My Trainer)
-  - `d30b40c` feat(pt): My Trainer panel (client) + `/api/pt`
-  - `3061f91` feat(pt): trainer workspace `/trainer` + ChatRoom dùng chung
-  - `59e2635` feat(pt): client tự tìm + xin trainer (directory/request)
-  - `34950e2` feat(pt): disconnect/unlink trainer (cả 2 phía)
-  - `d4e0aeb` feat(auth): Sign in with Google (server-side OAuth)
+- **Nhánh hiện đi TRƯỚC `origin/main` ~24 commit và CHƯA mở PR** (đã push). **Việc cần
+  làm: mở 1 PR mới** gộp các commit này vào `main`. Xem đủ list:
+  `git log --oneline origin/main..HEAD`. Các mảng lớn trên nhánh:
+  - **PT epic** (slice 1-5 + disconnect + **PT-initiated invites** `72d6fe7`) — xem mục 3/6.
+  - **Sign in with Google** (`d4e0aeb`).
+  - **i18n (vue-i18n)** — locale vi/en, đa số view đã localize (session song song).
+  - **BitBalance Wrapped** — recap API + story UI (session song song).
+  - **Deploy kit** — `DEPLOY.md`, serve SPA từ Express, CachyOS/N100; DB fixes
+    (utf8mb4, time_zone +07:00, trust proxy).
 - Push thẳng `main` bị chặn (branch protection) → luôn đưa qua PR từ nhánh này.
 - `client/vite.config.js` **cố ý để uncommitted** (proxy/allowedHosts local) — đừng commit.
+- **Nhiều session chạy song song trên cùng nhánh** — trước khi sửa file dùng chung
+  (`i18n/en.js`/`vi.js`, ...) check `git status`; đừng commit file đang dirty của session khác.
 
 ## 2. Chạy dev ở local
 
@@ -63,8 +64,9 @@ trên DB chưa mới, apply các file trong `include/migrations/`. Chạy qua
 `php include/migrations/migrate.php` hoặc nạp trực tiếp file `.sql`. Các bảng PT
 cần có: `2026_05_31_add_pt_features`, `add_pt_chat`, `add_pt_profile`,
 `add_pt_goal_proposal`. **Accept goal proposal cần `2026_06_02_add_macro_goals`**
-(thêm cột `userGoal.{protein_goal,carbs_goal,fat_goal,set_by,source}`) — DB test
-local có thể tụt cột này, apply trước khi test luồng accept.
+(thêm cột `userGoal.{protein_goal,carbs_goal,fat_goal,set_by,source}`). **PT mời client
+cần `2026_06_03_add_trainer_client_initiated_by`** (cột `trainer_client.initiated_by`).
+DB test local có thể tụt các cột này — apply trước khi test luồng accept/invite.
 
 **Tài khoản test (DB `test` XAMPP, password đã set `Test1234!`):** client `24`
 (`kross2710@gmail.com`), client `34` (`vukhanhhung2710@gmail.com`); trainer `39`
@@ -85,7 +87,7 @@ nhánh, CHƯA merge** (7 commit chờ PR — xem mục 1).
 | Dashboard (day/summary, **Focus tile**, entries read-only + lightbox, **nudge reminder**) | `routes/dashboard.js`, `lib/dashboard.js` | `views/DashboardView.vue` |
 | Profile (get/update + **Meal reminders** + **Log out**) | `routes/profile.js`, `routes/reminders.js` | `views/ProfileView.vue` |
 | **Coach Hub** (segmented **AI Coach** / **My Trainer**) | `routes/aiCoach.js`, `lib/aiProvider.js` | `views/CoachView.vue` (hub), `components/AiCoachPanel.vue`, `ConversationList.vue`, `BottomSheet.vue` |
-| **Personal Trainer (PT)** — client (My Trainer: hero/chat/advice/accept goal · tìm+xin trainer · disconnect) + trainer (`/trainer` workspace: clients/detail/diary/trend/feedback/goal/chat/requests · terminate) | `routes/pt.js`, `lib/pt.js`, `middleware/auth.js` (`requirePt`) | `components/MyTrainerPanel.vue`, `TrainerDirectory.vue`, `ChatRoom.vue`, `views/TrainerView.vue`, `components/TrainerClientDetail.vue`, `layouts/AppLayout.vue` (avatar menu) |
+| **Personal Trainer (PT)** — client (My Trainer: hero/chat/advice/accept goal · tìm+xin trainer · **accept lời mời PT** · disconnect) + trainer (`/trainer` workspace: clients/detail/diary/trend/feedback/goal/chat/requests · **Find clients = mời client** · terminate). **Connect 2 chiều** (client xin HLV ↔ PT mời client, bên kia accept). | `routes/pt.js`, `lib/pt.js`, `middleware/auth.js` (`requirePt`) | `components/MyTrainerPanel.vue`, `TrainerDirectory.vue`, `TrainerFindClients.vue`, `ChatRoom.vue`, `views/TrainerView.vue`, `components/TrainerClientDetail.vue`, `layouts/AppLayout.vue` (avatar menu) |
 | Friends/Social | `routes/friends.js`, `lib/friends.js` | `views/FriendsView.vue` |
 | Gamification | `lib/xp.js`, `lib/streak.js` | (dashboard) |
 | App shell: topbar (brand + **avatar dropdown**: Trainer workspace[pt]/Profile) + **4-tab** nav + badge | — | `layouts/AppLayout.vue`, `stores/badges.js` |
@@ -105,8 +107,8 @@ Chi tiết từng endpoint: bảng trạng thái trong `MIGRATION.md`.
    `lib/remember.js`, chỉ cần thêm endpoint + nút trong Profile.
 3. **Nợ hạ tầng:** session store production (Redis/MySQL thay MemoryStore — hiện
    MemoryStore mất session khi reload), CSRF cho mutation, captcha (svg-captcha thay
-   PHP GD), i18n, AI Coach chat nhận ảnh (vision — provider đã hỗ trợ, route `send`
-   chưa nhận upload).
+   PHP GD), AI Coach chat nhận ảnh (vision — provider đã hỗ trợ, route `send`
+   chưa nhận upload). **i18n đã xong** (vue-i18n, locale vi/en) — session song song.
    - **Google OAuth đã xong** (`lib/google.js` + routes `GET /api/auth/google`,
      `/google/callback`, `/providers`). Server-side Authorization Code flow port
      1-1 từ PHP, dùng lại bảng `user_identity` + `fetch` (không thêm dependency).
@@ -162,6 +164,11 @@ Chi tiết từng endpoint: bảng trạng thái trong `MIGRATION.md`.
 - **PT quan hệ 1-1 một lúc**: `sendTrainerRequest` chặn nếu đã accepted/pending + check
   capacity; directory chỉ hiện khi client chưa có trainer; **disconnect** (client) /
   **terminate** (trainer) đều có **confirm inline** (không dùng popup trình duyệt).
+- **Connect 2 chiều + `trainer_client.initiated_by`**: client xin HLV (initiated_by
+  `client`) → trainer accept ở tab Requests; PT mời client (initiated_by `trainer`) →
+  client accept ở card lời mời trong My Trainer. Query lọc theo direction nên lời mời
+  KHÔNG lẫn vào Requests và ngược lại. Legacy row `initiated_by=NULL` coi là `client`.
+  `respondInvite` accept chạy trong transaction + dọn link in-flight khác (giữ 1-1).
 - **Accept goal proposal** ghi 1 row `userGoal` mới `source='pt'` (latest-wins) trong
   transaction; số liệu chuẩn theo `respond_goal_proposal.php`.
 - **TRADEOFF đã biết:** Dashboard **read-only mọi ngày**; sửa/xoá món chuyển hẳn sang
