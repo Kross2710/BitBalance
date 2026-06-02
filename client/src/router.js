@@ -20,6 +20,8 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       { path: '', name: 'admin', component: () => import('./views/admin/AdminHomeView.vue') },
+      { path: 'users', name: 'admin-users', component: () => import('./views/admin/AdminUsersView.vue') },
+      { path: 'users/:id', name: 'admin-user', component: () => import('./views/admin/AdminUserDetailView.vue') },
     ],
   },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,

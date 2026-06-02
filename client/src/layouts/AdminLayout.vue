@@ -1,10 +1,11 @@
 <script setup>
-import { RouterLink, RouterView, useRouter } from 'vue-router';
+import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router';
 import { computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 // Defence in depth: the router guard already blocks non-admins, but this area is
 // sensitive, so bounce anyone who reaches the layout without the admin role.
@@ -12,13 +13,19 @@ onMounted(() => {
   if (auth.user && auth.user.role !== 'admin') router.replace('/dashboard');
 });
 
-// Sidebar nav. Users (Phase 1) and Logs (Phase 2) are listed so the full IA is
-// visible, but disabled until their views ship.
+// Sidebar nav. Logs (Phase 2) is listed so the full IA is visible but disabled
+// until its view ships.
 const navItems = [
   { to: '/admin', icon: 'fa-gauge', labelKey: 'admin.nav.overview', enabled: true },
-  { to: '/admin/users', icon: 'fa-users', labelKey: 'admin.nav.users', enabled: false },
+  { to: '/admin/users', icon: 'fa-users', labelKey: 'admin.nav.users', enabled: true },
   { to: '/admin/logs', icon: 'fa-list-check', labelKey: 'admin.nav.logs', enabled: false },
 ];
+
+// Explicit active matching: Overview is exact (so it doesn't light up on child
+// routes); section items match their path prefix (so /users/:id keeps Users lit).
+function isActive(item) {
+  return item.to === '/admin' ? route.path === '/admin' : route.path.startsWith(item.to);
+}
 
 const adminName = computed(() => auth.user?.first_name || auth.user?.handle || 'Admin');
 </script>
@@ -32,7 +39,7 @@ const adminName = computed(() => auth.user?.first_name || auth.user?.handle || '
       </div>
       <nav class="admin-nav">
         <template v-for="item in navItems" :key="item.to">
-          <RouterLink v-if="item.enabled" :to="item.to" class="admin-nav-link">
+          <RouterLink v-if="item.enabled" :to="item.to" class="admin-nav-link" :class="{ active: isActive(item) }">
             <i class="fa-solid" :class="item.icon" />
             <span>{{ $t(item.labelKey) }}</span>
           </RouterLink>
@@ -91,7 +98,7 @@ const adminName = computed(() => auth.user?.first_name || auth.user?.handle || '
 }
 .admin-nav-link i { flex: none; width: 18px; text-align: center; }
 .admin-nav-link:not(.disabled):hover { background: #12151b; color: var(--text); }
-.admin-nav-link.router-link-active:not(.disabled) { background: #12151b; color: var(--accent); }
+.admin-nav-link.active:not(.disabled) { background: #12151b; color: var(--accent); }
 .admin-nav-link.disabled { opacity: 0.45; cursor: default; }
 .soon {
   margin-left: auto; font-style: normal; font-size: 10px; font-weight: 700;
