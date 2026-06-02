@@ -81,8 +81,12 @@ gần như port 1-1.
       `updateLoggingStreak()` (`lib/streak.js`). Còn nợ nhỏ: chưa ghi `log_attempt`
       (activity_log) cho sự kiện streak/award — chỉ là audit, không ảnh hưởng hành vi.
       `xp_award_weight_log` đã port nhưng chưa được gọi (chờ endpoint weight-log).
-- [ ] **Remember-me token**: port `include/handlers/remember_token.php` + bảng token
-      (login hiện chưa cấp cookie ghi nhớ dài hạn).
+- [x] **Remember-me token**: đã port `include/handlers/remember_token.php` →
+      `server/src/lib/remember.js` (selector/validator, bảng `auth_token` có sẵn).
+      Login nhận cờ `remember` → cấp cookie `bb_remember` 30 ngày; middleware
+      tự đăng nhập lại khi session hết hạn; logout thu hồi token + xoá cookie.
+      UI: checkbox "Keep me signed in for 30 days" ở Login + nút Log out trong
+      Profile. Còn nợ nhỏ: "Log out of all devices" (revoke_all đã có sẵn hàm).
 - [ ] **Session store production**: thay MemoryStore của express-session bằng
       store bền (Redis hoặc MySQL session store).
 - [ ] **CSRF**: app PHP có `include/csrf.php`. SPA dùng cookie → cân nhắc

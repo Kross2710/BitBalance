@@ -9,6 +9,7 @@ const route = useRoute();
 
 const email = ref('');
 const password = ref('');
+const remember = ref(false);
 const error = ref('');
 const busy = ref(false);
 
@@ -16,7 +17,7 @@ async function onSubmit() {
   error.value = '';
   busy.value = true;
   try {
-    await auth.login(email.value, password.value);
+    await auth.login(email.value, password.value, remember.value);
     router.push(route.query.redirect || { name: 'dashboard' });
   } catch (e) {
     error.value = e.message;
@@ -39,6 +40,10 @@ async function onSubmit() {
       <input id="login-email" v-model="email" type="email" autocomplete="email" placeholder="you@example.com" required />
       <label for="login-password">Password</label>
       <input id="login-password" v-model="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+      <label class="remember">
+        <input v-model="remember" type="checkbox" />
+        <span>Keep me signed in for 30 days</span>
+      </label>
       <button type="submit" class="submit" :disabled="busy">
         {{ busy ? 'Signing in…' : 'Sign in' }}
       </button>
@@ -84,6 +89,18 @@ async function onSubmit() {
 }
 .auth-card label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
 .auth-card label + input { margin-bottom: 14px; }
+/* Remember-me row: a label wrapping the checkbox (override the block label rule). */
+.auth-card .remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+  min-height: 44px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.auth-card .remember input { width: auto; margin: 0; }
 .submit { width: 100%; margin-top: 8px; min-height: 50px; font-size: 16px; }
 .muted { color: var(--muted); font-size: 13px; }
 .switch { text-align: center; margin: 16px 0 0; }

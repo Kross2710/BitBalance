@@ -11,6 +11,7 @@ import profileRoutes from './routes/profile.js';
 import aiCoachRoutes from './routes/aiCoach.js';
 import friendsRoutes from './routes/friends.js';
 import { UPLOADS_ROOT } from './lib/uploads.js';
+import { tryRememberLogin } from './lib/remember.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -45,6 +46,18 @@ app.use(
     },
   })
 );
+
+// Auto-login from a "remember me" cookie when the session has lapsed. Mirrors
+// PHP's remember_login() in init.php: only touches the DB when a guest request
+// actually carries the cookie, so it's a no-op for normal traffic.
+app.use(async (req, res, next) => {
+  try {
+    if (!req.session?.user) await tryRememberLogin(req, res);
+  } catch {
+    /* a remember-me failure must never break the request */
+  }
+  next();
+});
 
 app.get('/api/health', (req, res) => res.json({ ok: true, data: { status: 'up' }, message: null }));
 
