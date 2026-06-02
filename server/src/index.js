@@ -9,6 +9,7 @@ import onboardingRoutes from './routes/onboarding.js';
 import dashboardRoutes from './routes/dashboard.js';
 import profileRoutes from './routes/profile.js';
 import aiCoachRoutes from './routes/aiCoach.js';
+import friendsRoutes from './routes/friends.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -52,6 +53,7 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
+app.use('/api/social', friendsRoutes);
 
 // 404 + error handlers in the same { ok, data, message } envelope the SPA expects.
 app.use((req, res) => {

@@ -9,27 +9,33 @@ const router = useRouter();
 const route = useRoute();
 
 // Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
-// the PHP app's Font Awesome set (fa-solid). Friends is hidden until its backend
-// is ported (a greyed-out tab read as "unfinished" to end users).
+// the PHP app's Font Awesome set (fa-solid).
 const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
   { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
+  { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: true },
   { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
 ];
 
-// Per-tab numeric badges (FB-style). Intake shows how many of today's main meals
-// (breakfast/lunch/dinner) are still unlogged — a gentle nudge that clears as you
-// log. Sourced from the existing dashboard summary; no notifications system yet.
-const badges = reactive({ '/intake': 0 });
+// Per-tab numeric badges (FB-style):
+//   /intake  → today's unlogged main meals (breakfast/lunch/dinner), a nudge
+//              that clears as you log. From the existing dashboard summary.
+//   /friends → incoming friend requests awaiting a response.
+const badges = reactive({ '/intake': 0, '/friends': 0 });
 
 async function refreshBadges() {
-  try {
-    const s = await api.get('/api/dashboard/summary');
-    const meals = s.meal_categories || {};
+  // Independent sources; a failure on one must not blank the other.
+  const [summary, pending] = await Promise.allSettled([
+    api.get('/api/dashboard/summary'),
+    api.get('/api/social/pending-count'),
+  ]);
+  if (summary.status === 'fulfilled') {
+    const meals = summary.value.meal_categories || {};
     badges['/intake'] = ['Breakfast', 'Lunch', 'Dinner'].filter((m) => !(Number(meals[m]) > 0)).length;
-  } catch {
-    /* non-fatal: just no badge */
+  }
+  if (pending.status === 'fulfilled') {
+    badges['/friends'] = Number(pending.value.count) || 0;
   }
 }
 
@@ -38,7 +44,7 @@ onMounted(refreshBadges);
 watch(
   () => route.name,
   (name) => {
-    if (name === 'dashboard' || name === 'intake') refreshBadges();
+    if (name === 'dashboard' || name === 'intake' || name === 'friends') refreshBadges();
   }
 );
 
