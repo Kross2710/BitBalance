@@ -49,18 +49,6 @@ $stmt = $pdo->prepare("SELECT food_item, meal_category, calories, protein, carbs
 $stmt->execute([$user_id]);
 $intakes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Latest posts
-$stmt = $pdo->prepare("SELECT post_id, title, status, date_posted
-                       FROM forumPost WHERE user_id = ? ORDER BY date_posted DESC LIMIT 10");
-$stmt->execute([$user_id]);
-$posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Latest comments
-$stmt = $pdo->prepare("SELECT comment_id, post_id, content, status, date_posted
-                       FROM forumComment WHERE user_id = ? ORDER BY date_posted DESC LIMIT 10");
-$stmt->execute([$user_id]);
-$comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 // Login attempts (by email — login_attempts has no user_id FK)
 $stmt = $pdo->prepare("SELECT ip_address, success, attempted_at
                        FROM login_attempts WHERE email = ? ORDER BY attempted_at DESC LIMIT 15");
@@ -192,13 +180,6 @@ $adminActions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <span class="stat-value"><?php echo !empty($user['last_logging_date']) ? htmlspecialchars($user['last_logging_date']) : '—'; ?></span>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon posts"><i class="fa-solid fa-comments"></i></div>
-                    <div class="stat-body">
-                        <span class="stat-label">Posts (shown)</span>
-                        <span class="stat-value"><?php echo count($posts); ?></span>
-                    </div>
-                </div>
             </div>
 
             <div class="grid-2">
@@ -236,54 +217,6 @@ $adminActions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <tr>
                                         <td><?php echo htmlspecialchars($w['date_logged']); ?></td>
                                         <td><?php echo number_format((float) $w['weight'], 2); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </section>
-
-                <section class="panel">
-                    <h3><i class="fa-solid fa-pen-to-square"></i> Forum posts (last 10)</h3>
-                    <?php if (empty($posts)): ?>
-                        <p class="muted">No posts.</p>
-                    <?php else: ?>
-                        <table class="mini-table">
-                            <thead><tr><th>Date</th><th>Title</th><th>Status</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($posts as $p): ?>
-                                    <tr>
-                                        <td><?php echo date('d-m-Y', strtotime($p['date_posted'])); ?></td>
-                                        <td><?php echo htmlspecialchars($p['title']); ?></td>
-                                        <td><?php echo htmlspecialchars(ucfirst($p['status'])); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </section>
-
-                <section class="panel">
-                    <h3><i class="fa-solid fa-comment"></i> Forum comments (last 10)</h3>
-                    <?php if (empty($comments)): ?>
-                        <p class="muted">No comments.</p>
-                    <?php else: ?>
-                        <table class="mini-table">
-                            <thead><tr><th>Date</th><th>Post</th><th>Excerpt</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($comments as $c): ?>
-                                    <tr>
-                                        <td><?php echo date('d-m-Y', strtotime($c['date_posted'])); ?></td>
-                                        <td>#<?php echo (int) $c['post_id']; ?></td>
-                                        <td>
-                                             <?php 
-                                             $excerpt = $c['content'];
-                                             if (strlen($excerpt) > 70) {
-                                                 $excerpt = substr($excerpt, 0, 70) . '…';
-                                             }
-                                             echo htmlspecialchars($excerpt);
-                                             ?>
-                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

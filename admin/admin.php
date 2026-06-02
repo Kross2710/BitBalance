@@ -24,8 +24,6 @@ $last7DaysLogCount = Last7DaysLogCount();
 $todayNewUsers = getTodayNewUsers();
 $userStatusBreakdown = getUserStatusBreakdown();
 $recentActivity = getRecentActivity(10);
-$totalPosts = getTotalPosts();
-$totalComments = getTotalComments();
 
 // --- Diet & Beats data ---
 $totalFoodLogged = getTotalFoodLogged();

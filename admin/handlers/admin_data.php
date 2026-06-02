@@ -173,48 +173,6 @@ function getActivityLogsPaginated($page, $limit, $searchTerm = '', $filterAction
     ];
 }
 
-function getAllPosts()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("
-        SELECT p.post_id, p.title, p.content, p.user_id, p.date_posted, p.status, u.user_name 
-        FROM forumPost p 
-        JOIN user u ON p.user_id = u.user_id 
-        ORDER BY p.date_posted DESC
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getAllComments()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("
-        SELECT c.comment_id, c.post_id, c.user_id, c.content, c.status, c.date_posted, u.user_name 
-        FROM forumComment c 
-        JOIN user u ON c.user_id = u.user_id 
-        ORDER BY c.date_posted DESC
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function getAllLikes()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("
-        SELECT l.like_id, u.user_name, l.type, l.target_id, l.date_liked
-        FROM forumLike l
-        JOIN user u ON l.user_id = u.user_id
-        ORDER BY l.date_liked DESC
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 function Last7DaysLogCount()
 {
     global $pdo;
@@ -253,70 +211,6 @@ foreach ($rows as $row) {
     $d = $row['log_date'];
     if (isset($logDateMap[$d])) {
         $logData[$logDateMap[$d]] = (int)$row['total'];
-    }
-}
-
-function getTotalPosts()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("SELECT COUNT(*) AS total_posts FROM forumPost");
-    $stmt->execute();
-    return $stmt->fetchColumn();
-}
-
-function getTotalComments()
-{
-    global $pdo;
-
-    $stmt = $pdo->prepare("SELECT COUNT(*) AS total_comments FROM forumComment");
-    $stmt->execute();
-    return $stmt->fetchColumn();
-}
-
-// Prepare data for the total posts and comments chart (Optimized to single queries!)
-$postData = array_fill(0, 7, 0);
-$commentData = array_fill(0, 7, 0);
-$postCommentLabels = [];
-$postCommentDateMap = [];
-
-for ($i = 6; $i >= 0; $i--) {
-    $date = date('Y-m-d', strtotime("-$i days"));
-    $postCommentDateMap[$date] = 6 - $i;
-    $postCommentLabels[] = date('D', strtotime($date));
-}
-
-// Single high-performance query for posts
-$stmtPosts = $pdo->prepare("
-    SELECT DATE(date_posted) as post_date, COUNT(*) as total
-    FROM forumPost
-    WHERE date_posted >= ?
-    GROUP BY DATE(date_posted)
-");
-$stmtPosts->execute([$startDate]);
-$postRows = $stmtPosts->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($postRows as $row) {
-    $d = $row['post_date'];
-    if (isset($postCommentDateMap[$d])) {
-        $postData[$postCommentDateMap[$d]] = (int)$row['total'];
-    }
-}
-
-// Single high-performance query for comments
-$stmtComments = $pdo->prepare("
-    SELECT DATE(date_posted) as comment_date, COUNT(*) as total
-    FROM forumComment
-    WHERE date_posted >= ?
-    GROUP BY DATE(date_posted)
-");
-$stmtComments->execute([$startDate]);
-$commentRows = $stmtComments->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($commentRows as $row) {
-    $d = $row['comment_date'];
-    if (isset($postCommentDateMap[$d])) {
-        $commentData[$postCommentDateMap[$d]] = (int)$row['total'];
     }
 }
 

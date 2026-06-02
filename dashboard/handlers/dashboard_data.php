@@ -44,7 +44,7 @@ if ($isLoggedIn) {
 
     // Macro totals for selected date and recommended macro goals derived from calorie goal
     $macroTotals = getMacroTotalsToday($userId, $selectedDate);
-    $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal ? (int) $userGoal : null);
+    $macroGoals  = resolveMacroGoals($userId); // explicit PT macros if set, else derived
 
     $progressPercentage = 0; // Default progress percentage
     if ($userGoal) {

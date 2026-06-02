@@ -58,7 +58,7 @@ try {
 
     // Macro totals + goals
     $macroTotals = getMacroTotalsToday($userId);
-    $macroGoals  = getMacroGoalsFromCalorieGoal($goal);
+    $macroGoals  = resolveMacroGoals($userId);
 
     /* --- Ghi log --- */
     log_attempt($pdo, $userId, 'delete_intake', 'User deleted intake', 'intakeLog', $intakeId);

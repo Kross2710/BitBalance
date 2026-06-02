@@ -64,7 +64,7 @@ try {
 
         // D. Macro totals + goals
         $macroTotals = getMacroTotalsToday($userId);
-        $macroGoals  = getMacroGoalsFromCalorieGoal($goal);
+        $macroGoals  = resolveMacroGoals($userId);
 
         // Trả về JSON đầy đủ dữ liệu
         echo json_encode([

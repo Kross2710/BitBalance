@@ -175,7 +175,6 @@ $activeHeader = 'about';
             <p>Managers ensuring a smooth and safe user experience.</p>
             <ul class="needs-list">
                 <li>User account management</li>
-                <li>Forum moderation tools</li>
                 <li>System activity logs</li>
                 <li>Security maintenance</li>
             </ul>

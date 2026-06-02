@@ -16,7 +16,7 @@ $action = $_POST['action'] ?? '';
 $csrfToken = $_POST['csrf_token'] ?? '';
 
 // Verify CSRF for mutation actions
-if (in_array($action, ['accept', 'reject', 'terminate', 'save_feedback'], true)) {
+if (in_array($action, ['accept', 'reject', 'terminate', 'save_feedback', 'propose_goal'], true)) {
     if (!csrf_verify($csrfToken)) {
         echo json_encode(['ok' => false, 'error' => 'CSRF verification failed.']);
         exit();
@@ -121,6 +121,86 @@ try {
         }
 
         echo json_encode(['ok' => true]);
+        exit();
+
+    } elseif ($action === 'propose_goal') {
+        $clientId = (int) ($_POST['client_id'] ?? 0);
+        $calorie  = filter_input(INPUT_POST, 'calorie_goal', FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 800, 'max_range' => 10000]
+        ]);
+        $note = trim((string) ($_POST['note'] ?? ''));
+        if (strlen($note) > 255) {
+            $note = substr($note, 0, 255);
+        }
+
+        if ($clientId <= 0) {
+            echo json_encode(['ok' => false, 'error' => 'Invalid client ID']);
+            exit();
+        }
+        if ($calorie === false || $calorie === null) {
+            echo json_encode(['ok' => false, 'error' => 'Calorie goal must be between 800 and 10000.']);
+            exit();
+        }
+
+        // Optional explicit macro targets (Phase 2). All three or none: a partial
+        // set would leave the macro widget half-derived/half-explicit.
+        $macros = ['protein' => null, 'carbs' => null, 'fat' => null];
+        foreach (array_keys($macros) as $mk) {
+            $raw = $_POST[$mk] ?? '';
+            if ($raw === '' || $raw === null) {
+                continue;
+            }
+            $iv = filter_var($raw, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 999]]);
+            if ($iv === false) {
+                echo json_encode(['ok' => false, 'error' => 'Macro values must be whole numbers between 0 and 999.']);
+                exit();
+            }
+            $macros[$mk] = $iv;
+        }
+        $macroSet = 0;
+        foreach ($macros as $mv) {
+            if ($mv !== null) {
+                $macroSet++;
+            }
+        }
+        if ($macroSet > 0 && $macroSet < 3) {
+            echo json_encode(['ok' => false, 'error' => 'Provide all three macros (protein, carbs, fat) or leave them all empty.']);
+            exit();
+        }
+
+        // Verify this client is actually linked to this trainer.
+        $stmt = $pdo->prepare("
+            SELECT id FROM trainer_client
+            WHERE trainer_id = ? AND client_id = ? AND status = 'accepted'
+        ");
+        $stmt->execute([$me, $clientId]);
+        if (!$stmt->fetch()) {
+            echo json_encode(['ok' => false, 'error' => 'This client is not linked to you.']);
+            exit();
+        }
+
+        // Only one active proposal per (trainer, client): retire the previous one.
+        $stmt = $pdo->prepare("
+            UPDATE pt_goal_proposal
+            SET status = 'superseded', responded_at = NOW()
+            WHERE trainer_id = ? AND client_id = ? AND status = 'pending'
+        ");
+        $stmt->execute([$me, $clientId]);
+
+        $stmt = $pdo->prepare("
+            INSERT INTO pt_goal_proposal (trainer_id, client_id, calorie_goal, protein_goal, carbs_goal, fat_goal, note, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+        ");
+        $stmt->execute([$me, $clientId, $calorie, $macros['protein'], $macros['carbs'], $macros['fat'], ($note === '' ? null : $note)]);
+
+        echo json_encode([
+            'ok' => true,
+            'calorie_goal' => $calorie,
+            'protein_goal' => $macros['protein'],
+            'carbs_goal' => $macros['carbs'],
+            'fat_goal' => $macros['fat'],
+            'note' => $note,
+        ]);
         exit();
 
     } else {

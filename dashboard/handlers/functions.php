@@ -158,6 +158,44 @@ function getMacroGoalsFromCalorieGoal(?int $calorieGoal): array
     ];
 }
 
+/**
+ * Resolve a user's macro goals (PT goal Phase 2).
+ *
+ * Reads the latest userGoal row: if explicit macro targets are stored (e.g. a
+ * PT-proposed goal the client accepted), use them; otherwise fall back to the
+ * standard split derived from the calorie goal. Backward compatible — every old
+ * row has NULL macros and so derives exactly as before.
+ */
+function resolveMacroGoals($userId): array
+{
+    global $pdo;
+    $row = null;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT calorie_goal, protein_goal, carbs_goal, fat_goal
+            FROM userGoal
+            WHERE user_id = ?
+            ORDER BY date_set DESC
+            LIMIT 1
+        ");
+        $stmt->execute([(int) $userId]);
+        $row = $stmt->fetch();
+    } catch (PDOException $e) {
+        $row = null;
+    }
+
+    if ($row && $row['protein_goal'] !== null && $row['carbs_goal'] !== null && $row['fat_goal'] !== null) {
+        return [
+            'protein' => (int) $row['protein_goal'],
+            'carbs'   => (int) $row['carbs_goal'],
+            'fat'     => (int) $row['fat_goal'],
+        ];
+    }
+
+    $cal = $row ? (int) $row['calorie_goal'] : 0;
+    return getMacroGoalsFromCalorieGoal($cal > 0 ? $cal : null);
+}
+
 function getUserIntakeGoal($userId)
 {
     global $pdo;

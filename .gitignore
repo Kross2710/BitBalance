@@ -1,6 +1,29 @@
 include/secrets.php
-include/db_config.php
+include/db_config.local.php
 .claude/
 .DS_Store
 AGENTS.md
-docs/
+
+# Keep docs ignored by default, but allow the architecture contract.
+docs/*
+!docs/architecture.md
+
+# Monorepo companion projects: keep source, ignore generated dependencies.
+node_modules/
+client/node_modules/
+client/.vite/
+server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files.
+.env
+.env.*
+server/.env
+
+# Xcode user/build artifacts.
+ios-swift/**/xcuserdata/
+ios-swift/**/DerivedData/
+ios-swift/**/build/
+*.xcuserstate

@@ -14,6 +14,18 @@
     min-width: 0;
 }
 
+/* Honeypot: kept in the layout flow but pushed far off-screen so humans never
+   see or tab to it. Bots that auto-fill every field trip it. Not display:none —
+   some bots skip hidden fields, which would defeat the trap. */
+.hp-field {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 /* Password input + show/hide toggle */
 .password-field {
     position: relative;

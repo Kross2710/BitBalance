@@ -136,7 +136,7 @@ if ($isLoggedIn) {
 
     // 6. Today's-focus data (remaining kcal + macro nudge for the "Hôm nay" widget)
     $macroTotals = getMacroTotalsToday($userId, $selectedDate);
-    $macroGoals  = getMacroGoalsFromCalorieGoal($userGoal ? (int) $userGoal : null);
+    $macroGoals  = resolveMacroGoals($userId);
     $hasCalorieGoal = !empty($userGoal);
     $calorieDiff = $hasCalorieGoal ? ((int) $userGoal - (int) $totalCalories) : null;
 

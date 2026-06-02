@@ -17,8 +17,10 @@ if (isset($_GET['date'])) {
 require_once __DIR__ . '/handlers/dashboard_data.php';
 require_once __DIR__ . '/handlers/functions.php';
 require_once __DIR__ . '/../include/handlers/log_attempt.php';
+require_once __DIR__ . '/../include/csrf.php';
 
 $leaderboardWidgetRows = [];
+$goalProposal = null; // PT-proposed calorie goal awaiting this client's decision
 if ($isLoggedIn) {
     require_once __DIR__ . '/../include/handlers/friends.php';
     // Real User
@@ -28,6 +30,25 @@ if ($isLoggedIn) {
         $leaderboardWidgetRows = leaderboard_friends($pdo, (int) $user['user_id'], 'weekly', 5);
     } catch (PDOException $e) {
         $leaderboardWidgetRows = [];
+    }
+
+    // Pending PT goal proposal (Phase 1) — only from a still-linked trainer.
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.id, p.calorie_goal, p.protein_goal, p.carbs_goal, p.fat_goal, p.note,
+                   u.first_name, u.last_name, u.user_name, u.profile_image
+            FROM pt_goal_proposal p
+            JOIN trainer_client tc
+                ON tc.trainer_id = p.trainer_id AND tc.client_id = p.client_id AND tc.status = 'accepted'
+            JOIN user u ON u.user_id = p.trainer_id
+            WHERE p.client_id = ? AND p.status = 'pending'
+            ORDER BY p.created_at DESC
+            LIMIT 1
+        ");
+        $stmt->execute([(int) $user['user_id']]);
+        $goalProposal = $stmt->fetch();
+    } catch (PDOException $e) {
+        $goalProposal = null;
     }
 } else {
     // Guest (Demo): Create mock data
@@ -182,6 +203,9 @@ if ($streakDays >= 30) {
 // --- Today's Focus card data ---
 $macroTotals = $macroTotals ?? ['protein' => 0, 'carbs' => 0, 'fat' => 0];
 $macroGoals = $macroGoals ?? getMacroGoalsFromCalorieGoal(!empty($userGoal) ? (int) $userGoal : null);
+// Combined macro-grams target — drawn as the dashed reference line on the
+// stacked Macros Trend chart (0 = no goal set, line is hidden).
+$macroGoalTotal = (int) round((float) ($macroGoals['protein'] ?? 0) + (float) ($macroGoals['carbs'] ?? 0) + (float) ($macroGoals['fat'] ?? 0));
 $hasCalorieGoal = !empty($userGoal);
 $calorieDiff = $hasCalorieGoal ? ((int) $userGoal - (int) $totalCalories) : null;
 
@@ -295,6 +319,10 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                 <span><strong><?= t('dashboard.demo.heading') ?></strong> <?= t('dashboard.demo.body') ?></span>
                 <a href="<?= BASE_URL ?>signup.php" class="demo-banner-cta"><?= t('dashboard.demo.cta') ?></a>
             </div>
+        <?php endif; ?>
+
+        <?php if ($isLoggedIn && !empty($goalProposal)): ?>
+            <?php include PROJECT_ROOT . 'dashboard/views/_goal-proposal-card.php'; ?>
         <?php endif; ?>
 
         <div class="welcome-banner">
@@ -423,6 +451,9 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                         <span><i class="dot p"></i> <?= t('dashboard.macros.protein') ?></span>
                                         <span><i class="dot c"></i> <?= t('dashboard.macros.carbs') ?></span>
                                         <span><i class="dot f"></i> <?= t('dashboard.macros.fat') ?></span>
+                                        <?php if ($macroGoalTotal > 0): ?>
+                                        <span><i class="dash-line"></i> <?= t('dashboard.macros_trend.target') ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                                 <div class="chart-container-wrapper macros-trend-canvas">
@@ -487,28 +518,48 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                         label: 'Protein',
                                                         data: <?php echo json_encode($historyProtein); ?>,
                                                         backgroundColor: macroColors.protein,
-                                                        borderRadius: 8,
-                                                        maxBarThickness: 12,
-                                                        categoryPercentage: 0.58,
-                                                        barPercentage: 0.82
+                                                        borderRadius: 4,
+                                                        borderSkipped: false,
+                                                        stack: 'macros',
+                                                        maxBarThickness: 34,
+                                                        categoryPercentage: 0.7,
+                                                        barPercentage: 0.9
                                                     },
                                                     {
                                                         label: 'Carbs',
                                                         data: <?php echo json_encode($historyCarbs); ?>,
                                                         backgroundColor: macroColors.carbs,
-                                                        borderRadius: 8,
-                                                        maxBarThickness: 12,
-                                                        categoryPercentage: 0.58,
-                                                        barPercentage: 0.82
+                                                        borderRadius: 4,
+                                                        borderSkipped: false,
+                                                        stack: 'macros',
+                                                        maxBarThickness: 34,
+                                                        categoryPercentage: 0.7,
+                                                        barPercentage: 0.9
                                                     },
                                                     {
                                                         label: 'Fat',
                                                         data: <?php echo json_encode($historyFat); ?>,
                                                         backgroundColor: macroColors.fat,
-                                                        borderRadius: 8,
-                                                        maxBarThickness: 12,
-                                                        categoryPercentage: 0.58,
-                                                        barPercentage: 0.82
+                                                        borderRadius: 4,
+                                                        borderSkipped: false,
+                                                        stack: 'macros',
+                                                        maxBarThickness: 34,
+                                                        categoryPercentage: 0.7,
+                                                        barPercentage: 0.9
+                                                    },
+                                                    {
+                                                        type: 'line',
+                                                        label: <?php echo json_encode(t_raw('dashboard.macros_trend.target')); ?>,
+                                                        stack: 'target',
+                                                        data: <?php echo json_encode($macroGoalTotal > 0 ? array_fill(0, count($historyLabels), $macroGoalTotal) : array_fill(0, count($historyLabels), null)); ?>,
+                                                        borderColor: textColor,
+                                                        borderWidth: 2,
+                                                        borderDash: [6, 5],
+                                                        pointRadius: 0,
+                                                        pointHoverRadius: 0,
+                                                        fill: false,
+                                                        tension: 0,
+                                                        order: 0
                                                     }
                                                 ]
                                             },
@@ -529,6 +580,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                         borderWidth: 1,
                                                         padding: 10,
                                                         displayColors: true,
+                                                        filter: (item) => item.parsed.y != null,
                                                         callbacks: {
                                                             label: (ctx) => ` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y)}g`
                                                         }
@@ -536,6 +588,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                 },
                                                 scales: {
                                                     x: {
+                                                        stacked: true,
                                                         grid: { display: false },
                                                         border: { display: false },
                                                         ticks: {
@@ -544,6 +597,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                         }
                                                     },
                                                     y: {
+                                                        stacked: true,
                                                         beginAtZero: true,
                                                         grid: { color: gridColor },
                                                         border: { display: false },
@@ -652,21 +706,6 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                 <h4><i class="fas fa-utensils"></i> <?= t('dashboard.intake.heading') ?></h4>
                             </div> -->
 
-                            <?php
-                            $mealConfig = [
-                                'breakfast' => ['icon' => 'fa-mug-hot', 'color' => '#FF3366', 'label' => t_raw('dashboard.meal.breakfast')],
-                                'lunch' => ['icon' => 'fa-hamburger', 'color' => '#1CB0F6', 'label' => t_raw('dashboard.meal.lunch')],
-                                'dinner' => ['icon' => 'fa-utensils', 'color' => '#FF9600', 'label' => t_raw('dashboard.meal.dinner')],
-                                'snack' => ['icon' => 'fa-apple-alt', 'color' => '#58CC02', 'label' => t_raw('dashboard.meal.snack')]
-                            ];
-                            // Normalize per-category kcal: keys are capitalized for real users
-                            // but lowercase in the guest mock — accept either.
-                            $mealLegendData = [];
-                            foreach (['breakfast', 'lunch', 'dinner', 'snack'] as $__c) {
-                                $mealLegendData[$__c] = (int) ($mealCategoryData[ucfirst($__c)] ?? $mealCategoryData[$__c] ?? 0);
-                            }
-                            ?>
-
                             <!-- BENTO NUTRITION PLATE -->
                             <div class="bento-box-container" id="bentoBoxContainer">
                                 <div class="bento-plate" id="bentoPlate">
@@ -719,17 +758,9 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                                         <!-- <span class="center-label"><?= t('common.kcal') ?></span> -->
                                                     </div>
                                                 </div>
-                                                <div class="meal-legend" id="mealLegend">
-                                                    <?php foreach ($mealConfig as $__cat => $__cfg): ?>
-                                                        <div class="meal-legend-item" data-cat="<?= $__cat ?>">
-                                                            <div class="legend-dot-wrapper">
-                                                                <span class="legend-dot" style="background: <?= $__cfg['color'] ?>;"></span>
-                                                                <span class="legend-label"><?= htmlspecialchars($__cfg['label']) ?></span>
-                                                            </div>
-                                                            <span class="legend-val"><?= $mealLegendData[$__cat] ?> <?= t('common.kcal') ?></span>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
+                                                <?php /* Per-meal legend removed: each meal's ring color now lives on its
+                                                         bento compartment (left accent border, see dashboard-home.css),
+                                                         and per-meal kcal already shows on each slot — no need to repeat. */ ?>
                                             </div>
                                         </div>
 
@@ -738,7 +769,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                             <!-- Breakfast Slot -->
                                             <div class="bento-slot slot-breakfast" id="bento-slot-breakfast" data-meal="Breakfast">
                                                 <div class="slot-header">
-                                                    <span class="slot-title">🌅 <?= t('dashboard.meal.breakfast') ?></span>
+                                                    <span class="slot-title"><i class="fas fa-mug-hot"></i> <?= t('dashboard.meal.breakfast') ?></span>
                                                     <span class="slot-kcal" id="bento-kcal-breakfast">0 kcal</span>
                                                 </div>
                                                 <div class="slot-empty" id="bento-empty-breakfast">
@@ -752,7 +783,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                             <!-- Lunch Slot -->
                                             <div class="bento-slot slot-lunch" id="bento-slot-lunch" data-meal="Lunch">
                                                 <div class="slot-header">
-                                                    <span class="slot-title">☀️ <?= t('dashboard.meal.lunch') ?></span>
+                                                    <span class="slot-title"><i class="fas fa-hamburger"></i> <?= t('dashboard.meal.lunch') ?></span>
                                                     <span class="slot-kcal" id="bento-kcal-lunch">0 kcal</span>
                                                 </div>
                                                 <div class="slot-empty" id="bento-empty-lunch">
@@ -766,7 +797,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                             <!-- Dinner Slot -->
                                             <div class="bento-slot slot-dinner" id="bento-slot-dinner" data-meal="Dinner">
                                                 <div class="slot-header">
-                                                    <span class="slot-title">🌙 <?= t('dashboard.meal.dinner') ?></span>
+                                                    <span class="slot-title"><i class="fas fa-utensils"></i> <?= t('dashboard.meal.dinner') ?></span>
                                                     <span class="slot-kcal" id="bento-kcal-dinner">0 kcal</span>
                                                 </div>
                                                 <div class="slot-empty" id="bento-empty-dinner">
@@ -780,7 +811,7 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                                             <!-- Snack Slot -->
                                             <div class="bento-slot slot-snack" id="bento-slot-snack" data-meal="Snack">
                                                 <div class="slot-header">
-                                                    <span class="slot-title">🍪 <?= t('dashboard.meal.snack') ?></span>
+                                                    <span class="slot-title"><i class="fas fa-apple-alt"></i> <?= t('dashboard.meal.snack') ?></span>
                                                     <span class="slot-kcal" id="bento-kcal-snack">0 kcal</span>
                                                 </div>
                                                 <div class="slot-empty" id="bento-empty-snack">
@@ -1434,14 +1465,6 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         window.macrosTrendChartInstance.update();
                     }
                     // window.mealDoughnutChartInstance is replaced by concentric SVG rings which auto-sync in syncBentoFromTable()
-
-                    // Per-category legend values
-                    const legendCap = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
-                    document.querySelectorAll('#mealLegend .meal-legend-item').forEach(item => {
-                        const valEl = item.querySelector('.legend-val');
-                        const val = data.mealCategoryData[legendCap[item.dataset.cat]] ?? 0;
-                        if (valEl) valEl.textContent = `${val} ${CAL.kcalLabel}`;
-                    });
 
                     const tbody = document.querySelector('#logs-table tbody');
                     if (tbody && tableController) {
@@ -2453,13 +2476,6 @@ if ($actualWeight > 0 && $actualHeight > 0) {
                         slots[k].empty.style.display = 'flex';
                         slots[k].list.style.display = 'none';
                         if (slotEl) slotEl.classList.remove('has-food');
-                    }
-
-                    // Update legend values directly on the page
-                    const legendItem = document.querySelector(`.slot-breakdown .meal-legend-item[data-cat="${k}"]`);
-                    if (legendItem) {
-                        const valEl = legendItem.querySelector('.legend-val');
-                        if (valEl) valEl.textContent = slots[k].kcal + ' kcal';
                     }
                 });
 
