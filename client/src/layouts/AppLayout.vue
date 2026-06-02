@@ -1,22 +1,46 @@
 <script setup>
-import { RouterLink, RouterView, useRouter } from 'vue-router';
+import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router';
+import { reactive, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
+import { api } from '../lib/api.js';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
-// Nav model shared by the desktop sidebar and the mobile tab bar. Items that
-// aren't ported yet are marked disabled (rendered greyed, non-clickable) so the
-// intended structure is visible without dead links. Icons mirror the PHP app's
-// Font Awesome set (fa-solid).
+// Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
+// the PHP app's Font Awesome set (fa-solid). Friends is hidden until its backend
+// is ported (a greyed-out tab read as "unfinished" to end users).
 const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
   { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
   { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
-  // Friends is hidden until its backend is ported (a greyed-out tab read as
-  // "unfinished" to end users). Re-add when /api/social is available.
 ];
+
+// Per-tab numeric badges (FB-style). Intake shows how many of today's main meals
+// (breakfast/lunch/dinner) are still unlogged — a gentle nudge that clears as you
+// log. Sourced from the existing dashboard summary; no notifications system yet.
+const badges = reactive({ '/intake': 0 });
+
+async function refreshBadges() {
+  try {
+    const s = await api.get('/api/dashboard/summary');
+    const meals = s.meal_categories || {};
+    badges['/intake'] = ['Breakfast', 'Lunch', 'Dinner'].filter((m) => !(Number(meals[m]) > 0)).length;
+  } catch {
+    /* non-fatal: just no badge */
+  }
+}
+
+onMounted(refreshBadges);
+// Re-check after the user has likely changed today's log (landing on these tabs).
+watch(
+  () => route.name,
+  (name) => {
+    if (name === 'dashboard' || name === 'intake') refreshBadges();
+  }
+);
 
 async function onLogout() {
   await auth.logout();
@@ -30,16 +54,19 @@ async function onLogout() {
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">B</span><span class="brand-text">BitBalance</span></div>
       <nav class="side-nav">
-        <template v-for="item in navItems" :key="item.to">
-          <RouterLink v-if="item.enabled" :to="item.to" class="nav-link">
-            <i class="fa-solid" :class="item.icon" />
-            <span class="nav-label">{{ item.label }}</span>
-          </RouterLink>
-          <span v-else class="nav-link disabled" title="Coming soon">
-            <i class="fa-solid" :class="item.icon" />
-            <span class="nav-label">{{ item.label }}</span>
+        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="nav-link">
+          <span class="nav-ico">
+            <img
+              v-if="item.to === '/profile' && auth.user?.profile_image"
+              :src="auth.user.profile_image"
+              class="nav-avatar"
+              alt=""
+            />
+            <i v-else class="fa-solid" :class="item.icon" />
+            <span v-if="badges[item.to]" class="badge">{{ badges[item.to] }}</span>
           </span>
-        </template>
+          <span class="nav-label">{{ item.label }}</span>
+        </RouterLink>
       </nav>
     </aside>
 
@@ -60,16 +87,19 @@ async function onLogout() {
 
     <!-- Mobile bottom tab bar -->
     <nav class="tabbar">
-      <template v-for="item in navItems" :key="item.to">
-        <RouterLink v-if="item.enabled" :to="item.to" class="tab">
-          <i class="fa-solid" :class="item.icon" />
-          <span>{{ item.label }}</span>
-        </RouterLink>
-        <span v-else class="tab disabled" title="Coming soon">
-          <i class="fa-solid" :class="item.icon" />
-          <span>{{ item.label }}</span>
+      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" class="tab">
+        <span class="tab-ico">
+          <img
+            v-if="item.to === '/profile' && auth.user?.profile_image"
+            :src="auth.user.profile_image"
+            class="nav-avatar"
+            alt=""
+          />
+          <i v-else class="fa-solid" :class="item.icon" />
+          <span v-if="badges[item.to]" class="badge">{{ badges[item.to] }}</span>
         </span>
-      </template>
+        <span>{{ item.label }}</span>
+      </RouterLink>
     </nav>
   </div>
 </template>
@@ -170,6 +200,44 @@ async function onLogout() {
   opacity: 1;
 }
 
+/* ---------- Nav icon slot: avatar + badge (shared sidebar/tab bar) ---------- */
+.nav-ico,
+.tab-ico {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.nav-ico { flex: none; width: 20px; }
+.nav-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.nav-ico .nav-avatar { width: 22px; height: 22px; }
+.tab-ico .nav-avatar { width: 24px; height: 24px; }
+/* Ring the avatar on the active tab (FB-style). */
+.nav-link.router-link-active .nav-avatar,
+.tab.router-link-active .nav-avatar {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--card); /* cutout against the bar background */
+}
+
 /* ---------- Main column ---------- */
 .main {
   margin-left: 64px;
@@ -245,11 +313,18 @@ async function onLogout() {
   .tab i {
     font-size: 18px;
   }
+  .tab-ico {
+    transition: transform 0.15s ease;
+  }
+  /* Stronger active state (FB-style): accent colour, larger icon, bolder label. */
   .tab.router-link-active {
     color: var(--accent);
   }
-  .tab.disabled {
-    opacity: 0.4;
+  .tab.router-link-active .tab-ico {
+    transform: scale(1.14);
+  }
+  .tab.router-link-active span:last-child {
+    font-weight: 800;
   }
 }
 </style>
