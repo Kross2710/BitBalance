@@ -44,6 +44,7 @@ async function loadDay() {
   error.value = '';
   try {
     day.value = await api.get(`/api/dashboard/day?date=${selectedDate.value}`);
+    computeNudge(); // day's meal totals changed → re-evaluate the reminder
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -55,13 +56,66 @@ async function loadDay() {
 // is a read-only overview; editing/deleting entries lives on the Intake page.
 const lightbox = ref('');
 
-onMounted(loadDay);
+// ---- In-app meal reminder nudge ----
+// When a reminder's time has passed today and that meal isn't logged yet, show
+// a dismissible banner. (Background push is future work — this only fires while
+// the app is open.) Dismissal is remembered per meal per day in localStorage.
+const reminders = ref(null);
+const nudge = ref(null);
+
+async function loadReminders() {
+  try {
+    reminders.value = await api.get('/api/reminders');
+  } catch {
+    reminders.value = null;
+  }
+  computeNudge();
+}
+
+function computeNudge() {
+  nudge.value = null;
+  const r = reminders.value;
+  if (!r || !r.enabled || !day.value || !isToday.value) return;
+  const nowHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false }).slice(0, 5);
+  const dateKey = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const cats = day.value.meal_categories || {};
+  const due = [];
+  for (const m of ['breakfast', 'lunch', 'dinner', 'snack']) {
+    const cfg = r.meals?.[m];
+    if (!cfg?.enabled) continue; // reminder off for this meal
+    if (nowHM < cfg.time) continue; // its time hasn't arrived
+    if (Number(cats[m]) > 0) continue; // already logged today
+    if (localStorage.getItem(`bb_rd_${dateKey}_${m}`)) continue; // dismissed today
+    due.push({ key: m, time: cfg.time });
+  }
+  if (!due.length) return;
+  due.sort((a, b) => (a.time < b.time ? 1 : -1)); // most-recently-due first
+  nudge.value = { key: due[0].key, dateKey };
+}
+
+function dismissNudge() {
+  if (nudge.value) localStorage.setItem(`bb_rd_${nudge.value.dateKey}_${nudge.value.key}`, '1');
+  nudge.value = null;
+}
+
+onMounted(() => {
+  loadDay();
+  loadReminders();
+});
 </script>
 
 <template>
   <main style="max-width: 820px; margin: 0 auto; padding: 8px 16px">
     <!-- Greeting (moved here from the topbar, which now shows brand + avatar). -->
     <p v-if="auth.user" class="greet">Hi, {{ auth.user.first_name || auth.user.handle }}</p>
+
+    <!-- In-app meal reminder nudge -->
+    <div v-if="nudge" class="nudge">
+      <i class="fa-solid fa-bell" />
+      <span>Time to log your <strong>{{ nudge.key }}</strong>?</span>
+      <RouterLink to="/intake" class="nudge-cta">Log now</RouterLink>
+      <button type="button" class="nudge-x" aria-label="Dismiss" @click="dismissNudge"><i class="fa-solid fa-xmark" /></button>
+    </div>
 
     <!-- Level / XP pill -->
     <div v-if="day" class="hero">
@@ -193,6 +247,42 @@ onMounted(loadDay);
 .bar > div { height: 100%; transition: width 0.3s; }
 
 .greet { font-weight: 800; font-size: 18px; margin: 2px 0 10px; }
+
+/* In-app reminder nudge */
+.nudge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid #4b3f7a;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.nudge > i { color: #c4b5fd; }
+.nudge span { flex: 1; min-width: 0; }
+.nudge strong { text-transform: capitalize; }
+.nudge-cta {
+  flex: none;
+  background: var(--accent);
+  color: #04210f;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.nudge-x {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
 
 /* Level / XP pill + streak flame */
 .hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px; }

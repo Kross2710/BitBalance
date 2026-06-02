@@ -57,6 +57,7 @@ function hydrate(data) {
 }
 
 onMounted(async () => {
+  loadReminders();
   try {
     hydrate(await api.get('/api/profile'));
   } catch (e) {
@@ -80,6 +81,50 @@ async function onSubmit() {
     error.value = e.message;
   } finally {
     saving.value = false;
+  }
+}
+
+// ---- Meal reminders ----
+const REMINDER_MEALS = [
+  { key: 'breakfast', label: 'Breakfast', icon: 'fa-mug-saucer' },
+  { key: 'lunch', label: 'Lunch', icon: 'fa-bowl-food' },
+  { key: 'dinner', label: 'Dinner', icon: 'fa-utensils' },
+  { key: 'snack', label: 'Snack', icon: 'fa-cookie-bite' },
+];
+const reminders = reactive({
+  enabled: false,
+  meals: {
+    breakfast: { enabled: true, time: '08:30' },
+    lunch: { enabled: true, time: '12:30' },
+    dinner: { enabled: true, time: '19:00' },
+    snack: { enabled: false, time: '16:00' },
+  },
+});
+const savingReminders = ref(false);
+const remindersMsg = ref('');
+
+async function loadReminders() {
+  try {
+    const d = await api.get('/api/reminders');
+    reminders.enabled = d.enabled;
+    reminders.meals = d.meals;
+  } catch {
+    /* non-fatal: keep defaults */
+  }
+}
+
+async function saveReminders() {
+  remindersMsg.value = '';
+  savingReminders.value = true;
+  try {
+    const d = await api.post('/api/reminders', { enabled: reminders.enabled, meals: reminders.meals });
+    reminders.enabled = d.enabled;
+    reminders.meals = d.meals;
+    remindersMsg.value = 'Reminders saved.';
+  } catch (e) {
+    remindersMsg.value = e.message;
+  } finally {
+    savingReminders.value = false;
   }
 }
 
@@ -175,6 +220,39 @@ const initials = () =>
       </div>
     </form>
 
+    <!-- Meal reminders -->
+    <section v-if="!loading" class="card reminders">
+      <h2>Meal reminders</h2>
+      <label class="rem-master">
+        <input v-model="reminders.enabled" type="checkbox" />
+        <span>Enable reminders</span>
+      </label>
+      <p class="rem-hint">In-app nudges when a meal's time has passed and it isn't logged yet.</p>
+
+      <div class="rem-grid" :class="{ off: !reminders.enabled }">
+        <div v-for="m in REMINDER_MEALS" :key="m.key" class="rem-row">
+          <label class="rem-meal">
+            <input v-model="reminders.meals[m.key].enabled" type="checkbox" :disabled="!reminders.enabled" />
+            <i class="fa-solid" :class="m.icon" />
+            <span>{{ m.label }}</span>
+          </label>
+          <input
+            v-model="reminders.meals[m.key].time"
+            type="time"
+            class="rem-time"
+            :disabled="!reminders.enabled || !reminders.meals[m.key].enabled"
+          />
+        </div>
+      </div>
+
+      <div class="rem-actions">
+        <button type="button" :disabled="savingReminders" @click="saveReminders">
+          {{ savingReminders ? 'Saving…' : 'Save reminders' }}
+        </button>
+        <span v-if="remindersMsg" class="ok">{{ remindersMsg }}</span>
+      </div>
+    </section>
+
     <!-- Account session: logout lives here (the topbar's logout is being retired). -->
     <section v-if="!loading" class="card logout-card">
       <button type="button" class="logout-btn" @click="onLogout">
@@ -214,6 +292,20 @@ textarea {
   overflow: hidden;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.reminders { margin-top: 16px; padding: 16px; }
+.reminders h2 { font-size: 16px; margin: 0 0 12px; }
+.rem-master { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.rem-master input { width: auto; margin: 0; }
+.rem-hint { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+.rem-grid { display: flex; flex-direction: column; gap: 6px; }
+.rem-grid.off { opacity: 0.5; }
+.rem-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.rem-meal { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.rem-meal input { width: auto; margin: 0; }
+.rem-meal i { width: 18px; text-align: center; color: var(--muted); }
+.rem-time { width: auto; flex: none; }
+.rem-actions { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
 
 .logout-card { margin-top: 16px; padding: 16px; }
 .logout-btn {
