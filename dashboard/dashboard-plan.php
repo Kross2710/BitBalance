@@ -182,6 +182,20 @@ $chartCalories = array_map(fn($d) => $d['calories'], $intakeSummary['daily']);
 $goalLineValue = $currentGoal ?: ($recommendedGoal ?: 0);
 $goalLine = array_fill(0, count($chartLabels), $goalLineValue);
 $goalLineLabel = $currentGoal ? 'Current goal' : ($recommendedGoal ? 'Recommended goal' : 'Goal');
+
+// Macro-balance editor seed: current split as percentages of the goal calories
+// (falls back to the standard 45/25/30 when no goal yet).
+require_once __DIR__ . '/../include/csrf.php';
+$planMacroCsrf = csrf_token();
+$planMbPct = ['carbs' => 45, 'fat' => 25, 'protein' => 30];
+if ($isLoggedIn && $currentGoal) {
+    $__curMacros = resolveMacroGoals((int) $user['user_id']);
+    $planMbPct = [
+        'carbs'   => (int) round($__curMacros['carbs'] * 4 / $currentGoal * 100),
+        'fat'     => (int) round($__curMacros['fat'] * 9 / $currentGoal * 100),
+        'protein' => (int) round($__curMacros['protein'] * 4 / $currentGoal * 100),
+    ];
+}
 $weightLabelsForChart = array_map(fn($d) => $d['label'], $weightSummary['chart']);
 $weightValuesForChart = array_map(fn($d) => $d['weight'], $weightSummary['chart']);
 
@@ -218,7 +232,7 @@ if ($physicalReady) {
     <title><?= t('plan.title_alt') ?></title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-plan.css'];
+    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-plan.css', 'css/components/macro-balance.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
@@ -394,12 +408,78 @@ if ($physicalReady) {
                         <small><?= t('plan.weekly_budget_unit') ?></small>
                     </div>
                 </section>
+
+                <?php if ($isLoggedIn && $currentGoal): ?>
+                    <section class="plan-panel surface-card macro-balance-panel">
+                        <div class="plan-section-head compact">
+                            <h2><i class="fas fa-sliders"></i> <?= t('macrobalance.title') ?></h2>
+                        </div>
+                        <?php
+                        $mbId = 'planMacroBalance';
+                        $mbCalories = $currentGoal;
+                        $mbPct = $planMbPct;
+                        include PROJECT_ROOT . 'dashboard/views/_macro-balance.php';
+                        ?>
+                        <button type="button" class="btn-tactile btn-tactile--primary" id="planMacroSave"
+                            style="margin-top:16px; width:100%; padding:12px; border:none; border-radius:var(--radius-md); background:var(--color-primary); color:#fff; font-weight:700; cursor:pointer;">
+                            <i class="fas fa-save"></i> <?= t('macrobalance.save') ?>
+                        </button>
+                    </section>
+                <?php endif; ?>
             </div>
         </main>
 
     <?php if ($isLoggedIn): include PROJECT_ROOT . 'dashboard/views/quick-log-fab.php'; endif; ?>
 
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
+
+    <?php if ($isLoggedIn && $currentGoal): ?>
+        <script src="<?= BASE_URL ?>js/macro-balance.js?v=<?= @filemtime(PROJECT_ROOT . 'js/macro-balance.js') ?>"></script>
+        <script>
+            (function () {
+                const el = document.getElementById('planMacroBalance');
+                const btn = document.getElementById('planMacroSave');
+                if (!el || !btn || !window.MacroBalance) return;
+                const CSRF = <?= json_encode($planMacroCsrf) ?>;
+                const inst = MacroBalance.mount(el, {
+                    onChange: function (st) {
+                        btn.disabled = !st.valid;
+                        btn.style.opacity = st.valid ? '1' : '0.55';
+                        btn.style.cursor = st.valid ? 'pointer' : 'not-allowed';
+                    }
+                });
+                btn.addEventListener('click', async function () {
+                    if (btn.disabled || !inst.isValid()) return;
+                    const g = inst.getGrams();
+                    const orig = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    try {
+                        const fd = new FormData();
+                        fd.append('protein', g.protein);
+                        fd.append('carbs', g.carbs);
+                        fd.append('fat', g.fat);
+                        fd.append('csrf_token', CSRF);
+                        const res = await fetch('<?= BASE_URL ?>dashboard/handlers/update_macro_goals.php', {
+                            method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: fd
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                            if (window.showLoggingToast) showLoggingToast(<?= json_encode(t_raw('macrobalance.saved')) ?>, '');
+                            else alert(<?= json_encode(t_raw('macrobalance.saved')) ?>);
+                        } else {
+                            alert(data.error || 'Error');
+                        }
+                    } catch (e) {
+                        alert('Connection error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = orig;
+                    }
+                });
+            })();
+        </script>
+    <?php endif; ?>
 </body>
 
 </html>

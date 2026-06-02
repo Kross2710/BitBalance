@@ -107,7 +107,7 @@ try {
 
     // Macro breakdowns
     $macros = getMacroTotalsToday($userId, $targetDate);
-    $macroGoals = getMacroGoalsFromCalorieGoal($userGoal);
+    $macroGoals = resolveMacroGoals($userId);
 
     // 6. Render the new row markup via the shared view component
     $entry = [

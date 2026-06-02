@@ -5,47 +5,53 @@ require_once __DIR__ . '/username.php';
 $error_message = '';
 $success_message = '';
 
-// Generate CAPTCHA question ONLY if not already set or if there was an error
-if (!isset($_SESSION['captcha_answer']) || !isset($_SESSION['captcha_question'])) {
-    $captcha_question = CustomCaptcha::generateCaptcha();
-} else {
-    $captcha_question = $_SESSION['captcha_question'];
-}
+// Risk-based bot protection. The math captcha is NOT shown by default — that
+// extra step measurably hurts real sign-ups. Two invisible checks run on every
+// submit instead: a honeypot field and a minimum fill time. Only when one of
+// them looks bot-like do we "escalate" — flag the session so the visible
+// captcha is shown and required from then on, until a successful sign-up.
+$SIGNUP_MIN_SECONDS = 2; // a human cannot complete the whole form faster than this
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $first_name = trim($_POST['first_name']);
-    $last_name = trim($_POST['last_name']);
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name = trim($_POST['last_name'] ?? '');
     // Username is no longer entered by the user — it is auto-generated from the
     // first name as a Discord-style handle (e.g. "Hung4821"). See username.php.
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    $captcha_answer = $_POST['captcha_answer'];
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
+    $captcha_answer = $_POST['captcha_answer'] ?? '';
     $accept_terms = isset($_POST['accept_terms']);
+    $honeypot = trim($_POST['website'] ?? ''); // hidden decoy; real users leave it empty
 
-    // Basic validation including terms acceptance
-    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($confirm_password) || empty($captcha_answer)) {
+    // Invisible bot heuristics. A filled honeypot or an implausibly fast submit
+    // (or a POST with no prior form render) escalates the session to a captcha.
+    $formShownAt = (int) ($_SESSION['signup_form_time'] ?? 0);
+    $tooFast     = ($formShownAt === 0) || ((time() - $formShownAt) < $SIGNUP_MIN_SECONDS);
+    if ($honeypot !== '' || $tooFast) {
+        $_SESSION['signup_challenge'] = true;
+    }
+    $challengeActive = !empty($_SESSION['signup_challenge']);
+
+    // Validation. The captcha is only enforced for challenged (suspicious)
+    // sessions; everyone else skips it entirely.
+    if (empty($first_name) || empty($last_name) || empty($email) || empty($password) || empty($confirm_password)) {
         $error_message = "Please fill in all fields.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
     } elseif (!$accept_terms) {
         $error_message = "You must accept the Terms and Conditions to create an account.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
-    } elseif (!CustomCaptcha::verifyCaptcha($captcha_answer)) {
-        $error_message = "Incorrect CAPTCHA answer. Please try again.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
+    } elseif ($challengeActive && !CustomCaptcha::verifyCaptcha($captcha_answer)) {
+        // Either a bot signal just fired (no puzzle was on screen yet) or the
+        // answer was blank/wrong — a fresh puzzle is generated below.
+        $error_message = "Quick check: please solve the puzzle below to continue.";
     } elseif ($password !== $confirm_password) {
         $error_message = "Passwords do not match.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
     } elseif (strlen($password) < 8) {
         $error_message = "Password must be at least 8 characters long.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
     } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/', $password)) {
         $error_message = "Password must contain at least one uppercase letter, one lowercase letter, and one number.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error_message = "Please enter a valid email address.";
-        $captcha_question = CustomCaptcha::generateCaptcha();
     } else {
         try {
             // Check if email already exists
@@ -53,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$email]);
             if ($stmt->fetch()) {
                 $error_message = "An account with this email already exists.";
-                $captcha_question = CustomCaptcha::generateCaptcha();
             } else {
                 // Auto-generate a unique handle from the first name (Hung → Hung4821).
                 $username = generate_handle($pdo, $first_name);
@@ -87,6 +92,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     'is_new_signup' => true
                 ];
 
+                // Human verified — clear the anti-bot session state.
+                unset(
+                    $_SESSION['signup_challenge'],
+                    $_SESSION['signup_form_time'],
+                    $_SESSION['captcha_answer'],
+                    $_SESSION['captcha_time'],
+                    $_SESSION['captcha_question']
+                );
+
                 // Log the signup attempt
                 log_attempt($pdo, $user_id, 'signup', 'User signed up successfully');
 
@@ -97,8 +111,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } catch (PDOException $e) {
             $error_message = "Registration failed. Please try again.";
             error_log("Signup error: " . $e->getMessage());
-            $captcha_question = CustomCaptcha::generateCaptcha();
         }
     }
 }
+
+// Decide whether the visible captcha should render, and make sure a fresh
+// puzzle is ready when it does. $showCaptcha is consumed by signup.php.
+$showCaptcha = !empty($_SESSION['signup_challenge']);
+$captcha_question = $showCaptcha ? CustomCaptcha::generateCaptcha() : '';
+
+// Stamp the render time so the NEXT submit is measured against this page load.
+$_SESSION['signup_form_time'] = time();
 ?>

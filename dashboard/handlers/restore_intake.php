@@ -99,7 +99,7 @@ try {
         'total' => $totalCalories,
         'percentage' => $percentage,
         'macros' => getMacroTotalsToday($userId),
-        'macro_goals' => getMacroGoalsFromCalorieGoal($goal),
+        'macro_goals' => resolveMacroGoals($userId),
     ], JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     ob_clean();

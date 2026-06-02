@@ -209,6 +209,23 @@ if (!empty($clientUnread)) {
     $clients = array_merge($withMsg, $withoutMsg);
 }
 
+// 8. Pending calorie-goal proposals from this PT (Phase 1), keyed by client_id,
+//    so the Goal tab can show "awaiting approval". Shape: [client_id] => row.
+$clientProposals = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT client_id, calorie_goal, note
+        FROM pt_goal_proposal
+        WHERE trainer_id = ? AND status = 'pending'
+    ");
+    $stmt->execute([$me]);
+    while ($row = $stmt->fetch()) {
+        $clientProposals[(int) $row['client_id']] = $row;
+    }
+} catch (PDOException $e) {
+    error_log("PT Load Proposals Error: " . $e->getMessage());
+}
+
 $csrfToken = csrf_token();
 ?>
 <!DOCTYPE html>
@@ -219,7 +236,7 @@ $csrfToken = csrf_token();
     <title><?= ($lang === 'vi') ? 'PT Dashboard - Quản lý Học viên' : 'PT Dashboard - Client Management' ?></title>
     <?php
     $pageComponents = ['sidebar', 'fab'];
-    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-pt.css', 'css/components/pt-chat.css'];
+    $pageCss = ['css/dashboard.css', 'css/pages/dashboard-pt.css', 'css/components/pt-chat.css', 'css/components/macro-balance.css'];
     include PROJECT_ROOT . 'views/head_css.php';
     ?>
     <script src="https://kit.fontawesome.com/b94f65ead2.js" crossorigin="anonymous"></script>
@@ -402,6 +419,7 @@ $csrfToken = csrf_token();
                                 <button type="button" class="details-tab active" data-pane="diary"><i class="fas fa-utensils"></i> <?= ($lang === 'vi') ? 'Nhật ký' : 'Diary' ?></button>
                                 <button type="button" class="details-tab" data-pane="chat"><i class="fas fa-comments"></i> <?= ($lang === 'vi') ? 'Chat' : 'Chat' ?></button>
                                 <button type="button" class="details-tab" data-pane="feedback"><i class="fas fa-comment-medical"></i> <?= ($lang === 'vi') ? 'Góp ý' : 'Feedback' ?></button>
+                                <button type="button" class="details-tab" data-pane="goal"><i class="fas fa-bullseye"></i> <?= ($lang === 'vi') ? 'Mục tiêu' : 'Goal' ?></button>
                             </div>
 
                             <!-- Meal Logs & Photos Section -->
@@ -441,6 +459,30 @@ $csrfToken = csrf_token();
                                     <div class="feedback-actions">
                                         <button type="button" class="feedback-btn feedback-btn--ghost" onclick="disconnectClient()"><i class="fas fa-unlink"></i> <?= ($lang === 'vi') ? 'Hủy liên kết' : 'Disconnect' ?></button>
                                         <button type="submit" class="feedback-btn feedback-btn--primary"><i class="fas fa-save"></i> <?= ($lang === 'vi') ? 'Lưu góp ý' : 'Save Feedback' ?></button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Calorie Goal proposal (Phase 1): PT proposes, client accepts -->
+                            <div class="details-tabpane details-goal-section" data-pane="goal" hidden>
+                                <h4 class="details-section-title"><i class="fas fa-bullseye ic-accent"></i> <?= ($lang === 'vi') ? 'Đề xuất mục tiêu calo' : 'Propose Calorie Goal' ?></h4>
+                                <p class="feedback-label" style="margin-bottom:4px;"><?= ($lang === 'vi') ? 'Mục tiêu hiện tại của học viên' : "Client's current goal" ?>: <strong id="det-goal-current">—</strong> kcal</p>
+                                <p class="feedback-label" id="det-goal-pending" hidden style="color:var(--color-accent); margin-bottom:8px;"></p>
+                                <form id="goalProposeForm" onsubmit="proposeGoal(event)">
+                                    <label class="feedback-label" for="det-goal-calorie"><i class="fas fa-fire"></i> <?= ($lang === 'vi') ? 'Calo đề xuất (800–10000)' : 'Proposed calories (800–10000)' ?></label>
+                                    <input type="number" class="feedback-input" id="det-goal-calorie" min="800" max="10000" step="10" placeholder="<?= ($lang === 'vi') ? 'vd 2000' : 'e.g. 2000' ?>" required>
+
+                                    <label class="feedback-label"><i class="fas fa-drumstick-bite"></i> <?= ($lang === 'vi') ? 'Tỉ lệ macro' : 'Macro split' ?></label>
+                                    <?php
+                                    $mbId = 'ptMacroBalance';
+                                    $mbCalories = 0;
+                                    $mbPct = ['carbs' => 45, 'fat' => 25, 'protein' => 30];
+                                    include PROJECT_ROOT . 'dashboard/views/_macro-balance.php';
+                                    ?>
+
+                                    <textarea class="feedback-textarea" id="det-goal-note" rows="2" maxlength="255" placeholder="<?= ($lang === 'vi') ? 'Ghi chú ngắn cho học viên (tùy chọn)...' : 'Short note to the client (optional)...' ?>"></textarea>
+                                    <div class="feedback-actions">
+                                        <button type="submit" class="feedback-btn feedback-btn--primary"><i class="fas fa-paper-plane"></i> <?= ($lang === 'vi') ? 'Gửi đề xuất' : 'Send proposal' ?></button>
                                     </div>
                                 </form>
                             </div>
@@ -546,6 +588,7 @@ $csrfToken = csrf_token();
     <?php include PROJECT_ROOT . 'views/footer.php'; ?>
 
     <script src="<?= BASE_URL ?>js/pt-chat.js"></script>
+    <script src="<?= BASE_URL ?>js/macro-balance.js?v=<?= @filemtime(PROJECT_ROOT . 'js/macro-balance.js') ?>"></script>
     <script>
         (function() {
             const CSRF = <?= json_encode($csrfToken) ?>;
@@ -556,6 +599,11 @@ $csrfToken = csrf_token();
             const clientsData = <?= json_encode($clients) ?>;
             // clientTrends[client_id]['YYYY-MM-DD'] = {cal, pro} (Task #2: 7-day trend)
             const clientTrends = <?= json_encode($clientTrends) ?>;
+            // clientProposals[client_id] = {calorie_goal, note} (Phase 1: pending goal proposal)
+            const clientProposals = <?= json_encode($clientProposals) ?>;
+            const GOAL_LABELS = <?= json_encode($lang === 'vi'
+                ? ['pending' => 'Đang chờ học viên duyệt', 'proposed' => 'Đã gửi đề xuất mục tiêu', 'need100' => 'Tổng macro phải bằng 100%.']
+                : ['pending' => 'Awaiting client approval', 'proposed' => 'Goal proposal sent', 'need100' => 'Macro total must equal 100%.']) ?>;
             const TODAY = <?= json_encode(date('Y-m-d')) ?>;
             const TODAY_LABEL = <?= json_encode($lang === 'vi' ? 'Hôm nay' : 'Today') ?>;
             const MSG = <?= json_encode($lang === 'vi' ? [
@@ -820,6 +868,101 @@ $csrfToken = csrf_token();
                 });
             });
 
+            // ---- Goal proposal (Phase 1) ----
+            const detGoalCurrent = document.getElementById('det-goal-current');
+            const detGoalPending = document.getElementById('det-goal-pending');
+            const detGoalCalorie = document.getElementById('det-goal-calorie');
+            const detGoalNote = document.getElementById('det-goal-note');
+            const ptMacroEl = document.getElementById('ptMacroBalance');
+            let ptMacro = null;
+            // Mount lazily — macro-balance.js loads after this inline script, and the
+            // goal tab isn't used until a client is selected anyway.
+            function ensurePtMacro() {
+                if (!ptMacro && ptMacroEl && window.MacroBalance) {
+                    ptMacro = MacroBalance.mount(ptMacroEl);
+                }
+                return ptMacro;
+            }
+            if (detGoalCalorie) {
+                detGoalCalorie.addEventListener('input', function () {
+                    if (ensurePtMacro()) ptMacro.setCalories(parseInt(detGoalCalorie.value, 10) || 0);
+                });
+            }
+
+            function updateGoalPending(cid) {
+                if (!detGoalPending) return;
+                const p = clientProposals[cid] || clientProposals[String(cid)];
+                if (p) {
+                    detGoalPending.innerHTML = `<i class="fas fa-hourglass-half"></i> ${GOAL_LABELS.pending}: <strong>${(parseInt(p.calorie_goal, 10) || 0).toLocaleString()}</strong> kcal`;
+                    detGoalPending.removeAttribute('hidden');
+                } else {
+                    detGoalPending.setAttribute('hidden', '');
+                }
+            }
+
+            function updateGoalPane(c) {
+                const cur = parseInt(c.calorie_goal, 10) || 0;
+                if (detGoalCurrent) detGoalCurrent.textContent = cur > 0 ? cur.toLocaleString() : '—';
+                if (detGoalCalorie) detGoalCalorie.value = cur > 0 ? cur : '';
+                if (detGoalNote) detGoalNote.value = '';
+                if (ensurePtMacro()) {
+                    ptMacro.setPct({ carbs: 45, fat: 25, protein: 30 });
+                    ptMacro.setCalories(cur);
+                }
+                updateGoalPending(c.user_id);
+            }
+
+            window.proposeGoal = async function (e) {
+                e.preventDefault();
+                const cid = parseInt(detClientId.value, 10);
+                const cal = parseInt(detGoalCalorie.value, 10);
+                const note = (detGoalNote.value || '').trim();
+                if (!cid || !cal) return;
+
+                // Macro grams come from the balance editor; total must equal 100%.
+                const inst = ensurePtMacro();
+                if (inst) inst.setCalories(cal);
+                if (inst && !inst.isValid()) {
+                    notify(GOAL_LABELS.need100, 'error');
+                    return;
+                }
+                const grams = inst ? inst.getGrams() : { protein: '', carbs: '', fat: '' };
+                const pv = grams.protein;
+                const cv = grams.carbs;
+                const fv = grams.fat;
+
+                const form = document.getElementById('goalProposeForm');
+                const btn = form.querySelector('button[type="submit"]');
+                const orig = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                try {
+                    const fd = new FormData();
+                    fd.append('action', 'propose_goal');
+                    fd.append('client_id', cid);
+                    fd.append('calorie_goal', cal);
+                    fd.append('protein', pv);
+                    fd.append('carbs', cv);
+                    fd.append('fat', fv);
+                    fd.append('note', note);
+                    fd.append('csrf_token', CSRF);
+                    const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'X-Requested-With': 'fetch' }, body: fd });
+                    const data = await res.json();
+                    if (data.ok) {
+                        clientProposals[cid] = { calorie_goal: cal, note: note };
+                        updateGoalPending(cid);
+                        notify(GOAL_LABELS.proposed);
+                    } else {
+                        notify(data.error || MSG.actionErr, 'error');
+                    }
+                } catch (err) {
+                    notify(MSG.conn, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = orig;
+                }
+            };
+
             function showClientDetails(c) {
                 openDrawer();
 
@@ -881,6 +1024,9 @@ $csrfToken = csrf_token();
                 detDateFor.value = TODAY;
                 loadFeedbackForDate();
                 renderFeedbackHistory();
+
+                // Goal pane (Phase 1): current goal + any pending proposal
+                updateGoalPane(c);
             }
 
             // ---- Drawer open/close ----

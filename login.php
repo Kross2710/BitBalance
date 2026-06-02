@@ -2,6 +2,9 @@
 require_once __DIR__ . '/include/init.php';
 require_once __DIR__ . '/include/db_config.php';
 require_once __DIR__ . '/include/handlers/user_login.php';
+require_once __DIR__ . '/include/secrets.php';                 // GOOGLE_CLIENT_ID/SECRET (init.php only loads secrets when signed in)
+require_once __DIR__ . '/include/handlers/google_oauth.php';
+$googleEnabled = google_oauth_configured();
 
 if (isset($_SESSION['user'])) {
     header("Location: index.php");
@@ -59,6 +62,14 @@ if (isset($_GET['error'])) {
                         <?php endif; ?>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($googleEnabled): ?>
+                <a class="oauth-btn oauth-btn--google" href="google_auth.php">
+                    <i class="fab fa-google" aria-hidden="true"></i>
+                    <span>Continue with Google</span>
+                </a>
+                <div class="auth-divider"><span>or</span></div>
             <?php endif; ?>
 
             <form action="login.php" method="POST" class="js-submit-lock">

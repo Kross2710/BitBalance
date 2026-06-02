@@ -162,6 +162,7 @@ return array_merge($translations, [
     'dashboard.last7.heading'          => '7 derniers jours',
     'dashboard.last7.avg'              => 'Moy. :',
     'dashboard.macros_trend.heading'   => 'Tendance des macros (g)',
+    'dashboard.macros_trend.target'    => 'Objectif',
     'dashboard.macros.protein'         => 'Protéines',
     'dashboard.macros.carbs'           => 'Glucides',
     'dashboard.macros.fat'             => 'Lipides',

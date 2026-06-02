@@ -139,6 +139,14 @@
     .summary-list .dot.c { background: var(--color-secondary); }
     .macros-trend-legend .dot.f,
     .summary-list .dot.f { background: var(--color-accent); }
+    /* Dashed-line swatch for the macro target reference line. */
+    .macros-trend-legend .dash-line {
+        display: inline-block;
+        width: 14px;
+        height: 0;
+        border-top: 2px dashed var(--color-text-secondary);
+        vertical-align: middle;
+    }
     .macros-trend-canvas {
         height: 160px !important;
     }
@@ -979,43 +987,6 @@
         cursor: not-allowed;
     }
 
-    /* ================================================
-       MEALS DOUGHNUT — per-category legend
-       ================================================ */
-    .meal-legend {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 8px;
-    }
-    .meal-legend-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        background: var(--color-surface-alt);
-        border: 2px solid var(--color-border);
-        border-radius: var(--radius-md);
-    }
-    .meal-legend-item .legend-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-    .meal-legend-item .legend-label {
-        flex-grow: 1;
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: var(--color-text);
-    }
-    .meal-legend-item .legend-val {
-        font-size: 0.82rem;
-        font-weight: 800;
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-    }
-
 /* ================================================
    AI MASCOT ROOM & HEALTH AURA
    ================================================ */
@@ -1735,6 +1706,29 @@
     background: rgba(255, 255, 255, 0.02);
 }
 
+/* Each meal compartment carries its doughnut-ring color as a left accent
+   border, so the ring -> meal mapping stays clear now that the per-meal
+   legend is gone. The title icon + kcal value reinforce it. Hex values
+   mirror the SVG ring gradients in the dashboard markup. */
+.bento-slot.slot-breakfast { border-left: 4px solid #FF3366; }
+.bento-slot.slot-lunch     { border-left: 4px solid #1CB0F6; }
+.bento-slot.slot-dinner    { border-left: 4px solid #FF9600; }
+.bento-slot.slot-snack     { border-left: 4px solid #58CC02; }
+
+/* The title icon (replaces the old emoji) takes the meal color — it's the
+   primary colored marker echoing the ring. */
+.bento-slot.slot-breakfast .slot-title i { color: #FF3366; }
+.bento-slot.slot-lunch     .slot-title i { color: #1CB0F6; }
+.bento-slot.slot-dinner    .slot-title i { color: #FF9600; }
+.bento-slot.slot-snack     .slot-title i { color: #58CC02; }
+
+/* Tint the per-slot kcal in the meal color too (was a flat green for all),
+   so the number echoes its ring as well. */
+.bento-slot.slot-breakfast .slot-kcal { color: #FF3366; }
+.bento-slot.slot-lunch     .slot-kcal { color: #1CB0F6; }
+.bento-slot.slot-dinner    .slot-kcal { color: #FF9600; }
+.bento-slot.slot-snack     .slot-kcal { color: #58CC02; }
+
 .slot-header {
     display: flex;
     justify-content: space-between;
@@ -1917,7 +1911,11 @@
 .bento-breakdown-panel {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    /* Hug the doughnut at the top of the column rather than stretching to the
+       grid's full height — without the legend underneath, stretching left the
+       doughnut floating in ~134px of dead space top and bottom. */
+    align-self: start;
+    height: auto;
 }
 
 .slot-breakdown {
@@ -1927,7 +1925,10 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
-    min-height: 360px !important;
+    /* Was 360px; trimmed now that the per-meal legend no longer sits under the
+       doughnut. On desktop the grid still drives the row height (the panel
+       stretches to match); this just avoids reserving dead space. */
+    min-height: 240px !important;
 }
 
 .slot-breakdown .doughnut-container {
@@ -2005,52 +2006,6 @@
     letter-spacing: 0.5px;
 }
 
-.slot-breakdown .meal-legend {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    width: 100%;
-    margin-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 12px;
-}
-
-.slot-breakdown .meal-legend-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    width: 100%;
-    padding: 8px 10px !important;
-    box-sizing: border-box;
-}
-
-.slot-breakdown .legend-dot-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.slot-breakdown .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-.slot-breakdown .legend-label {
-    font-size: 0.72rem;
-    font-weight: 750;
-    color: rgba(255, 255, 255, 0.75);
-}
-
-.slot-breakdown .legend-val {
-    font-size: 0.75rem;
-    font-weight: 850;
-    color: #ffffff;
-}
-
 @media (max-width: 900px) {
     .bento-dashboard-layout {
         grid-template-columns: 1fr;
@@ -2062,16 +2017,116 @@
 }
 
 @media (max-width: 600px) {
+    /* Keep the meal compartments in a 2x2 grid on mobile. Previously this
+       collapsed to a single column, stacking four tall slots so the bento
+       plate ran ~1.5 screens long (and ~60% of that was empty placeholders).
+       Two-up halves the rows; compact empty slots (below) cut the rest. */
+    /* minmax(0, 1fr) (not bare 1fr) so each column can shrink below its
+       content's min width — otherwise the food-card footer (time + 3 action
+       buttons) blows the track out past the viewport and the right column
+       gets clipped. */
     .bento-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
     }
     .bento-plate {
         min-height: auto;
-        padding: 16px;
+        padding: 12px;
     }
-    .bento-slot {
-        min-height: 140px;
+
+    /* Tighter slots so two fit comfortably at ~375px. */
+    .bento-grid .bento-slot {
+        min-height: 0;
+        padding: 12px 10px;
+        gap: 8px;
+    }
+    .bento-grid .slot-header {
+        flex-wrap: wrap;
+        row-gap: 2px;
+        padding-bottom: 4px;
+    }
+    .bento-grid .slot-title {
+        font-size: 0.8rem;
+    }
+    .bento-grid .slot-kcal {
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    /* --- Food cards optimized for the narrow 2-up columns ---
+       The old layout crammed the name (wrapping to 3 lines) and a row of
+       three tiny buttons squeezed next to the timestamp. Instead: cap the
+       name to 2 lines, keep kcal prominent, and drop the action buttons onto
+       their own full-width row as evenly-sized, tappable chips. */
+    .bento-grid .bento-food-item {
+        padding: 8px;
+        gap: 5px;
+    }
+    .bento-grid .bento-food-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .bento-grid .bento-food-name {
+        font-size: 0.74rem;
+        line-height: 1.25;
+        text-align: left;
+        /* Clamp to 2 lines + ellipsis so a long name can't blow the card up. */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+    .bento-grid .bento-food-kcal {
+        font-size: 0.72rem;
+    }
+    /* Time on its own line, then the actions as a full-width chip row. */
+    .bento-grid .bento-food-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding-top: 6px;
+    }
+    .bento-grid .bento-food-time {
+        font-size: 0.62rem;
+    }
+    .bento-grid .bento-food-actions {
+        gap: 4px;
+        justify-content: space-between;
+    }
+    .bento-grid .bento-food-actions button {
+        flex: 1;
+        font-size: 0.8rem;
+        padding: 6px 0;
+        border-radius: 6px;
+        background: var(--color-surface-alt);
+        color: var(--color-text-secondary);
+    }
+
+    /* Empty meal slots collapse to a compact "+" affordance instead of the
+       tall dashed placeholder box, saving ~120px per unlogged meal. The
+       .has-food class is toggled by the bento sync JS in dashboard.php. */
+    .bento-slot:not(.has-food) .slot-empty {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 4px;
+        min-height: 0;
+        border: none;
+        opacity: 0.75;
+    }
+    .bento-slot:not(.has-food) .slot-icon {
+        font-size: 1rem;
+        margin: 0;
+    }
+    .bento-slot:not(.has-food) .slot-prompt {
+        display: none;
+    }
+    .bento-slot:not(.has-food) .btn-add-bento {
+        width: 26px;
+        height: 26px;
     }
 }
 

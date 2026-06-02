@@ -1,0 +1,133 @@
+/*
+ * Macro Balance editor (reusable): ring + 3 sliders for Carbs/Fat/Protein.
+ * Percentages always total 100 (auto-rebalanced in js/macro-balance.js).
+ * Used on dashboard-plan (user sets own split) and the PT goal tab.
+ */
+.macro-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mb-ring-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto;
+}
+.mb-ring {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    /* Overwritten by JS render(); this is the default 45/25/30 split. */
+    background: conic-gradient(#f4b740 0deg 162deg, #4aa3f0 162deg 252deg, #46c46a 252deg 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent 62%, #000 63%);
+    mask: radial-gradient(farthest-side, transparent 62%, #000 63%);
+}
+.mb-ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+.mb-ring-pct {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text);
+    transition: color .15s ease;
+}
+/* Total is off 100% — flag it (consumer disables Save until balanced). */
+.macro-balance.mb-invalid .mb-ring-pct {
+    color: var(--color-danger, #dc2626);
+}
+
+.mb-hint {
+    text-align: center;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.mb-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.mb-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.mb-row-label {
+    font-weight: 700;
+    color: var(--color-text);
+}
+.mb-row-stats {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+.mb-row-stats .mb-pct {
+    color: var(--color-text);
+    font-weight: 800;
+}
+
+.mb-row-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.mb-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 999px;
+    background: var(--color-border);
+    outline: none;
+}
+.mb-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+.mb-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--color-primary);
+    cursor: pointer;
+}
+.mb-row--carbs .mb-slider { accent-color: #f4b740; }
+.mb-row--carbs .mb-slider::-webkit-slider-thumb { border-color: #f4b740; }
+.mb-row--carbs .mb-slider::-moz-range-thumb { border-color: #f4b740; }
+.mb-row--fat .mb-slider { accent-color: #4aa3f0; }
+.mb-row--fat .mb-slider::-webkit-slider-thumb { border-color: #4aa3f0; }
+.mb-row--fat .mb-slider::-moz-range-thumb { border-color: #4aa3f0; }
+.mb-row--protein .mb-slider { accent-color: #46c46a; }
+.mb-row--protein .mb-slider::-webkit-slider-thumb { border-color: #46c46a; }
+.mb-row--protein .mb-slider::-moz-range-thumb { border-color: #46c46a; }
+
+.mb-step {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 12px;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.mb-step:active { transform: scale(.94); }

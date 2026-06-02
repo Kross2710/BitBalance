@@ -3,6 +3,9 @@ require_once __DIR__ . '/include/init.php';
 require_once __DIR__ . '/include/db_config.php';
 require_once __DIR__ . '/include/handlers/captcha.php';
 require_once __DIR__ . '/include/handlers/user_signup.php';
+require_once __DIR__ . '/include/secrets.php';                 // GOOGLE_CLIENT_ID/SECRET (init.php only loads secrets when signed in)
+require_once __DIR__ . '/include/handlers/google_oauth.php';
+$googleEnabled = google_oauth_configured();
 
 if ($isLoggedIn) {
     header("Location: index.php");
@@ -46,7 +49,21 @@ if ($isLoggedIn) {
                 </div>
             <?php endif; ?>
 
+            <?php if ($googleEnabled): ?>
+                <a class="oauth-btn oauth-btn--google" href="google_auth.php?from=signup">
+                    <i class="fab fa-google" aria-hidden="true"></i>
+                    <span>Sign up with Google</span>
+                </a>
+                <div class="auth-divider"><span>or</span></div>
+            <?php endif; ?>
+
             <form action="signup.php" method="POST" class="js-submit-lock">
+                <?php // Honeypot: hidden from humans; bots that fill it get challenged with a captcha. ?>
+                <div class="hp-field" aria-hidden="true">
+                    <label for="website">Leave this field empty</label>
+                    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                </div>
+
                 <div class="form-row">
                     <input type="text" placeholder="First Name" name="first_name" required
                         value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ''; ?>">
@@ -78,17 +95,19 @@ if ($isLoggedIn) {
                     </button>
                 </div>
 
-                <!-- CAPTCHA Section -->
-                <div class="captcha-section">
-                    <div class="captcha-question">
-                        <i class="fas fa-robot"></i>
-                        Solve this math problem: <?php echo htmlspecialchars($captcha_question); ?>
+                <?php // CAPTCHA: only shown when the session has been flagged as suspicious. ?>
+                <?php if (!empty($showCaptcha)): ?>
+                    <div class="captcha-section">
+                        <div class="captcha-question">
+                            <i class="fas fa-robot"></i>
+                            Solve this math problem: <?php echo htmlspecialchars($captcha_question); ?>
+                        </div>
+                        <input type="number" name="captcha_answer" class="captcha-input" placeholder="Answer" required>
+                        <button type="button" class="refresh-captcha" onclick="refreshCaptcha(this)">
+                            <i class="fas fa-sync-alt"></i> New Problem
+                        </button>
                     </div>
-                    <input type="number" name="captcha_answer" class="captcha-input" placeholder="Answer" required>
-                    <button type="button" class="refresh-captcha" onclick="refreshCaptcha(this)">
-                        <i class="fas fa-sync-alt"></i> New Problem
-                    </button>
-                </div>
+                <?php endif; ?>
 
                 <!-- Terms and Conditions Checkbox -->
                 <div class="terms-checkbox">

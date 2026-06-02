@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Daily macro totals for the LOGGED day
                     $macroTotals = getMacroTotalsToday($user_id, $logDate);
-                    $macroGoals  = getMacroGoalsFromCalorieGoal($goal);
+                    $macroGoals  = resolveMacroGoals($user_id);
 
                     // Log the attempt
                     log_attempt($pdo, $user_id, 'log_intake', 'User logged intake', 'intakeLog', $newId);
