@@ -13,12 +13,11 @@ onMounted(() => {
   if (auth.user && auth.user.role !== 'admin') router.replace('/dashboard');
 });
 
-// Sidebar nav. Logs (Phase 2) is listed so the full IA is visible but disabled
-// until its view ships.
+// Sidebar nav for the admin sections.
 const navItems = [
   { to: '/admin', icon: 'fa-gauge', labelKey: 'admin.nav.overview', enabled: true },
   { to: '/admin/users', icon: 'fa-users', labelKey: 'admin.nav.users', enabled: true },
-  { to: '/admin/logs', icon: 'fa-list-check', labelKey: 'admin.nav.logs', enabled: false },
+  { to: '/admin/logs', icon: 'fa-list-check', labelKey: 'admin.nav.logs', enabled: true },
 ];
 
 // Explicit active matching: Overview is exact (so it doesn't light up on child

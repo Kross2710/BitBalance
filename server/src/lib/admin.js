@@ -249,3 +249,88 @@ export async function unlockUser(adminId, userId) {
     description: 'Cleared failed attempts and lock',
   });
 }
+
+// GET /logs — paginated activity_log viewer with text search + action_type
+// filter, joined with the actor. Mirrors getActivityLogsPaginated() in
+// admin_data.php. Also returns the distinct action_type list (computed over the
+// whole table, independent of the current filter) so the UI can offer a dropdown.
+export async function getActivityLogs({ q = '', action = '', page = 1 } = {}) {
+  const where = [];
+  const params = [];
+  const term = String(q).trim();
+  if (term) {
+    where.push('(a.description LIKE ? OR a.action_type LIKE ? OR u.user_name LIKE ?)');
+    const like = `%${term}%`;
+    params.push(like, like, like);
+  }
+  if (String(action).trim()) {
+    where.push('a.action_type = ?');
+    params.push(String(action).trim());
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const countRows = await query(
+    `SELECT COUNT(*) AS n FROM activity_log a LEFT JOIN user u ON u.user_id = a.user_id ${whereSql}`,
+    params
+  );
+  const total = Number(countRows[0].n);
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const offset = (pageNum - 1) * PAGE_SIZE;
+  const rows = await query(
+    `SELECT a.log_id, a.action_type, a.target_table, a.target_id, a.description, a.created_at,
+            a.user_id AS actor_id, u.user_name AS actor_name, u.role AS actor_role
+       FROM activity_log a
+       LEFT JOIN user u ON u.user_id = a.user_id
+       ${whereSql}
+       ORDER BY a.created_at DESC, a.log_id DESC
+       LIMIT ? OFFSET ?`,
+    [...params, PAGE_SIZE, offset]
+  );
+
+  const types = await query('SELECT DISTINCT action_type FROM activity_log ORDER BY action_type');
+
+  return {
+    logs: rows.map((r) => ({
+      log_id: Number(r.log_id),
+      action_type: r.action_type,
+      target_table: r.target_table ?? null,
+      target_id: r.target_id == null ? null : Number(r.target_id),
+      description: r.description ?? null,
+      created_at: r.created_at,
+      actor_id: r.actor_id == null ? null : Number(r.actor_id),
+      actor_name: r.actor_name ?? null,
+      actor_role: r.actor_role ?? null,
+    })),
+    total,
+    page: pageNum,
+    page_size: PAGE_SIZE,
+    pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    action_types: types.map((t) => t.action_type),
+  };
+}
+
+// POST /logs/prune — delete activity_log rows older than `days` (1..365, default
+// 30 enforced by the route) and record the prune itself. Mirrors
+// prune-logs-action.php. `days` is validated to a small integer and interpolated
+// directly (parameterising the INTERVAL unit is awkward and this is injection-
+// safe once validated). DESTRUCTIVE + irreversible.
+export async function pruneLogs(adminId, days) {
+  const d = parseInt(days, 10);
+  if (!Number.isFinite(d) || d < 1 || d > 365) {
+    throw new AdminActionError('Days must be a whole number between 1 and 365.');
+  }
+  const countRows = await query(
+    `SELECT COUNT(*) AS n FROM activity_log WHERE created_at < (NOW() - INTERVAL ${d} DAY)`
+  );
+  const deleted = Number(countRows[0].n);
+  await query(`DELETE FROM activity_log WHERE created_at < (NOW() - INTERVAL ${d} DAY)`);
+  await logActivity({
+    userId: adminId,
+    action: 'admin_prune_logs',
+    targetTable: 'activity_log',
+    targetId: null,
+    description: `Pruned ${deleted} log(s) older than ${d} day(s)`,
+  });
+  return { deleted, days: d };
+}

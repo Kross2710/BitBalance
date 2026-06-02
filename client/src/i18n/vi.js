@@ -110,6 +110,24 @@ export default {
   'admin.user.saved': 'Đã lưu.',
   'admin.user.done': 'Xong.',
 
+  // nhật ký hoạt động (AdminLogsView.vue)
+  'admin.logs.title': 'Nhật ký hoạt động',
+  'admin.logs.search_ph': 'Tìm hành động hoặc mô tả',
+  'admin.logs.all_actions': 'Tất cả hành động',
+  'admin.logs.col_when': 'Thời điểm',
+  'admin.logs.col_actor': 'Người thực hiện',
+  'admin.logs.col_action': 'Hành động',
+  'admin.logs.col_target': 'Đối tượng',
+  'admin.logs.col_desc': 'Mô tả',
+  'admin.logs.none': 'Không có bản ghi.',
+  'admin.logs.prune_label': 'Xoá bản ghi cũ hơn',
+  'admin.logs.days': 'ngày',
+  'admin.logs.prune': 'Dọn',
+  'admin.logs.pruning': 'Đang dọn…',
+  'admin.logs.confirm_prune': 'Xoá vĩnh viễn các bản ghi cũ? Không thể hoàn tác.',
+  'admin.logs.pruned': 'Đã xoá:',
+  'admin.logs.bad_days': 'Nhập số ngày từ 1 đến 365.',
+
   // ---- auth: login + signup ----
   'auth.tagline': 'Đếm calo. Giữ chuỗi ngày. Đạt mục tiêu.',
   'auth.email': 'Email',

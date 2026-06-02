@@ -22,6 +22,7 @@ const routes = [
       { path: '', name: 'admin', component: () => import('./views/admin/AdminHomeView.vue') },
       { path: 'users', name: 'admin-users', component: () => import('./views/admin/AdminUsersView.vue') },
       { path: 'users/:id', name: 'admin-user', component: () => import('./views/admin/AdminUserDetailView.vue') },
+      { path: 'logs', name: 'admin-logs', component: () => import('./views/admin/AdminLogsView.vue') },
     ],
   },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,

@@ -111,6 +111,24 @@ export default {
   'admin.user.saved': 'Saved.',
   'admin.user.done': 'Done.',
 
+  // activity logs (AdminLogsView.vue)
+  'admin.logs.title': 'Activity logs',
+  'admin.logs.search_ph': 'Search action or description',
+  'admin.logs.all_actions': 'All actions',
+  'admin.logs.col_when': 'When',
+  'admin.logs.col_actor': 'Actor',
+  'admin.logs.col_action': 'Action',
+  'admin.logs.col_target': 'Target',
+  'admin.logs.col_desc': 'Description',
+  'admin.logs.none': 'No log entries.',
+  'admin.logs.prune_label': 'Delete entries older than',
+  'admin.logs.days': 'days',
+  'admin.logs.prune': 'Prune',
+  'admin.logs.pruning': 'Pruning…',
+  'admin.logs.confirm_prune': 'Permanently delete old log entries? This cannot be undone.',
+  'admin.logs.pruned': 'Deleted entries:',
+  'admin.logs.bad_days': 'Enter a number of days between 1 and 365.',
+
   // ---- auth: login + signup (net-new, no PHP equivalent) ----
   'auth.tagline': 'Track calories. Build streaks. Hit your goals.',
   'auth.email': 'Email',

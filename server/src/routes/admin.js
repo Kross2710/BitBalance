@@ -19,6 +19,8 @@ import {
   updateUser,
   setUserStatus,
   unlockUser,
+  getActivityLogs,
+  pruneLogs,
 } from '../lib/admin.js';
 
 const router = Router();
@@ -112,6 +114,24 @@ router.post(
     const id = intParam(req.params.id);
     await setUserStatus(req.user.user_id, id, req.params.action);
     ok(res, await getUserDetail(id), 'Status updated.');
+  })
+);
+
+// GET /api/admin/logs?q=&action=&page= → paginated activity_log + action types.
+router.get(
+  '/logs',
+  handle(async (req, res) => {
+    const { q = '', action = '', page = '1' } = req.query;
+    ok(res, await getActivityLogs({ q, action, page }));
+  })
+);
+
+// POST /api/admin/logs/prune → delete logs older than { days } (default 30).
+router.post(
+  '/logs/prune',
+  handle(async (req, res) => {
+    const days = req.body?.days ?? 30;
+    ok(res, await pruneLogs(req.user.user_id, days), 'Logs pruned.');
   })
 );
 
