@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
+import GoogleSignInButton from '../components/GoogleSignInButton.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -10,8 +11,11 @@ const route = useRoute();
 const email = ref('');
 const password = ref('');
 const remember = ref(false);
-const error = ref('');
+// Surface an error bounced back by the Google OAuth redirect (e.g. cancelled).
+const error = ref(typeof route.query.error === 'string' ? route.query.error : '');
 const busy = ref(false);
+
+onMounted(() => auth.loadProviders());
 
 async function onSubmit() {
   error.value = '';
@@ -48,6 +52,12 @@ async function onSubmit() {
         {{ busy ? 'Signing in…' : 'Sign in' }}
       </button>
       <p v-if="error" class="error">{{ error }}</p>
+
+      <template v-if="auth.providers.google">
+        <div class="or"><span>or</span></div>
+        <GoogleSignInButton from="login" />
+      </template>
+
       <p class="muted switch">No account? <RouterLink to="/signup">Sign up</RouterLink></p>
     </form>
   </main>
@@ -102,6 +112,23 @@ async function onSubmit() {
 }
 .auth-card .remember input { width: auto; margin: 0; }
 .submit { width: 100%; margin-top: 8px; min-height: 50px; font-size: 16px; }
+/* "or" divider between the password form and the Google button. */
+.or {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #353c49;
+}
+.or span { padding: 0 12px; }
 .muted { color: var(--muted); font-size: 13px; }
 .switch { text-align: center; margin: 16px 0 0; }
 a { color: var(--accent); font-weight: 600; }

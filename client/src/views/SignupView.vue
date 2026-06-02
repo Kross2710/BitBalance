@@ -1,14 +1,19 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter, RouterLink } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
+import GoogleSignInButton from '../components/GoogleSignInButton.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const form = ref({ first_name: '', last_name: '', email: '', password: '', confirm_password: '' });
-const error = ref('');
+// Surface an error bounced back by the Google OAuth redirect.
+const error = ref(typeof route.query.error === 'string' ? route.query.error : '');
 const busy = ref(false);
+
+onMounted(() => auth.loadProviders());
 
 async function onSubmit() {
   error.value = '';
@@ -50,6 +55,12 @@ async function onSubmit() {
         {{ busy ? 'Creating…' : 'Sign up' }}
       </button>
       <p v-if="error" class="error">{{ error }}</p>
+
+      <template v-if="auth.providers.google">
+        <div class="or"><span>or</span></div>
+        <GoogleSignInButton from="signup" />
+      </template>
+
       <p class="muted" style="text-align: center; margin: 14px 0 0">
         Already have an account? <RouterLink to="/login">Sign in</RouterLink>
       </p>
@@ -60,4 +71,20 @@ async function onSubmit() {
 <style scoped>
 .muted { color: var(--muted); font-size: 13px; }
 a { color: var(--accent); }
+/* "or" divider between the password form and the Google button. */
+.or {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #353c49;
+}
+.or span { padding: 0 12px; }
 </style>

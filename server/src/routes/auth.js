@@ -2,13 +2,25 @@
 // persistent "remember me" tokens (see lib/remember.js). Mirrors the legacy
 // lockout behaviour.
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { publicUser, currentUserRow } from '../lib/users.js';
 import { generateHandle } from '../lib/handle.js';
 import { createRemember, forgetRemember } from '../lib/remember.js';
+import {
+  googleConfigured,
+  googleRedirectUri,
+  googleAuthorizeUrl,
+  exchangeCodeForToken,
+  fetchGoogleProfile,
+  findOrCreateGoogleUser,
+} from '../lib/google.js';
 
 const router = Router();
+
+// Where the SPA lives, for the full-page redirects the OAuth flow ends with.
+const clientUrl = (path) => (process.env.CLIENT_ORIGIN || 'http://localhost:5173') + path;
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 60;
@@ -168,6 +180,96 @@ router.post('/logout', async (req, res) => {
     res.clearCookie('bb.sid');
     res.json({ ok: true, data: null, message: null });
   });
+});
+
+// Which third-party sign-in providers are available, so the login/signup views
+// can hide buttons that are not configured (graceful degradation, like PHP).
+router.get('/providers', (req, res) => {
+  res.json({ ok: true, data: { google: googleConfigured() }, message: null });
+});
+
+// --- Sign in with Google ----------------------------------------------------
+// Step 1: build a CSRF state token and redirect to Google's consent screen.
+// Ports google_auth.php. These two endpoints are full-page redirects (browser
+// navigations), so they speak Location headers, not the JSON envelope.
+router.get('/google', (req, res) => {
+  if (req.session?.user) return res.redirect(clientUrl('/dashboard'));
+  if (!googleConfigured()) {
+    return res.redirect(clientUrl('/login?error=' + encodeURIComponent('Google sign-in is not configured yet.')));
+  }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  const origin = req.query.from === 'signup' ? 'signup' : 'login';
+  req.session.googleOAuth = { state, origin };
+
+  res.redirect(googleAuthorizeUrl(googleRedirectUri(req), state));
+});
+
+// Step 2: Google redirects here with ?code & ?state. Verify state, exchange the
+// code, read the profile, find-or-create the account, then start the session.
+// Ports google_callback.php.
+router.get('/google/callback', async (req, res, next) => {
+  const saved = req.session?.googleOAuth || {};
+  if (req.session) delete req.session.googleOAuth;
+  const errorPath = saved.origin === 'signup' ? '/signup' : '/login';
+  const failRedirect = (msg) => res.redirect(clientUrl(errorPath + '?error=' + encodeURIComponent(msg)));
+
+  try {
+    if (req.session?.user) return res.redirect(clientUrl('/dashboard'));
+    if (!googleConfigured()) return failRedirect('Google sign-in is not configured yet.');
+
+    const state = String(req.query.state || '');
+    if (
+      !state ||
+      !saved.state ||
+      state.length !== saved.state.length ||
+      !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(saved.state))
+    ) {
+      return failRedirect('Sign-in session expired. Please try again.');
+    }
+    if (req.query.error) return failRedirect('Google sign-in was cancelled.');
+
+    const code = req.query.code || '';
+    if (!code) return failRedirect('Authorization code missing. Please try again.');
+
+    const redirectUri = googleRedirectUri(req);
+    const accessToken = await exchangeCodeForToken(code, redirectUri);
+    const g = await fetchGoogleProfile(accessToken);
+
+    // Google must have verified the email before we trust it for linking.
+    if (!g.emailVerified) return failRedirect('Your Google email is not verified, so we cannot sign you in.');
+
+    let userId;
+    try {
+      ({ userId } = await findOrCreateGoogleUser(g));
+    } catch (err) {
+      console.error('Google find-or-create:', err);
+      return failRedirect('Something went wrong creating your account. Please try again.');
+    }
+
+    // Rotate the session id now that we are authenticated (session fixation).
+    req.session.regenerate(async (err) => {
+      if (err) return next(err);
+      try {
+        req.session.user = { user_id: userId };
+        // Re-hydrate the full public user + read status/onboarding. Handles
+        // archived/banned by destroying the session and returning inactive.
+        const row = await currentUserRow(req);
+        if (!row || row.inactive) return failRedirect('This account is not available. Please contact support.');
+
+        await query('UPDATE user SET last_login = NOW() WHERE user_id = ?', [userId]);
+
+        // New accounts (no goal/physical info) land on onboarding; others go home.
+        const dest = row.needs_onboarding ? '/onboarding' : '/dashboard';
+        req.session.save(() => res.redirect(clientUrl(dest)));
+      } catch (e) {
+        next(e);
+      }
+    });
+  } catch (err) {
+    console.error('Google callback:', err);
+    failRedirect('Google sign-in failed. Please try again.');
+  }
 });
 
 // Ports api/me.php — who am I? Returns null data (not 401) for guests so the

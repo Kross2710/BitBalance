@@ -7,6 +7,17 @@ import { api } from '../lib/api.js';
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null);
   const ready = ref(false); // becomes true once the initial /me check resolves
+  // Which third-party sign-in providers the server has configured (e.g. Google).
+  const providers = ref({ google: false });
+
+  // Load once for the login/signup views so unconfigured buttons stay hidden.
+  async function loadProviders() {
+    try {
+      providers.value = await api.get('/api/auth/providers');
+    } catch {
+      providers.value = { google: false };
+    }
+  }
 
   async function bootstrap() {
     try {
@@ -38,5 +49,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null;
   }
 
-  return { user, ready, bootstrap, login, register, logout, markOnboarded };
+  return { user, ready, providers, loadProviders, bootstrap, login, register, logout, markOnboarded };
 });
