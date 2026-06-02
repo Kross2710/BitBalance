@@ -16,7 +16,7 @@ SET @bb_col_exists := (
 SET @bb_sql := IF(
   @bb_col_exists = 0,
   'ALTER TABLE userStatus ADD COLUMN language_preference VARCHAR(8) NOT NULL DEFAULT ''en'' AFTER theme_preference',
-  'SELECT 1'
+  'SET @bb_noop := 1'
 );
 
 PREPARE bb_stmt FROM @bb_sql;
