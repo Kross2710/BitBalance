@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
+import { t, locale, setLocale, locales } from '../i18n/index.js';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -78,7 +79,7 @@ async function onSubmit() {
     hydrate(data);
     // Keep the shared auth store (greeting, theme, etc.) in sync with the save.
     auth.user = data.user;
-    success.value = 'Profile updated successfully.';
+    success.value = t('profile.updated');
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -88,10 +89,10 @@ async function onSubmit() {
 
 // ---- Meal reminders ----
 const REMINDER_MEALS = [
-  { key: 'breakfast', label: 'Breakfast', icon: 'fa-mug-saucer' },
-  { key: 'lunch', label: 'Lunch', icon: 'fa-bowl-food' },
-  { key: 'dinner', label: 'Dinner', icon: 'fa-utensils' },
-  { key: 'snack', label: 'Snack', icon: 'fa-cookie-bite' },
+  { key: 'breakfast', labelKey: 'reminders.meal.breakfast', icon: 'fa-mug-saucer' },
+  { key: 'lunch', labelKey: 'reminders.meal.lunch', icon: 'fa-bowl-food' },
+  { key: 'dinner', labelKey: 'reminders.meal.dinner', icon: 'fa-utensils' },
+  { key: 'snack', labelKey: 'reminders.meal.snack', icon: 'fa-cookie-bite' },
 ];
 const reminders = reactive({
   enabled: false,
@@ -122,7 +123,7 @@ async function saveReminders() {
     const d = await api.post('/api/reminders', { enabled: reminders.enabled, meals: reminders.meals });
     reminders.enabled = d.enabled;
     reminders.meals = d.meals;
-    remindersMsg.value = 'Reminders saved.';
+    remindersMsg.value = t('reminders.saved');
     badgesStore.refresh(); // reflect the change in the nav badge immediately
 
   } catch (e) {
@@ -138,9 +139,9 @@ const initials = () =>
 
 <template>
   <main style="max-width: 720px; margin: 0 auto; padding: 8px 16px">
-    <h1 style="margin: 6px 0 16px">Profile</h1>
+    <h1 style="margin: 6px 0 16px">{{ $t('profile.title') }}</h1>
 
-    <p v-if="loading" class="muted">Loading…</p>
+    <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
 
     <form v-else @submit.prevent="onSubmit">
       <!-- Identity header -->
@@ -152,7 +153,7 @@ const initials = () =>
         <div>
           <strong style="font-size: 18px">{{ form.user_name || '—' }}</strong>
           <p class="muted" style="margin: 4px 0 0; font-size: 13px">
-            <span style="text-transform: capitalize">{{ meta.role || 'regular' }}</span>
+            <span style="text-transform: capitalize">{{ $t(meta.role === 'pt' ? 'profile.role.pt' : 'profile.role.regular') }}</span>
             <span v-if="meta.status"> · {{ meta.status }}</span>
           </p>
         </div>
@@ -160,65 +161,71 @@ const initials = () =>
 
       <!-- Account -->
       <section class="card" style="margin-top: 14px">
-        <h2 style="margin: 0 0 12px; font-size: 16px">Account</h2>
+        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.account') }}</h2>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
-          <div><label>First name</label><input v-model="form.first_name" required /></div>
-          <div><label>Last name</label><input v-model="form.last_name" required /></div>
+          <div><label>{{ $t('profile.field.first_name') }}</label><input v-model="form.first_name" required /></div>
+          <div><label>{{ $t('profile.field.last_name') }}</label><input v-model="form.last_name" required /></div>
         </div>
-        <label style="display: block; margin-top: 12px">Username</label>
+        <label style="display: block; margin-top: 12px">{{ $t('profile.field.username') }}</label>
         <input v-model="form.user_name" required />
-        <p class="hint">3-30 characters: letters, numbers, and . # - _</p>
-        <label style="display: block; margin-top: 12px">Email</label>
+        <p class="hint">{{ $t('profile.field.username_hint') }}</p>
+        <label style="display: block; margin-top: 12px">{{ $t('profile.field.email') }}</label>
         <input v-model="form.email" type="email" required />
-        <label style="display: block; margin-top: 12px">Bio</label>
+        <label style="display: block; margin-top: 12px">{{ $t('profile.field.bio') }}</label>
         <textarea v-model="form.bio" rows="3" />
       </section>
 
       <!-- Preferences -->
       <section class="card" style="margin-top: 14px">
-        <h2 style="margin: 0 0 12px; font-size: 16px">Preferences</h2>
-        <label>Theme</label>
+        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.appearance.title') }}</h2>
+        <label>{{ $t('profile.theme.label') }}</label>
         <select v-model="form.theme_preference">
-          <option value="system">System</option>
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
+          <option value="system">{{ $t('profile.theme.system') }}</option>
+          <option value="light">{{ $t('profile.theme.light') }}</option>
+          <option value="dark">{{ $t('profile.theme.dark') }}</option>
+        </select>
+        <!-- Language is NOT part of `form`/onSubmit: setLocale persists it instantly
+             (cookie + DB), so it's decoupled from the Save button. -->
+        <label style="display: block; margin-top: 12px">{{ $t('profile.language.title') }}</label>
+        <select :value="locale" @change="setLocale($event.target.value)">
+          <option v-for="(meta, code) in locales" :key="code" :value="code">{{ meta.native }}</option>
         </select>
       </section>
 
       <!-- Goal + physical -->
       <section class="card" style="margin-top: 14px">
-        <h2 style="margin: 0 0 12px; font-size: 16px">Goal &amp; body</h2>
-        <label>Daily calorie goal (kcal)</label>
+        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.goal_body.title') }}</h2>
+        <label>{{ $t('profile.goal.calorie') }}</label>
         <input v-model="form.calorie_goal" type="number" min="800" max="10000" />
-        <p v-if="meta.goalDate" class="hint">Last set {{ meta.goalDate }}</p>
+        <p v-if="meta.goalDate" class="hint">{{ $t('profile.goal.last_set', { date: meta.goalDate }) }}</p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px">
           <div>
-            <label>Age</label>
+            <label>{{ $t('profile.body.age') }}</label>
             <input v-model="form.age" type="number" min="1" max="130" />
           </div>
           <div>
-            <label>Gender</label>
+            <label>{{ $t('profile.body.gender') }}</label>
             <select v-model="form.gender">
-              <option value="">—</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
+              <option value="">{{ $t('profile.body.gender.none') }}</option>
+              <option value="male">{{ $t('profile.body.gender.male') }}</option>
+              <option value="female">{{ $t('profile.body.gender.female') }}</option>
+              <option value="other">{{ $t('profile.body.gender.other') }}</option>
             </select>
           </div>
           <div>
-            <label>Weight (kg)</label>
+            <label>{{ $t('profile.body.weight') }}</label>
             <input v-model="form.weight" type="number" step="0.1" min="1" max="999" />
           </div>
           <div>
-            <label>Height (cm)</label>
+            <label>{{ $t('profile.body.height') }}</label>
             <input v-model="form.height" type="number" step="0.1" min="1" max="300" />
           </div>
         </div>
       </section>
 
       <div style="margin-top: 16px; display: flex; align-items: center; gap: 14px">
-        <button type="submit" :disabled="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+        <button type="submit" :disabled="saving">{{ saving ? $t('common.saving') : $t('common.save_changes') }}</button>
         <span v-if="success" class="ok">{{ success }}</span>
         <span v-if="error" class="error" style="margin: 0">{{ error }}</span>
       </div>
@@ -226,19 +233,19 @@ const initials = () =>
 
     <!-- Meal reminders -->
     <section v-if="!loading" class="card reminders">
-      <h2>Meal reminders</h2>
+      <h2>{{ $t('reminders.title') }}</h2>
       <label class="rem-master">
         <input v-model="reminders.enabled" type="checkbox" />
-        <span>Enable reminders</span>
+        <span>{{ $t('reminders.enable') }}</span>
       </label>
-      <p class="rem-hint">In-app nudges when a meal's time has passed and it isn't logged yet.</p>
+      <p class="rem-hint">{{ $t('reminders.hint') }}</p>
 
       <div class="rem-grid" :class="{ off: !reminders.enabled }">
         <div v-for="m in REMINDER_MEALS" :key="m.key" class="rem-row">
           <label class="rem-meal">
             <input v-model="reminders.meals[m.key].enabled" type="checkbox" :disabled="!reminders.enabled" />
             <i class="fa-solid" :class="m.icon" />
-            <span>{{ m.label }}</span>
+            <span>{{ $t(m.labelKey) }}</span>
           </label>
           <input
             v-model="reminders.meals[m.key].time"
@@ -251,7 +258,7 @@ const initials = () =>
 
       <div class="rem-actions">
         <button type="button" :disabled="savingReminders" @click="saveReminders">
-          {{ savingReminders ? 'Saving…' : 'Save reminders' }}
+          {{ savingReminders ? $t('common.saving') : $t('reminders.save') }}
         </button>
         <span v-if="remindersMsg" class="ok">{{ remindersMsg }}</span>
       </div>
@@ -260,7 +267,7 @@ const initials = () =>
     <!-- Account session: logout lives here (the topbar's logout is being retired). -->
     <section v-if="!loading" class="card logout-card">
       <button type="button" class="logout-btn" @click="onLogout">
-        <i class="fa-solid fa-right-from-bracket" /> Log out
+        <i class="fa-solid fa-right-from-bracket" /> {{ $t('profile.logout') }}
       </button>
     </section>
   </main>

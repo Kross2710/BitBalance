@@ -2,7 +2,9 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
+import { setLocale } from '../i18n/index.js';
 import GoogleSignInButton from '../components/GoogleSignInButton.vue';
+import LocaleSwitcher from '../components/LocaleSwitcher.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -21,7 +23,9 @@ async function onSubmit() {
   error.value = '';
   busy.value = true;
   try {
-    await auth.login(email.value, password.value, remember.value);
+    const user = await auth.login(email.value, password.value, remember.value);
+    // Adopt the account's stored language (a guest may have toggled to something else).
+    if (user?.language_preference) setLocale(user.language_preference, { persist: false });
     router.push(route.query.redirect || { name: 'dashboard' });
   } catch (e) {
     error.value = e.message;
@@ -36,29 +40,30 @@ async function onSubmit() {
     <div class="hero">
       <span class="mark">B</span>
       <h1>BitBalance</h1>
-      <p class="tagline">Track calories. Build streaks. Hit your goals.</p>
+      <p class="tagline">{{ $t('auth.tagline') }}</p>
+      <LocaleSwitcher class="hero-locale" />
     </div>
 
     <form class="card auth-card" @submit.prevent="onSubmit">
-      <label for="login-email">Email</label>
+      <label for="login-email">{{ $t('auth.email') }}</label>
       <input id="login-email" v-model="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-      <label for="login-password">Password</label>
-      <input id="login-password" v-model="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+      <label for="login-password">{{ $t('auth.password') }}</label>
+      <input id="login-password" v-model="password" type="password" autocomplete="current-password" :placeholder="$t('auth.password_placeholder')" required />
       <label class="remember">
         <input v-model="remember" type="checkbox" />
-        <span>Keep me signed in for 30 days</span>
+        <span>{{ $t('auth.remember') }}</span>
       </label>
       <button type="submit" class="submit" :disabled="busy">
-        {{ busy ? 'Signing in…' : 'Sign in' }}
+        {{ busy ? $t('auth.signing_in') : $t('auth.sign_in') }}
       </button>
       <p v-if="error" class="error">{{ error }}</p>
 
       <template v-if="auth.providers.google">
-        <div class="or"><span>or</span></div>
+        <div class="or"><span>{{ $t('auth.or') }}</span></div>
         <GoogleSignInButton from="login" />
       </template>
 
-      <p class="muted switch">No account? <RouterLink to="/signup">Sign up</RouterLink></p>
+      <p class="muted switch">{{ $t('auth.no_account') }} <RouterLink to="/signup">{{ $t('auth.sign_up') }}</RouterLink></p>
     </form>
   </main>
 </template>
@@ -90,6 +95,7 @@ async function onSubmit() {
 }
 .hero h1 { margin: 0; font-size: 26px; }
 .tagline { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+.hero-locale { margin-top: 16px; }
 
 .auth-card {
   padding: 22px;

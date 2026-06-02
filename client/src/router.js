@@ -39,7 +39,17 @@ const router = createRouter({
 // routes. This is what makes navigation feel seamless — no full page reloads.
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  if (!auth.ready) await auth.bootstrap();
+  if (!auth.ready) {
+    await auth.bootstrap();
+    // First load only: adopt the logged-in user's stored language. The cookie /
+    // navigator already set a pre-paint default; persist:false because we're
+    // reflecting the server value, not echoing it back. Gated to the initial
+    // bootstrap so it never overrides an in-session manual switch.
+    if (auth.user?.language_preference) {
+      const { setLocale } = await import('./i18n/index.js');
+      setLocale(auth.user.language_preference, { persist: false });
+    }
+  }
 
   if (to.meta.requiresAuth && !auth.user) {
     return { name: 'login', query: { redirect: to.fullPath } };

@@ -16,11 +16,13 @@ watch(() => route.fullPath, () => (menuOpen.value = false));
 // Nav model shared by the desktop sidebar and the mobile tab bar. Icons mirror
 // the PHP app's Font Awesome set (fa-solid). Profile is intentionally NOT here:
 // it's reached via the avatar in the topbar, keeping the bottom bar to 4 tabs.
+// labelKey resolves through $t in the template so the labels re-render on a
+// language switch (a plain string would freeze at its initial locale).
 const navItems = [
-  { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
-  { to: '/intake', icon: 'fa-utensils', label: 'Intake', enabled: true },
-  { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: true },
-  { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: true },
+  { to: '/dashboard', icon: 'fa-house', labelKey: 'nav.home', enabled: true },
+  { to: '/intake', icon: 'fa-utensils', labelKey: 'nav.intake', enabled: true },
+  { to: '/coach', icon: 'fa-dumbbell', labelKey: 'nav.coach', enabled: true },
+  { to: '/friends', icon: 'fa-user-group', labelKey: 'nav.friends', enabled: true },
 ];
 
 // Initial for the avatar fallback when the user has no profile image.
@@ -52,7 +54,7 @@ watch(
             <i class="fa-solid" :class="item.icon" />
             <span v-if="badges[item.to]" class="badge">{{ badges[item.to] }}</span>
           </span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ $t(item.labelKey) }}</span>
         </RouterLink>
       </nav>
     </aside>
@@ -60,7 +62,7 @@ watch(
     <!-- Main column -->
     <div class="main">
       <header class="topbar">
-        <RouterLink to="/dashboard" class="brand-link" aria-label="BitBalance home">
+        <RouterLink to="/dashboard" class="brand-link" :aria-label="$t('nav.brand_home')">
           <span class="brand-mark">B</span>
           <span class="brand-name">BitBalance</span>
         </RouterLink>
@@ -68,7 +70,7 @@ watch(
           <button
             class="avatar-link"
             :class="{ active: route.name === 'profile' || route.name === 'trainer' }"
-            aria-label="Account menu"
+            :aria-label="$t('nav.account_menu')"
             aria-haspopup="true"
             :aria-expanded="menuOpen"
             @click="menuOpen = !menuOpen"
@@ -83,10 +85,10 @@ watch(
               <span class="am-handle">@{{ auth.user?.handle }}</span>
             </div>
             <RouterLink v-if="auth.user?.role === 'pt'" to="/trainer" class="am-item" role="menuitem">
-              <i class="fa-solid fa-user-tie" /> Trainer workspace
+              <i class="fa-solid fa-user-tie" /> {{ $t('nav.trainer_workspace') }}
             </RouterLink>
             <RouterLink to="/profile" class="am-item" role="menuitem">
-              <i class="fa-solid fa-user" /> Profile
+              <i class="fa-solid fa-user" /> {{ $t('nav.profile') }}
             </RouterLink>
           </div>
         </div>

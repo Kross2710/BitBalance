@@ -14,6 +14,7 @@ export function publicUser(row) {
     role: row.role ?? 'regular',
     profile_image: row.profile_image ?? null,
     theme_preference: row.theme_preference ?? 'system',
+    language_preference: row.language_preference ?? 'en',
     needs_onboarding: Boolean(row.needs_onboarding),
   };
 }
@@ -27,7 +28,7 @@ export async function currentUserRow(req) {
 
   const rows = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
-            us.status, us.theme_preference,
+            us.status, us.theme_preference, us.language_preference,
             CASE
                 WHEN NOT EXISTS (SELECT 1 FROM userGoal ug WHERE ug.user_id = u.user_id LIMIT 1)
                   OR NOT EXISTS (SELECT 1 FROM userPhysicalInfo upi WHERE upi.user_id = u.user_id LIMIT 1)

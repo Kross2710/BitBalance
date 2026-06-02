@@ -9,7 +9,7 @@ import { publicUser } from './users.js';
 export async function fetchUser(userId) {
   const rows = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
-            us.status, us.theme_preference, us.profile_bio
+            us.status, us.theme_preference, us.language_preference, us.profile_bio
        FROM user u
        JOIN userStatus us ON u.user_id = us.user_id
       WHERE u.user_id = ?
