@@ -1,0 +1,146 @@
+// Profile routes — port api/profile/get.php and update.php.
+//   GET  /api/profile        → current user's profile payload
+//   POST /api/profile/update → validate + persist account / status / goal / physical
+// Profile image upload and language preference are NOT part of the JSON API
+// (the legacy update.php didn't handle them either) — tracked in MIGRATION.md.
+import { Router } from 'express';
+import { pool } from '../db.js';
+import { requireAuth } from '../middleware/auth.js';
+import { publicUser } from '../lib/users.js';
+import { fetchUser, payload } from '../lib/profile.js';
+
+const router = Router();
+
+const HANDLE_RE = /^[A-Za-z0-9_.#\-]{3,30}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_THEMES = ['light', 'dark', 'system'];
+const VALID_GENDERS = ['male', 'female', 'other'];
+
+// Mirror api_profile_nullable_int / nullable_float: '' and null collapse to null.
+function nullableInt(v) {
+  if (v === null || v === undefined || v === '') return null;
+  return parseInt(v, 10);
+}
+function nullableFloat(v) {
+  if (v === null || v === undefined || v === '') return null;
+  return Number(v);
+}
+
+router.get('/', requireAuth, async (req, res, next) => {
+  try {
+    const profile = await fetchUser(req.user.user_id);
+    if (!profile) {
+      return res.status(404).json({ ok: false, data: null, message: 'Profile not found.' });
+    }
+    res.json({ ok: true, data: await payload(profile), message: null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/update', requireAuth, async (req, res, next) => {
+  const fail = (msg, code = 422) => res.status(code).json({ ok: false, data: null, message: msg });
+  const d = req.body ?? {};
+  const userId = req.user.user_id;
+
+  const firstName = (d.first_name ?? '').trim();
+  const lastName = (d.last_name ?? '').trim();
+  const handle = (d.user_name ?? '').trim();
+  const email = (d.email ?? '').trim();
+  const bio = (d.bio ?? '').trim();
+  const theme = (d.theme_preference ?? 'system').trim();
+  const calorieGoal = 'calorie_goal' in d ? nullableInt(d.calorie_goal) : null;
+  const age = 'age' in d ? nullableInt(d.age) : null;
+  let gender = 'gender' in d && d.gender !== null ? String(d.gender).trim() : null;
+  const weight = 'weight' in d ? nullableFloat(d.weight) : null;
+  const height = 'height' in d ? nullableFloat(d.height) : null;
+
+  if (firstName === '' || lastName === '' || handle === '' || email === '') {
+    return fail('Please fill in all required fields.');
+  }
+  if (!HANDLE_RE.test(handle)) {
+    return fail('Username must be 3-30 characters: letters, numbers, and . # - _.');
+  }
+  if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.');
+  if (!VALID_THEMES.includes(theme)) return fail('Invalid theme selected.');
+  if (calorieGoal !== null && (calorieGoal < 800 || calorieGoal > 10000)) {
+    return fail('Please enter a valid calorie goal (800-10,000).');
+  }
+  if (age !== null && (age < 1 || age > 130)) return fail('Age must be between 1 and 130.');
+  if (gender === '') gender = null;
+  if (gender !== null && !VALID_GENDERS.includes(gender)) return fail('Invalid gender selected.');
+  if (weight !== null && (weight <= 0 || weight > 999)) return fail('Weight must be between 1 and 999 kg.');
+  if (height !== null && (height <= 0 || height > 300)) return fail('Height must be between 1 and 300 cm.');
+
+  const conn = await pool.getConnection();
+  try {
+    // Uniqueness checks (excluding self) — mirror the 409s the PHP API returned.
+    const [emailDup] = await conn.query('SELECT user_id FROM user WHERE email = ? AND user_id != ?', [email, userId]);
+    if (emailDup.length) {
+      return fail('This email is already taken by another user.', 409);
+    }
+    const [handleDup] = await conn.query('SELECT user_id FROM user WHERE user_name = ? AND user_id != ?', [
+      handle,
+      userId,
+    ]);
+    if (handleDup.length) {
+      return fail('This username is already taken.', 409);
+    }
+
+    await conn.beginTransaction();
+
+    await conn.query('UPDATE user SET first_name = ?, last_name = ?, user_name = ?, email = ? WHERE user_id = ?', [
+      firstName,
+      lastName,
+      handle,
+      email,
+      userId,
+    ]);
+
+    await conn.query('UPDATE userStatus SET profile_bio = ?, theme_preference = ? WHERE user_id = ?', [
+      bio,
+      theme,
+      userId,
+    ]);
+
+    // A new goal is appended (history-preserving), matching the legacy INSERT.
+    if (calorieGoal !== null) {
+      await conn.query('INSERT INTO userGoal (user_id, calorie_goal, date_set) VALUES (?, ?, NOW())', [
+        userId,
+        calorieGoal,
+      ]);
+    }
+
+    // Upsert physical info (PHP reuses user_id as the surrogate PK on insert).
+    const [phys] = await conn.query('SELECT userPhysicalStat_id FROM userPhysicalInfo WHERE user_id = ?', [userId]);
+    if (phys.length) {
+      await conn.query('UPDATE userPhysicalInfo SET age = ?, gender = ?, weight = ?, height = ? WHERE user_id = ?', [
+        age,
+        gender,
+        weight,
+        height,
+        userId,
+      ]);
+    } else {
+      await conn.query(
+        'INSERT INTO userPhysicalInfo (userPhysicalStat_id, user_id, age, gender, weight, height) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, userId, age, gender, weight, height]
+      );
+    }
+
+    await conn.commit();
+
+    const fresh = await fetchUser(userId);
+    // Keep the session row in sync so the next currentUserRow refresh (and the
+    // SPA's auth store) reflects the rename/email/theme change immediately.
+    req.session.user = publicUser(fresh);
+    res.json({ ok: true, data: await payload(fresh), message: null });
+  } catch (err) {
+    await conn.rollback().catch(() => {});
+    next(err);
+  } finally {
+    conn.release();
+  }
+});
+
+export default router;

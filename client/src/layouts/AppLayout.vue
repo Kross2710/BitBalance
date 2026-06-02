@@ -13,7 +13,7 @@ const navItems = [
   { to: '/dashboard', icon: 'fa-house', label: 'Home', enabled: true },
   { to: '/coach', icon: 'fa-dumbbell', label: 'Coach', enabled: false },
   { to: '/friends', icon: 'fa-user-group', label: 'Friends', enabled: false },
-  { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: false },
+  { to: '/profile', icon: 'fa-user', label: 'Profile', enabled: true },
 ];
 
 async function onLogout() {

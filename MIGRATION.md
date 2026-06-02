@@ -58,7 +58,8 @@ gần như port 1-1.
 | Intake – suggest/barcode | `suggest.php`, `lookup_barcode.php` | ⬜ | ⬜ | gọi AI / barcode ngoài |
 | Dashboard – day | `api/dashboard/day.php` | ✅ `GET /api/dashboard/day?date=` | ✅ Dashboard | Điều hướng ngày, BMI, focus, biểu đồ 7 ngày, theo bữa, XP/level thật |
 | Dashboard – summary | `api/dashboard/summary.php` | ✅ `GET /api/dashboard/summary` | — | Snapshot hôm nay, XP/level thật |
-| Profile | `api/profile/*` | ⬜ | ⬜ | `profile.php` rất lớn (61KB) |
+| Profile – get | `api/profile/get.php` | ✅ `GET /api/profile` | ✅ ProfileView | Payload `{user, bio, status, goal, physical}` |
+| Profile – update | `api/profile/update.php` | ✅ `POST /api/profile/update` | ✅ ProfileView | Account/bio/theme/goal/physical trong 1 transaction; check trùng email/handle; đồng bộ session. Chưa port: upload ảnh + đổi ngôn ngữ + `log_attempt` (legacy update.php cũng không xử lý ảnh/ngôn ngữ) |
 | AI Coach | `api/ai-coach/*` | ⬜ | ⬜ | tích hợp OpenRouter |
 | Social/Friends | `api/social/action.php` | ⬜ | ⬜ | |
 | Admin panel | `admin/*.php` | ⬜ | ⬜ | module riêng, có auth riêng |
