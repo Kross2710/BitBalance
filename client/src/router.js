@@ -25,6 +25,9 @@ const routes = [
       { path: 'users/new', name: 'admin-user-new', component: () => import('./views/admin/AdminUserCreateView.vue') },
       { path: 'users/:id', name: 'admin-user', component: () => import('./views/admin/AdminUserDetailView.vue') },
       { path: 'logs', name: 'admin-logs', component: () => import('./views/admin/AdminLogsView.vue') },
+      { path: 'barcodes', name: 'admin-barcodes', component: () => import('./views/admin/AdminBarcodesView.vue') },
+      // ':barcode' is digits-only (validated server-side), so no clash with a sub-route.
+      { path: 'barcodes/:barcode', name: 'admin-barcode', component: () => import('./views/admin/AdminBarcodeDetailView.vue') },
     ],
   },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,

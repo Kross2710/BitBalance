@@ -438,3 +438,197 @@ export async function pruneLogs(adminId, days) {
   });
   return { deleted, days: d };
 }
+
+// ---- Barcode cache (Phase 3) ----------------------------------------------
+// Read + manage the shared barcode_products cache and its barcode_scan_log
+// analytics, both created in include/migrations/2026_05_27_add_barcode_scanner.sql
+// and written by server/src/lib/barcode.js. Lets an admin inspect what
+// OpenFoodFacts data has been cached, see scan coverage, and evict a bad/stale
+// entry (the next scan of that barcode then re-fetches from OpenFoodFacts).
+export const BARCODE_SOURCES = ['openfoodfacts', 'user_submitted'];
+// Whitelisted sort keys -> ORDER BY clause. The value is never user-controlled
+// (we look it up by key), so interpolating it is injection-safe.
+const BARCODE_SORTS = {
+  popular: 'p.lookup_count DESC, p.updated_at DESC',
+  recent: 'p.updated_at DESC',
+  oldest: 'p.created_at ASC',
+  name: 'p.product_name ASC, p.barcode ASC',
+};
+
+function barcodeRow(r) {
+  const num = (v) => (v == null ? null : Number(v));
+  return {
+    barcode: r.barcode,
+    product_name: r.product_name ?? null,
+    brand: r.brand ?? null,
+    serving_size: r.serving_size ?? null,
+    kcal_per_serving: num(r.kcal_per_serving),
+    kcal_per_100g: num(r.kcal_per_100g),
+    protein_per_serving: num(r.protein_per_serving),
+    carbs_per_serving: num(r.carbs_per_serving),
+    fat_per_serving: num(r.fat_per_serving),
+    sugar_per_serving: num(r.sugar_per_serving),
+    image_url: r.image_url ?? null,
+    source: r.source ?? 'openfoodfacts',
+    submitted_by_user_id: num(r.submitted_by_user_id),
+    lookup_count: Number(r.lookup_count ?? 0),
+    created_at: r.created_at ?? null,
+    updated_at: r.updated_at ?? null,
+  };
+}
+
+// Cache-wide headline numbers for the list page's stats strip: how many products
+// are cached, and the scan-result breakdown (cache_hit / api_found / api_miss /
+// api_error) with a derived cache hit-rate. The scan-log half is wrapped in
+// try/catch so the product list still loads on a DB where barcode_scan_log is
+// missing or empty (it's analytics, not core data).
+async function barcodeCacheStats() {
+  const productRows = await query('SELECT COUNT(*) AS n FROM barcode_products');
+  const stats = {
+    products: Number(productRows[0].n),
+    total_scans: 0,
+    cache_hit: 0,
+    api_found: 0,
+    api_miss: 0,
+    api_error: 0,
+    hit_rate: null,
+  };
+  try {
+    const byResult = await query('SELECT result, COUNT(*) AS n FROM barcode_scan_log GROUP BY result');
+    for (const row of byResult) {
+      const n = Number(row.n);
+      stats.total_scans += n;
+      if (Object.prototype.hasOwnProperty.call(stats, row.result)) stats[row.result] = n;
+    }
+    if (stats.total_scans > 0) stats.hit_rate = Math.round((stats.cache_hit / stats.total_scans) * 100);
+  } catch (e) {
+    console.error('barcode_scan_log stats failed:', e.message);
+  }
+  return stats;
+}
+
+// GET /barcodes — paginated cache list with optional text search (barcode /
+// product name / brand), source filter and sort. Returns the available sources +
+// cache-wide stats alongside the page so the view can render filters and a
+// headline strip without a second round-trip.
+export async function listBarcodeCache({ q = '', source = '', sort = 'popular', page = 1 } = {}) {
+  const where = [];
+  const params = [];
+  const term = String(q).trim();
+  if (term) {
+    where.push('(p.barcode LIKE ? OR p.product_name LIKE ? OR p.brand LIKE ?)');
+    const like = `%${term}%`;
+    params.push(like, like, like);
+  }
+  if (BARCODE_SOURCES.includes(source)) {
+    where.push('p.source = ?');
+    params.push(source);
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const orderSql = BARCODE_SORTS[sort] || BARCODE_SORTS.popular;
+
+  const countRows = await query(`SELECT COUNT(*) AS n FROM barcode_products p ${whereSql}`, params);
+  const total = Number(countRows[0].n);
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const offset = (pageNum - 1) * PAGE_SIZE;
+  const rows = await query(
+    `SELECT p.barcode, p.product_name, p.brand, p.serving_size,
+            p.kcal_per_serving, p.kcal_per_100g,
+            p.protein_per_serving, p.carbs_per_serving, p.fat_per_serving, p.sugar_per_serving,
+            p.image_url, p.source, p.submitted_by_user_id, p.lookup_count, p.created_at, p.updated_at
+       FROM barcode_products p
+       ${whereSql}
+       ORDER BY ${orderSql}
+       LIMIT ? OFFSET ?`,
+    [...params, PAGE_SIZE, offset]
+  );
+
+  return {
+    products: rows.map(barcodeRow),
+    total,
+    page: pageNum,
+    page_size: PAGE_SIZE,
+    pages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    sources: BARCODE_SOURCES,
+    stats: await barcodeCacheStats(),
+  };
+}
+
+// GET /barcodes/:barcode — one cached product (plus the submitter's handle for
+// user_submitted rows) with its recent scans and per-result scan counts. The
+// scan-log half is best-effort (see barcodeCacheStats).
+export async function getBarcodeDetail(barcode) {
+  const code = String(barcode).trim();
+  const rows = await query(
+    `SELECT p.barcode, p.product_name, p.brand, p.serving_size,
+            p.kcal_per_serving, p.kcal_per_100g,
+            p.protein_per_serving, p.carbs_per_serving, p.fat_per_serving, p.sugar_per_serving,
+            p.image_url, p.source, p.submitted_by_user_id, p.lookup_count, p.created_at, p.updated_at,
+            sub.user_name AS submitted_by_name
+       FROM barcode_products p
+       LEFT JOIN user sub ON sub.user_id = p.submitted_by_user_id
+      WHERE p.barcode = ? LIMIT 1`,
+    [code]
+  );
+  const r = rows[0];
+  if (!r) throw new AdminActionError('Cached product not found.');
+
+  let scans = [];
+  const scanStats = { total: 0, cache_hit: 0, api_found: 0, api_miss: 0, api_error: 0 };
+  try {
+    scans = await query(
+      `SELECT s.scan_id, s.user_id, s.result, s.latency_ms, s.created_at, u.user_name AS user_name
+         FROM barcode_scan_log s
+         LEFT JOIN user u ON u.user_id = s.user_id
+        WHERE s.barcode = ?
+        ORDER BY s.created_at DESC, s.scan_id DESC
+        LIMIT 20`,
+      [code]
+    );
+    const counts = await query(
+      'SELECT result, COUNT(*) AS n FROM barcode_scan_log WHERE barcode = ? GROUP BY result',
+      [code]
+    );
+    for (const c of counts) {
+      const n = Number(c.n);
+      scanStats.total += n;
+      if (Object.prototype.hasOwnProperty.call(scanStats, c.result)) scanStats[c.result] = n;
+    }
+  } catch (e) {
+    console.error('barcode_scan_log detail failed:', e.message);
+  }
+
+  return {
+    product: { ...barcodeRow(r), submitted_by_name: r.submitted_by_name ?? null },
+    scans: scans.map((s) => ({
+      scan_id: Number(s.scan_id),
+      user_id: s.user_id == null ? null : Number(s.user_id),
+      user_name: s.user_name ?? null,
+      result: s.result,
+      latency_ms: s.latency_ms == null ? null : Number(s.latency_ms),
+      created_at: s.created_at,
+    })),
+    scan_stats: scanStats,
+  };
+}
+
+// POST /barcodes/:barcode/evict — drop a cached product so the next scan re-fetches
+// fresh data from OpenFoodFacts (e.g. when OFF returned wrong/stale nutrition).
+// The barcode_scan_log history is deliberately KEPT — those scans really happened
+// and the FK there is on user, not barcode, so nothing cascades.
+export async function evictBarcode(adminId, barcode) {
+  const code = String(barcode).trim();
+  const rows = await query('SELECT barcode, product_name FROM barcode_products WHERE barcode = ? LIMIT 1', [code]);
+  if (!rows.length) throw new AdminActionError('Cached product not found.');
+
+  await query('DELETE FROM barcode_products WHERE barcode = ?', [code]);
+  await logActivity({
+    userId: adminId,
+    action: 'admin_evict_barcode',
+    targetTable: 'barcode_products',
+    targetId: null,
+    description: `Evicted cached barcode ${code}${rows[0].product_name ? ` (${rows[0].product_name})` : ''}`,
+  });
+  return { barcode: code };
+}

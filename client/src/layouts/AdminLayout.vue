@@ -17,6 +17,7 @@ onMounted(() => {
 const navItems = [
   { to: '/admin', icon: 'fa-gauge', labelKey: 'admin.nav.overview', enabled: true },
   { to: '/admin/users', icon: 'fa-users', labelKey: 'admin.nav.users', enabled: true },
+  { to: '/admin/barcodes', icon: 'fa-barcode', labelKey: 'admin.nav.barcodes', enabled: true },
   { to: '/admin/logs', icon: 'fa-list-check', labelKey: 'admin.nav.logs', enabled: true },
 ];
 

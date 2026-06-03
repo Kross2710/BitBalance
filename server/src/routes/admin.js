@@ -24,6 +24,9 @@ import {
   getActivityLogs,
   previewPrune,
   pruneLogs,
+  listBarcodeCache,
+  getBarcodeDetail,
+  evictBarcode,
 } from '../lib/admin.js';
 
 const router = Router();
@@ -164,6 +167,33 @@ router.post(
   handle(async (req, res) => {
     const days = req.body?.days ?? 30;
     ok(res, await pruneLogs(req.user.user_id, days), 'Logs pruned.');
+  })
+);
+
+// GET /api/admin/barcodes?q=&source=&sort=&page= → paginated barcode cache + stats.
+router.get(
+  '/barcodes',
+  handle(async (req, res) => {
+    const { q = '', source = '', sort = 'popular', page = '1' } = req.query;
+    ok(res, await listBarcodeCache({ q, source, sort, page }));
+  })
+);
+
+// GET /api/admin/barcodes/:barcode → one cached product + its recent scans.
+router.get(
+  '/barcodes/:barcode',
+  handle(async (req, res) => {
+    ok(res, await getBarcodeDetail(req.params.barcode));
+  })
+);
+
+// POST /api/admin/barcodes/:barcode/evict → drop a cached product (next scan
+// re-fetches from OpenFoodFacts). POST (not DELETE) to reuse the SPA api client,
+// which only sends GET/POST/PATCH with the CSRF header.
+router.post(
+  '/barcodes/:barcode/evict',
+  handle(async (req, res) => {
+    ok(res, await evictBarcode(req.user.user_id, req.params.barcode), 'Cached product evicted.');
   })
 );
 
