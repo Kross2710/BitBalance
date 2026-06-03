@@ -4,6 +4,12 @@ include/db_config.local.php
 .DS_Store
 AGENTS.md
 
+# Operator deploy runbooks — kept private (they name the box's SSH user/IPs and
+# the RMIT production DB host + login). Operational templates with placeholders
+# only (deploy/deploy.sh, bitbalance.service, ngrok.yml) stay tracked.
+/DEPLOY.md
+/deploy/DEPLOY-CachyOS.md
+
 # Keep docs ignored by default, but allow the architecture contract.
 docs/*
 !docs/architecture.md
