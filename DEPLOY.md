@@ -39,9 +39,14 @@ Operator --Tailscale (100.x)--> ssh into the box --> ./deploy/deploy.sh
 
 ## Redeploy after pushing code (the normal flow)
 
+**The box tracks `main`** (switched 2026-06-03 from the old
+`claude/express-vue-migration-XoMbE` migration branch — work now lands on `main`
+via PRs). The usual flow is: push to `main`, or merge a stable branch built off
+`main` into it, then deploy.
+
 ```bash
-# 1. Push to the branch the box tracks (currently claude/express-vue-migration-XoMbE)
-git push origin <branch>
+# 1. Get the code onto main (push directly, or merge the PR on GitHub).
+git push origin main
 
 # 2. One command from anywhere on the tailnet:
 ssh kross@100.127.38.40 'cd ~/BitBalance-2.0---Calorie-Tracker && ./deploy/deploy.sh'
@@ -52,8 +57,17 @@ ssh kross@100.127.38.40 'cd ~/BitBalance-2.0---Calorie-Tracker && ./deploy/deplo
 restart the `bitbalance` user service. It is idempotent and ff-only (refuses to
 clobber local divergence — reconcile by hand if it stops).
 
-Deploy a different branch: `BRANCH=main ./deploy/deploy.sh` (or `git checkout` it
-on the box once).
+Deploy a stable feature branch instead of `main`: check it out on the box once,
+then run the script —
+
+```bash
+ssh kross@100.127.38.40 'bash -lc "cd ~/BitBalance-2.0---Calorie-Tracker && git checkout <branch> && ./deploy/deploy.sh"'
+```
+
+The `BRANCH=<branch> ./deploy/deploy.sh` override only changes which `origin/<ref>`
+it fetches and ff-merges **into the currently checked-out branch**, so a plain
+`git checkout` is the clean way to switch what's live (and ff-only refuses to
+merge across diverged branches anyway).
 
 ## Operate
 
