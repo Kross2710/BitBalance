@@ -21,6 +21,8 @@ const routes = [
     children: [
       { path: '', name: 'admin', component: () => import('./views/admin/AdminHomeView.vue') },
       { path: 'users', name: 'admin-users', component: () => import('./views/admin/AdminUsersView.vue') },
+      // 'users/new' MUST precede 'users/:id' so it isn't captured as an id.
+      { path: 'users/new', name: 'admin-user-new', component: () => import('./views/admin/AdminUserCreateView.vue') },
       { path: 'users/:id', name: 'admin-user', component: () => import('./views/admin/AdminUserDetailView.vue') },
       { path: 'logs', name: 'admin-logs', component: () => import('./views/admin/AdminLogsView.vue') },
     ],

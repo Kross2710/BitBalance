@@ -16,6 +16,7 @@ import {
   AdminActionError,
   listUsers,
   getUserDetail,
+  createUser,
   updateUser,
   setUserStatus,
   unlockUser,
@@ -77,6 +78,16 @@ router.get(
   handle(async (req, res) => {
     const { q = '', role = '', status = '', page = '1' } = req.query;
     ok(res, await listUsers({ q, role, status, page }));
+  })
+);
+
+// POST /api/admin/users → create a new user (admin-only). Declared before the
+// /:id routes (different method, but keep the user-collection handlers together).
+router.post(
+  '/users',
+  handle(async (req, res) => {
+    const data = await createUser(req.user.user_id, req.body || {});
+    ok(res, data, 'User created.');
   })
 );
 

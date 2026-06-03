@@ -81,6 +81,7 @@ export default {
   'admin.users.prev': 'Prev',
   'admin.users.next': 'Next',
   'admin.users.page': 'Page',
+  'admin.users.new': 'New user',
   'admin.users.confirm_ban_title': 'Ban user?',
   'admin.users.confirm_ban': 'Ban this user? They will be signed out and blocked from logging in.',
 
@@ -111,6 +112,16 @@ export default {
   'admin.user.none_data': 'Nothing yet.',
   'admin.user.saved': 'Saved.',
   'admin.user.done': 'Done.',
+
+  // create user (AdminUserCreateView.vue)
+  'admin.create.title': 'Create user',
+  'admin.create.intro': 'Add a new account. The user can change their details later.',
+  'admin.create.password': 'Password',
+  'admin.create.confirm_password': 'Confirm password',
+  'admin.create.password_hint': 'At least 8 characters, with an uppercase letter, a lowercase letter and a number.',
+  'admin.create.submit': 'Create user',
+  'admin.create.creating': 'Creating…',
+  'admin.create.created': 'User created.',
 
   // activity logs (AdminLogsView.vue)
   'admin.logs.title': 'Activity logs',

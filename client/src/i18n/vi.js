@@ -80,6 +80,7 @@ export default {
   'admin.users.prev': 'Trước',
   'admin.users.next': 'Sau',
   'admin.users.page': 'Trang',
+  'admin.users.new': 'Thêm người dùng',
   'admin.users.confirm_ban_title': 'Cấm người dùng?',
   'admin.users.confirm_ban': 'Cấm người dùng này? Họ sẽ bị đăng xuất và không đăng nhập được.',
 
@@ -110,6 +111,16 @@ export default {
   'admin.user.none_data': 'Chưa có gì.',
   'admin.user.saved': 'Đã lưu.',
   'admin.user.done': 'Xong.',
+
+  // tạo người dùng (AdminUserCreateView.vue)
+  'admin.create.title': 'Tạo người dùng',
+  'admin.create.intro': 'Thêm tài khoản mới. Người dùng có thể tự đổi thông tin sau.',
+  'admin.create.password': 'Mật khẩu',
+  'admin.create.confirm_password': 'Xác nhận mật khẩu',
+  'admin.create.password_hint': 'Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số.',
+  'admin.create.submit': 'Tạo người dùng',
+  'admin.create.creating': 'Đang tạo…',
+  'admin.create.created': 'Đã tạo người dùng.',
 
   // nhật ký hoạt động (AdminLogsView.vue)
   'admin.logs.title': 'Nhật ký hoạt động',

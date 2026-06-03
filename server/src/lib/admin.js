@@ -3,6 +3,7 @@
 // admin/view-user.php, admin/handlers/edit_user.php and admin/user-action.php.
 // The route layer (routes/admin.js) stays thin; all SQL + validation lives here
 // and throws AdminActionError (mapped to 422) for user-facing failures.
+import bcrypt from 'bcryptjs';
 import { query } from '../db.js';
 import { logActivity } from './activity.js';
 import { normalizeProfileImage } from './users.js';
@@ -15,6 +16,10 @@ export const STATUSES = ['active', 'banned', 'archived'];
 const STATUS_ACTIONS = { ban: 'banned', unban: 'active', archive: 'archived', restore: 'active' };
 const PAGE_SIZE = 20;
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+// Same password policy + cost as auth.js register so admin-created accounts are
+// indistinguishable from self-signups (and the $2b$ hash stays PHP-compatible).
+const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+const BCRYPT_ROUNDS = 10;
 
 function userRow(r) {
   return {
@@ -154,6 +159,66 @@ export async function getUserDetail(userId) {
       actor_name: a.actor_name ?? null,
     })),
   };
+}
+
+// POST /users — create a user from the admin panel. Ports admin/handlers/add_user.php:
+// same field set, password policy and uniqueness checks as self-signup, plus the
+// admin-only role choice. Creates the user + its default userStatus row, exactly
+// like auth.js register, so an admin-created account behaves like a normal one
+// (and goes through onboarding on first login).
+export async function createUser(adminId, fields = {}) {
+  const first = String(fields.first_name ?? '').trim();
+  const last = String(fields.last_name ?? '').trim();
+  const userName = String(fields.user_name ?? '').trim();
+  const email = String(fields.email ?? '').trim().toLowerCase();
+  const password = String(fields.password ?? '');
+  const confirm = String(fields.confirm_password ?? '');
+  const role = fields.role;
+
+  if (!first || !last || !userName || !email || !password || !confirm) {
+    throw new AdminActionError('Please fill in all fields.');
+  }
+  if (password !== confirm) throw new AdminActionError('Passwords do not match.');
+  if (password.length < 8) throw new AdminActionError('Password must be at least 8 characters long.');
+  if (!PASSWORD_RE.test(password)) {
+    throw new AdminActionError('Password must contain at least one uppercase letter, one lowercase letter, and one number.');
+  }
+  if (!EMAIL_RE.test(email)) throw new AdminActionError('A valid email is required.');
+  if (!ROLES.includes(role)) throw new AdminActionError('Invalid role.');
+
+  const dupe = await query(
+    'SELECT email FROM user WHERE user_name = ? OR email = ? LIMIT 1',
+    [userName, email]
+  );
+  if (dupe.length) {
+    throw new AdminActionError(
+      dupe[0].email === email ? 'That email is already in use.' : 'That username is already taken.'
+    );
+  }
+
+  const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  const result = await query(
+    `INSERT INTO user (user_name, first_name, last_name, email, password, role, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+    [userName, first, last, email, hashed, role]
+  );
+  const userId = result.insertId;
+
+  await query(
+    `INSERT INTO userStatus (user_id, status, theme_preference, failed_attempts, locked_until)
+     VALUES (?, 'active', 'system', 0, NULL)`,
+    [userId]
+  );
+
+  await logActivity({
+    userId: adminId,
+    action: 'admin_create_user',
+    targetTable: 'user',
+    targetId: userId,
+    description: `Created user @${userName} (role=${role})`,
+  });
+
+  return getUserDetail(userId);
 }
 
 // PATCH /users/:id — edit profile fields, role and status. Mirrors edit_user.php

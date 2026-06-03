@@ -77,7 +77,10 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
 
 <template>
   <section class="users">
-    <h1>{{ $t('admin.users.title') }}</h1>
+    <div class="page-head">
+      <h1>{{ $t('admin.users.title') }}</h1>
+      <RouterLink to="/admin/users/new" class="btn-new">{{ $t('admin.users.new') }}</RouterLink>
+    </div>
 
     <div class="filters">
       <input v-model="q" :placeholder="$t('admin.users.search_ph')" class="search" @input="onSearch" />
@@ -152,7 +155,12 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
 
 <style scoped>
 .users { max-width: 1000px; }
-h1 { margin: 0 0 16px; font-size: 1.5rem; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
+h1 { margin: 0; font-size: 1.5rem; }
+.btn-new {
+  flex: none; font-weight: 700; font-size: 0.85rem; text-decoration: none;
+  padding: 9px 16px; border-radius: 10px; background: var(--accent); color: #04210f;
+}
 .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .search { flex: 1; min-width: 200px; }
 .filters input, .filters select {
