@@ -5,6 +5,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
+import { compressImage } from '../lib/image.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
 import { t, locale, setLocale, locales } from '../i18n/index.js';
@@ -87,6 +88,35 @@ async function onSubmit() {
   }
 }
 
+// ---- Avatar upload ----
+const avatarInput = ref(null);
+const avatarBusy = ref(false);
+
+async function onAvatarPicked(e) {
+  const file = e.target.files?.[0];
+  e.target.value = ''; // allow re-picking the same file
+  if (!file) return;
+  error.value = '';
+  success.value = '';
+  avatarBusy.value = true;
+  try {
+    // Avatars display small — downscale hard (512px) before upload.
+    const compressed = await compressImage(file, { maxEdge: 512, quality: 0.82, filename: 'avatar.jpg' });
+    const fd = new FormData();
+    fd.append('image', compressed);
+    const res = await fetch('/api/profile/avatar', { method: 'POST', credentials: 'include', body: fd });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.message || t('profile.avatar.upload_failed'));
+    meta.image = json.data.profile_image;
+    if (auth.user) auth.user.profile_image = json.data.profile_image; // topbar avatar updates
+    success.value = t('profile.updated');
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    avatarBusy.value = false;
+  }
+}
+
 // ---- Meal reminders ----
 const REMINDER_MEALS = [
   { key: 'breakfast', labelKey: 'reminders.meal.breakfast', icon: 'fa-mug-saucer' },
@@ -146,9 +176,19 @@ const initials = () =>
     <form v-else @submit.prevent="onSubmit">
       <!-- Identity header -->
       <section class="card" style="display: flex; align-items: center; gap: 16px">
-        <div class="avatar">
+        <div class="avatar avatar-edit">
           <img v-if="meta.image" :src="meta.image" :alt="$t('profile.avatar.alt')" />
           <span v-else>{{ initials() }}</span>
+          <button
+            type="button"
+            class="avatar-btn"
+            :disabled="avatarBusy"
+            :aria-label="$t('profile.avatar.change')"
+            @click="avatarInput?.click()"
+          >
+            <i class="fa-solid" :class="avatarBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
+          </button>
+          <input ref="avatarInput" type="file" accept="image/*" hidden @change="onAvatarPicked" />
         </div>
         <div>
           <strong style="font-size: 18px">{{ form.user_name || '—' }}</strong>
@@ -303,6 +343,25 @@ textarea {
   overflow: hidden;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-edit { position: relative; }
+.avatar-btn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.avatar-btn:disabled { cursor: default; opacity: 0.8; }
 
 .reminders { margin-top: 16px; padding: 16px; }
 .reminders h2 { font-size: 16px; margin: 0 0 12px; }
