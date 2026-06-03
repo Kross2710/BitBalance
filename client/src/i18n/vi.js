@@ -331,6 +331,8 @@ export default {
   'intake.log_entry_btn': 'Ghi bữa ăn',
   'intake.logging': 'Đang ghi...',
   'intake.logged_named': 'Đã ghi {name}.',
+  'intake.deleted_named': 'Đã xoá {name}.',
+  'intake.undo': 'Hoàn tác',
   'intake.todays_entries': 'Các mục hôm nay',
   'intake.entries_for': 'Các mục · {date}',
   'intake.past.banner': 'Đang ghi cho {date} — không phải hôm nay.',

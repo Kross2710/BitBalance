@@ -37,10 +37,25 @@ const foodFocused = ref(false);
 const saving = ref(false);
 const error = ref('');
 const success = ref('');
+const undoEntry = ref(null); // last-deleted row, pending undo
 let suggestTimer = null;
+let successTimer = null;
+let undoTimer = null;
 let justPicked = false;
 
 const canSubmit = computed(() => form.food_item.trim() !== '' && Number(form.calories) > 0);
+
+// Success toast that auto-dismisses, so it doesn't linger after the entry it
+// referred to is edited or deleted.
+function flashSuccess(msg) {
+  success.value = msg;
+  clearTimeout(successTimer);
+  successTimer = setTimeout(() => (success.value = ''), 4000);
+}
+function clearMessages() {
+  success.value = '';
+  clearTimeout(successTimer);
+}
 
 async function loadRecent() {
   try {
@@ -120,6 +135,7 @@ function cancelEdit() {
 }
 async function saveEdit() {
   error.value = '';
+  clearMessages();
   try {
     await api.post('/api/intake/update', { ...editForm });
     editingId.value = null;
@@ -128,11 +144,47 @@ async function saveEdit() {
     error.value = e.message;
   }
 }
+// Delete immediately and offer an Undo (PHP-style) instead of a blocking confirm —
+// the delete route returns the deleted row, so restoring it is just a re-create.
 async function removeEntry(e) {
-  if (!confirm(t('intake.confirm_delete_named', { name: e.food_item }))) return;
+  error.value = '';
+  clearMessages();
+  try {
+    const res = await api.post('/api/intake/delete', { intake_id: e.id });
+    await Promise.all([loadEntries(), loadRecent()]);
+    showUndo(res.deleted_row);
+  } catch (err) {
+    error.value = err.message;
+  }
+}
+
+function showUndo(row) {
+  if (!row) return;
+  clearTimeout(undoTimer);
+  undoEntry.value = row;
+  undoTimer = setTimeout(() => (undoEntry.value = null), 6000);
+}
+function dismissUndo() {
+  undoEntry.value = null;
+  clearTimeout(undoTimer);
+}
+// Restore the just-deleted entry on the same day (re-create from the snapshot).
+async function undoDelete() {
+  const row = undoEntry.value;
+  dismissUndo();
+  if (!row) return;
   error.value = '';
   try {
-    await api.post('/api/intake/delete', { intake_id: e.id });
+    await api.post('/api/intake/create', {
+      food_item: row.food_item,
+      calories: row.calories,
+      protein: row.protein,
+      carbs: row.carbs,
+      fat: row.fat,
+      meal_category: row.meal_category,
+      image_path: row.image_path || '',
+      date: (row.date_intake || '').slice(0, 10) || undefined,
+    });
     await Promise.all([loadEntries(), loadRecent()]);
   } catch (err) {
     error.value = err.message;
@@ -202,10 +254,11 @@ async function onSubmit() {
   if (!canSubmit.value || saving.value) return;
   error.value = '';
   success.value = '';
+  dismissUndo();
   saving.value = true;
   try {
     await api.post('/api/intake/create', { ...form, date: activeDate.value });
-    success.value = t('intake.logged_named', { name: form.food_item });
+    flashSuccess(t('intake.logged_named', { name: form.food_item }));
     form.food_item = '';
     form.calories = '';
     form.protein = '';
@@ -394,6 +447,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   stopCamera();
+  clearTimeout(successTimer);
+  clearTimeout(undoTimer);
 });
 </script>
 
@@ -572,6 +627,16 @@ onBeforeUnmount(() => {
 
     <!-- AI food chat: attach a photo + correct the dish, then Add to log. -->
     <AiFoodChat :open="showAiChat" @close="showAiChat = false" @pick="onAiPick" />
+
+    <!-- Undo bar after delete (PHP-style): restore the last-deleted entry. -->
+    <Transition name="undo">
+      <div v-if="undoEntry" class="undo-bar" role="status">
+        <span class="undo-msg">{{ $t('intake.deleted_named', { name: undoEntry.food_item }) }}</span>
+        <button type="button" class="undo-btn" @click="undoDelete">
+          <i class="fa-solid fa-rotate-left" /> {{ $t('intake.undo') }}
+        </button>
+      </div>
+    </Transition>
   </main>
 </template>
 
@@ -783,5 +848,37 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .edit-grid input, .edit-grid select { width: 100%; }
 .edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .edit-actions .ghost { background: var(--surface-2); color: var(--text); }
+
+/* Undo snackbar (after delete) — sits above the fixed bottom tab bar. */
+.undo-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+.undo-msg { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.undo-btn {
+  flex: none;
+  background: transparent;
+  color: var(--accent);
+  border: none;
+  font-weight: 700;
+  padding: 6px 8px;
+  min-height: 0;
+}
+.undo-btn i { margin-right: 4px; }
+.undo-enter-active, .undo-leave-active { transition: opacity 0.2s ease; }
+.undo-enter-from, .undo-leave-to { opacity: 0; }
 
 </style>

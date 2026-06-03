@@ -332,6 +332,8 @@ export default {
   'intake.log_entry_btn': 'Log entry',
   'intake.logging': 'Logging...',
   'intake.logged_named': 'Logged {name}.',
+  'intake.deleted_named': 'Deleted {name}.',
+  'intake.undo': 'Undo',
   'intake.todays_entries': "Today's entries",
   'intake.entries_for': 'Entries · {date}',
   'intake.past.banner': 'Logging for {date} — not today.',
