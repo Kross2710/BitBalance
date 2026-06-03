@@ -33,6 +33,7 @@ const showMacros = ref(false);
 const recent = ref([]);
 const suggestions = ref([]);
 const showSuggest = ref(false);
+const foodFocused = ref(false);
 const saving = ref(false);
 const error = ref('');
 const success = ref('');
@@ -155,9 +156,19 @@ function pickChip(item) {
   applyItem(item);
 }
 
-// Delay hiding so a click on a suggestion (mousedown) still registers.
-function hideSuggestSoon() {
-  setTimeout(() => (showSuggest.value = false), 150);
+// Suggestions appear only in response to interaction (matches the PHP intake
+// page): recent chips while the focused field is still empty, and the
+// autocomplete dropdown only once the user has actually typed a query.
+function onFoodFocus() {
+  showSuggest.value = form.food_item.trim() !== '' && suggestions.value.length > 0;
+  foodFocused.value = true;
+}
+// Delay hiding so a click on a chip / suggestion (mousedown) still registers.
+function onFoodBlur() {
+  setTimeout(() => {
+    showSuggest.value = false;
+    foodFocused.value = false;
+  }, 150);
 }
 
 // Debounced autocomplete as the user types the food name.
@@ -420,8 +431,8 @@ onBeforeUnmount(() => {
           :placeholder="$t('intake.food_placeholder')"
           autocomplete="off"
           required
-          @focus="showSuggest = suggestions.length > 0"
-          @blur="hideSuggestSoon"
+          @focus="onFoodFocus"
+          @blur="onFoodBlur"
         />
         <ul v-if="showSuggest" class="suggest">
           <li v-for="(s, i) in suggestions" :key="i" @mousedown.prevent="applyItem(s)">
@@ -431,8 +442,8 @@ onBeforeUnmount(() => {
         </ul>
       </div>
 
-      <!-- Recent chips -->
-      <div v-if="recent.length" class="chips">
+      <!-- Recent quick-pick chips: only while the empty food field is focused. -->
+      <div v-if="recent.length && foodFocused && !form.food_item.trim()" class="chips">
         <button v-for="(r, i) in recent" :key="i" type="button" class="chip" @click="pickChip(r)">
           {{ r.food_item }}
         </button>
@@ -465,18 +476,18 @@ onBeforeUnmount(() => {
         <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
         {{ showMacros ? $t('intake.hide_macros') : $t('intake.add_macros_optional') }}
       </button>
-      <div v-if="showMacros" class="three">
-        <div>
-          <label for="intake-p">{{ $t('intake.protein_g') }}</label>
-          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" />
+      <div v-if="showMacros" class="macros-row">
+        <div class="macro-field p">
+          <label for="intake-p" class="macro-tag" :title="$t('intake.protein_g')">{{ $t('intake.macro_abbr.protein') }}</label>
+          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.protein_g')" />
         </div>
-        <div>
-          <label for="intake-c">{{ $t('intake.carbs_g') }}</label>
-          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" />
+        <div class="macro-field c">
+          <label for="intake-c" class="macro-tag" :title="$t('intake.carbs_g')">{{ $t('intake.macro_abbr.carbs') }}</label>
+          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.carbs_g')" />
         </div>
-        <div>
-          <label for="intake-f">{{ $t('intake.fat_g') }}</label>
-          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" />
+        <div class="macro-field f">
+          <label for="intake-f" class="macro-tag" :title="$t('intake.fat_g')">{{ $t('intake.macro_abbr.fat') }}</label>
+          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.fat_g')" />
         </div>
       </div>
 
@@ -623,7 +634,28 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+/* Macros: always one row, each color-coded (P red / C amber / F blue) for quick ID. */
+.macros-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.macro-field { display: flex; flex-direction: column; gap: 5px; }
+.macro-tag {
+  margin: 0;
+  align-self: flex-start;
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+}
+.macro-field input { width: 100%; border-left-width: 3px; }
+.macro-field.p .macro-tag { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.macro-field.p input { border-left-color: #ef4444; }
+.macro-field.c .macro-tag { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.macro-field.c input { border-left-color: #f59e0b; }
+.macro-field.f .macro-tag { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.macro-field.f input { border-left-color: #3b82f6; }
 
 /* Meal segmented selector */
 .meal-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
@@ -752,7 +784,4 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .edit-actions .ghost { background: var(--surface-2); color: var(--text); }
 
-@media (max-width: 480px) {
-  .three { grid-template-columns: 1fr; }
-}
 </style>
