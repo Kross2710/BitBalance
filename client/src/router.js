@@ -65,6 +65,11 @@ router.beforeEach(async (to) => {
       const { setLocale } = await import('./i18n/index.js');
       setLocale(auth.user.language_preference, { persist: false });
     }
+    // Same for the stored theme: reflect the server value once on first load.
+    if (auth.user?.theme_preference) {
+      const { setTheme } = await import('./lib/theme.js');
+      setTheme(auth.user.theme_preference, { persist: false });
+    }
   }
 
   if (to.meta.requiresAuth && !auth.user) {

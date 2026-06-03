@@ -306,10 +306,10 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
   font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.tab.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
+.tab.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
 .count {
   min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-  background: #2a2e37; color: var(--text); font-size: 11px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--text); font-size: 11px; display: grid; place-items: center;
 }
 .count.alert { background: #ef4444; color: #fff; }
 
@@ -323,7 +323,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 
 .avatar {
   flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
-  background: #2a2e37; color: var(--text); font-weight: 800;
+  background: var(--surface-2); color: var(--text); font-weight: 800;
   display: grid; place-items: center;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -334,8 +334,8 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
   min-height: 40px; padding: 0 14px; border-radius: 10px; font-weight: 700; font-size: 13px;
   border: 1px solid transparent; white-space: nowrap;
 }
-.btn.primary { background: var(--accent); color: #04210f; }
-.btn.ghost { background: #2a2e37; color: var(--text); }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.ghost { background: var(--surface-2); color: var(--text); }
 .btn.ghost.danger { color: #f87171; }
 .btn:disabled { opacity: 0.5; }
 .link { background: none; border: none; color: var(--accent); font-weight: 700; padding: 0; min-height: 0; text-decoration: underline; }
@@ -349,7 +349,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
   flex: 1; min-height: 40px; border-radius: 10px; font-weight: 700; font-size: 13px;
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
 }
-.seg-btn.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
+.seg-btn.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
 .rank {
   flex: none; width: 26px; text-align: center; font-weight: 800; color: var(--muted);
 }

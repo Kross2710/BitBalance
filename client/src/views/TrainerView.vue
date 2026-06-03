@@ -204,8 +204,8 @@ onMounted(load);
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
   font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.tv-tab.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
-.count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #2a2e37; color: var(--text); font-size: 11px; display: grid; place-items: center; }
+.tv-tab.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
+.count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--surface-2); color: var(--text); font-size: 11px; display: grid; place-items: center; }
 .count.alert { background: #ef4444; color: #fff; }
 
 /* Master-detail */
@@ -223,14 +223,14 @@ onMounted(load);
 .client-card.alert { border-left: 3px solid #f59e0b; }
 .c-avatar {
   flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center; background: var(--accent); color: #04210f; font-weight: 800;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 800;
 }
 .c-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .c-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .c-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
 .c-unread { background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; display: grid; place-items: center; }
 .c-sub { font-size: 12px; }
-.c-bar { height: 5px; background: #12151b; border-radius: 999px; overflow: hidden; }
+.c-bar { height: 5px; background: var(--inset); border-radius: 999px; overflow: hidden; }
 .c-fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
 .c-fill.over { background: #f59e0b; }
 .flag { position: absolute; top: 8px; right: 10px; font-size: 10px; color: #f59e0b; font-weight: 700; }

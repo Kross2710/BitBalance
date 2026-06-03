@@ -272,7 +272,7 @@ onMounted(() => {
 
 <style scoped>
 .muted { color: var(--muted); }
-.bar { height: 10px; background: #12151b; border-radius: 6px; margin-top: 10px; overflow: hidden; }
+.bar { height: 10px; background: var(--inset); border-radius: 6px; margin-top: 10px; overflow: hidden; }
 .bar > div { height: 100%; transition: width 0.3s; }
 
 .greet { font-weight: 800; font-size: 18px; margin: 2px 0 10px; }
@@ -295,7 +295,7 @@ onMounted(() => {
 .nudge-cta {
   flex: none;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 13px;
   padding: 8px 12px;
@@ -328,7 +328,7 @@ onMounted(() => {
 }
 .level-pill .lvl { font-weight: 800; color: #c4b5fd; white-space: nowrap; }
 .level-pill .xp { flex: 1; min-width: 0; }
-.xp-bar { height: 6px; background: #12151b; border-radius: 4px; overflow: hidden; }
+.xp-bar { height: 6px; background: var(--inset); border-radius: 4px; overflow: hidden; }
 .xp-bar > div { height: 100%; background: #a78bfa; transition: width 0.3s; }
 .level-pill small { display: block; margin-top: 3px; font-size: 11px; }
 .streak-flame { font-weight: 800; color: #fb923c; white-space: nowrap; }
@@ -358,7 +358,7 @@ onMounted(() => {
   place-items: center;
   border-radius: 11px;
   background: linear-gradient(135deg, #a78bfa, #4ade80);
-  color: #04210f;
+  color: var(--on-accent);
   font-size: 17px;
 }
 .wrapped-cta .wc-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -385,7 +385,7 @@ onMounted(() => {
 }
 .day-chip small { font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
 .day-chip strong { font-size: 15px; }
-.day-chip.active { border-color: var(--accent); color: var(--accent); background: #12151b; }
+.day-chip.active { border-color: var(--accent); color: var(--accent); background: var(--inset); }
 
 /* Quick actions */
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
@@ -398,10 +398,10 @@ onMounted(() => {
   border-radius: 12px;
   font-weight: 700;
   text-decoration: none;
-  background: #2a2e37;
+  background: var(--surface-2);
   color: var(--text);
 }
-.action.primary { background: var(--accent); color: #04210f; }
+.action.primary { background: var(--accent); color: var(--on-accent); }
 
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
 .tile { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; }

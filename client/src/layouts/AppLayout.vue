@@ -156,7 +156,7 @@ watch(
   height: 28px;
   border-radius: 8px;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -195,11 +195,11 @@ watch(
   font-size: 17px;
 }
 .nav-link:hover:not(.disabled) {
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
 }
 .nav-link.router-link-active {
-  background: #12151b;
+  background: var(--inset);
   color: var(--accent);
 }
 .nav-link.disabled {
@@ -252,7 +252,7 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 14px 24px;
-  background: rgba(15, 17, 21, 0.85);
+  background: var(--glass);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   z-index: 30;
@@ -271,7 +271,7 @@ watch(
   height: 30px;
   border-radius: 8px;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -302,7 +302,7 @@ watch(
   display: grid;
   place-items: center;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 15px;
 }
@@ -331,7 +331,7 @@ watch(
   color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600;
 }
 .am-item i { width: 18px; text-align: center; color: var(--muted); }
-.am-item:hover { background: #12151b; }
+.am-item:hover { background: var(--inset); }
 .am-item.router-link-active { color: var(--accent); }
 .am-item.router-link-active i { color: var(--accent); }
 

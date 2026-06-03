@@ -64,8 +64,8 @@ li {
   cursor: pointer;
   font-size: 13px;
 }
-li:hover { background: #12151b; }
-li.active { background: #12151b; color: var(--accent); }
+li:hover { background: var(--inset); }
+li.active { background: var(--inset); color: var(--accent); }
 li.empty { cursor: default; color: var(--muted); font-size: 13px; }
 li.empty:hover { background: transparent; }
 .title {

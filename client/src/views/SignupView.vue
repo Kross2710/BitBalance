@@ -221,7 +221,7 @@ a { color: var(--accent); }
   content: '';
   flex: 1;
   height: 1px;
-  background: #353c49;
+  background: var(--border);
 }
 .or span { padding: 0 12px; }
 </style>

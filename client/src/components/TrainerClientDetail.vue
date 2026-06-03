@@ -265,7 +265,7 @@ onMounted(load);
 }
 .d-head .avatar {
   flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center; background: var(--accent); color: #04210f; font-weight: 800;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 800;
 }
 .d-head .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .d-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -301,7 +301,7 @@ onMounted(load);
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
   font-weight: 700; font-size: 12px;
 }
-.d-tab.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
+.d-tab.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
 
 .pane { flex: 1; min-height: 0; overflow-y: auto; }
 

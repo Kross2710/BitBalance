@@ -629,13 +629,13 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   border-radius: 8px;
   cursor: pointer;
 }
-.suggest li:hover { background: #12151b; }
+.suggest li:hover { background: var(--inset); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
   display: inline-flex;
   align-items: center;
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -658,7 +658,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   gap: 3px;
   min-height: 64px; /* comfortable tap target */
   padding: 8px 4px;
-  background: #12151b;
+  background: var(--inset);
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -668,7 +668,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .meal-name { font-size: 12px; }
 .meal-stat { font-size: 10px; opacity: 0.85; }
 /* Logged-but-not-selected meals read as "done" without stealing focus. */
-.meal-pill.logged { color: var(--text); border-color: #2a2e37; }
+.meal-pill.logged { color: var(--text); border-color: var(--surface-2); }
 .meal-pill.active {
   color: var(--accent);
   border-color: var(--accent);
@@ -699,7 +699,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
   font-size: 14px;
@@ -714,7 +714,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   gap: 12px;
   padding: 10px;
   margin-bottom: 16px;
-  background: #12151b;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -733,7 +733,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   height: 44px;
   display: grid;
   place-items: center;
-  background: #2a2e37;
+  background: var(--surface-2);
   color: var(--text);
   border: none;
   border-radius: 10px;
@@ -800,14 +800,14 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .icon-btn {
   width: 44px; height: 44px; min-height: 44px;
   display: grid; place-items: center;
-  background: #2a2e37; color: var(--text); border: none; border-radius: 10px;
+  background: var(--surface-2); color: var(--text); border: none; border-radius: 10px;
   font-size: 14px;
 }
 .icon-btn.danger { color: #f87171; }
 .edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
 .edit-grid input, .edit-grid select { width: 100%; }
 .edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
-.edit-actions .ghost { background: #2a2e37; color: var(--text); }
+.edit-actions .ghost { background: var(--surface-2); color: var(--text); }
 
 @media (max-width: 480px) {
   .three { grid-template-columns: 1fr; }

@@ -44,10 +44,10 @@ import { locale, setLocale, locales } from '../i18n/index.js';
 }
 .ls-btn:hover {
   color: var(--text);
-  border-color: #353c49;
+  border-color: var(--border);
 }
 .ls-btn.active {
-  color: #04210f;
+  color: var(--on-accent);
   background: var(--accent);
   border-color: var(--accent);
 }

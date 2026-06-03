@@ -265,7 +265,7 @@ onMounted(load);
 .placeholder h2 { margin: 0 0 6px; }
 .btn-link {
   display: inline-block; margin-top: 14px; text-decoration: none;
-  background: var(--accent); color: #04210f; font-weight: 700;
+  background: var(--accent); color: var(--on-accent); font-weight: 700;
   padding: 10px 18px; border-radius: 8px;
 }
 .ghost { margin-top: 14px; background: var(--card); color: var(--text); border: 1px solid var(--border); }
@@ -279,7 +279,7 @@ onMounted(load);
 }
 .inv-avatar {
   flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center; background: var(--accent); color: #04210f; font-weight: 800;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 800;
 }
 .inv-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .inv-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -292,7 +292,7 @@ onMounted(load);
 .hero { flex: none; display: flex; gap: 12px; align-items: center; padding: 4px 2px 12px; }
 .hero .avatar {
   flex: none; width: 52px; height: 52px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center; background: var(--accent); color: #04210f;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent);
 }
 .hero .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .hero .avatar .initial { font-weight: 800; font-size: 20px; }
@@ -344,10 +344,10 @@ onMounted(load);
   background: var(--card); border: 1px solid var(--border); color: var(--muted);
   font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
 }
-.mt-tab.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
+.mt-tab.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
 .count {
   min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-  background: #2a2e37; color: var(--text); font-size: 11px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--text); font-size: 11px; display: grid; place-items: center;
 }
 
 /* Advice */
