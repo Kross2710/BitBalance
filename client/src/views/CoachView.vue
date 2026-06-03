@@ -49,7 +49,7 @@ const tab = ref('ai'); // 'ai' | 'trainer'
 }
 .tab {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   padding: 7px 6px;
   border-radius: 10px;
   background: var(--card);
