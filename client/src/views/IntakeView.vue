@@ -468,10 +468,10 @@ function onAiPick(p) {
 function entryTime(e) {
   const iso = e.iso_date || (e.date_intake ? e.date_intake.replace(' ', 'T') + '+07:00' : null);
   if (!iso) return '';
+  // iso_date is the true instant; render it in the user's local (browser) zone.
   return new Date(iso).toLocaleTimeString(locale.value === 'vi' ? 'vi-VN' : 'en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: 'Asia/Bangkok',
   });
 }
 

@@ -41,37 +41,37 @@ function latestGoal(userId) {
   return scalar('SELECT calorie_goal FROM userGoal WHERE user_id = ? ORDER BY date_set DESC LIMIT 1', [userId]);
 }
 
-function balancedDays(userId, goal) {
+function balancedDays(userId, goal, shift = 0) {
   if (goal <= 0) return 0;
   return scalar(
     `SELECT COUNT(*) FROM (
-        SELECT DATE(date_intake) AS d, SUM(calories) AS total_calories
+        SELECT DATE(date_intake + INTERVAL ? MINUTE) AS d, SUM(calories) AS total_calories
         FROM intakeLog WHERE user_id = ?
-        GROUP BY DATE(date_intake)
+        GROUP BY DATE(date_intake + INTERVAL ? MINUTE)
         HAVING total_calories BETWEEN ? AND ?
      ) balanced_days`,
-    [userId, Math.floor(goal * 0.9), Math.ceil(goal * 1.1)]
+    [shift, userId, shift, Math.floor(goal * 0.9), Math.ceil(goal * 1.1)]
   );
 }
 
-function fullPlateDays(userId) {
+function fullPlateDays(userId, shift = 0) {
   return scalar(
     `SELECT COUNT(*) FROM (
-        SELECT DATE(date_intake) AS d
+        SELECT DATE(date_intake + INTERVAL ? MINUTE) AS d
         FROM intakeLog
         WHERE user_id = ? AND meal_category IN ('breakfast', 'lunch', 'dinner')
-        GROUP BY DATE(date_intake)
+        GROUP BY DATE(date_intake + INTERVAL ? MINUTE)
         HAVING COUNT(DISTINCT meal_category) = 3
      ) full_plate_days`,
-    [userId]
+    [shift, userId, shift]
   );
 }
 
 // Number of times the user returned after a 3+ day logging gap.
-async function comebackCount(userId) {
+async function comebackCount(userId, shift = 0) {
   const rows = await query(
-    'SELECT DISTINCT DATE(date_intake) AS d FROM intakeLog WHERE user_id = ? ORDER BY d ASC',
-    [userId]
+    'SELECT DISTINCT DATE(date_intake + INTERVAL ? MINUTE) AS d FROM intakeLog WHERE user_id = ? ORDER BY d ASC',
+    [shift, userId]
   );
   let count = 0;
   let prev = null;
@@ -107,7 +107,7 @@ function build(id, name, description, icon, tone, value, unit, thresholds) {
 
 // Full progress snapshot: { summary, records, achievements }. Mirrors the PHP
 // payload shape so a later achievements page ports 1-1.
-export async function achievementsProgress(userId) {
+export async function achievementsProgress(userId, shift = 0) {
   const xp = await getSummary(userId);
   const goal = await latestGoal(userId);
 
@@ -117,14 +117,14 @@ export async function achievementsProgress(userId) {
     ])) ?? {};
 
   const dailyLogger = await scalar(
-    'SELECT COUNT(DISTINCT DATE(date_intake)) FROM intakeLog WHERE user_id = ?',
-    [userId]
+    'SELECT COUNT(DISTINCT DATE(date_intake + INTERVAL ? MINUTE)) FROM intakeLog WHERE user_id = ?',
+    [shift, userId]
   );
   const totalFoods = await scalar('SELECT COUNT(*) FROM intakeLog WHERE user_id = ?', [userId]);
-  const fullPlate = await fullPlateDays(userId);
-  const balanced = await balancedDays(userId, goal);
+  const fullPlate = await fullPlateDays(userId, shift);
+  const balanced = await balancedDays(userId, goal, shift);
   const friends = await friendCount(userId);
-  const comebacks = await comebackCount(userId);
+  const comebacks = await comebackCount(userId, shift);
 
   const riceCount = await foodCount(userId, ['rice', 'cơm', 'com tam', 'com ga', 'com suon', 'com rang']);
   const phoCount = await foodCount(userId, ['pho', 'phở']);
@@ -164,15 +164,15 @@ export async function achievementsProgress(userId) {
 
   const mostFoodsDay = await scalar(
     `SELECT COALESCE(MAX(day_count), 0) FROM (
-        SELECT COUNT(*) AS day_count FROM intakeLog WHERE user_id = ? GROUP BY DATE(date_intake)
+        SELECT COUNT(*) AS day_count FROM intakeLog WHERE user_id = ? GROUP BY DATE(date_intake + INTERVAL ? MINUTE)
      ) food_days`,
-    [userId]
+    [userId, shift]
   );
   const mostXpDay = await scalar(
     `SELECT COALESCE(MAX(day_xp), 0) FROM (
-        SELECT SUM(amount) AS day_xp FROM xp_event WHERE user_id = ? GROUP BY DATE(created_at)
+        SELECT SUM(amount) AS day_xp FROM xp_event WHERE user_id = ? GROUP BY DATE(created_at + INTERVAL ? MINUTE)
      ) xp_days`,
-    [userId]
+    [userId, shift]
   );
 
   return {
@@ -236,9 +236,9 @@ export function snapshotAchievementLevels(session, achievements) {
 // seeded. Called before a log so the very first log of a session (which may
 // unlock First Bite) still has a "before" to diff against. Only the first log
 // of a session pays the extra achievementsProgress() cost.
-export async function seedAchievementBaseline(userId, session) {
+export async function seedAchievementBaseline(userId, session, shift = 0) {
   if (!session || session.ach_levels) return;
-  const { achievements } = await achievementsProgress(userId);
+  const { achievements } = await achievementsProgress(userId, shift);
   session.ach_levels = levelMap(achievements);
 }
 
@@ -246,8 +246,8 @@ export async function seedAchievementBaseline(userId, session) {
 // baseline to "now" and returns the freshly-gained tiers (for the unlock toast).
 // Defensive: with no baseline it just seeds and reports nothing, so a returning
 // user is never spammed with everything they already earned.
-export async function newlyUnlockedSince(userId, session) {
-  const { achievements } = await achievementsProgress(userId);
+export async function newlyUnlockedSince(userId, session, shift = 0) {
+  const { achievements } = await achievementsProgress(userId, shift);
   const prev = session?.ach_levels;
   if (session) session.ach_levels = levelMap(achievements);
   if (!prev) return [];

@@ -9,7 +9,7 @@ import { query } from '../db.js';
 import { chatCompletion } from './aiProvider.js';
 import { achievementsProgress, topBadge } from './achievements.js';
 import { leaderboard } from './friends.js';
-import { todayVN } from './dates.js';
+import { todayVN, addDays } from './dates.js';
 
 // Bump when the payload shape or prompt changes so stale caches regenerate.
 const CACHE_VERSION = 2;
@@ -39,12 +39,12 @@ function writeCache(userId, periodKey, lang, json) {
 }
 
 // Top 15 most-logged foods over the last 30 days → "name: n times, ..." for the prompt.
-async function foodListString(userId, lang) {
+async function foodListString(userId, lang, shift = 0, cutoff) {
   const rows = await query(
     `SELECT food_item, COUNT(*) AS c FROM intakeLog
-      WHERE user_id = ? AND date_intake >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) >= ?
       GROUP BY food_item ORDER BY c DESC, food_item ASC LIMIT 15`,
-    [userId]
+    [userId, shift, cutoff]
   );
   if (!rows.length) return lang === 'vi' ? 'Chưa có món ăn nào được ghi nhận' : 'No foods logged yet';
   const unit = lang === 'vi' ? 'lần' : 'times';
@@ -180,9 +180,9 @@ function localizeBadge(badge, lang) {
 
 // Build (or serve cached) the Wrapped payload for a user.
 // Returns the payload merged with { cached: boolean }.
-export async function buildWrapped(userId, username, lang = 'en') {
+export async function buildWrapped(userId, username, lang = 'en', shift = 0, today = todayVN()) {
   lang = lang === 'vi' ? 'vi' : 'en';
-  const periodKey = isoWeekYear(todayVN()); // PHP-compatible "W-Y" cache key
+  const periodKey = isoWeekYear(today); // PHP-compatible "W-Y" cache key (user-local)
 
   // 1. Cache hit (same day + lang + payload version) → serve as-is.
   const cachedRows = await readCache(userId, periodKey, lang);
@@ -196,7 +196,7 @@ export async function buildWrapped(userId, username, lang = 'en') {
   }
 
   // 2. Gather stats from the already-ported libs.
-  const { summary, records, achievements } = await achievementsProgress(userId);
+  const { summary, records, achievements } = await achievementsProgress(userId, shift);
   const favoriteRecord = records.find((r) => r.key === 'favorite_food');
   const favoriteFood = favoriteRecord?.value || (lang === 'vi' ? 'Chưa đủ dữ liệu' : 'Not enough data');
   const badge = localizeBadge(topBadge(achievements), lang);
@@ -217,7 +217,7 @@ export async function buildWrapped(userId, username, lang = 'en') {
   };
 
   // 3. One AI call for archetype + slide captions, with a deterministic fallback.
-  const foodList = await foodListString(userId, lang);
+  const foodList = await foodListString(userId, lang, shift, addDays(today, -30));
   const { system, history } = buildPrompt(username, stats, favoriteFood, badge.name, foodList, lang);
 
   let captions = null;

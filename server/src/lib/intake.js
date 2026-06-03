@@ -90,10 +90,14 @@ export async function fetchEntry(userId, intakeId) {
 
 // Mirrors api_intake_daily_summary(). `date` (YYYY-MM-DD) scopes the totals to a
 // specific day so the Intake page's running total is correct when backdating via
-// ?date=; null means today (CURDATE() runs in the DB's +07:00 zone).
-export async function dailySummary(userId, date = null) {
-  const dateCond = date ? 'DATE(date_intake) = ?' : 'DATE(date_intake) = CURDATE()';
-  const scopeParams = date ? [userId, date] : [userId];
+// ?date=; null means today. `shift` (minutes) reinterprets the +07:00-stored
+// date_intake in the user's local day; 0 (VN) is byte-identical to the old
+// DATE(date_intake)=CURDATE() form. DATE(NOW()+INTERVAL ? MINUTE) is user-local today.
+export async function dailySummary(userId, date = null, shift = 0) {
+  const dateCond = date
+    ? 'DATE(date_intake + INTERVAL ? MINUTE) = ?'
+    : 'DATE(date_intake + INTERVAL ? MINUTE) = DATE(NOW() + INTERVAL ? MINUTE)';
+  const scopeParams = date ? [userId, shift, date] : [userId, shift, shift];
 
   const [{ total }] = await query(
     `SELECT COALESCE(SUM(calories), 0) AS total FROM intakeLog WHERE user_id = ? AND ${dateCond}`,

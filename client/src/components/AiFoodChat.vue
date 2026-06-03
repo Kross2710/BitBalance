@@ -7,6 +7,7 @@
 // re-sends recent turns + the active photo each call, so corrections keep context.
 import { ref, nextTick, watch, onBeforeUnmount } from 'vue';
 import { t } from '../i18n/index.js';
+import { browserTz } from '../lib/api.js';
 import { compressImage } from '../lib/image.js';
 import BottomSheet from './BottomSheet.vue';
 
@@ -75,7 +76,7 @@ async function send() {
     const res = await fetch('/api/intake/ai-chat', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-Timezone': browserTz() },
       body: fd,
     });
     const json = await res.json();

@@ -12,7 +12,7 @@ const router = Router();
 
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const data = await achievementsProgress(req.user.user_id);
+    const data = await achievementsProgress(req.user.user_id, req.tzShift);
     // The user has now seen their current standing — reset the unlock-toast
     // baseline so only achievements earned AFTER this view celebrate later.
     snapshotAchievementLevels(req.session, data.achievements);

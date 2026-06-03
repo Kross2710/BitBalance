@@ -4,7 +4,7 @@
 // goal, and physical info. Image upload + language are not part of the API yet.
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { api } from '../lib/api.js';
+import { api, browserTz } from '../lib/api.js';
 import { compressImage } from '../lib/image.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
@@ -114,7 +114,12 @@ async function onAvatarPicked(e) {
     const compressed = await compressImage(file, { maxEdge: 512, quality: 0.82, filename: 'avatar.jpg' });
     const fd = new FormData();
     fd.append('image', compressed);
-    const res = await fetch('/api/profile/avatar', { method: 'POST', credentials: 'include', body: fd });
+    const res = await fetch('/api/profile/avatar', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-Timezone': browserTz() },
+      body: fd,
+    });
     const json = await res.json();
     if (!json.ok) throw new Error(json.message || t('profile.avatar.upload_failed'));
     meta.image = json.data.profile_image;

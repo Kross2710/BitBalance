@@ -8,7 +8,9 @@
 import { pool } from '../db.js';
 import { todayVN, addDays } from './dates.js';
 
-export async function updateLoggingStreak(userId) {
+// `today` is the user's local calendar date (YYYY-MM-DD). Callers pass req.todayTz
+// so the streak advances per the user's local day; defaults to VN for safety.
+export async function updateLoggingStreak(userId, today = todayVN()) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -24,7 +26,6 @@ export async function updateLoggingStreak(userId) {
       throw new Error(`User status not found for user ID ${userId}`);
     }
 
-    const today = todayVN();
     const yesterday = addDays(today, -1);
     const lastLogging = status.last_logging_date ? String(status.last_logging_date).slice(0, 10) : null;
 

@@ -121,15 +121,18 @@ async function commit(userId, source, totalAmount, unitCount, refTable = null, r
 
 // --- Generic state-based awarder --------------------------------------------
 
-async function awardForCount(userId, source, xpPerUnit, cap, countSql, session) {
+// `countParams` are the bind params for `countSql` (so the caller can include the
+// tz shift). `shift` (minutes) reinterprets the +07:00 xp_event.created_at in the
+// user's local day for the once-per-day dedupe. shift 0 (VN) == DATE(created_at)=CURDATE().
+async function awardForCount(userId, source, xpPerUnit, cap, countSql, countParams, shift, session) {
   await ensureRow(userId);
 
-  const actualRows = await query(countSql, [userId]);
+  const actualRows = await query(countSql, countParams);
   const actual = Number(Object.values(actualRows[0])[0]);
 
   const awardedRows = await query(
-    "SELECT COUNT(*) AS c FROM xp_event WHERE user_id = ? AND source = ? AND DATE(created_at) = CURDATE()",
-    [userId, source]
+    'SELECT COUNT(*) AS c FROM xp_event WHERE user_id = ? AND source = ? AND DATE(created_at + INTERVAL ? MINUTE) = DATE(NOW() + INTERVAL ? MINUTE)',
+    [userId, source, shift, shift]
   );
   const awarded = Number(awardedRows[0].c);
 
@@ -142,24 +145,30 @@ async function awardForCount(userId, source, xpPerUnit, cap, countSql, session) 
 
 // --- Source-specific awarders ------------------------------------------------
 
-export function awardIntakeLog(userId, session) {
+export function awardIntakeLog(userId, session, shift = 0) {
   return awardForCount(
     userId,
     'intake_log',
     XP_RULES.intake_log.xp,
     XP_RULES.intake_log.cap,
-    'SELECT COUNT(*) AS c FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = CURDATE()',
+    'SELECT COUNT(*) AS c FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = DATE(NOW() + INTERVAL ? MINUTE)',
+    [userId, shift, shift],
+    shift,
     session
   );
 }
 
-export function awardWeightLog(userId, session) {
+// weight_log.date_logged is a DATE stored as the user's local day (see onboarding/
+// profile), so compare it directly to today-in-user-tz — no shift on the column.
+export function awardWeightLog(userId, session, shift = 0, today = todayVN()) {
   return awardForCount(
     userId,
     'weight_log',
     XP_RULES.weight_log.xp,
     XP_RULES.weight_log.cap,
-    'SELECT COUNT(*) AS c FROM weight_log WHERE user_id = ? AND DATE(date_logged) = CURDATE()',
+    'SELECT COUNT(*) AS c FROM weight_log WHERE user_id = ? AND date_logged = ?',
+    [userId, today],
+    shift,
     session
   );
 }
@@ -202,20 +211,20 @@ async function awardOneOffForDate(userId, source, xp, date, session) {
 
 // Award goal-hit XP for yesterday, idempotently. Only finalizes yesterday (a
 // week-long gap does not retroactively grant XP). Mirrors xp_finalize_yesterday_goals.
-export async function finalizeYesterdayGoals(userId, session) {
+export async function finalizeYesterdayGoals(userId, session, shift = 0, today = todayVN()) {
   await ensureRow(userId);
 
   const lastRows = await query('SELECT last_finalized_date FROM user_xp WHERE user_id = ?', [userId]);
   const last = lastRows[0]?.last_finalized_date ? String(lastRows[0].last_finalized_date).slice(0, 10) : null;
-  const yesterday = addDays(todayVN(), -1);
+  const yesterday = addDays(today, -1);
 
   if (last && last >= yesterday) return { xp_added: 0, leveled_up: false };
 
   const sumRows = await query(
     `SELECT COALESCE(SUM(calories),0) AS cal, COALESCE(SUM(protein),0) AS p,
             COALESCE(SUM(carbs),0) AS c, COALESCE(SUM(fat),0) AS f
-       FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?`,
-    [userId, yesterday]
+       FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?`,
+    [userId, shift, yesterday]
   );
   const t = sumRows[0];
 

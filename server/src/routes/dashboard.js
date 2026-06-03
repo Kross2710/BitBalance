@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { macroGoalsFromCalories, shapeEntry } from '../lib/intake.js';
-import { todayVN, isValidDate } from '../lib/dates.js';
+import { isValidDate } from '../lib/dates.js';
 import { finalizeYesterdayGoals, awardStreakMilestone, getSummary } from '../lib/xp.js';
 import {
   DEFAULT_XP_SUMMARY,
@@ -28,9 +28,9 @@ const clampPct = (n) => Math.min(100, Math.max(0, n));
 // Run the read-time XP side effects (finalize yesterday's goals, catch up streak
 // milestones) and return the summary. Falls back to defaults on error, exactly
 // like the try/catch in the PHP dashboard endpoints.
-async function computeXp(userId, streakCurrent, session) {
+async function computeXp(userId, streakCurrent, session, shift = 0, today) {
   try {
-    await finalizeYesterdayGoals(userId, session);
+    await finalizeYesterdayGoals(userId, session, shift, today);
     await awardStreakMilestone(userId, streakCurrent, session);
     return await getSummary(userId);
   } catch (e) {
@@ -43,7 +43,8 @@ async function computeXp(userId, streakCurrent, session) {
 router.get('/day', requireAuth, async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    const today = todayVN();
+    const today = req.todayTz;
+    const shift = req.tzShift;
 
     let selectedDate = today;
     if (req.query.date) {
@@ -59,19 +60,19 @@ router.get('/day', requireAuth, async (req, res, next) => {
       return res.status(422).json({ ok: false, data: null, message: 'Future dashboard dates are not available.' });
     }
 
-    const totalCalories = await totalCaloriesForDate(userId, selectedDate);
+    const totalCalories = await totalCaloriesForDate(userId, selectedDate, shift);
     const goal = await calorieGoal(userId);
     const hasGoal = goal !== null && goal > 0;
 
-    const macros = await macroTotalsForDate(userId, selectedDate);
+    const macros = await macroTotalsForDate(userId, selectedDate, shift);
     const macroGoals = macroGoalsFromCalories(goal);
 
     const progressPercentage = hasGoal ? clampPct(round2((totalCalories / goal) * 100)) : 0;
     const statusClass = hasGoal ? (totalCalories > goal ? 'overlimit' : 'ongoing') : 'unset';
 
-    const history = await history7Days(userId, selectedDate);
-    const mealCategories = await mealCategoryTotals(userId, selectedDate, 'lower');
-    const entries = (await intakeLogForDate(userId, selectedDate)).map(shapeEntry);
+    const history = await history7Days(userId, selectedDate, shift);
+    const mealCategories = await mealCategoryTotals(userId, selectedDate, 'lower', shift);
+    const entries = (await intakeLogForDate(userId, selectedDate, shift)).map(shapeEntry);
     const streak = await loggingStreak(userId);
     const physical = await physicalInfo(userId);
     const weights = await weightHistory(userId);
@@ -103,7 +104,7 @@ router.get('/day', requireAuth, async (req, res, next) => {
     }
 
     const avg = calorieAverage(history.calories);
-    const xp = await computeXp(userId, streak.current, req.session);
+    const xp = await computeXp(userId, streak.current, req.session, shift, today);
 
     res.json({
       ok: true,
@@ -147,21 +148,22 @@ router.get('/day', requireAuth, async (req, res, next) => {
 router.get('/summary', requireAuth, async (req, res, next) => {
   try {
     const userId = req.user.user_id;
-    const today = todayVN();
+    const today = req.todayTz;
+    const shift = req.tzShift;
 
-    const totalCalories = await totalCaloriesForDate(userId, today);
+    const totalCalories = await totalCaloriesForDate(userId, today, shift);
     const goal = await calorieGoal(userId);
-    const macros = await macroTotalsForDate(userId, today);
+    const macros = await macroTotalsForDate(userId, today, shift);
     const macroGoals = macroGoalsFromCalories(goal);
     const streak = await loggingStreak(userId);
 
     const progressPercentage = goal && goal > 0 ? clampPct(round2((totalCalories / goal) * 100)) : 0;
 
-    const history = await history7Days(userId, today);
+    const history = await history7Days(userId, today, shift);
     // NOTE: summary.php uses Capitalized meal keys (vs lowercase in day.php) —
     // preserved for contract parity.
-    const mealCategories = await mealCategoryTotals(userId, today, 'capital');
-    const xp = await computeXp(userId, streak.current, req.session);
+    const mealCategories = await mealCategoryTotals(userId, today, 'capital', shift);
+    const xp = await computeXp(userId, streak.current, req.session, shift, today);
 
     res.json({
       ok: true,

@@ -80,8 +80,8 @@ router.post('/send', requireAuth, async (req, res, next) => {
   }
 
   try {
-    // Rate limit (per user per local day).
-    const today = todayVN();
+    // Rate limit (per user per local day, in the user's timezone).
+    const today = req.todayTz;
     const usageRows = await query(
       'SELECT message_count FROM ai_usage_daily WHERE user_id = ? AND usage_date = ?',
       [userId, today]
@@ -127,7 +127,7 @@ router.post('/send', requireAuth, async (req, res, next) => {
       .map((r) => ({ role: r.role, content: unpackFoodLogSuggestions(r.content ?? '')[0] }));
 
     // Build context + call the model.
-    const userContext = await buildUserContext(userId);
+    const userContext = await buildUserContext(userId, req.tzShift, req.todayTz);
     const clientTimeInfo = buildClientTimeInfo(req.body?.client_now, req.body?.client_tz_offset);
     const system = systemInstruction(userContext, clientTimeInfo);
 

@@ -1,14 +1,10 @@
-// The app's "day" is defined in the server's timezone (Asia/Bangkok, +07:00),
-// which is where intake rows are stamped. Compute "today" in that timezone
-// everywhere so the Dashboard and Intake agree on which day is "today".
+// Today's calendar date in the USER's local (browser) timezone, as YYYY-MM-DD.
+// The server resolves the same browser zone from the X-Timezone header (see
+// lib/api.js) and groups days to match, so Dashboard and Intake agree on "today".
 //
 // Do NOT use `new Date().toISOString().slice(0, 10)` for this — that's the UTC
-// date, which lags Bangkok by a day for ~7 hours every night and makes the
-// Dashboard query yesterday while Intake (correctly) queries today.
-const APP_TZ = 'Asia/Bangkok';
-
-// Today's calendar date in the app timezone, as a YYYY-MM-DD string.
+// date, which can be a day off from the user's local date near midnight.
 // 'en-CA' formats dates as YYYY-MM-DD.
 export function appToday() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: APP_TZ });
+  return new Date().toLocaleDateString('en-CA');
 }

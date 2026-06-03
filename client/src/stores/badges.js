@@ -28,7 +28,7 @@ export const useBadgesStore = defineStore('badges', () => {
       const meals = summary.value.meal_categories || {}; // capitalized keys
       const r = reminders.value;
       if (r?.enabled) {
-        const nowHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false }).slice(0, 5);
+        const nowHM = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 5);
         counts['/intake'] = MEALS.filter((m) => {
           const cfg = r.meals?.[m];
           if (!cfg?.enabled || nowHM < cfg.time) return false; // off or not due yet

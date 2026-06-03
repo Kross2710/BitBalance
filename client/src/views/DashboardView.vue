@@ -94,8 +94,8 @@ function computeNudge() {
   nudge.value = null;
   const r = reminders.value;
   if (!r || !r.enabled || !day.value || !isToday.value) return;
-  const nowHM = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false }).slice(0, 5);
-  const dateKey = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  const nowHM = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 5);
+  const dateKey = new Date().toLocaleDateString('en-CA');
   const cats = day.value.meal_categories || {};
   const due = [];
   for (const m of ['breakfast', 'lunch', 'dinner', 'snack']) {

@@ -40,6 +40,7 @@ import { awardIntakeLog, awardStreakMilestone, getSummary, consumeLevelupFlash }
 import { updateLoggingStreak } from '../lib/streak.js';
 import { loggingStreak } from '../lib/dashboard.js';
 import { seedAchievementBaseline, newlyUnlockedSince } from '../lib/achievements.js';
+import { vnLiteralForUserLocalNoon, userLocalDateOf } from '../lib/tz.js';
 
 const router = Router();
 
@@ -57,15 +58,18 @@ router.get('/history', requireAuth, async (req, res, next) => {
     const rows = await query(
       `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
          FROM intakeLog
-        WHERE user_id = ?${byDate ? ' AND DATE(date_intake) = ?' : ''}
+        WHERE user_id = ?${byDate ? ' AND DATE(date_intake + INTERVAL ? MINUTE) = ?' : ''}
         ORDER BY date_intake DESC, intakeLog_id DESC
         LIMIT ?`,
-      byDate ? [userId, date, limit] : [userId, limit]
+      byDate ? [userId, req.tzShift, date, limit] : [userId, limit]
     );
 
     res.json({
       ok: true,
-      data: { entries: rows.map(shapeEntry), daily_summary: await dailySummary(userId, byDate ? date : null) },
+      data: {
+        entries: rows.map(shapeEntry),
+        daily_summary: await dailySummary(userId, byDate ? date : null, req.tzShift),
+      },
       message: null,
     });
   } catch (err) {
@@ -247,30 +251,44 @@ router.post('/create', requireAuth, async (req, res, next) => {
     // against. No-op once seeded, so only the first log of a session pays the
     // extra cost. Best-effort: never let it fail the log.
     try {
-      await seedAchievementBaseline(userId, req.session);
+      await seedAchievementBaseline(userId, req.session, req.tzShift);
     } catch (e) {
       console.error('intake achievement seed error:', e);
     }
 
     // Optional backdating (ports process_intake.php): clamp future -> today, and
-    // only today's logs bump the streak. CURDATE()/CURTIME() run in the DB's
-    // +07:00 zone, matching how "today" is computed everywhere else.
-    const [{ today }] = await query('SELECT CURDATE() AS today');
+    // only today's logs bump the streak. "today" is the user's local day; the
+    // stored date_intake is always a +07:00 wall-clock literal.
+    const today = req.todayTz;
     const logDate = payload.date && payload.date <= today ? payload.date : today;
     const isToday = logDate === today;
 
-    const result = isToday
-      ? await query(
-          `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path]
-        )
-      : await query(
-          // Keep the real time-of-day so entries within a backdated day still order sensibly.
-          `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CONCAT(?, ' ', CURTIME()))`,
-          [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path, logDate]
-        );
+    const baseCols = [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path];
+    let result;
+    if (isToday) {
+      // DEFAULT CURRENT_TIMESTAMP (+07:00). The instant is now, so its user-local
+      // date is always today regardless of shift.
+      result = await query(
+        `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        baseCols
+      );
+    } else if (req.tzShift === 0) {
+      // VN: keep the real +07:00 time-of-day so backdated entries order sensibly.
+      result = await query(
+        `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CONCAT(?, ' ', CURTIME()))`,
+        [...baseCols, logDate]
+      );
+    } else {
+      // Non-VN: stamp the user-local NOON of logDate, expressed as a +07:00 literal,
+      // so DATE(date_intake + INTERVAL shift MINUTE) === logDate (no midnight cross).
+      result = await query(
+        `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [...baseCols, vnLiteralForUserLocalNoon(req.tz, logDate)]
+      );
+    }
 
     const [entry] = await query(
       `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
@@ -282,7 +300,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
     // best-effort: a failure here must not fail the log itself.
     let xpAdded = 0;
     try {
-      const r = await awardIntakeLog(userId, req.session);
+      const r = await awardIntakeLog(userId, req.session, req.tzShift);
       xpAdded += r.xp_added ?? 0;
     } catch (e) {
       console.error('intake xp award error:', e);
@@ -291,7 +309,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
     // the current streak (recomputing historical streaks is out of scope).
     if (isToday) {
       try {
-        await updateLoggingStreak(userId);
+        await updateLoggingStreak(userId, req.todayTz);
         const streak = await loggingStreak(userId);
         const m = await awardStreakMilestone(userId, streak.current, req.session);
         xpAdded += m.xp_added ?? 0;
@@ -312,7 +330,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
     // never breaks the log itself.
     let newlyUnlocked = [];
     try {
-      newlyUnlocked = await newlyUnlockedSince(userId, req.session);
+      newlyUnlocked = await newlyUnlockedSince(userId, req.session, req.tzShift);
     } catch (e) {
       console.error('intake achievement unlock diff error:', e);
     }
@@ -321,7 +339,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
       ok: true,
       data: {
         entry: entry ? shapeEntry(entry) : null,
-        daily_summary: await dailySummary(userId, logDate),
+        daily_summary: await dailySummary(userId, logDate, req.tzShift),
         date: logDate,
         is_today: isToday,
         xp: { added: xpAdded, summary: xpSummary, levelup: consumeLevelupFlash(req.session) },
@@ -357,7 +375,14 @@ router.post('/update', requireAuth, async (req, res, next) => {
 
     res.json({
       ok: true,
-      data: { entry: shapeEntry(entry), daily_summary: await dailySummary(userId, entry.date_intake ? String(entry.date_intake).slice(0, 10) : null) },
+      data: {
+        entry: shapeEntry(entry),
+        daily_summary: await dailySummary(
+          userId,
+          entry.date_intake ? userLocalDateOf(entry.date_intake, req.tzShift) : null,
+          req.tzShift
+        ),
+      },
       message: null,
     });
   } catch (err) {
@@ -393,7 +418,11 @@ router.post('/delete', requireAuth, async (req, res, next) => {
       data: {
         deleted_id: intakeId,
         deleted_row: snapshot[0] ?? null,
-        daily_summary: await dailySummary(userId, snapshot[0]?.date_intake ? String(snapshot[0].date_intake).slice(0, 10) : null),
+        daily_summary: await dailySummary(
+          userId,
+          snapshot[0]?.date_intake ? userLocalDateOf(snapshot[0].date_intake, req.tzShift) : null,
+          req.tzShift
+        ),
       },
       message: null,
     });

@@ -25,6 +25,7 @@ export function publicUser(row) {
     profile_image: normalizeProfileImage(row.profile_image),
     theme_preference: row.theme_preference ?? 'system',
     language_preference: row.language_preference ?? 'en',
+    time_zone: row.time_zone ?? 'Asia/Ho_Chi_Minh',
     needs_onboarding: Boolean(row.needs_onboarding),
   };
 }
@@ -38,7 +39,7 @@ export async function currentUserRow(req) {
 
   const rows = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
-            us.status, us.theme_preference, us.language_preference,
+            us.status, us.theme_preference, us.language_preference, us.time_zone,
             CASE
                 WHEN NOT EXISTS (SELECT 1 FROM userGoal ug WHERE ug.user_id = u.user_id LIMIT 1)
                   OR NOT EXISTS (SELECT 1 FROM userPhysicalInfo upi WHERE upi.user_id = u.user_id LIMIT 1)
@@ -60,6 +61,14 @@ export async function currentUserRow(req) {
   if (row.status === 'archived' || row.status === 'banned') {
     req.session.destroy(() => {});
     return { inactive: true };
+  }
+
+  // Best-effort: persist the browser-reported timezone so cross-user / server-side
+  // reads (PT viewing a client, Wrapped, finalizeYesterdayGoals) can use the
+  // user's real zone. Only writes on an actual change; never breaks the request.
+  if (req.tz && req.tz !== row.time_zone) {
+    query('UPDATE userStatus SET time_zone = ? WHERE user_id = ?', [req.tz, userId]).catch(() => {});
+    row.time_zone = req.tz;
   }
 
   req.session.user = publicUser(row);

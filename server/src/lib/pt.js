@@ -6,7 +6,8 @@
 // workspace can reuse them later; the exported client* wrappers resolve the
 // caller's single accepted trainer.
 import { pool, query } from '../db.js';
-import { todayVN, addDays, weekdayLabel, isValidDate } from './dates.js';
+import { addDays, weekdayLabel, isValidDate } from './dates.js';
+import { ctxForStoredTz } from './tz.js';
 import { normalizeProfileImage } from './users.js';
 
 // Thrown for user-facing validation failures (mapped to a 422 by the route).
@@ -453,11 +454,9 @@ async function requireAcceptedClient(trainerId, clientId) {
 export async function trainerClients(trainerId) {
   const clients = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.profile_image,
-            us.logging_streak,
+            us.logging_streak, us.time_zone,
             (SELECT calorie_goal FROM userGoal WHERE user_id = u.user_id ORDER BY date_set DESC LIMIT 1) AS calorie_goal,
-            (SELECT weight FROM weight_log WHERE user_id = u.user_id ORDER BY date_logged DESC LIMIT 1) AS last_weight,
-            COALESCE((SELECT SUM(calories) FROM intakeLog WHERE user_id = u.user_id AND DATE(date_intake) = CURDATE()), 0) AS calories_today,
-            COALESCE((SELECT SUM(protein)  FROM intakeLog WHERE user_id = u.user_id AND DATE(date_intake) = CURDATE()), 0) AS protein_today
+            (SELECT weight FROM weight_log WHERE user_id = u.user_id ORDER BY date_logged DESC LIMIT 1) AS last_weight
        FROM trainer_client tc
        JOIN user u ON tc.client_id = u.user_id
        JOIN userStatus us ON u.user_id = us.user_id
@@ -465,6 +464,19 @@ export async function trainerClients(trainerId) {
       ORDER BY u.first_name ASC`,
     [trainerId]
   );
+
+  // Today's totals are scoped to each CLIENT's own timezone (not the trainer's),
+  // so a coach in a different zone still sees the client's local day. N is small.
+  for (const c of clients) {
+    const { shift, today } = ctxForStoredTz(c.time_zone);
+    const [s] = await query(
+      `SELECT COALESCE(SUM(calories),0) AS cal, COALESCE(SUM(protein),0) AS pro
+         FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?`,
+      [c.user_id, shift, today]
+    );
+    c.calories_today = Number(s.cal);
+    c.protein_today = Number(s.pro);
+  }
 
   const unreadRows = await query(
     `SELECT t.client_id, COUNT(*) AS unread
@@ -503,23 +515,27 @@ export async function trainerClients(trainerId) {
 export async function clientDetail(trainerId, clientId) {
   await requireAcceptedClient(trainerId, clientId);
 
+  // Scope the client's day to THEIR timezone, not the trainer's.
+  const tzRow = await query('SELECT time_zone FROM userStatus WHERE user_id = ?', [clientId]);
+  const { shift, today } = ctxForStoredTz(tzRow[0]?.time_zone);
+  const from = addDays(today, -6);
+
   const diary = await query(
     `SELECT food_item, meal_category, calories, protein, carbs, fat, image_path, date_intake
        FROM intakeLog
-      WHERE user_id = ? AND DATE(date_intake) = CURDATE()
+      WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?
       ORDER BY date_intake DESC`,
-    [clientId]
+    [clientId, shift, today]
   );
 
   const trendRows = await query(
-    `SELECT DATE(date_intake) AS d, SUM(calories) AS cal, SUM(protein) AS pro
+    `SELECT DATE(date_intake + INTERVAL ? MINUTE) AS d, SUM(calories) AS cal, SUM(protein) AS pro
        FROM intakeLog
-      WHERE user_id = ? AND DATE(date_intake) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-      GROUP BY DATE(date_intake)`,
-    [clientId]
+      WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) >= ?
+      GROUP BY DATE(date_intake + INTERVAL ? MINUTE)`,
+    [shift, clientId, shift, from, shift]
   );
   const byDate = new Map(trendRows.map((r) => [String(r.d), { cal: Number(r.cal ?? 0), pro: Number(r.pro ?? 0) }]));
-  const today = todayVN();
   const trend = [];
   for (let i = 6; i >= 0; i--) {
     const date = addDays(today, -i);

@@ -111,10 +111,11 @@ router.post('/save', requireAuth, async (req, res, next) => {
       );
     }
 
-    // Weight log — same-day upsert.
+    // Weight log — same-day upsert. date_logged is a DATE; store the user's local
+    // day directly so "same day" matches the user's timezone (req.todayTz).
     const [wlog] = await conn.query(
-      'SELECT weight_id FROM weight_log WHERE user_id = ? AND date_logged = CURDATE() LIMIT 1',
-      [req.user.user_id]
+      'SELECT weight_id FROM weight_log WHERE user_id = ? AND date_logged = ? LIMIT 1',
+      [req.user.user_id, req.todayTz]
     );
     if (wlog.length) {
       await conn.query('UPDATE weight_log SET weight = ? WHERE weight_id = ? AND user_id = ?', [
@@ -123,9 +124,10 @@ router.post('/save', requireAuth, async (req, res, next) => {
         req.user.user_id,
       ]);
     } else {
-      await conn.query('INSERT INTO weight_log (user_id, weight, date_logged) VALUES (?, ?, CURDATE())', [
+      await conn.query('INSERT INTO weight_log (user_id, weight, date_logged) VALUES (?, ?, ?)', [
         req.user.user_id,
         weight,
+        req.todayTz,
       ]);
     }
 

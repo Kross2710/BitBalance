@@ -10,9 +10,8 @@ function num(v, digits = 1) {
   return Number(v || 0).toFixed(digits);
 }
 
-export async function buildUserContext(userId) {
+export async function buildUserContext(userId, shift = 0, today = todayVN()) {
   const lines = [];
-  const today = todayVN();
 
   // ---- Basic profile ----
   const profileRows = await query(
@@ -70,9 +69,9 @@ export async function buildUserContext(userId) {
   const todayItems = await query(
     `SELECT food_item, meal_category, calories, protein, carbs, fat
        FROM intakeLog
-      WHERE user_id = ? AND DATE(date_intake) = ?
+      WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?
       ORDER BY date_intake ASC`,
-    [userId, today]
+    [userId, shift, today]
   );
   if (todayItems.length) {
     let cal = 0;
@@ -97,15 +96,15 @@ export async function buildUserContext(userId) {
 
   // ---- Last 7 days totals (excluding today, for trend) ----
   const weekDays = await query(
-    `SELECT DATE(date_intake) AS d,
+    `SELECT DATE(date_intake + INTERVAL ? MINUTE) AS d,
             SUM(calories) AS cal, SUM(protein) AS p, SUM(carbs) AS c, SUM(fat) AS f
        FROM intakeLog
       WHERE user_id = ?
-        AND DATE(date_intake) >= DATE_SUB(?, INTERVAL 7 DAY)
-        AND DATE(date_intake) < ?
-      GROUP BY DATE(date_intake)
+        AND DATE(date_intake + INTERVAL ? MINUTE) >= DATE_SUB(?, INTERVAL 7 DAY)
+        AND DATE(date_intake + INTERVAL ? MINUTE) < ?
+      GROUP BY DATE(date_intake + INTERVAL ? MINUTE)
       ORDER BY d DESC`,
-    [userId, today, today]
+    [shift, userId, shift, today, shift, today, shift]
   );
   if (weekDays.length) {
     lines.push('\nPast 7 days (daily totals):');

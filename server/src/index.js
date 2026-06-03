@@ -21,6 +21,7 @@ import wrappedRoutes from './routes/wrapped.js';
 import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
+import { tzContext } from './middleware/tz.js';
 import { LEGACY_UPLOADS_ROOT, UPLOADS_ROOT } from './lib/uploads.js';
 import { tryRememberLogin } from './lib/remember.js';
 
@@ -99,6 +100,10 @@ app.use(async (req, res, next) => {
   }
   next();
 });
+
+// Attach per-request timezone context (req.tz / req.tzShift / req.todayTz) from
+// the client's X-Timezone header, so day-grouping reflects the user's local day.
+app.use(tzContext);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, data: { status: 'up' }, message: null }));
 

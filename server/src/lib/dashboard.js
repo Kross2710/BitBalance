@@ -19,19 +19,19 @@ export const DEFAULT_XP_SUMMARY = {
   progress_pct: 0,
 };
 
-export async function totalCaloriesForDate(userId, date) {
+export async function totalCaloriesForDate(userId, date, shift = 0) {
   const rows = await query(
-    'SELECT COALESCE(SUM(calories), 0) AS total FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?',
-    [userId, date]
+    'SELECT COALESCE(SUM(calories), 0) AS total FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?',
+    [userId, shift, date]
   );
   return Number(rows[0].total);
 }
 
-export async function macroTotalsForDate(userId, date) {
+export async function macroTotalsForDate(userId, date, shift = 0) {
   const rows = await query(
     `SELECT COALESCE(SUM(protein),0) AS protein, COALESCE(SUM(carbs),0) AS carbs, COALESCE(SUM(fat),0) AS fat
-       FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?`,
-    [userId, date]
+       FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?`,
+    [userId, shift, date]
   );
   return { protein: Number(rows[0].protein), carbs: Number(rows[0].carbs), fat: Number(rows[0].fat) };
 }
@@ -46,15 +46,15 @@ export async function calorieGoal(userId) {
 
 // 7-day rolling window ending on `endDate` (inclusive), oldest first — matches
 // the i=6..0 loop in both PHP endpoints.
-export async function history7Days(userId, endDate) {
+export async function history7Days(userId, endDate, shift = 0) {
   const history = { labels: [], calories: [], protein: [], carbs: [], fat: [] };
   for (let i = 6; i >= 0; i--) {
     const date = addDays(endDate, -i);
     const [row] = await query(
       `SELECT COALESCE(SUM(calories),0) AS total, COALESCE(SUM(protein),0) AS protein,
               COALESCE(SUM(carbs),0) AS carbs, COALESCE(SUM(fat),0) AS fat
-         FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ?`,
-      [userId, date]
+         FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?`,
+      [userId, shift, date]
     );
     history.labels.push(weekdayLabel(date));
     history.calories.push(Number(row.total));
@@ -68,13 +68,13 @@ export async function history7Days(userId, endDate) {
 // Per-meal calorie totals for one date. `keyCase` controls the output keys to
 // mirror the (inconsistent!) legacy endpoints: day.php uses lowercase keys,
 // summary.php uses capitalized keys.
-export async function mealCategoryTotals(userId, date, keyCase = 'lower') {
+export async function mealCategoryTotals(userId, date, keyCase = 'lower', shift = 0) {
   const categories = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   const out = {};
   for (const category of categories) {
     const rows = await query(
-      'SELECT COALESCE(SUM(calories),0) AS total FROM intakeLog WHERE user_id = ? AND meal_category = ? AND DATE(date_intake) = ?',
-      [userId, category, date]
+      'SELECT COALESCE(SUM(calories),0) AS total FROM intakeLog WHERE user_id = ? AND meal_category = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ?',
+      [userId, category, shift, date]
     );
     const key = keyCase === 'lower' ? category.toLowerCase() : category;
     out[key] = Number(rows[0].total);
@@ -82,11 +82,11 @@ export async function mealCategoryTotals(userId, date, keyCase = 'lower') {
   return out;
 }
 
-export async function intakeLogForDate(userId, date) {
+export async function intakeLogForDate(userId, date, shift = 0) {
   return query(
     `SELECT intakeLog_id, food_item, meal_category, calories, protein, carbs, fat, image_path, date_intake
-       FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = ? ORDER BY date_intake DESC`,
-    [userId, date]
+       FROM intakeLog WHERE user_id = ? AND DATE(date_intake + INTERVAL ? MINUTE) = ? ORDER BY date_intake DESC`,
+    [userId, shift, date]
   );
 }
 
