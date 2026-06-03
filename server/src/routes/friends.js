@@ -26,6 +26,7 @@ import {
   pendingIncoming,
   pendingOutgoing,
   pendingCountIncoming,
+  publicProfile,
 } from '../lib/friends.js';
 
 const router = Router();
@@ -151,6 +152,20 @@ router.get(
     const other = intParam(req.params.userId);
     if (other <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid user id.' });
     ok(res, { relationship: await relationshipTo(req.user.user_id, other) });
+  })
+);
+
+// Public profile peek — non-sensitive "flex" data, gated by profile_visibility.
+// Unknown / blocked / not-permitted users return a minimal card (or 404).
+router.get(
+  '/profile/:userId',
+  requireAuth,
+  handle(async (req, res) => {
+    const other = intParam(req.params.userId);
+    if (other <= 0) return res.status(422).json({ ok: false, data: null, message: 'Invalid user id.' });
+    const profile = await publicProfile(req.user.user_id, other);
+    if (!profile) return res.status(404).json({ ok: false, data: null, message: 'User not found.' });
+    ok(res, profile);
   })
 );
 

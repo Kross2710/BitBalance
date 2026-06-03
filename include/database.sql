@@ -361,6 +361,7 @@ CREATE TABLE `userStatus` (
   `archived_at` timestamp NULL DEFAULT NULL,
   `profile_bio` text DEFAULT NULL,
   `profile_visibility` enum('private','friends','public') NOT NULL DEFAULT 'friends',
+  `show_favorite_food` tinyint(1) NOT NULL DEFAULT 1,
   `last_login_date` date DEFAULT NULL,
   `logging_streak` int(11) DEFAULT 0,
   `longest_logging_streak` int(11) DEFAULT 0,

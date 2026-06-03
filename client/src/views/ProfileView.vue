@@ -35,6 +35,8 @@ const form = reactive({
   email: '',
   bio: '',
   theme_preference: 'system',
+  visibility: 'friends',
+  show_favorite_food: true,
   calorie_goal: '',
   age: '',
   gender: '',
@@ -55,6 +57,8 @@ function hydrate(data) {
   form.email = data.user.email ?? '';
   form.bio = data.bio ?? '';
   form.theme_preference = data.user.theme_preference ?? 'system';
+  form.visibility = data.privacy?.visibility ?? 'friends';
+  form.show_favorite_food = data.privacy?.show_favorite_food ?? true;
   form.calorie_goal = data.goal?.calorie_goal ?? '';
   form.age = data.physical?.age ?? '';
   form.gender = data.physical?.gender ?? '';
@@ -247,6 +251,23 @@ const initials = () =>
         </select>
       </section>
 
+      <!-- Privacy -->
+      <section class="card" style="margin-top: 14px">
+        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.privacy.title') }}</h2>
+        <label>{{ $t('profile.privacy.visibility') }}</label>
+        <select v-model="form.visibility">
+          <option value="public">{{ $t('profile.privacy.visibility.public') }}</option>
+          <option value="friends">{{ $t('profile.privacy.visibility.friends') }}</option>
+          <option value="private">{{ $t('profile.privacy.visibility.private') }}</option>
+        </select>
+        <label class="check">
+          <input v-model="form.show_favorite_food" type="checkbox" />
+          <span>{{ $t('profile.privacy.show_favorite_food') }}</span>
+        </label>
+        <p class="hint">{{ $t('profile.privacy.show_favorite_food_hint') }}</p>
+        <p class="hint">{{ $t('profile.privacy.note') }}</p>
+      </section>
+
       <!-- Goal + physical -->
       <section class="card" style="margin-top: 14px">
         <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.goal_body.title') }}</h2>
@@ -404,4 +425,15 @@ textarea {
   color: #f87171;
   font-weight: 700;
 }
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.check input { width: auto; margin: 0; }
 </style>

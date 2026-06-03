@@ -19,6 +19,7 @@
   --focus-ring: rgba(74, 222, 128, 0.25);
   /* Status */
   --danger: #f87171;
+  --streak: #fb923c;               /* lit logging-streak flame (fa-fire) */
   /* Macros (P/C/F) — colour lives on the chip/letter + left border + focus ring */
   --macro-p: #ff6b6b;
   --macro-p-bg: rgba(255, 107, 107, 0.14);
@@ -57,6 +58,7 @@
   --placeholder: #98a1ad;
   --focus-ring: rgba(22, 163, 74, 0.22);
   --danger: #dc2626;
+  --streak: #ea580c;
   --macro-p: #ff4b4b;
   --macro-p-bg: #ffe8e8;
   --macro-c: #ffb020;

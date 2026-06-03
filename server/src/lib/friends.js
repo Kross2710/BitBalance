@@ -12,6 +12,7 @@
 //   created_at >= NOW() - INTERVAL 1 DAY AND status = 'pending'.
 import { pool, query } from '../db.js';
 import { normalizeProfileImage } from './users.js';
+import { ctxForStoredTz } from './tz.js';
 
 export const FRIENDS_REQUEST_DAILY_CAP = 20;
 
@@ -352,4 +353,96 @@ export async function pendingCountIncoming(me) {
     [me]
   );
   return num(rows[0].n);
+}
+
+// -----------------------------------------------------------------------------
+// Public profile peek (the /friends profile sheet)
+// -----------------------------------------------------------------------------
+
+// Non-sensitive "flex" profile of another user, gated by their profile_visibility.
+// Returns null (→ 404) for unknown or blocked users so we never reveal them.
+// Always returns a minimal card; the rich block (streak/xp/badges/favorite/bio)
+// is attached ONLY when the viewer is allowed to see it. Never exposes calories,
+// macros, weight, goal, email, or real name.
+export async function publicProfile(me, targetId) {
+  const target = Number(targetId);
+  if (!Number.isFinite(target) || target <= 0) return null;
+
+  const rel = await relationshipTo(me, target);
+  if (rel === 'blocked_in' || rel === 'blocked_out') return null; // don't reveal
+
+  const rows = await query(
+    `SELECT u.user_id, u.user_name, u.profile_image,
+            COALESCE(ux.current_level, 1)           AS current_level,
+            COALESCE(ux.total_xp, 0)                AS total_xp,
+            COALESCE(us.logging_streak, 0)          AS logging_streak,
+            COALESCE(us.longest_logging_streak, 0)  AS longest_streak,
+            us.profile_bio,
+            COALESCE(us.profile_visibility, 'friends')   AS visibility,
+            COALESCE(us.show_favorite_food, 1)           AS show_favorite_food,
+            COALESCE(us.time_zone, 'Asia/Ho_Chi_Minh')   AS time_zone
+       FROM user u
+       LEFT JOIN user_xp    ux ON ux.user_id = u.user_id
+       LEFT JOIN userStatus us ON us.user_id = u.user_id
+      WHERE u.user_id = ?
+      LIMIT 1`,
+    [target]
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  const visibility = r.visibility;
+
+  const card = {
+    user_id: Number(r.user_id),
+    user_name: r.user_name,
+    profile_image: normalizeProfileImage(r.profile_image),
+    current_level: num(r.current_level),
+    relationship: rel,
+    visibility,
+    can_view_full:
+      target === me || visibility === 'public' || (visibility === 'friends' && rel === 'friends'),
+  };
+  if (!card.can_view_full) return card;
+
+  // Rich block. achievementsProgress is dynamically imported to sidestep the
+  // friends <-> achievements circular import (achievements.js imports leaderboard).
+  const { achievementsProgress } = await import('./achievements.js');
+  const { shift } = ctxForStoredTz(r.time_zone);
+  const prog = await achievementsProgress(target, shift);
+
+  const weekly = await query(
+    `SELECT COALESCE(SUM(amount), 0) AS n FROM xp_event
+      WHERE user_id = ? AND created_at >= NOW() - INTERVAL 7 DAY`,
+    [target]
+  );
+
+  const topBadges = prog.achievements
+    .filter((a) => a.level > 0)
+    .sort((a, b) => b.level - a.level)
+    .slice(0, 6)
+    .map((a) => ({ id: a.id, name: a.name, icon: a.icon, tone: a.tone, level: a.level }));
+
+  // Favorite food is opt-out per user. Dedicated query gives a clean numeric count.
+  let favorite_food = null;
+  if (Number(r.show_favorite_food) === 1) {
+    const fav = await query(
+      `SELECT food_item, COUNT(*) AS c FROM intakeLog WHERE user_id = ?
+        GROUP BY food_item ORDER BY c DESC, food_item ASC LIMIT 1`,
+      [target]
+    );
+    if (fav.length && fav[0].food_item) favorite_food = { food: fav[0].food_item, logs: num(fav[0].c) };
+  }
+
+  return {
+    ...card,
+    bio: r.profile_bio ?? '',
+    total_xp: num(r.total_xp),
+    weekly_xp: num(weekly[0]?.n),
+    current_streak: num(r.logging_streak),
+    longest_streak: num(r.longest_streak),
+    unlocked: prog.summary.unlocked,
+    total_achievements: prog.summary.total_achievements,
+    top_badges: topBadges,
+    favorite_food,
+  };
 }

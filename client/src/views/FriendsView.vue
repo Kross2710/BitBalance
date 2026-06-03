@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { api } from '../lib/api.js';
 import { t } from '../i18n/index.js';
+import FriendProfileSheet from '../components/FriendProfileSheet.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 
 // Four sections mirror the PHP friends page: Friends, Pending (in+out),
 // Leaderboard (weekly/all-time), Find People (search + add).
@@ -43,12 +45,16 @@ onUnmounted(() => clearInterval(timer));
 const leaders = ref([]);
 const period = ref('weekly');
 const lbLoading = ref(false);
+// The weekly self-row, captured once so the hero tiles (rank + weekly XP) stay
+// put even if the Ranks toggle flips to all-time.
+const meWeekly = ref(null);
 
 async function loadLeaderboard() {
   lbLoading.value = true;
   try {
     const d = await api.get(`/api/social/leaderboard?period=${period.value}`);
     leaders.value = d.leaders;
+    if (period.value === 'weekly') meWeekly.value = d.leaders.find((u) => u.is_current_user) || null;
   } catch (e) {
     error.value = e.message;
   } finally {
@@ -120,16 +126,47 @@ function acceptFromSearch(u) {
   if (match) acceptReq(match);
   else tab.value = 'pending';
 }
-function removeFriend(u) {
-  if (!confirm(t('friends.confirm_remove_named', { name: u.user_name }))) return;
-  mutate('/api/social/unfriend', { target_id: u.user_id });
+// --- Per-row kebab menu (Friends list) ---------------------------------------
+const openMenuId = ref(null);
+const toggleMenu = (id) => {
+  openMenuId.value = openMenuId.value === id ? null : id;
+};
+
+// --- Profile peek sheet -------------------------------------------------------
+const profileOpen = ref(false);
+const profileUserId = ref(null);
+function openProfile(userId) {
+  openMenuId.value = null;
+  profileUserId.value = userId;
+  profileOpen.value = true;
+}
+function onProfileChanged() {
+  poll();
+  if (tab.value === 'leaderboard') loadLeaderboard();
+}
+
+// --- Remove friend (via ConfirmDialog; native confirm() retired) -------------
+const confirmOpen = ref(false);
+const pendingRemove = ref(null);
+function askRemove(u) {
+  pendingRemove.value = u;
+  openMenuId.value = null;
+  profileOpen.value = false; // don't stack the dialog under the sheet
+  confirmOpen.value = true;
+}
+async function confirmRemove() {
+  const u = pendingRemove.value;
+  if (!u) return;
+  await mutate('/api/social/unfriend', { target_id: u.user_id });
+  confirmOpen.value = false;
+  pendingRemove.value = null;
+}
+function cancelRemove() {
+  confirmOpen.value = false;
+  pendingRemove.value = null;
 }
 
 const pendingInCount = computed(() => pendingIn.value.length);
-// The current user's own leaderboard row (the API always returns it, even with
-// zero friends) — feeds the hero tiles. logging_streak / current_level are
-// period-independent, so they stay put when the weekly/all-time toggle flips.
-const me = computed(() => leaders.value.find((u) => u.is_current_user) || null);
 const initials = (name) => (name || '?').slice(0, 1).toUpperCase();
 
 // Empty-state sentences embed a "Find" button mid-sentence. We can't use
@@ -151,8 +188,8 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
     <!-- Hero metrics: always present so the page never reads as empty. -->
     <div class="hero-metrics">
       <div class="hm"><strong>{{ friends.length }}</strong><small>{{ $t('friends.metric.friends') }}</small></div>
-      <div class="hm"><strong>{{ me ? me.logging_streak : '—' }}</strong><small>{{ $t('friends.metric.streak') }}</small></div>
-      <div class="hm"><strong>{{ me ? me.current_level : '—' }}</strong><small>{{ $t('friends.metric.level') }}</small></div>
+      <div class="hm"><strong>{{ meWeekly ? '#' + meWeekly.rank : '—' }}</strong><small>{{ $t('friends.metric.rank') }}</small></div>
+      <div class="hm"><strong>{{ meWeekly ? meWeekly.weekly_xp : '—' }}</strong><small>{{ $t('friends.metric.weekly_xp') }}</small></div>
     </div>
 
     <!-- Tabs -->
@@ -177,14 +214,25 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
       </p>
       <ul v-else class="list">
         <li v-for="u in friends" :key="u.user_id" class="row card">
-          <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
-          <span class="meta">
-            <strong>{{ u.user_name }}</strong>
-            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }} · {{ $t('friends.card.weekly_xp', { n: u.weekly_xp }) }}</small>
-          </span>
-          <button class="btn ghost danger" :disabled="busy" @click="removeFriend(u)">{{ $t('friends.card.btn_remove') }}</button>
+          <button type="button" class="row-tap" @click="openProfile(u.user_id)">
+            <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
+            <span class="meta">
+              <strong>{{ u.user_name }}</strong>
+              <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" :class="{ lit: u.logging_streak > 0 }" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }} · {{ $t('friends.card.weekly_xp', { n: u.weekly_xp }) }}</small>
+            </span>
+          </button>
+          <div class="kebab-wrap">
+            <button class="icon-btn" :aria-label="$t('friends.menu.aria')" :disabled="busy" @click.stop="toggleMenu(u.user_id)">
+              <i class="fa-solid fa-ellipsis" />
+            </button>
+            <div v-if="openMenuId === u.user_id" class="menu" @click.stop>
+              <button class="menu-item" @click="openProfile(u.user_id)"><i class="fa-solid fa-user" /> {{ $t('friends.menu.view_profile') }}</button>
+              <button class="menu-item danger" @click="askRemove(u)"><i class="fa-solid fa-user-xmark" /> {{ $t('friends.menu.remove') }}</button>
+            </div>
+          </div>
         </li>
       </ul>
+      <div v-if="openMenuId !== null" class="menu-scrim" @click="openMenuId = null" />
     </section>
 
     <!-- PENDING -->
@@ -195,11 +243,13 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         <p v-if="!pendingIn.length" class="muted empty">{{ $t('friends.empty.no_incoming') }}</p>
         <ul v-else class="list">
           <li v-for="r in pendingIn" :key="r.request_id" class="row card">
-            <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
-            <span class="meta">
-              <strong>{{ r.user_name }}</strong>
-              <small class="muted">{{ $t('friends.card.level_short') }} {{ r.current_level }} · <i class="fa-solid fa-fire" /> {{ r.logging_streak }}{{ $t('friends.card.day_short') }}</small>
-            </span>
+            <button type="button" class="row-tap" @click="openProfile(r.user_id)">
+              <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
+              <span class="meta">
+                <strong>{{ r.user_name }}</strong>
+                <small class="muted">{{ $t('friends.card.level_short') }} {{ r.current_level }} · <i class="fa-solid fa-fire" :class="{ lit: r.logging_streak > 0 }" /> {{ r.logging_streak }}{{ $t('friends.card.day_short') }}</small>
+              </span>
+            </button>
             <span class="actions">
               <button class="btn primary" :disabled="busy" @click="acceptReq(r)">{{ $t('friends.card.btn_accept') }}</button>
               <button class="btn ghost" :disabled="busy" @click="rejectReq(r)">{{ $t('friends.card.btn_decline') }}</button>
@@ -211,11 +261,13 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         <p v-if="!pendingOut.length" class="muted empty">{{ $t('friends.empty.no_outgoing') }}</p>
         <ul v-else class="list">
           <li v-for="r in pendingOut" :key="r.request_id" class="row card">
-            <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
-            <span class="meta">
-              <strong>{{ r.user_name }}</strong>
-              <small class="muted">{{ $t('friends.card.hint_waiting') }}</small>
-            </span>
+            <button type="button" class="row-tap" @click="openProfile(r.user_id)">
+              <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
+              <span class="meta">
+                <strong>{{ r.user_name }}</strong>
+                <small class="muted">{{ $t('friends.card.hint_waiting') }}</small>
+              </span>
+            </button>
             <button class="btn ghost" :disabled="busy" @click="cancelReq(r)">{{ $t('friends.card.btn_cancel') }}</button>
           </li>
         </ul>
@@ -235,11 +287,13 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         <ul v-if="leaders.length" class="list">
           <li v-for="u in leaders" :key="u.user_id" class="row card" :class="{ me: u.is_current_user }">
             <span class="rank" :class="'r' + u.rank">{{ u.rank }}</span>
-            <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
-            <span class="meta">
-              <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> {{ $t('friends.lb.you_paren') }}</small></strong>
-              <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
-            </span>
+            <button type="button" class="row-tap" @click="openProfile(u.user_id)">
+              <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
+              <span class="meta">
+                <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> {{ $t('friends.lb.you_paren') }}</small></strong>
+                <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" :class="{ lit: u.logging_streak > 0 }" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
+              </span>
+            </button>
             <strong class="score">{{ u.score_xp }}<small class="muted"> {{ $t('friends.col.xp') }}</small></strong>
           </li>
         </ul>
@@ -260,15 +314,22 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         @input="onSearchInput"
         :aria-label="$t('friends.find.aria')"
       />
-      <p v-if="searching" class="muted">{{ $t('friends.find.searching') }}</p>
-      <p v-else-if="q.trim().length >= 2 && !results.length" class="muted empty">{{ $t('friends.find.no_results') }}</p>
-      <ul v-else-if="results.length" class="list">
+      <div v-if="q.trim().length < 2" class="find-empty">
+        <i class="fa-solid fa-user-plus" />
+        <strong>{{ $t('friends.find.empty_title') }}</strong>
+        <p class="muted">{{ $t('friends.find.empty_hint') }}</p>
+      </div>
+      <p v-else-if="searching" class="muted">{{ $t('friends.find.searching') }}</p>
+      <p v-else-if="!results.length" class="muted empty">{{ $t('friends.find.no_results') }}</p>
+      <ul v-else class="list">
         <li v-for="u in results" :key="u.user_id" class="row card">
-          <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
-          <span class="meta">
-            <strong>{{ u.user_name }}</strong>
-            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
-          </span>
+          <button type="button" class="row-tap" @click="openProfile(u.user_id)">
+            <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
+            <span class="meta">
+              <strong>{{ u.user_name }}</strong>
+              <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" :class="{ lit: u.logging_streak > 0 }" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
+            </span>
+          </button>
           <!-- CTA depends on the relationship the API annotates each result with. -->
           <button v-if="u.relationship === 'none'" class="btn primary" :disabled="busy" @click="addFriend(u)">{{ $t('friends.card.btn_add') }}</button>
           <button v-else-if="u.relationship === 'pending_in'" class="btn primary" :disabled="busy"
@@ -279,6 +340,24 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         </li>
       </ul>
     </section>
+
+    <!-- Profile peek (tap any row) + remove confirm (kebab / sheet) -->
+    <FriendProfileSheet
+      :open="profileOpen"
+      :user-id="profileUserId"
+      @close="profileOpen = false"
+      @changed="onProfileChanged"
+      @remove="askRemove"
+    />
+    <ConfirmDialog
+      :open="confirmOpen"
+      :title="$t('friends.menu.remove')"
+      :message="pendingRemove ? $t('friends.confirm_remove_named', { name: pendingRemove.user_name }) : ''"
+      :confirm-label="$t('friends.card.btn_remove')"
+      :busy="busy"
+      @confirm="confirmRemove"
+      @cancel="cancelRemove"
+    />
   </main>
 </template>
 
@@ -364,4 +443,50 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 
 /* Search */
 .search { width: 100%; margin-bottom: 12px; }
+
+/* Tappable row body — opens the profile peek. Strips button chrome so it reads
+   as the row itself; the avatar + meta keep their own styles inside it. */
+.row-tap {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+  background: none; border: none; padding: 0; margin: 0;
+  text-align: left; color: inherit; font: inherit; cursor: pointer; min-height: 0;
+}
+.row-tap:hover .meta strong { color: var(--accent); }
+
+/* Lit logging-streak flame (grey at 0, warm when active). */
+.lit { color: var(--streak); }
+
+/* Kebab menu (Friends list) */
+.kebab-wrap { position: relative; flex: none; }
+.icon-btn {
+  width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 10px;
+  background: var(--surface-2); color: var(--muted); border: 1px solid transparent;
+  display: grid; place-items: center; cursor: pointer;
+}
+.icon-btn:hover { color: var(--text); }
+.icon-btn:disabled { opacity: 0.5; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+  min-width: 172px; background: var(--card); border: 1px solid var(--field-border);
+  border-radius: 10px; padding: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px;
+  padding: 8px 10px; border-radius: 8px; background: none; border: none;
+  color: var(--text); font-weight: 600; font-size: 13px; text-align: left; cursor: pointer;
+}
+.menu-item i { width: 16px; text-align: center; color: var(--muted); }
+.menu-item:hover { background: var(--inset); }
+.menu-item.danger, .menu-item.danger i { color: var(--danger); }
+.menu-scrim { position: fixed; inset: 0; z-index: 10; }
+
+/* Find empty-state */
+.find-empty {
+  text-align: center; padding: 36px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.find-empty > i { font-size: 32px; color: var(--muted); }
+.find-empty strong { font-size: 16px; }
+.find-empty p { margin: 0; max-width: 320px; font-size: 13px; line-height: 1.5; }
 </style>

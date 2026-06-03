@@ -9,7 +9,8 @@ import { publicUser } from './users.js';
 export async function fetchUser(userId) {
   const rows = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
-            us.status, us.theme_preference, us.language_preference, us.profile_bio
+            us.status, us.theme_preference, us.language_preference, us.profile_bio,
+            us.profile_visibility, us.show_favorite_food
        FROM user u
        JOIN userStatus us ON u.user_id = us.user_id
       WHERE u.user_id = ?
@@ -67,6 +68,10 @@ export async function payload(userRow) {
     user: publicUser(userRow),
     bio: userRow.profile_bio ?? '',
     status: userRow.status ?? 'active',
+    privacy: {
+      visibility: userRow.profile_visibility ?? 'friends',
+      show_favorite_food: Number(userRow.show_favorite_food ?? 1) === 1,
+    },
     goal,
     physical: phys,
   };

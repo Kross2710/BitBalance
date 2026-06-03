@@ -26,6 +26,7 @@ const HANDLE_RE = /^[A-Za-z0-9_.#\-]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_THEMES = ['light', 'dark', 'system'];
 const VALID_GENDERS = ['male', 'female', 'other'];
+const VALID_VISIBILITIES = ['private', 'friends', 'public'];
 // Locales the Vue client ships catalogs for (client/src/i18n/locales.js). The DB
 // column also accepts 'fr' from the PHP app, but the SPA only offers en/vi.
 const VALID_LOCALES = ['en', 'vi'];
@@ -85,6 +86,9 @@ router.post('/update', requireAuth, async (req, res, next) => {
   // Optional — only written when present, so a Save that omits it never clobbers
   // a value set by the instant /language toggle (COALESCE leaves it untouched).
   const language = 'language_preference' in d ? String(d.language_preference).trim() : null;
+  // Profile privacy — optional, only written when present (COALESCE-guarded below).
+  const visibility = 'visibility' in d ? String(d.visibility).trim() : null;
+  const showFavoriteFood = 'show_favorite_food' in d ? (d.show_favorite_food ? 1 : 0) : null;
   const calorieGoal = 'calorie_goal' in d ? nullableInt(d.calorie_goal) : null;
   const age = 'age' in d ? nullableInt(d.age) : null;
   let gender = 'gender' in d && d.gender !== null ? String(d.gender).trim() : null;
@@ -100,6 +104,7 @@ router.post('/update', requireAuth, async (req, res, next) => {
   if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.');
   if (!VALID_THEMES.includes(theme)) return fail('Invalid theme selected.');
   if (language !== null && !VALID_LOCALES.includes(language)) return fail('Invalid language selected.');
+  if (visibility !== null && !VALID_VISIBILITIES.includes(visibility)) return fail('Invalid profile visibility.');
   if (calorieGoal !== null && (calorieGoal < 800 || calorieGoal > 10000)) {
     return fail('Please enter a valid calorie goal (800-10,000).');
   }
@@ -135,8 +140,14 @@ router.post('/update', requireAuth, async (req, res, next) => {
     ]);
 
     await conn.query(
-      'UPDATE userStatus SET profile_bio = ?, theme_preference = ?, language_preference = COALESCE(?, language_preference) WHERE user_id = ?',
-      [bio, theme, language, userId]
+      `UPDATE userStatus
+          SET profile_bio = ?,
+              theme_preference = ?,
+              language_preference = COALESCE(?, language_preference),
+              profile_visibility = COALESCE(?, profile_visibility),
+              show_favorite_food = COALESCE(?, show_favorite_food)
+        WHERE user_id = ?`,
+      [bio, theme, language, visibility, showFavoriteFood, userId]
     );
 
     // A new goal is appended (history-preserving), matching the legacy INSERT.
