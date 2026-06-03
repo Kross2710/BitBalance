@@ -88,11 +88,16 @@ export async function fetchEntry(userId, intakeId) {
   return rows[0] ?? null;
 }
 
-// Mirrors api_intake_daily_summary().
-export async function dailySummary(userId) {
+// Mirrors api_intake_daily_summary(). `date` (YYYY-MM-DD) scopes the totals to a
+// specific day so the Intake page's running total is correct when backdating via
+// ?date=; null means today (CURDATE() runs in the DB's +07:00 zone).
+export async function dailySummary(userId, date = null) {
+  const dateCond = date ? 'DATE(date_intake) = ?' : 'DATE(date_intake) = CURDATE()';
+  const scopeParams = date ? [userId, date] : [userId];
+
   const [{ total }] = await query(
-    'SELECT COALESCE(SUM(calories), 0) AS total FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = CURDATE()',
-    [userId]
+    `SELECT COALESCE(SUM(calories), 0) AS total FROM intakeLog WHERE user_id = ? AND ${dateCond}`,
+    scopeParams
   );
   const totalCalories = Number(total);
 
@@ -109,8 +114,8 @@ export async function dailySummary(userId) {
 
   const [macroRow] = await query(
     `SELECT COALESCE(SUM(protein),0) AS protein, COALESCE(SUM(carbs),0) AS carbs, COALESCE(SUM(fat),0) AS fat
-       FROM intakeLog WHERE user_id = ? AND DATE(date_intake) = CURDATE()`,
-    [userId]
+       FROM intakeLog WHERE user_id = ? AND ${dateCond}`,
+    scopeParams
   );
 
   return {
@@ -123,5 +128,36 @@ export async function dailySummary(userId) {
       fat: Number(macroRow.fat),
     },
     macro_goals: macroGoalsFromCalories(goal),
+  };
+}
+
+// Round to 1 decimal — shared by the AI estimate parser.
+function round1(v) {
+  return Math.round((Number(v) || 0) * 10) / 10;
+}
+
+// Parse a vision/chat model reply (possibly fenced or prose-wrapped) into a
+// sanitized food estimate card, or null if no JSON object can be read. Shared by
+// the /estimate-photo and /ai-chat intake routes. food_name is null when the
+// model can't identify a dish (the chat UI then shows short_advice as a prompt).
+export function parseEstimate(text) {
+  let txt = String(text ?? '').trim().replace(/^```(?:json)?\s*|\s*```$/gi, '');
+  const m = /\{[\s\S]*\}/.exec(txt);
+  if (m) txt = m[0];
+  let parsed;
+  try {
+    parsed = JSON.parse(txt);
+  } catch {
+    return null;
+  }
+  const name = parsed.food_name == null ? '' : String(parsed.food_name).slice(0, 80);
+  return {
+    food_name: name === '' ? null : name,
+    calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
+    protein: round1(parsed.protein),
+    carbs: round1(parsed.carbs),
+    fat: round1(parsed.fat),
+    unit: parsed.unit ? String(parsed.unit).slice(0, 40) : null,
+    short_advice: parsed.short_advice ? String(parsed.short_advice).slice(0, 200) : null,
   };
 }

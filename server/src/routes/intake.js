@@ -6,7 +6,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateIntake, shapeEntry, dailySummary, fetchEntry, ValidationError } from '../lib/intake.js';
+import { validateIntake, shapeEntry, dailySummary, fetchEntry, parseEstimate, ValidationError } from '../lib/intake.js';
 import { lookupBarcode, BarcodeError } from '../lib/barcode.js';
 import { chatCompletion } from '../lib/aiProvider.js';
 import { saveIntakeImage } from '../lib/uploads.js';
@@ -26,9 +26,16 @@ const ESTIMATE_PROMPT =
   '(no markdown, no code fences) of exactly this shape: ' +
   '{"food_name":"Name","calories":0,"protein":0,"carbs":0,"fat":0,"unit":"1 serving","short_advice":"one short tip"}';
 
-function round1(v) {
-  return Math.round((Number(v) || 0) * 10) / 10;
-}
+// Chat-oriented nutritionist prompt for /ai-chat — like ESTIMATE_PROMPT but uses
+// the whole conversation so the user can correct the dish over multiple turns.
+const CHAT_PROMPT =
+  'You are a professional Nutritionist AI helping a user log a meal. Analyze the food in ' +
+  'the image and/or the text the user sends, and use the whole conversation for context — ' +
+  'the user may clarify or correct the dish (e.g. "it is actually pho bo"). Estimate the ' +
+  'nutrition for the portion described. Reply with ONLY a raw JSON object (no markdown, no ' +
+  'code fences) of exactly this shape: ' +
+  '{"food_name":"Name","calories":0,"protein":0,"carbs":0,"fat":0,"unit":"1 serving","short_advice":"one short tip"}. ' +
+  'If you cannot identify a food yet, set food_name to null and put a short clarifying question in short_advice.';
 import { awardIntakeLog, awardStreakMilestone, getSummary, consumeLevelupFlash } from '../lib/xp.js';
 import { updateLoggingStreak } from '../lib/streak.js';
 import { loggingStreak } from '../lib/dashboard.js';
@@ -57,7 +64,7 @@ router.get('/history', requireAuth, async (req, res, next) => {
 
     res.json({
       ok: true,
-      data: { entries: rows.map(shapeEntry), daily_summary: await dailySummary(userId) },
+      data: { entries: rows.map(shapeEntry), daily_summary: await dailySummary(userId, byDate ? date : null) },
       message: null,
     });
   } catch (err) {
@@ -146,14 +153,8 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
       return res.status(502).json({ ok: false, data: null, message: result.error || 'AI error' });
     }
 
-    // Models sometimes wrap JSON in prose/fences — extract the first object.
-    let txt = result.text.trim().replace(/^```(?:json)?\s*|\s*```$/gi, '');
-    const m = /\{[\s\S]*\}/.exec(txt);
-    if (m) txt = m[0];
-    let parsed;
-    try {
-      parsed = JSON.parse(txt);
-    } catch {
+    const parsed = parseEstimate(result.text);
+    if (!parsed) {
       return res.status(502).json({ ok: false, data: null, message: 'AI returned an unreadable estimate.' });
     }
 
@@ -167,20 +168,69 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
       console.error('intake photo save error:', e);
     }
 
-    res.json({
-      ok: true,
-      data: {
-        food_name: String(parsed.food_name ?? '').slice(0, 80),
-        calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
-        protein: round1(parsed.protein),
-        carbs: round1(parsed.carbs),
-        fat: round1(parsed.fat),
-        unit: parsed.unit ? String(parsed.unit).slice(0, 40) : null,
-        short_advice: parsed.short_advice ? String(parsed.short_advice).slice(0, 200) : null,
-        image_path: imagePath,
-      },
-      message: null,
-    });
+    res.json({ ok: true, data: { ...parsed, image_path: imagePath }, message: null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// AI food chat — multi-turn port of dashboard/handlers/ai_chat.php. The client
+// owns the conversation (stateless server, like the rest of the app) and re-sends
+// the recent text turns + the active photo each call, so corrections like "it's
+// actually pho bo" keep context. Returns one nutrition card per reply.
+router.post('/ai-chat', requireAuth, upload.single('image'), async (req, res, next) => {
+  try {
+    let image = null;
+    if (req.file) {
+      if (!PHOTO_MIMES.includes(req.file.mimetype)) {
+        return res.status(415).json({ ok: false, data: null, message: 'Only JPG, PNG, WEBP or GIF images are allowed.' });
+      }
+      image = { mime: req.file.mimetype, data: req.file.buffer.toString('base64') };
+    }
+
+    const message = String(req.body?.message ?? '').trim().slice(0, 1000);
+    if (!message && !image) {
+      return res.status(400).json({ ok: false, data: null, message: 'Send a photo or a message.' });
+    }
+
+    // Prior turns from the client (text only); cap + sanitize.
+    let history = [];
+    try {
+      const raw = JSON.parse(req.body?.history ?? '[]');
+      if (Array.isArray(raw)) {
+        history = raw
+          .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+          .slice(-8)
+          .map((m) => ({ role: m.role, content: m.content.slice(0, 1000) }));
+      }
+    } catch {
+      /* ignore malformed history */
+    }
+    // Current user turn — the image attaches to the last user message in aiProvider.
+    history.push({ role: 'user', content: message || 'Estimate the food in this photo.' });
+
+    const result = await chatCompletion({ system: CHAT_PROMPT, history, image });
+    if (!result.ok) {
+      return res.status(502).json({ ok: false, data: null, message: result.error || 'AI error' });
+    }
+
+    // Prefer the structured card; fall back to the raw reply as a chat message so
+    // a non-JSON answer still shows up instead of erroring.
+    const parsed = parseEstimate(result.text) || {
+      food_name: null, calories: 0, protein: 0, carbs: 0, fat: 0, unit: null,
+      short_advice: String(result.text).trim().slice(0, 200) || 'Sorry, I could not read that.',
+    };
+
+    let imagePath = null;
+    if (req.file) {
+      try {
+        imagePath = saveIntakeImage(req.user.user_id, req.file.buffer, req.file.mimetype);
+      } catch (e) {
+        console.error('intake ai-chat image save error:', e);
+      }
+    }
+
+    res.json({ ok: true, data: { ...parsed, image_path: imagePath }, message: null });
   } catch (err) {
     next(err);
   }
@@ -250,7 +300,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
       ok: true,
       data: {
         entry: entry ? shapeEntry(entry) : null,
-        daily_summary: await dailySummary(userId),
+        daily_summary: await dailySummary(userId, logDate),
         date: logDate,
         is_today: isToday,
         xp: { added: xpAdded, summary: xpSummary, levelup: consumeLevelupFlash(req.session) },
@@ -285,7 +335,7 @@ router.post('/update', requireAuth, async (req, res, next) => {
 
     res.json({
       ok: true,
-      data: { entry: shapeEntry(entry), daily_summary: await dailySummary(userId) },
+      data: { entry: shapeEntry(entry), daily_summary: await dailySummary(userId, entry.date_intake ? String(entry.date_intake).slice(0, 10) : null) },
       message: null,
     });
   } catch (err) {
@@ -321,7 +371,7 @@ router.post('/delete', requireAuth, async (req, res, next) => {
       data: {
         deleted_id: intakeId,
         deleted_row: snapshot[0] ?? null,
-        daily_summary: await dailySummary(userId),
+        daily_summary: await dailySummary(userId, snapshot[0]?.date_intake ? String(snapshot[0].date_intake).slice(0, 10) : null),
       },
       message: null,
     });

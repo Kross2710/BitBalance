@@ -7,7 +7,8 @@ import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } 
 import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../lib/api.js';
 import { t, locale } from '../i18n/index.js';
-import { compressImage } from '../lib/image.js';
+import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
+import AiFoodChat from '../components/AiFoodChat.vue';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -26,19 +27,36 @@ const MEALS = [
   { key: 'dinner', labelKey: 'intake.meal.dinner_emoji', icon: 'fa-utensils' },
   { key: 'snack', labelKey: 'intake.meal.snack_emoji', icon: 'fa-cookie-bite' },
 ];
+const mealMeta = Object.fromEntries(MEALS.map((m) => [m.key, m])); // quick icon lookup per meal
 
 const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
 const showMacros = ref(false);
 const recent = ref([]);
 const suggestions = ref([]);
 const showSuggest = ref(false);
+const foodFocused = ref(false);
 const saving = ref(false);
 const error = ref('');
 const success = ref('');
+const undoEntry = ref(null); // last-deleted row, pending undo
 let suggestTimer = null;
+let successTimer = null;
+let undoTimer = null;
 let justPicked = false;
 
 const canSubmit = computed(() => form.food_item.trim() !== '' && Number(form.calories) > 0);
+
+// Success toast that auto-dismisses, so it doesn't linger after the entry it
+// referred to is edited or deleted.
+function flashSuccess(msg) {
+  success.value = msg;
+  clearTimeout(successTimer);
+  successTimer = setTimeout(() => (success.value = ''), 4000);
+}
+function clearMessages() {
+  success.value = '';
+  clearTimeout(successTimer);
+}
 
 async function loadRecent() {
   try {
@@ -55,6 +73,7 @@ async function loadRecent() {
 // "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
 const route = useRoute();
 const entries = ref([]);
+const summary = ref(null); // daily total/goal/macros for the CalorieSummaryCard
 const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
 // Backdating: the Dashboard date strip can carry a past day via ?date=, and we
@@ -91,6 +110,7 @@ async function loadEntries() {
     const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
     // Server already scopes to the day; the filter is a belt-and-suspenders guard.
     entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === activeDate.value);
+    summary.value = data.daily_summary; // running total for the bar, scoped to activeDate
   } catch {
     /* non-fatal: section just stays empty */
   }
@@ -116,6 +136,7 @@ function cancelEdit() {
 }
 async function saveEdit() {
   error.value = '';
+  clearMessages();
   try {
     await api.post('/api/intake/update', { ...editForm });
     editingId.value = null;
@@ -124,11 +145,47 @@ async function saveEdit() {
     error.value = e.message;
   }
 }
+// Delete immediately and offer an Undo (PHP-style) instead of a blocking confirm —
+// the delete route returns the deleted row, so restoring it is just a re-create.
 async function removeEntry(e) {
-  if (!confirm(t('intake.confirm_delete_named', { name: e.food_item }))) return;
+  error.value = '';
+  clearMessages();
+  try {
+    const res = await api.post('/api/intake/delete', { intake_id: e.id });
+    await Promise.all([loadEntries(), loadRecent()]);
+    showUndo(res.deleted_row);
+  } catch (err) {
+    error.value = err.message;
+  }
+}
+
+function showUndo(row) {
+  if (!row) return;
+  clearTimeout(undoTimer);
+  undoEntry.value = row;
+  undoTimer = setTimeout(() => (undoEntry.value = null), 6000);
+}
+function dismissUndo() {
+  undoEntry.value = null;
+  clearTimeout(undoTimer);
+}
+// Restore the just-deleted entry on the same day (re-create from the snapshot).
+async function undoDelete() {
+  const row = undoEntry.value;
+  dismissUndo();
+  if (!row) return;
   error.value = '';
   try {
-    await api.post('/api/intake/delete', { intake_id: e.id });
+    await api.post('/api/intake/create', {
+      food_item: row.food_item,
+      calories: row.calories,
+      protein: row.protein,
+      carbs: row.carbs,
+      fat: row.fat,
+      meal_category: row.meal_category,
+      image_path: row.image_path || '',
+      date: (row.date_intake || '').slice(0, 10) || undefined,
+    });
     await Promise.all([loadEntries(), loadRecent()]);
   } catch (err) {
     error.value = err.message;
@@ -141,7 +198,7 @@ function applyItem(item) {
   form.protein = item.protein ?? '';
   form.carbs = item.carbs ?? '';
   form.fat = item.fat ?? '';
-  removePhoto(); // a chosen-from-history item has no photo of its own
+  clearPhoto(); // a chosen-from-history item has no photo of its own
   if (item.protein || item.carbs || item.fat) showMacros.value = true;
   showSuggest.value = false;
   suggestions.value = [];
@@ -152,9 +209,19 @@ function pickChip(item) {
   applyItem(item);
 }
 
-// Delay hiding so a click on a suggestion (mousedown) still registers.
-function hideSuggestSoon() {
-  setTimeout(() => (showSuggest.value = false), 150);
+// Suggestions appear only in response to interaction (matches the PHP intake
+// page): recent chips while the focused field is still empty, and the
+// autocomplete dropdown only once the user has actually typed a query.
+function onFoodFocus() {
+  showSuggest.value = form.food_item.trim() !== '' && suggestions.value.length > 0;
+  foodFocused.value = true;
+}
+// Delay hiding so a click on a chip / suggestion (mousedown) still registers.
+function onFoodBlur() {
+  setTimeout(() => {
+    showSuggest.value = false;
+    foodFocused.value = false;
+  }, 150);
 }
 
 // Debounced autocomplete as the user types the food name.
@@ -188,16 +255,17 @@ async function onSubmit() {
   if (!canSubmit.value || saving.value) return;
   error.value = '';
   success.value = '';
+  dismissUndo();
   saving.value = true;
   try {
     await api.post('/api/intake/create', { ...form, date: activeDate.value });
-    success.value = t('intake.logged_named', { name: form.food_item });
+    flashSuccess(t('intake.logged_named', { name: form.food_item }));
     form.food_item = '';
     form.calories = '';
     form.protein = '';
     form.carbs = '';
     form.fat = '';
-    removePhoto(); // clears form.image_path + the preview thumbnail
+    clearPhoto(); // clears the AI photo attached to the form
     showMacros.value = false;
     suggestions.value = [];
     showSuggest.value = false;
@@ -346,68 +414,62 @@ function useProduct() {
     form.fat = p.fat ?? '';
     showMacros.value = true;
   }
-  removePhoto(); // a scanned product isn't the AI photo
+  clearPhoto(); // a scanned product isn't the AI photo
   closeScanner();
 }
 
-// ---- AI Photo estimate ----
-const photoInput = ref(null);
-const photoBusy = ref(false);
-const photoAdvice = ref('');
-// Object URL of the (compressed) image so the user can review what they picked
-// — mirrors the PHP intake page's inline thumbnail.
-const photoPreview = ref('');
+// ---- AI food chat ----
+const showAiChat = ref(false);
 
-function openPhoto() {
-  photoInput.value?.click();
-}
-
-function clearPhotoPreview() {
-  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-  photoPreview.value = '';
-}
-
-// Remove the reviewed photo + its advice (leaves the filled fields so the user
-// can still log the estimate, or edit it).
-function removePhoto() {
-  clearPhotoPreview();
-  photoAdvice.value = '';
+// Clear the AI photo attached to the form (when a history/barcode pick replaces
+// it, or after logging).
+function clearPhoto() {
   form.image_path = '';
 }
 
-async function onPhotoPicked(e) {
-  const file = e.target.files?.[0];
-  e.target.value = ''; // allow re-picking the same file
-  if (!file) return;
+// Add-to-log from the chat: prefill the form (the user still taps Log Entry, so
+// they can adjust the meal/amount first — consistent with the rich-entry flow).
+function onAiPick(p) {
   error.value = '';
   success.value = '';
-  photoAdvice.value = '';
-  clearPhotoPreview();
-  photoBusy.value = true;
+  form.food_item = p.food_item || '';
+  form.calories = p.calories || '';
+  form.protein = p.protein ?? '';
+  form.carbs = p.carbs ?? '';
+  form.fat = p.fat ?? '';
+  form.image_path = p.image_path || ''; // travels to /create so the entry keeps the photo
+  if (p.protein || p.carbs || p.fat) showMacros.value = true;
+  showAiChat.value = false;
+}
+
+// Time-of-day an entry was logged (app tz +07:00), e.g. "8:30 AM".
+function entryTime(e) {
+  const iso = e.iso_date || (e.date_intake ? e.date_intake.replace(' ', 'T') + '+07:00' : null);
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString(locale.value === 'vi' ? 'vi-VN' : 'en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Asia/Bangkok',
+  });
+}
+
+// Quick re-log: duplicate this entry onto the active day in one tap.
+async function relog(e) {
+  error.value = '';
   try {
-    const compressed = await compressImage(file, { filename: 'meal.jpg' });
-    // Preview exactly what we send to the model.
-    photoPreview.value = URL.createObjectURL(compressed);
-    const fd = new FormData();
-    fd.append('image', compressed);
-    // FormData must NOT go through the JSON api helper — post it directly.
-    const res = await fetch('/api/intake/estimate-photo', { method: 'POST', credentials: 'include', body: fd });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.message || t('intake.photo.estimate_failed'));
-    const est = json.data;
-    form.food_item = est.food_name || '';
-    form.calories = est.calories || '';
-    form.protein = est.protein ?? '';
-    form.carbs = est.carbs ?? '';
-    form.fat = est.fat ?? '';
-    form.image_path = est.image_path || ''; // travels to /create so the entry keeps the photo
-    if (est.protein || est.carbs || est.fat) showMacros.value = true;
-    photoAdvice.value = est.short_advice || '';
+    await api.post('/api/intake/create', {
+      food_item: e.food_item,
+      calories: e.calories,
+      protein: e.protein,
+      carbs: e.carbs,
+      fat: e.fat,
+      meal_category: e.meal_category,
+      date: activeDate.value,
+    });
+    flashSuccess(t('intake.logged_named', { name: e.food_item }));
+    await Promise.all([loadEntries(), loadRecent()]);
   } catch (err) {
     error.value = err.message;
-    clearPhotoPreview(); // drop the preview if the estimate failed
-  } finally {
-    photoBusy.value = false;
   }
 }
 
@@ -417,7 +479,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   stopCamera();
-  clearPhotoPreview();
+  clearTimeout(successTimer);
+  clearTimeout(undoTimer);
 });
 </script>
 
@@ -431,36 +494,17 @@ onBeforeUnmount(() => {
       <RouterLink to="/intake" class="past-back">{{ $t('intake.past.back_today') }}</RouterLink>
     </div>
 
+    <!-- Running calorie total (shared with the Dashboard) -->
+    <CalorieSummaryCard v-if="summary" :summary="summary" class="intake-summary" />
+
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
       <div class="io-actions">
         <button type="button" class="io-chip" @click="openScanner">
           <i class="fa-solid fa-barcode" /> {{ $t('intake.scan_barcode_chip') }}
         </button>
-        <button type="button" class="io-chip" :disabled="photoBusy" @click="openPhoto">
-          <i class="fa-solid" :class="photoBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
-          {{ photoBusy ? $t('intake.photo.analyzing') : $t('intake.ai_photo_chip') }}
-        </button>
-      </div>
-
-      <!-- AI Photo review: shows the picked image so the user can confirm it. -->
-      <div v-if="photoPreview || photoBusy" class="photo-review">
-        <img v-if="photoPreview" :src="photoPreview" :alt="$t('intake.photo.selected_alt')" />
-        <div class="photo-review-body">
-          <span v-if="photoBusy" class="muted"><i class="fa-solid fa-spinner fa-spin" /> {{ $t('intake.photo.analyzing_photo') }}</span>
-          <template v-else>
-            <strong>{{ $t('intake.photo.added') }}</strong>
-            <small class="muted">{{ $t('intake.photo.estimate_hint') }}</small>
-          </template>
-        </div>
-        <button
-          v-if="!photoBusy"
-          type="button"
-          class="photo-x"
-          @click="removePhoto"
-          :aria-label="$t('intake.photo.remove')"
-        >
-          <i class="fa-solid fa-xmark" />
+        <button type="button" class="io-chip" @click="showAiChat = true">
+          <i class="fa-solid fa-wand-magic-sparkles" /> {{ $t('intake.ai_photo_chip') }}
         </button>
       </div>
 
@@ -474,8 +518,8 @@ onBeforeUnmount(() => {
           :placeholder="$t('intake.food_placeholder')"
           autocomplete="off"
           required
-          @focus="showSuggest = suggestions.length > 0"
-          @blur="hideSuggestSoon"
+          @focus="onFoodFocus"
+          @blur="onFoodBlur"
         />
         <ul v-if="showSuggest" class="suggest">
           <li v-for="(s, i) in suggestions" :key="i" @mousedown.prevent="applyItem(s)">
@@ -485,8 +529,8 @@ onBeforeUnmount(() => {
         </ul>
       </div>
 
-      <!-- Recent chips -->
-      <div v-if="recent.length" class="chips">
+      <!-- Recent quick-pick chips: only while the empty food field is focused. -->
+      <div v-if="recent.length && foodFocused && !form.food_item.trim()" class="chips">
         <button v-for="(r, i) in recent" :key="i" type="button" class="chip" @click="pickChip(r)">
           {{ r.food_item }}
         </button>
@@ -519,22 +563,20 @@ onBeforeUnmount(() => {
         <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
         {{ showMacros ? $t('intake.hide_macros') : $t('intake.add_macros_optional') }}
       </button>
-      <div v-if="showMacros" class="three">
-        <div>
-          <label for="intake-p">{{ $t('intake.protein_g') }}</label>
-          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" />
+      <div v-if="showMacros" class="macros-row">
+        <div class="macro-field p">
+          <label for="intake-p" class="macro-tag" :title="$t('intake.protein_g')">{{ $t('intake.macro_abbr.protein') }}</label>
+          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.protein_g')" />
         </div>
-        <div>
-          <label for="intake-c">{{ $t('intake.carbs_g') }}</label>
-          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" />
+        <div class="macro-field c">
+          <label for="intake-c" class="macro-tag" :title="$t('intake.carbs_g')">{{ $t('intake.macro_abbr.carbs') }}</label>
+          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.carbs_g')" />
         </div>
-        <div>
-          <label for="intake-f">{{ $t('intake.fat_g') }}</label>
-          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" />
+        <div class="macro-field f">
+          <label for="intake-f" class="macro-tag" :title="$t('intake.fat_g')">{{ $t('intake.macro_abbr.fat') }}</label>
+          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.fat_g')" />
         </div>
       </div>
-
-      <p v-if="photoAdvice" class="advice"><i class="fa-solid fa-lightbulb" /> {{ photoAdvice }}</p>
 
       <button type="submit" class="log-btn" :disabled="!canSubmit || saving">
         {{ saving ? $t('intake.logging') : $t('intake.log_entry_btn') }}
@@ -566,15 +608,29 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div v-else class="entry-row">
-            <span class="entry-main">
-              <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
-              <span class="entry-name">{{ e.food_item }} <small class="muted">· {{ $t('intake.meal.' + e.meal_category + '_emoji') }}</small></span>
-            </span>
-            <span class="entry-end">
-              <strong>{{ e.calories }} {{ $t('common.kcal') }}</strong>
+            <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
+            <div class="entry-body">
+              <div class="entry-line">
+                <span class="entry-name">{{ e.food_item }}</span>
+                <strong class="entry-kcal">{{ e.calories }} {{ $t('common.kcal') }}</strong>
+              </div>
+              <div class="entry-meta">
+                <span class="meal-badge" :class="e.meal_category">
+                  <i class="fa-solid" :class="mealMeta[e.meal_category]?.icon" /> {{ $t('intake.meal.' + e.meal_category + '_emoji') }}
+                </span>
+                <span v-if="entryTime(e)" class="entry-time">{{ entryTime(e) }}</span>
+                <span v-if="e.protein || e.carbs || e.fat" class="mchips">
+                  <span v-if="e.protein" class="mchip p">{{ $t('intake.macro_abbr.protein') }} {{ e.protein }}</span>
+                  <span v-if="e.carbs" class="mchip c">{{ $t('intake.macro_abbr.carbs') }} {{ e.carbs }}</span>
+                  <span v-if="e.fat" class="mchip f">{{ $t('intake.macro_abbr.fat') }} {{ e.fat }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="entry-actions">
+              <button type="button" class="icon-btn" @click="relog(e)" :aria-label="$t('intake.row.relog_title')"><i class="fa-solid fa-rotate-right" /></button>
               <button type="button" class="icon-btn" @click="startEdit(e)" :aria-label="$t('intake.row.edit_title')"><i class="fa-solid fa-pen" /></button>
               <button type="button" class="icon-btn danger" @click="removeEntry(e)" :aria-label="$t('intake.row.delete_title')"><i class="fa-solid fa-trash" /></button>
-            </span>
+            </div>
           </div>
         </li>
       </ul>
@@ -615,22 +671,25 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- AI Photo: hidden file input triggered by the AI Photo chip. No `capture`
-         attribute, so iOS offers Photo Library / Take Photo / Choose File rather
-         than forcing the camera (matches the PHP intake page). -->
-    <input
-      ref="photoInput"
-      type="file"
-      accept="image/*"
-      style="display: none"
-      @change="onPhotoPicked"
-    />
+    <!-- AI food chat: attach a photo + correct the dish, then Add to log. -->
+    <AiFoodChat :open="showAiChat" @close="showAiChat = false" @pick="onAiPick" />
+
+    <!-- Undo bar after delete (PHP-style): restore the last-deleted entry. -->
+    <Transition name="undo">
+      <div v-if="undoEntry" class="undo-bar" role="status">
+        <span class="undo-msg">{{ $t('intake.deleted_named', { name: undoEntry.food_item }) }}</span>
+        <button type="button" class="undo-btn" @click="undoDelete">
+          <i class="fa-solid fa-rotate-left" /> {{ $t('intake.undo') }}
+        </button>
+      </div>
+    </Transition>
   </main>
 </template>
 
 <style scoped>
 .intake { max-width: 560px; margin: 0 auto; padding: 8px 16px; }
 .intake h1 { margin: 6px 0 16px; }
+.intake-summary { margin-bottom: 16px; }
 
 /* Past-day (backdating) banner */
 .past-banner {
@@ -686,7 +745,28 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+/* Macros: always one row, each color-coded (P red / C amber / F blue) for quick ID. */
+.macros-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.macro-field { display: flex; flex-direction: column; gap: 5px; }
+.macro-tag {
+  margin: 0;
+  align-self: flex-start;
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
+}
+.macro-field input { width: 100%; border-left-width: 3px; }
+.macro-field.p .macro-tag { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.macro-field.p input { border-left-color: #ef4444; }
+.macro-field.c .macro-tag { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.macro-field.c input { border-left-color: #f59e0b; }
+.macro-field.f .macro-tag { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.macro-field.f input { border-left-color: #3b82f6; }
 
 /* Meal segmented selector */
 .meal-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
@@ -729,8 +809,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .ql-toggle:hover { color: var(--text); }
 
 .log-btn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
-.advice { margin: 14px 0 0; font-size: 13px; color: #c4b5fd; }
-.advice i { margin-right: 6px; }
 
 /* Capture shortcut chips (Scan barcode / AI Photo) */
 .io-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -746,38 +824,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-weight: 600;
 }
 .io-chip:hover { border-color: var(--accent); color: var(--accent); }
-
-/* AI Photo review card */
-.photo-review {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  margin-bottom: 16px;
-  background: var(--inset);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-.photo-review img {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-.photo-review-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.photo-review-body small { font-size: 12px; }
-.photo-x {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  color: var(--text);
-  border: none;
-  border-radius: 10px;
-}
 
 /* Scanner modal */
 .overlay {
@@ -830,15 +876,33 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .entries { margin-top: 18px; }
 .entries h2 { font-size: 16px; margin: 0 0 12px; }
 .entries ul { list-style: none; margin: 0; padding: 0; }
-.entries li { padding: 10px 0; border-top: 1px solid var(--border); }
+.entries li { padding: 12px 0; border-top: 1px solid var(--border); }
 .entries li:first-child { border-top: none; padding-top: 0; }
-.entry-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.entry-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entry-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
-.entry-end { display: flex; align-items: center; gap: 6px; flex: none; }
+.entry-row { display: flex; align-items: center; gap: 10px; }
+.entry-thumb { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+.entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.entry-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.entry-kcal { flex: none; font-weight: 700; }
+.entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.entry-time { color: var(--muted); font-size: 12px; }
+.meal-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+}
+.meal-badge i { font-size: 10px; }
+.meal-badge.breakfast { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+.meal-badge.lunch { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.meal-badge.dinner { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+.meal-badge.snack { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.mchips { display: inline-flex; gap: 4px; }
+.mchip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+.mchip.p { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.mchip.c { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.mchip.f { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.entry-actions { flex: none; display: flex; gap: 6px; }
 .icon-btn {
-  width: 44px; height: 44px; min-height: 44px;
+  width: 40px; height: 40px; min-height: 40px;
   display: grid; place-items: center;
   background: var(--surface-2); color: var(--text); border: none; border-radius: 10px;
   font-size: 14px;
@@ -849,7 +913,36 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .edit-actions .ghost { background: var(--surface-2); color: var(--text); }
 
-@media (max-width: 480px) {
-  .three { grid-template-columns: 1fr; }
+/* Undo snackbar (after delete) — sits above the fixed bottom tab bar. */
+.undo-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 13px;
 }
+.undo-msg { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.undo-btn {
+  flex: none;
+  background: transparent;
+  color: var(--accent);
+  border: none;
+  font-weight: 700;
+  padding: 6px 8px;
+  min-height: 0;
+}
+.undo-btn i { margin-right: 4px; }
+.undo-enter-active, .undo-leave-active { transition: opacity 0.2s ease; }
+.undo-enter-from, .undo-leave-to { opacity: 0; }
+
 </style>
