@@ -19,6 +19,13 @@
   --focus-ring: rgba(74, 222, 128, 0.25);
   /* Status */
   --danger: #f87171;
+  /* Macros (P/C/F) — colour lives on the chip/letter + left border + focus ring */
+  --macro-p: #ff6b6b;
+  --macro-p-bg: rgba(255, 107, 107, 0.14);
+  --macro-c: #ffc857;
+  --macro-c-bg: rgba(255, 200, 87, 0.14);
+  --macro-f: #74a7ff;
+  --macro-f-bg: rgba(116, 167, 255, 0.14);
 }
 
 /* Light theme. lib/theme.js sets data-theme on <html> ('system' resolves to
@@ -41,6 +48,12 @@
   --placeholder: #98a1ad;
   --focus-ring: rgba(22, 163, 74, 0.22);
   --danger: #dc2626;
+  --macro-p: #ff4b4b;
+  --macro-p-bg: #ffe8e8;
+  --macro-c: #ffb020;
+  --macro-c-bg: #fff3d6;
+  --macro-f: #4f8cff;
+  --macro-f-bg: #e8f0ff;
 }
 
 * { box-sizing: border-box; }

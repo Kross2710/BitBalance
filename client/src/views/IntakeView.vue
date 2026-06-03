@@ -9,6 +9,8 @@ import { api } from '../lib/api.js';
 import { t, locale } from '../i18n/index.js';
 import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
 import AiFoodChat from '../components/AiFoodChat.vue';
+import MacroInputs from '../components/MacroInputs.vue';
+import BottomSheet from '../components/BottomSheet.vue';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -45,6 +47,7 @@ let undoTimer = null;
 let justPicked = false;
 
 const canSubmit = computed(() => form.food_item.trim() !== '' && Number(form.calories) > 0);
+const hasMacros = computed(() => Number(form.protein) > 0 || Number(form.carbs) > 0 || Number(form.fat) > 0);
 
 // Success toast that auto-dismisses, so it doesn't linger after the entry it
 // referred to is edited or deleted.
@@ -102,7 +105,7 @@ const mealKcal = computed(() => {
   }
   return out;
 });
-const editingId = ref(null);
+const showEditSheet = ref(false);
 const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_category: 'snack', protein: '', carbs: '', fat: '' });
 
 async function loadEntries() {
@@ -120,7 +123,6 @@ async function loadEntries() {
 watch(activeDate, loadEntries);
 
 function startEdit(e) {
-  editingId.value = e.id;
   Object.assign(editForm, {
     intake_id: e.id,
     food_item: e.food_item,
@@ -130,16 +132,17 @@ function startEdit(e) {
     carbs: e.carbs || '',
     fat: e.fat || '',
   });
+  showEditSheet.value = true;
 }
 function cancelEdit() {
-  editingId.value = null;
+  showEditSheet.value = false;
 }
 async function saveEdit() {
   error.value = '';
   clearMessages();
   try {
     await api.post('/api/intake/update', { ...editForm });
-    editingId.value = null;
+    showEditSheet.value = false;
     await Promise.all([loadEntries(), loadRecent()]);
   } catch (e) {
     error.value = e.message;
@@ -558,25 +561,22 @@ onBeforeUnmount(() => {
       <label for="intake-kcal">{{ $t('intake.calories_label') }}</label>
       <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" :placeholder="$t('common.kcal')" required />
 
-      <!-- Optional macros -->
-      <button type="button" class="ql-toggle" @click="showMacros = !showMacros">
-        <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
-        {{ showMacros ? $t('intake.hide_macros') : $t('intake.add_macros_optional') }}
+      <!-- Optional macros: a light summary row toggles the tray open. -->
+      <button type="button" class="macro-toggle" :aria-expanded="showMacros" @click="showMacros = !showMacros">
+        <span class="mt-label">{{ $t('intake.macros_optional') }}</span>
+        <span v-if="!showMacros && hasMacros" class="mt-chips">
+          <span class="mchip p">{{ $t('intake.macro_abbr.protein') }} {{ form.protein || 0 }}</span>
+          <span class="mchip c">{{ $t('intake.macro_abbr.carbs') }} {{ form.carbs || 0 }}</span>
+          <span class="mchip f">{{ $t('intake.macro_abbr.fat') }} {{ form.fat || 0 }}</span>
+        </span>
+        <i class="mt-chevron fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-chevron-down'" />
       </button>
-      <div v-if="showMacros" class="macros-row">
-        <div class="macro-field p">
-          <label for="intake-p" class="macro-tag" :title="$t('intake.protein_g')">{{ $t('intake.macro_abbr.protein') }}</label>
-          <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.protein_g')" />
-        </div>
-        <div class="macro-field c">
-          <label for="intake-c" class="macro-tag" :title="$t('intake.carbs_g')">{{ $t('intake.macro_abbr.carbs') }}</label>
-          <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.carbs_g')" />
-        </div>
-        <div class="macro-field f">
-          <label for="intake-f" class="macro-tag" :title="$t('intake.fat_g')">{{ $t('intake.macro_abbr.fat') }}</label>
-          <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" placeholder="0" :aria-label="$t('intake.fat_g')" />
-        </div>
-      </div>
+      <MacroInputs
+        v-if="showMacros"
+        v-model:protein="form.protein"
+        v-model:carbs="form.carbs"
+        v-model:fat="form.fat"
+      />
 
       <button type="submit" class="log-btn" :disabled="!canSubmit || saving">
         {{ saving ? $t('intake.logging') : $t('intake.log_entry_btn') }}
@@ -590,24 +590,7 @@ onBeforeUnmount(() => {
       <h2>{{ isPastMode ? $t('intake.entries_for', { date: activeDateLabel }) : $t('intake.todays_entries') }}</h2>
       <ul>
         <li v-for="e in entries" :key="e.id">
-          <div v-if="editingId === e.id" class="edit-grid">
-            <input v-model="editForm.food_item" :aria-label="$t('intake.row.food')" />
-            <input v-model="editForm.calories" type="number" min="1" step="any" :aria-label="$t('intake.row.calories')" />
-            <select v-model="editForm.meal_category" :aria-label="$t('intake.category_label')">
-              <option value="breakfast">{{ $t('intake.meal.breakfast_emoji') }}</option>
-              <option value="lunch">{{ $t('intake.meal.lunch_emoji') }}</option>
-              <option value="dinner">{{ $t('intake.meal.dinner_emoji') }}</option>
-              <option value="snack">{{ $t('intake.meal.snack_emoji') }}</option>
-            </select>
-            <input v-model="editForm.protein" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.protein')" :aria-label="$t('dashboard.macros.protein')" />
-            <input v-model="editForm.carbs" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.carbs')" :aria-label="$t('dashboard.macros.carbs')" />
-            <input v-model="editForm.fat" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.fat')" :aria-label="$t('dashboard.macros.fat')" />
-            <div class="edit-actions">
-              <button type="button" @click="saveEdit">{{ $t('common.save') }}</button>
-              <button type="button" class="ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
-            </div>
-          </div>
-          <div v-else class="entry-row">
+          <div class="entry-row">
             <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
             <div class="entry-body">
               <div class="entry-line">
@@ -683,6 +666,42 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </Transition>
+
+    <!-- Edit entry: bottom sheet (replaces the old inline edit form). -->
+    <BottomSheet :open="showEditSheet" :title="$t('intake.row.edit_title')" @close="cancelEdit">
+      <form class="edit-sheet" @submit.prevent="saveEdit">
+        <label for="edit-food">{{ $t('intake.what_did_you_eat') }}</label>
+        <input id="edit-food" v-model="editForm.food_item" :placeholder="$t('intake.food_placeholder')" />
+
+        <label>{{ $t('intake.category_label') }}</label>
+        <div class="meal-seg" role="group" :aria-label="$t('intake.category_label')">
+          <button
+            v-for="m in MEALS"
+            :key="m.key"
+            type="button"
+            class="meal-pill"
+            :class="{ active: editForm.meal_category === m.key }"
+            :aria-pressed="editForm.meal_category === m.key"
+            @click="editForm.meal_category = m.key"
+          >
+            <i class="fa-solid" :class="m.icon" />
+            <span class="meal-name">{{ $t(m.labelKey) }}</span>
+          </button>
+        </div>
+
+        <label for="edit-kcal">{{ $t('intake.calories_label') }}</label>
+        <input id="edit-kcal" v-model="editForm.calories" type="number" min="1" step="any" :placeholder="$t('common.kcal')" />
+
+        <label>{{ $t('intake.macros_optional') }}</label>
+        <MacroInputs v-model:protein="editForm.protein" v-model:carbs="editForm.carbs" v-model:fat="editForm.fat" />
+
+        <div class="edit-sheet-actions">
+          <button type="button" class="ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
+          <button type="submit" :disabled="!editForm.food_item.trim() || !(Number(editForm.calories) > 0)">{{ $t('common.save') }}</button>
+        </div>
+        <p v-if="error" class="error">{{ error }}</p>
+      </form>
+    </BottomSheet>
   </main>
 </template>
 
@@ -745,28 +764,26 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Macros: always one row, each color-coded (P red / C amber / F blue) for quick ID. */
-.macros-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
-.macro-field { display: flex; flex-direction: column; gap: 5px; }
-.macro-tag {
-  margin: 0;
-  align-self: flex-start;
-  display: inline-grid;
-  place-items: center;
-  min-width: 24px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 6px;
-  font-weight: 800;
-  font-size: 12px;
+/* Macro tray toggle — a light summary row (label + chips when set + chevron). */
+.macro-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  min-height: 46px;
+  font-size: 13px;
+  font-weight: 600;
 }
-.macro-field input { width: 100%; border-left-width: 3px; }
-.macro-field.p .macro-tag { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.macro-field.p input { border-left-color: #ef4444; }
-.macro-field.c .macro-tag { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.macro-field.c input { border-left-color: #f59e0b; }
-.macro-field.f .macro-tag { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-.macro-field.f input { border-left-color: #3b82f6; }
+.macro-toggle:hover { color: var(--text); border-color: var(--field-border); }
+.mt-label { flex: none; }
+.mt-chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.mt-chevron { flex: none; margin-left: auto; font-size: 12px; }
 
 /* Meal segmented selector */
 .meal-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
@@ -795,18 +812,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   background: rgba(74, 222, 128, 0.08);
 }
 #intake-kcal { width: 100%; }
-
-.ql-toggle {
-  background: transparent;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  font-size: 13px;
-  font-weight: 600;
-  margin-top: 14px;
-  padding: 8px 12px;
-  min-height: 44px;
-}
-.ql-toggle:hover { color: var(--text); }
 
 .log-btn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
 
@@ -897,9 +902,9 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .meal-badge.snack { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
 .mchips { display: inline-flex; gap: 4px; }
 .mchip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
-.mchip.p { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.mchip.c { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.mchip.f { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.mchip.p { background: var(--macro-p-bg); color: var(--macro-p); }
+.mchip.c { background: var(--macro-c-bg); color: var(--macro-c); }
+.mchip.f { background: var(--macro-f-bg); color: var(--macro-f); }
 .entry-actions { flex: none; display: flex; gap: 6px; }
 .icon-btn {
   width: 40px; height: 40px; min-height: 40px;
@@ -908,10 +913,15 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-size: 14px;
 }
 .icon-btn.danger { color: #f87171; }
-.edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
-.edit-grid input, .edit-grid select { width: 100%; }
-.edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
-.edit-actions .ghost { background: var(--surface-2); color: var(--text); }
+/* Edit entry bottom sheet */
+.edit-sheet { display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; }
+.edit-sheet label { margin-top: 10px; }
+.edit-sheet label:first-child { margin-top: 0; }
+.edit-sheet .meal-seg { margin: 0; }
+.edit-sheet .meal-pill { min-height: 56px; }
+.edit-sheet-actions { display: flex; gap: 8px; margin-top: 18px; }
+.edit-sheet-actions button { flex: 1; padding: 12px; }
+.edit-sheet-actions .ghost { background: var(--surface-2); color: var(--text); }
 
 /* Undo snackbar (after delete) — sits above the fixed bottom tab bar. */
 .undo-bar {

@@ -322,6 +322,7 @@ export default {
   'intake.meal.snack_emoji': 'Snack',
   'intake.calories_label': 'Calories',
   'intake.add_macros_optional': 'Add macros (optional)',
+  'intake.macros_optional': 'Macros (optional)',
   'intake.hide_macros': 'Hide macros',
   'intake.protein_g': 'Protein (g)',
   'intake.carbs_g': 'Carbs (g)',

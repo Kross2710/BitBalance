@@ -321,6 +321,7 @@ export default {
   'intake.meal.snack_emoji': 'Bữa phụ',
   'intake.calories_label': 'Calo',
   'intake.add_macros_optional': 'Thêm macro (tuỳ chọn)',
+  'intake.macros_optional': 'Macro (tuỳ chọn)',
   'intake.hide_macros': 'Ẩn macro',
   'intake.protein_g': 'Đạm (g)',
   'intake.carbs_g': 'Carb (g)',
