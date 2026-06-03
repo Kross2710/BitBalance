@@ -236,6 +236,9 @@ onMounted(() => {
                   v-if="e.image_path"
                   :src="e.image_path"
                   class="entry-thumb"
+                  width="40"
+                  height="40"
+                  decoding="async"
                   :alt="$t('dashboard.entry.photo_alt')"
                   @click="lightbox = e.image_path"
                 />
