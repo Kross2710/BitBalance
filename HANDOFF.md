@@ -117,34 +117,25 @@ Chi tiết từng endpoint: bảng trạng thái trong `MIGRATION.md`.
      `GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback`). Chưa
      điền creds thì nút Google tự ẩn (graceful degradation qua `/api/auth/providers`).
 4. **Admin panel** (`admin/*.php`) — auth riêng.
-5. **CI Tier B (test tự động)** — *Tier A đã ship* (`.github/workflows/ci.yml`,
-   GitHub Actions, gate xanh trước PR vào main): 3 job không cần secret/DB —
-   `client` (`npm ci` + `vite build`), `server` (`npm ci` + `node --check` toàn
-   `src`), `php-lint` (`php -l` mọi `*.php`, ghim **PHP 7.4** = bản RMIT prod).
-   Action ghim `@v6` (checkout/setup-node, Node 24-native), Node build = 24
-   (box prod chạy 26 → matrix nếu cần parity). **Tier B = test thật, CHƯA làm:**
-   - **Vue units**: thêm **Vitest** (+ `@vue/test-utils`, `jsdom`) và script
-     `"test"` vào `client/package.json` (hiện CHỈ có `dev`/`build`/`preview`).
-   - **Express endpoints**: **Vitest + supertest**, thêm script `"test"` vào
-     `server/package.json` (hiện CHỈ có `dev`/`start`). Biến các **probe admin/PT
-     đã test tay** (list/ban/edit/unlock, logs/prune, self-guard, CSRF
-     `X-Requested-With`, PT connect 2 chiều) thành test tự động.
-   - **DB cho test**: job CI thêm **service container MariaDB** + chạy migration
-     (`include/migrations/`) trước khi test. Khung:
-     ```yaml
-     services:
-       mariadb:
-         image: mariadb:12
-         env: { MARIADB_DATABASE: bb_test, MARIADB_ROOT_PASSWORD: root }
-         ports: ['3306:3306']
-         options: >-
-           --health-cmd="healthcheck.sh --connect --innodb_initialized"
-           --health-interval=5s --health-timeout=5s --health-retries=10
-     ```
-     Test chạy với env trỏ vào service (`DB_HOST=127.0.0.1 DB_NAME=bb_test
-     DB_USER=root DB_PASSWORD=root`), KHÔNG cần secret thật (DB throwaway).
-   - Khi có script `test`, thêm job `test` vào `ci.yml` (gọi `npm test` cho
-     client + server). Xem chi tiết quyết định CI ở memory `ci-setup.md`.
+5. **CI (Tier A + Tier B) — ĐÃ SHIP.** `.github/workflows/ci.yml`, 4 job, xanh
+   (trigger: push `claude/**` + PR vào main). **Tier A** = `client` (build),
+   `server` (`node --check`), `php-lint` (`php -l`, ghim **PHP 7.4**). **Tier B**
+   = test tự động (40 test):
+   - **Server unit** (`server/test/unit/`, không DB): `dates`, `plan` (BMR/TDEE),
+     `xp` (đường cong level), `handle` (slugify). `npm run test:unit`.
+   - **Server integration** (`server/test/integration/admin.test.js`, supertest):
+     login + admin summary/users/ban/unlock/logs + self-guard + CSRF + non-admin
+     403 + prune. **Tự seed/dọn user throwaway**; **tự SKIP** nếu không có DB; prune
+     huỷ thật chỉ chạy khi `BB_TEST_DESTRUCTIVE=1` (CI + DB throwaway). Cần
+     `app.js` (đã tách khỏi `index.js` để export `app` cho supertest).
+   - **Client** (`client/test/`, jsdom): `api.js` (envelope/header/lỗi) + **parity
+     khoá i18n en/vi** (440 khoá, đang khớp).
+   - **DB cho CI**: KHÔNG replay migration (database.sql + migrations trùng cột,
+     quá giòn). Dùng **fixture schema-only** `server/test/fixtures/schema.sql`
+     (dump từ DB hiện tại) nạp bằng `server/test/load-fixture.mjs` (mysql2) vào
+     **service container MariaDB** — không secret.
+   - **Local**: `npm test` (mỗi package). Integration tự skip nếu không DB; nếu có
+     `.env` trỏ XAMPP `test` thì chạy thật (tự dọn). Chi tiết: memory `ci-setup.md`.
 
 > **Forum: bỏ hoàn toàn** (dead code, đã quyết) — không port.
 
