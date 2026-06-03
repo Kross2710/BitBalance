@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '../../lib/api.js';
-import { t } from '../../i18n/index.js';
+import ConfirmDialog from '../../components/ConfirmDialog.vue';
 
 const users = ref([]);
 const total = ref(0);
@@ -51,7 +51,6 @@ function go(p) {
 }
 
 async function quickAction(u, action) {
-  if (action === 'ban' && !window.confirm(t('admin.users.confirm_ban'))) return;
   busyId.value = u.user_id;
   try {
     await api.post(`/api/admin/users/${u.user_id}/${action}`, {});
@@ -63,12 +62,25 @@ async function quickAction(u, action) {
   }
 }
 
+// Ban goes through an in-app confirm dialog (no native popup — see DESIGN.md).
+const confirmUser = ref(null);
+function askBan(u) { confirmUser.value = u; }
+async function confirmBan() {
+  const u = confirmUser.value;
+  if (!u) return;
+  await quickAction(u, 'ban');
+  confirmUser.value = null;
+}
+
 const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
 </script>
 
 <template>
   <section class="users">
-    <h1>{{ $t('admin.users.title') }}</h1>
+    <div class="page-head">
+      <h1>{{ $t('admin.users.title') }}</h1>
+      <RouterLink to="/admin/users/new" class="btn-new">{{ $t('admin.users.new') }}</RouterLink>
+    </div>
 
     <div class="filters">
       <input v-model="q" :placeholder="$t('admin.users.search_ph')" class="search" @input="onSearch" />
@@ -102,17 +114,17 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
         </thead>
         <tbody>
           <tr v-for="u in users" :key="u.user_id">
-            <td>
+            <td :data-label="$t('admin.users.col_user')">
               <div class="u-name">{{ u.first_name || u.user_name }} {{ u.last_name }}</div>
               <div class="u-handle">@{{ u.user_name }}</div>
             </td>
-            <td class="u-email">{{ u.email }}</td>
-            <td><span class="badge" :class="'role-' + u.role">{{ $t('admin.role.' + u.role) }}</span></td>
-            <td><span class="badge" :class="'st-' + u.status">{{ $t('admin.status.' + u.status) }}</span></td>
-            <td class="u-date">{{ fmtDate(u.created_at) }}</td>
+            <td class="u-email" :data-label="$t('admin.users.col_email')">{{ u.email }}</td>
+            <td :data-label="$t('admin.users.col_role')"><span class="badge" :class="'role-' + u.role">{{ $t('admin.role.' + u.role) }}</span></td>
+            <td :data-label="$t('admin.users.col_status')"><span class="badge" :class="'st-' + u.status">{{ $t('admin.status.' + u.status) }}</span></td>
+            <td class="u-date" :data-label="$t('admin.users.col_joined')">{{ fmtDate(u.created_at) }}</td>
             <td class="u-actions">
               <RouterLink :to="`/admin/users/${u.user_id}`" class="btn-link">{{ $t('admin.users.view') }}</RouterLink>
-              <button v-if="u.status === 'active'" :disabled="busyId === u.user_id" class="btn-danger" @click="quickAction(u, 'ban')">{{ $t('admin.action.ban') }}</button>
+              <button v-if="u.status === 'active'" :disabled="busyId === u.user_id" class="btn-danger" @click="askBan(u)">{{ $t('admin.action.ban') }}</button>
               <button v-else-if="u.status === 'banned'" :disabled="busyId === u.user_id" class="btn-ghost" @click="quickAction(u, 'unban')">{{ $t('admin.action.unban') }}</button>
             </td>
           </tr>
@@ -128,12 +140,27 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
       <span class="pageinfo">{{ $t('admin.users.page') }} {{ page }} / {{ pages }} · {{ total }}</span>
       <button :disabled="page >= pages" @click="go(page + 1)">{{ $t('admin.users.next') }}</button>
     </div>
+
+    <ConfirmDialog
+      :open="!!confirmUser"
+      :title="$t('admin.users.confirm_ban_title')"
+      :message="$t('admin.users.confirm_ban')"
+      :confirm-label="$t('admin.action.ban')"
+      :busy="busyId === confirmUser?.user_id"
+      @confirm="confirmBan"
+      @cancel="confirmUser = null"
+    />
   </section>
 </template>
 
 <style scoped>
 .users { max-width: 1000px; }
-h1 { margin: 0 0 16px; font-size: 1.5rem; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
+h1 { margin: 0; font-size: 1.5rem; }
+.btn-new {
+  flex: none; font-weight: 700; font-size: 0.85rem; text-decoration: none;
+  padding: 9px 16px; border-radius: 10px; background: var(--accent); color: #04210f;
+}
 .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .search { flex: 1; min-width: 200px; }
 .filters input, .filters select {
@@ -172,4 +199,24 @@ button:disabled { opacity: 0.5; cursor: default; }
 .pager { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 18px; }
 .pager button { font: inherit; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
 .pageinfo { color: var(--muted); font-size: 0.88rem; }
+
+/* Mobile: stack each row into a card (label : value) instead of a wide table. */
+@media (max-width: 640px) {
+  .table-wrap { overflow-x: visible; border: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tr {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 8px 14px; margin-bottom: 12px;
+  }
+  td { border: none; padding: 7px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+  td::before {
+    content: attr(data-label); flex: none; color: var(--muted);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+  }
+  td.u-email { word-break: break-all; text-align: right; }
+  td.u-actions { justify-content: flex-end; }
+  td.u-actions::before, td.empty::before { display: none; }
+  td.empty { justify-content: center; }
+}
 </style>

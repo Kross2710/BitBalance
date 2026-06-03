@@ -80,6 +80,8 @@ export default {
   'admin.users.prev': 'Trước',
   'admin.users.next': 'Sau',
   'admin.users.page': 'Trang',
+  'admin.users.new': 'Thêm người dùng',
+  'admin.users.confirm_ban_title': 'Cấm người dùng?',
   'admin.users.confirm_ban': 'Cấm người dùng này? Họ sẽ bị đăng xuất và không đăng nhập được.',
 
   // chi tiết người dùng (AdminUserDetailView.vue)
@@ -109,6 +111,23 @@ export default {
   'admin.user.none_data': 'Chưa có gì.',
   'admin.user.saved': 'Đã lưu.',
   'admin.user.done': 'Xong.',
+  'admin.user.reset_password': 'Đặt lại mật khẩu',
+  'admin.user.new_password': 'Mật khẩu mới',
+  'admin.user.confirm_password': 'Xác nhận mật khẩu',
+  'admin.user.set_password': 'Đặt mật khẩu',
+  'admin.user.password_set': 'Đã cập nhật mật khẩu.',
+  'admin.user.confirm_reset_title': 'Đặt mật khẩu mới?',
+  'admin.user.confirm_reset_message': 'Thao tác này thay mật khẩu hiện tại của người dùng ngay lập tức.',
+
+  // tạo người dùng (AdminUserCreateView.vue)
+  'admin.create.title': 'Tạo người dùng',
+  'admin.create.intro': 'Thêm tài khoản mới. Người dùng có thể tự đổi thông tin sau.',
+  'admin.create.password': 'Mật khẩu',
+  'admin.create.confirm_password': 'Xác nhận mật khẩu',
+  'admin.create.password_hint': 'Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số.',
+  'admin.create.submit': 'Tạo người dùng',
+  'admin.create.creating': 'Đang tạo…',
+  'admin.create.created': 'Đã tạo người dùng.',
 
   // nhật ký hoạt động (AdminLogsView.vue)
   'admin.logs.title': 'Nhật ký hoạt động',
@@ -125,6 +144,10 @@ export default {
   'admin.logs.prune': 'Dọn',
   'admin.logs.pruning': 'Đang dọn…',
   'admin.logs.confirm_prune': 'Xoá vĩnh viễn các bản ghi cũ? Không thể hoàn tác.',
+  'admin.logs.confirm_prune_title': 'Dọn nhật ký?',
+  'admin.logs.prune_preview': 'Xoá vĩnh viễn {n} bản ghi cũ hơn {days} ngày. Không thể hoàn tác.',
+  'admin.logs.prune_preview_loading': 'Đang đếm số bản ghi bị ảnh hưởng…',
+  'admin.logs.prune_preview_none': 'Không có bản ghi nào cũ hơn {days} ngày — sẽ không xoá gì.',
   'admin.logs.pruned': 'Đã xoá:',
   'admin.logs.bad_days': 'Nhập số ngày từ 1 đến 365.',
 

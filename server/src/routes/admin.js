@@ -16,10 +16,13 @@ import {
   AdminActionError,
   listUsers,
   getUserDetail,
+  createUser,
   updateUser,
   setUserStatus,
+  setUserPassword,
   unlockUser,
   getActivityLogs,
+  previewPrune,
   pruneLogs,
 } from '../lib/admin.js';
 
@@ -79,6 +82,16 @@ router.get(
   })
 );
 
+// POST /api/admin/users → create a new user (admin-only). Declared before the
+// /:id routes (different method, but keep the user-collection handlers together).
+router.post(
+  '/users',
+  handle(async (req, res) => {
+    const data = await createUser(req.user.user_id, req.body || {});
+    ok(res, data, 'User created.');
+  })
+);
+
 // GET /api/admin/users/:id → one user's full detail.
 router.get(
   '/users/:id',
@@ -93,6 +106,17 @@ router.patch(
   handle(async (req, res) => {
     const data = await updateUser(req.user.user_id, intParam(req.params.id), req.body || {});
     ok(res, data, 'User updated.');
+  })
+);
+
+// POST /api/admin/users/:id/password → set a new password (account recovery).
+// Declared BEFORE /:action so "password" isn't swallowed by the action param.
+router.post(
+  '/users/:id/password',
+  handle(async (req, res) => {
+    const id = intParam(req.params.id);
+    await setUserPassword(req.user.user_id, id, req.body?.password, req.body?.confirm_password);
+    ok(res, await getUserDetail(id), 'Password updated.');
   })
 );
 
@@ -123,6 +147,14 @@ router.get(
   handle(async (req, res) => {
     const { q = '', action = '', page = '1' } = req.query;
     ok(res, await getActivityLogs({ q, action, page }));
+  })
+);
+
+// GET /api/admin/logs/prune-preview?days= → count rows a prune would remove.
+router.get(
+  '/logs/prune-preview',
+  handle(async (req, res) => {
+    ok(res, await previewPrune(req.query.days ?? 30));
   })
 );
 

@@ -81,6 +81,8 @@ export default {
   'admin.users.prev': 'Prev',
   'admin.users.next': 'Next',
   'admin.users.page': 'Page',
+  'admin.users.new': 'New user',
+  'admin.users.confirm_ban_title': 'Ban user?',
   'admin.users.confirm_ban': 'Ban this user? They will be signed out and blocked from logging in.',
 
   // user detail (AdminUserDetailView.vue)
@@ -110,6 +112,23 @@ export default {
   'admin.user.none_data': 'Nothing yet.',
   'admin.user.saved': 'Saved.',
   'admin.user.done': 'Done.',
+  'admin.user.reset_password': 'Reset password',
+  'admin.user.new_password': 'New password',
+  'admin.user.confirm_password': 'Confirm password',
+  'admin.user.set_password': 'Set password',
+  'admin.user.password_set': 'Password updated.',
+  'admin.user.confirm_reset_title': 'Set a new password?',
+  'admin.user.confirm_reset_message': "This replaces the user's current password immediately.",
+
+  // create user (AdminUserCreateView.vue)
+  'admin.create.title': 'Create user',
+  'admin.create.intro': 'Add a new account. The user can change their details later.',
+  'admin.create.password': 'Password',
+  'admin.create.confirm_password': 'Confirm password',
+  'admin.create.password_hint': 'At least 8 characters, with an uppercase letter, a lowercase letter and a number.',
+  'admin.create.submit': 'Create user',
+  'admin.create.creating': 'Creating…',
+  'admin.create.created': 'User created.',
 
   // activity logs (AdminLogsView.vue)
   'admin.logs.title': 'Activity logs',
@@ -126,6 +145,10 @@ export default {
   'admin.logs.prune': 'Prune',
   'admin.logs.pruning': 'Pruning…',
   'admin.logs.confirm_prune': 'Permanently delete old log entries? This cannot be undone.',
+  'admin.logs.confirm_prune_title': 'Prune logs?',
+  'admin.logs.prune_preview': 'Permanently delete {n} entr(y/ies) older than {days} day(s). This cannot be undone.',
+  'admin.logs.prune_preview_loading': 'Counting affected entries…',
+  'admin.logs.prune_preview_none': 'No entries are older than {days} day(s) — nothing will be deleted.',
   'admin.logs.pruned': 'Deleted entries:',
   'admin.logs.bad_days': 'Enter a number of days between 1 and 365.',
 

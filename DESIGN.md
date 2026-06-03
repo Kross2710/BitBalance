@@ -8,6 +8,25 @@ ghép từ nhiều nơi. Đọc file này trước khi dựng view mới.
 > nhất quán (Font Awesome), chuyển trang mượt (SPA, fade nhẹ). Mobile và desktop
 > dùng **chung component**, chỉ khác layout khung điều hướng.
 
+### Anti-patterns — KHÔNG làm "thô" như PHP/beats
+
+Định hướng đã chốt: **đồng nhất theo UI Vue hiện tại** (đẹp, gọn, phẳng), không kéo
+phong cách trang PHP `dashboard-beats.php` sang. Tránh các thứ sau — chúng là dấu
+hiệu "trôi" về phong cách cũ:
+
+| Đừng (phong cách PHP/beats) | Thay bằng (phong cách Vue) |
+|---|---|
+| Shadow "3D chunky" `box-shadow: 0 4px 0 …` | Viền `1px solid var(--border)`, phẳng |
+| Palette Duolingo sáng (`#58CC02`, `#FF9600`) | Token dark — accent **`#4ade80`** |
+| Padding to, khối phình | Padding gọn (`20px` card / `12–16px` list), nội dung `max-width: 820px` |
+| Trang dài, scroll nhiều | Bố cục đặc, ưu tiên gọn trong tầm nhìn |
+| Emoji 🍕🔥 trong UI | Icon Font Awesome `fa-solid` |
+| Bo góc quá lớn (`22px+`), gradient loè | Radius `8–14px`, màu phẳng |
+
+> Lý do tồn tại mục này: mockup/đề xuất từng bị dựng theo phong cách beats (shadow
+> chunky, emoji, `#58CC02`) → lệch hẳn UI Vue. `client/src/styles.css` + tài liệu
+> này là **chuẩn duy nhất**.
+
 ---
 
 ## 1. Design tokens (CSS variables)
