@@ -34,6 +34,7 @@ async function poll() {
 let timer = null;
 onMounted(() => {
   poll();
+  loadLeaderboard(); // pre-warm: powers the hero tiles + the Ranks tab
   timer = setInterval(poll, 15000);
 });
 onUnmounted(() => clearInterval(timer));
@@ -125,6 +126,10 @@ function removeFriend(u) {
 }
 
 const pendingInCount = computed(() => pendingIn.value.length);
+// The current user's own leaderboard row (the API always returns it, even with
+// zero friends) — feeds the hero tiles. logging_streak / current_level are
+// period-independent, so they stay put when the weekly/all-time toggle flips.
+const me = computed(() => leaders.value.find((u) => u.is_current_user) || null);
 const initials = (name) => (name || '?').slice(0, 1).toUpperCase();
 
 // Empty-state sentences embed a "Find" button mid-sentence. We can't use
@@ -142,6 +147,13 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 <template>
   <main class="wrap">
     <h1 class="title">{{ $t('friends.hero.title') }}</h1>
+
+    <!-- Hero metrics: always present so the page never reads as empty. -->
+    <div class="hero-metrics">
+      <div class="hm"><strong>{{ friends.length }}</strong><small>{{ $t('friends.metric.friends') }}</small></div>
+      <div class="hm"><strong>{{ me ? me.logging_streak : '—' }}</strong><small>{{ $t('friends.metric.streak') }}</small></div>
+      <div class="hm"><strong>{{ me ? me.current_level : '—' }}</strong><small>{{ $t('friends.metric.level') }}</small></div>
+    </div>
 
     <!-- Tabs -->
     <div class="tabs" role="tablist">
@@ -217,20 +229,25 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         <button class="seg-btn" :class="{ on: period === 'all_time' }" @click="period = 'all_time'">{{ $t('friends.leaderboard.range.all') }}</button>
       </div>
       <p v-if="lbLoading" class="muted">{{ $t('common.loading') }}</p>
-      <p v-else-if="leaders.length <= 1" class="muted empty">
-        {{ soloLbParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ soloLbParts.after }}
-      </p>
-      <ul v-else class="list">
-        <li v-for="u in leaders" :key="u.user_id" class="row card" :class="{ me: u.is_current_user }">
-          <span class="rank" :class="'r' + u.rank">{{ u.rank }}</span>
-          <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
-          <span class="meta">
-            <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> {{ $t('friends.lb.you_paren') }}</small></strong>
-            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
-          </span>
-          <strong class="score">{{ u.score_xp }}<small class="muted"> {{ $t('friends.col.xp') }}</small></strong>
-        </li>
-      </ul>
+      <template v-else>
+        <!-- Always render the rows: the API returns the user's own row (rank 1)
+             even with no friends, so the board is never blank. -->
+        <ul v-if="leaders.length" class="list">
+          <li v-for="u in leaders" :key="u.user_id" class="row card" :class="{ me: u.is_current_user }">
+            <span class="rank" :class="'r' + u.rank">{{ u.rank }}</span>
+            <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
+            <span class="meta">
+              <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> {{ $t('friends.lb.you_paren') }}</small></strong>
+              <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
+            </span>
+            <strong class="score">{{ u.score_xp }}<small class="muted"> {{ $t('friends.col.xp') }}</small></strong>
+          </li>
+        </ul>
+        <!-- Solo nudge sits BELOW the self-row instead of replacing it. -->
+        <p v-if="leaders.length <= 1" class="muted empty">
+          {{ soloLbParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ soloLbParts.after }}
+        </p>
+      </template>
     </section>
 
     <!-- FIND -->
@@ -268,6 +285,16 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 <style scoped>
 .wrap { max-width: 720px; margin: 0 auto; padding: 8px 16px 24px; }
 .title { font-size: 22px; margin: 6px 0 12px; }
+
+/* Hero metrics */
+.hero-metrics { display: flex; gap: 8px; margin-bottom: 14px; }
+.hm {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 8px; text-align: center;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.hm strong { font-size: 18px; font-weight: 800; }
+.hm small { color: var(--muted); font-size: 11px; }
 .muted { color: var(--muted); }
 .empty { padding: 18px 4px; }
 .error { color: #f87171; margin: 8px 0; }

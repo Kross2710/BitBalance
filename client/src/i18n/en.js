@@ -265,6 +265,8 @@ export default {
   // ---- friends ----
   'friends.hero.title': 'Friends',
   'friends.metric.friends': 'Friends',
+  'friends.metric.streak': 'Streak',
+  'friends.metric.level': 'Level',
   'friends.tab.pending': 'Pending',
   'friends.tab.ranks': 'Ranks',
   'friends.tab.find_short': 'Find',

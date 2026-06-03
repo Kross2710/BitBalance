@@ -264,6 +264,8 @@ export default {
   // ---- friends ----
   'friends.hero.title': 'Bạn bè',
   'friends.metric.friends': 'Bạn bè',
+  'friends.metric.streak': 'Chuỗi',
+  'friends.metric.level': 'Cấp',
   'friends.tab.pending': 'Đang chờ',
   'friends.tab.ranks': 'Xếp hạng',
   'friends.tab.find_short': 'Tìm',
