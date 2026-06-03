@@ -416,22 +416,26 @@ onMounted(() => {
   color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none;
 }
 
-/* Day-switch transition: directional slide + fade when tapping the date strip.
-   'next' = a more recent day (content enters from the right), 'prev' = mirrored.
+/* Day-switch transition: the old day slides out + fades, the new day fades in.
+   Enter is fade-only on purpose — the new subtree (chart, badges, entry images)
+   mounts on those same frames, so we keep its first frames cheap. The leaving
+   side keeps the directional slide ('next' exits left, 'prev' right). translate3d
+   + will-change promote a GPU layer for the transition's duration so iOS Safari
+   composites it instead of repainting the whole subtree on the main thread.
    Kept small per DESIGN.md §7 — motion serves smoothness, not decoration. */
 .day-next-enter-active, .day-next-leave-active,
 .day-prev-enter-active, .day-prev-leave-active {
   transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
-.day-next-enter-from { opacity: 0; transform: translateX(16px); }
-.day-next-leave-to   { opacity: 0; transform: translateX(-16px); }
-.day-prev-enter-from { opacity: 0; transform: translateX(-16px); }
-.day-prev-leave-to   { opacity: 0; transform: translateX(16px); }
+.day-next-enter-from, .day-prev-enter-from { opacity: 0; }
+.day-next-leave-to { opacity: 0; transform: translate3d(-16px, 0, 0); }
+.day-prev-leave-to { opacity: 0; transform: translate3d(16px, 0, 0); }
 
 @media (prefers-reduced-motion: reduce) {
   .day-next-enter-active, .day-next-leave-active,
   .day-prev-enter-active, .day-prev-leave-active { transition: opacity 0.15s ease; }
-  .day-next-enter-from, .day-next-leave-to,
-  .day-prev-enter-from, .day-prev-leave-to { transform: none; }
+  .day-next-leave-to, .day-prev-leave-to { transform: none; }
 }
 </style>
