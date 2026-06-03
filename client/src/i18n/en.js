@@ -81,6 +81,7 @@ export default {
   'admin.users.prev': 'Prev',
   'admin.users.next': 'Next',
   'admin.users.page': 'Page',
+  'admin.users.confirm_ban_title': 'Ban user?',
   'admin.users.confirm_ban': 'Ban this user? They will be signed out and blocked from logging in.',
 
   // user detail (AdminUserDetailView.vue)
@@ -126,6 +127,10 @@ export default {
   'admin.logs.prune': 'Prune',
   'admin.logs.pruning': 'Pruning…',
   'admin.logs.confirm_prune': 'Permanently delete old log entries? This cannot be undone.',
+  'admin.logs.confirm_prune_title': 'Prune logs?',
+  'admin.logs.prune_preview': 'Permanently delete {n} entr(y/ies) older than {days} day(s). This cannot be undone.',
+  'admin.logs.prune_preview_loading': 'Counting affected entries…',
+  'admin.logs.prune_preview_none': 'No entries are older than {days} day(s) — nothing will be deleted.',
   'admin.logs.pruned': 'Deleted entries:',
   'admin.logs.bad_days': 'Enter a number of days between 1 and 365.',
 

@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { api } from '../../lib/api.js';
-import { t } from '../../i18n/index.js';
+import ConfirmDialog from '../../components/ConfirmDialog.vue';
 
 const users = ref([]);
 const total = ref(0);
@@ -51,7 +51,6 @@ function go(p) {
 }
 
 async function quickAction(u, action) {
-  if (action === 'ban' && !window.confirm(t('admin.users.confirm_ban'))) return;
   busyId.value = u.user_id;
   try {
     await api.post(`/api/admin/users/${u.user_id}/${action}`, {});
@@ -61,6 +60,16 @@ async function quickAction(u, action) {
   } finally {
     busyId.value = 0;
   }
+}
+
+// Ban goes through an in-app confirm dialog (no native popup — see DESIGN.md).
+const confirmUser = ref(null);
+function askBan(u) { confirmUser.value = u; }
+async function confirmBan() {
+  const u = confirmUser.value;
+  if (!u) return;
+  await quickAction(u, 'ban');
+  confirmUser.value = null;
 }
 
 const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
@@ -112,7 +121,7 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
             <td class="u-date">{{ fmtDate(u.created_at) }}</td>
             <td class="u-actions">
               <RouterLink :to="`/admin/users/${u.user_id}`" class="btn-link">{{ $t('admin.users.view') }}</RouterLink>
-              <button v-if="u.status === 'active'" :disabled="busyId === u.user_id" class="btn-danger" @click="quickAction(u, 'ban')">{{ $t('admin.action.ban') }}</button>
+              <button v-if="u.status === 'active'" :disabled="busyId === u.user_id" class="btn-danger" @click="askBan(u)">{{ $t('admin.action.ban') }}</button>
               <button v-else-if="u.status === 'banned'" :disabled="busyId === u.user_id" class="btn-ghost" @click="quickAction(u, 'unban')">{{ $t('admin.action.unban') }}</button>
             </td>
           </tr>
@@ -128,6 +137,16 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
       <span class="pageinfo">{{ $t('admin.users.page') }} {{ page }} / {{ pages }} · {{ total }}</span>
       <button :disabled="page >= pages" @click="go(page + 1)">{{ $t('admin.users.next') }}</button>
     </div>
+
+    <ConfirmDialog
+      :open="!!confirmUser"
+      :title="$t('admin.users.confirm_ban_title')"
+      :message="$t('admin.users.confirm_ban')"
+      :confirm-label="$t('admin.action.ban')"
+      :busy="busyId === confirmUser?.user_id"
+      @confirm="confirmBan"
+      @cancel="confirmUser = null"
+    />
   </section>
 </template>
 

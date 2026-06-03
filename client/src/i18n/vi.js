@@ -80,6 +80,7 @@ export default {
   'admin.users.prev': 'Trước',
   'admin.users.next': 'Sau',
   'admin.users.page': 'Trang',
+  'admin.users.confirm_ban_title': 'Cấm người dùng?',
   'admin.users.confirm_ban': 'Cấm người dùng này? Họ sẽ bị đăng xuất và không đăng nhập được.',
 
   // chi tiết người dùng (AdminUserDetailView.vue)
@@ -125,6 +126,10 @@ export default {
   'admin.logs.prune': 'Dọn',
   'admin.logs.pruning': 'Đang dọn…',
   'admin.logs.confirm_prune': 'Xoá vĩnh viễn các bản ghi cũ? Không thể hoàn tác.',
+  'admin.logs.confirm_prune_title': 'Dọn nhật ký?',
+  'admin.logs.prune_preview': 'Xoá vĩnh viễn {n} bản ghi cũ hơn {days} ngày. Không thể hoàn tác.',
+  'admin.logs.prune_preview_loading': 'Đang đếm số bản ghi bị ảnh hưởng…',
+  'admin.logs.prune_preview_none': 'Không có bản ghi nào cũ hơn {days} ngày — sẽ không xoá gì.',
   'admin.logs.pruned': 'Đã xoá:',
   'admin.logs.bad_days': 'Nhập số ngày từ 1 đến 365.',
 

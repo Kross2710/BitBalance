@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../../lib/api.js';
 import { t } from '../../i18n/index.js';
+import ConfirmDialog from '../../components/ConfirmDialog.vue';
 
 const route = useRoute();
 const id = Number(route.params.id);
@@ -50,7 +51,6 @@ async function save() {
 }
 
 async function act(action) {
-  if (action === 'ban' && !window.confirm(t('admin.users.confirm_ban'))) return;
   saving.value = true; notice.value = ''; error.value = '';
   try {
     detail.value = await api.post(`/api/admin/users/${id}/${action}`, {});
@@ -61,6 +61,13 @@ async function act(action) {
   } finally {
     saving.value = false;
   }
+}
+
+// Ban is confirmed via an in-app dialog instead of window.confirm (see DESIGN.md).
+const confirmBanOpen = ref(false);
+async function confirmBan() {
+  await act('ban');
+  if (!error.value) confirmBanOpen.value = false;
 }
 
 const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
@@ -125,7 +132,7 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
             <dd>{{ detail.user.last_login ? fmt(detail.user.last_login) : $t('admin.user.never') }}</dd>
           </dl>
           <div class="actions">
-            <button v-if="detail.user.status !== 'banned'" class="btn-danger" :disabled="saving" @click="act('ban')">{{ $t('admin.action.ban') }}</button>
+            <button v-if="detail.user.status !== 'banned'" class="btn-danger" :disabled="saving" @click="confirmBanOpen = true">{{ $t('admin.action.ban') }}</button>
             <button v-if="detail.user.status === 'banned'" class="btn-ghost" :disabled="saving" @click="act('unban')">{{ $t('admin.action.unban') }}</button>
             <button v-if="detail.user.status !== 'archived'" class="btn-ghost" :disabled="saving" @click="act('archive')">{{ $t('admin.action.archive') }}</button>
             <button v-if="detail.user.status === 'archived'" class="btn-ghost" :disabled="saving" @click="act('restore')">{{ $t('admin.action.restore') }}</button>
@@ -164,6 +171,16 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
         <p v-else class="muted">{{ $t('admin.user.none_data') }}</p>
       </div>
     </template>
+
+    <ConfirmDialog
+      :open="confirmBanOpen"
+      :title="$t('admin.users.confirm_ban_title')"
+      :message="$t('admin.users.confirm_ban')"
+      :confirm-label="$t('admin.action.ban')"
+      :busy="saving"
+      @confirm="confirmBan"
+      @cancel="confirmBanOpen = false"
+    />
   </section>
 </template>
 

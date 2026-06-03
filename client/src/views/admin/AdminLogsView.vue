@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { api } from '../../lib/api.js';
 import { t } from '../../i18n/index.js';
+import ConfirmDialog from '../../components/ConfirmDialog.vue';
 
 const logs = ref([]);
 const actionTypes = ref([]);
@@ -15,6 +16,11 @@ const error = ref('');
 const pruneDays = ref(30);
 const pruning = ref(false);
 const notice = ref('');
+// Prune confirm dialog + preview of how many rows would be deleted.
+const confirmOpen = ref(false);
+const previewLoading = ref(false);
+const previewCount = ref(0);
+const previewDays = ref(0);
 
 async function load() {
   loading.value = true;
@@ -50,17 +56,37 @@ function go(p) {
   load();
 }
 
-async function prune() {
+// Open the confirm dialog and fetch the blast radius (rows that would be deleted)
+// so the admin sees the count before committing the irreversible delete.
+async function askPrune() {
   const days = Number(pruneDays.value);
   if (!Number.isFinite(days) || days < 1 || days > 365) {
     error.value = t('admin.logs.bad_days');
     return;
   }
-  if (!window.confirm(t('admin.logs.confirm_prune'))) return;
+  error.value = '';
+  notice.value = '';
+  previewDays.value = days;
+  previewCount.value = 0;
+  previewLoading.value = true;
+  confirmOpen.value = true;
+  try {
+    const d = await api.get(`/api/admin/logs/prune-preview?days=${days}`);
+    previewCount.value = d.count;
+  } catch (e) {
+    error.value = e.message;
+    confirmOpen.value = false;
+  } finally {
+    previewLoading.value = false;
+  }
+}
+
+async function doPrune() {
   pruning.value = true; notice.value = ''; error.value = '';
   try {
-    const d = await api.post('/api/admin/logs/prune', { days });
+    const d = await api.post('/api/admin/logs/prune', { days: previewDays.value });
     notice.value = `${t('admin.logs.pruned')} ${d.deleted}`;
+    confirmOpen.value = false;
     page.value = 1;
     await load();
   } catch (e) {
@@ -82,7 +108,7 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
         <input v-model.number="pruneDays" type="number" min="1" max="365" class="days" />
         {{ $t('admin.logs.days') }}
       </label>
-      <button class="btn-danger" :disabled="pruning" @click="prune">
+      <button class="btn-danger" :disabled="pruning" @click="askPrune">
         {{ pruning ? $t('admin.logs.pruning') : $t('admin.logs.prune') }}
       </button>
       <span v-if="notice" class="notice">{{ notice }}</span>
@@ -129,6 +155,20 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
       <span class="pageinfo">{{ $t('admin.users.page') }} {{ page }} / {{ pages }} · {{ total }}</span>
       <button :disabled="page >= pages" @click="go(page + 1)">{{ $t('admin.users.next') }}</button>
     </div>
+
+    <ConfirmDialog
+      :open="confirmOpen"
+      :title="$t('admin.logs.confirm_prune_title')"
+      :confirm-label="$t('admin.logs.prune')"
+      :busy="pruning"
+      :confirm-disabled="previewLoading || previewCount === 0"
+      @confirm="doPrune"
+      @cancel="confirmOpen = false"
+    >
+      <p v-if="previewLoading" class="prune-line muted">{{ $t('admin.logs.prune_preview_loading') }}</p>
+      <p v-else-if="previewCount === 0" class="prune-line">{{ $t('admin.logs.prune_preview_none', { days: previewDays }) }}</p>
+      <p v-else class="prune-line">{{ $t('admin.logs.prune_preview', { n: previewCount, days: previewDays }) }}</p>
+    </ConfirmDialog>
   </section>
 </template>
 
@@ -163,4 +203,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .pager { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 18px; }
 .pager button { font: inherit; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
 .pageinfo { color: var(--muted); font-size: 0.88rem; }
+.prune-line { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+.prune-line.muted { color: var(--muted); }
 </style>

@@ -20,6 +20,7 @@ import {
   setUserStatus,
   unlockUser,
   getActivityLogs,
+  previewPrune,
   pruneLogs,
 } from '../lib/admin.js';
 
@@ -123,6 +124,14 @@ router.get(
   handle(async (req, res) => {
     const { q = '', action = '', page = '1' } = req.query;
     ok(res, await getActivityLogs({ q, action, page }));
+  })
+);
+
+// GET /api/admin/logs/prune-preview?days= → count rows a prune would remove.
+router.get(
+  '/logs/prune-preview',
+  handle(async (req, res) => {
+    ok(res, await previewPrune(req.query.days ?? 30));
   })
 );
 

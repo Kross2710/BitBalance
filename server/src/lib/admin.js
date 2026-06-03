@@ -310,6 +310,20 @@ export async function getActivityLogs({ q = '', action = '', page = 1 } = {}) {
   };
 }
 
+// GET /logs/prune-preview — count how many activity_log rows a prune of `days`
+// WOULD delete, without touching anything. Lets the UI show the blast radius in
+// the confirm dialog before the destructive POST. Same validation as pruneLogs.
+export async function previewPrune(days) {
+  const d = parseInt(days, 10);
+  if (!Number.isFinite(d) || d < 1 || d > 365) {
+    throw new AdminActionError('Days must be a whole number between 1 and 365.');
+  }
+  const countRows = await query(
+    `SELECT COUNT(*) AS n FROM activity_log WHERE created_at < (NOW() - INTERVAL ${d} DAY)`
+  );
+  return { count: Number(countRows[0].n), days: d };
+}
+
 // POST /logs/prune — delete activity_log rows older than `days` (1..365, default
 // 30 enforced by the route) and record the prune itself. Mirrors
 // prune-logs-action.php. `days` is validated to a small integer and interpolated
