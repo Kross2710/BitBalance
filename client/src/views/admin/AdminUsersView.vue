@@ -159,7 +159,7 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
 h1 { margin: 0; font-size: 1.5rem; }
 .btn-new {
   flex: none; font-weight: 700; font-size: 0.85rem; text-decoration: none;
-  padding: 9px 16px; border-radius: 10px; background: var(--accent); color: #04210f;
+  padding: 9px 16px; border-radius: 10px; background: var(--accent); color: var(--on-accent);
 }
 .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .search { flex: 1; min-width: 200px; }

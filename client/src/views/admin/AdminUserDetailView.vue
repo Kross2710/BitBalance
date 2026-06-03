@@ -240,10 +240,10 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
 .card h2 { margin: 0 0 14px; font-size: 1.05rem; }
 label { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 0.82rem; color: var(--muted); font-weight: 600; }
 input, select { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg, #0f1115); color: var(--text); font: inherit; }
-.btn-primary { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: none; background: var(--accent); color: #04210f; }
+.btn-primary { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: none; background: var(--accent); color: var(--on-accent); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .hint { color: var(--muted); font-size: 0.8rem; margin: -4px 0 12px; }
-.btn-reset { font: inherit; font-weight: 700; cursor: pointer; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: #2a2e37; color: var(--text); }
+.btn-reset { font: inherit; font-weight: 700; cursor: pointer; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
 @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0 0 16px; }
 .kv dt { color: var(--muted); font-size: 0.85rem; }

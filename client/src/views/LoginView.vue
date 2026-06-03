@@ -88,7 +88,7 @@ async function onSubmit() {
   height: 52px;
   border-radius: 14px;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 26px;
   margin-bottom: 12px;
@@ -100,7 +100,7 @@ async function onSubmit() {
 .auth-card {
   padding: 22px;
   /* Lift the card off the background with a clearer edge + soft shadow. */
-  border-color: #353c49;
+  border-color: var(--border);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 .auth-card label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
@@ -132,7 +132,7 @@ async function onSubmit() {
   content: '';
   flex: 1;
   height: 1px;
-  background: #353c49;
+  background: var(--border);
 }
 .or span { padding: 0 12px; }
 .muted { color: var(--muted); font-size: 13px; }

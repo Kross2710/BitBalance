@@ -147,8 +147,8 @@ defineExpose({ scrollToBottom });
   padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45;
   white-space: pre-wrap; word-break: break-word;
 }
-.msg.me .bubble { background: var(--accent); color: #04210f; border-bottom-right-radius: 4px; }
-.msg.them .bubble { background: #12151b; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg.me .bubble { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 4px; }
+.msg.them .bubble { background: var(--inset); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .error { color: #f87171; font-size: 13px; margin: 0; padding: 0 12px; }
 .composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
 .composer textarea { flex: 1; resize: none; max-height: 120px; font-family: inherit; }

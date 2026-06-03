@@ -86,7 +86,7 @@ const adminName = computed(() => auth.user?.first_name || auth.user?.handle || '
 }
 .brand-mark {
   flex: none; width: 28px; height: 28px; border-radius: 8px;
-  background: var(--accent); color: #04210f; font-weight: 800;
+  background: var(--accent); color: var(--on-accent); font-weight: 800;
   display: grid; place-items: center;
 }
 .admin-nav { display: flex; flex-direction: column; gap: 4px; }
@@ -96,8 +96,8 @@ const adminName = computed(() => auth.user?.first_name || auth.user?.handle || '
   color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px;
 }
 .admin-nav-link i { flex: none; width: 18px; text-align: center; }
-.admin-nav-link:not(.disabled):hover { background: #12151b; color: var(--text); }
-.admin-nav-link.active:not(.disabled) { background: #12151b; color: var(--accent); }
+.admin-nav-link:not(.disabled):hover { background: var(--inset); color: var(--text); }
+.admin-nav-link.active:not(.disabled) { background: var(--inset); color: var(--accent); }
 .admin-nav-link.disabled { opacity: 0.45; cursor: default; }
 .soon {
   margin-left: auto; font-style: normal; font-size: 10px; font-weight: 700;
@@ -109,14 +109,14 @@ const adminName = computed(() => auth.user?.first_name || auth.user?.handle || '
   padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600;
   color: var(--muted); text-decoration: none;
 }
-.admin-back:hover { color: var(--text); background: #12151b; }
+.admin-back:hover { color: var(--text); background: var(--inset); }
 
 .admin-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .admin-topbar {
   position: sticky; top: 0; z-index: 10;
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 24px;
-  background: rgba(15, 17, 21, 0.85); backdrop-filter: blur(8px);
+  background: var(--glass); backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
 .admin-who { color: var(--muted); font-size: 14px; }

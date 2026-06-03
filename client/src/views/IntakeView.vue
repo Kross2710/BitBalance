@@ -4,8 +4,9 @@
 // Big food field with history-backed autocomplete + recent chips, calories,
 // meal, optional macros, and a full-width Log Entry button.
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../lib/api.js';
-import { t } from '../i18n/index.js';
+import { t, locale } from '../i18n/index.js';
 import { compressImage } from '../lib/image.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
@@ -52,8 +53,27 @@ async function loadRecent() {
 // The dashboard shows entries read-only; editing/deleting lives here. We pull
 // recent history and keep only today's rows (server tz is +07:00, so compute
 // "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
+const route = useRoute();
 const entries = ref([]);
 const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
+// Backdating: the Dashboard date strip can carry a past day via ?date=, and we
+// log to / show THAT day instead of today. Rules (ported from process_intake.php):
+// never the future (clamped here + re-clamped server-side), and past mode is NOT
+// sticky — a bare /intake always means today.
+const activeDate = computed(() => {
+  const q = route.query.date;
+  if (typeof q === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(q) && q <= todayLocal) return q;
+  return todayLocal;
+});
+const isPastMode = computed(() => activeDate.value !== todayLocal);
+const activeDateLabel = computed(() =>
+  new Date(activeDate.value + 'T00:00:00').toLocaleDateString(locale.value === 'vi' ? 'vi-VN' : 'en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+);
 
 // Today's kcal per meal, for the segmented selector's status line.
 const mealKcal = computed(() => {
@@ -68,12 +88,16 @@ const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_cate
 
 async function loadEntries() {
   try {
-    const data = await api.get('/api/intake/history');
-    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === todayLocal);
+    const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
+    // Server already scopes to the day; the filter is a belt-and-suspenders guard.
+    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === activeDate.value);
   } catch {
     /* non-fatal: section just stays empty */
   }
 }
+// Re-pull when the day changes (e.g. ?date= -> bare /intake), keeping past mode
+// non-sticky.
+watch(activeDate, loadEntries);
 
 function startEdit(e) {
   editingId.value = e.id;
@@ -166,7 +190,7 @@ async function onSubmit() {
   success.value = '';
   saving.value = true;
   try {
-    await api.post('/api/intake/create', { ...form });
+    await api.post('/api/intake/create', { ...form, date: activeDate.value });
     success.value = t('intake.logged_named', { name: form.food_item });
     form.food_item = '';
     form.calories = '';
@@ -401,6 +425,12 @@ onBeforeUnmount(() => {
   <main class="intake">
     <h1>{{ $t('intake.add_entry') }}</h1>
 
+    <!-- Past-day banner: logging is scoped to a back-dated day carried via ?date=. -->
+    <div v-if="isPastMode" class="past-banner">
+      <span><i class="fa-solid fa-clock-rotate-left" /> {{ $t('intake.past.banner', { date: activeDateLabel }) }}</span>
+      <RouterLink to="/intake" class="past-back">{{ $t('intake.past.back_today') }}</RouterLink>
+    </div>
+
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
       <div class="io-actions">
@@ -515,7 +545,7 @@ onBeforeUnmount(() => {
 
     <!-- Today's entries: review + edit/delete what was logged today -->
     <section v-if="entries.length" class="entries card">
-      <h2>{{ $t('intake.todays_entries') }}</h2>
+      <h2>{{ isPastMode ? $t('intake.entries_for', { date: activeDateLabel }) : $t('intake.todays_entries') }}</h2>
       <ul>
         <li v-for="e in entries" :key="e.id">
           <div v-if="editingId === e.id" class="edit-grid">
@@ -601,6 +631,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .intake { max-width: 560px; margin: 0 auto; padding: 8px 16px; }
 .intake h1 { margin: 6px 0 16px; }
+
+/* Past-day (backdating) banner */
+.past-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 14px; padding: 10px 14px;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid #fb923c; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+}
+.past-banner .past-back { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .muted { color: var(--muted); font-size: 13px; }
 .ok { color: var(--accent); font-size: 13px; margin: 10px 0 0; }
 label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
@@ -629,13 +669,13 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   border-radius: 8px;
   cursor: pointer;
 }
-.suggest li:hover { background: #12151b; }
+.suggest li:hover { background: var(--inset); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .chip {
   display: inline-flex;
   align-items: center;
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -658,7 +698,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   gap: 3px;
   min-height: 64px; /* comfortable tap target */
   padding: 8px 4px;
-  background: #12151b;
+  background: var(--inset);
   color: var(--muted);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -668,7 +708,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .meal-name { font-size: 12px; }
 .meal-stat { font-size: 10px; opacity: 0.85; }
 /* Logged-but-not-selected meals read as "done" without stealing focus. */
-.meal-pill.logged { color: var(--text); border-color: #2a2e37; }
+.meal-pill.logged { color: var(--text); border-color: var(--surface-2); }
 .meal-pill.active {
   color: var(--accent);
   border-color: var(--accent);
@@ -699,7 +739,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
   border: 1px solid var(--border);
   font-size: 14px;
@@ -714,7 +754,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   gap: 12px;
   padding: 10px;
   margin-bottom: 16px;
-  background: #12151b;
+  background: var(--inset);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -733,7 +773,7 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   height: 44px;
   display: grid;
   place-items: center;
-  background: #2a2e37;
+  background: var(--surface-2);
   color: var(--text);
   border: none;
   border-radius: 10px;
@@ -800,14 +840,14 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .icon-btn {
   width: 44px; height: 44px; min-height: 44px;
   display: grid; place-items: center;
-  background: #2a2e37; color: var(--text); border: none; border-radius: 10px;
+  background: var(--surface-2); color: var(--text); border: none; border-radius: 10px;
   font-size: 14px;
 }
 .icon-btn.danger { color: #f87171; }
 .edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
 .edit-grid input, .edit-grid select { width: 100%; }
 .edit-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
-.edit-actions .ghost { background: #2a2e37; color: var(--text); }
+.edit-actions .ghost { background: var(--surface-2); color: var(--text); }
 
 @media (max-width: 480px) {
   .three { grid-template-columns: 1fr; }

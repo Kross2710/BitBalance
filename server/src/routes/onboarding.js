@@ -22,31 +22,69 @@ function parseFloatLoose(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-router.post('/save', requireAuth, async (req, res, next) => {
-  const fail = (msg, code = 422) => res.status(code).json({ ok: false, data: null, message: msg });
+// Parse + validate the onboarding payload identically for /preview and /save so
+// the previewed plan can never diverge from what /save commits. Returns either
+// { error } (a 422 message) or { values } (normalized, ready for the planner).
+function readOnboardingInput(body) {
+  const gender = (body?.gender ?? '').trim();
+  const age = parseIntStrict(body?.age);
+  const height = parseIntStrict(body?.height);
+  const weight = parseIntStrict(body?.weight);
+  const activityLevel = (body?.activity_level ?? '').trim();
+  const goalMode = (body?.goal_mode ?? '').trim();
+  let weeklyRate = parseFloatLoose(body?.weekly_rate);
+  let targetWeight = parseFloatLoose(body?.target_weight);
 
-  const gender = (req.body?.gender ?? '').trim();
-  const age = parseIntStrict(req.body?.age);
-  const height = parseIntStrict(req.body?.height);
-  const weight = parseIntStrict(req.body?.weight);
-  const activityLevel = (req.body?.activity_level ?? '').trim();
-  const goalMode = (req.body?.goal_mode ?? '').trim();
-  let weeklyRate = parseFloatLoose(req.body?.weekly_rate);
-  let targetWeight = parseFloatLoose(req.body?.target_weight);
-
-  if (!VALID_GENDERS.includes(gender)) return fail('Please choose a gender.');
-  if (age === null || age < 13 || age > 100) return fail('Please choose a valid age.');
-  if (height === null || height < 100 || height > 250) return fail('Please choose a valid height.');
-  if (weight === null || weight < 30 || weight > 300) return fail('Please choose a valid weight.');
-  if (!ACTIVITY_FACTORS[activityLevel]) return fail('Please choose an activity level.');
-  if (!GOAL_MODES.includes(goalMode)) return fail('Please choose a goal.');
+  if (!VALID_GENDERS.includes(gender)) return { error: 'Please choose a gender.' };
+  if (age === null || age < 13 || age > 100) return { error: 'Please choose a valid age.' };
+  if (height === null || height < 100 || height > 250) return { error: 'Please choose a valid height.' };
+  if (weight === null || weight < 30 || weight > 300) return { error: 'Please choose a valid weight.' };
+  if (!ACTIVITY_FACTORS[activityLevel]) return { error: 'Please choose an activity level.' };
+  if (!GOAL_MODES.includes(goalMode)) return { error: 'Please choose a goal.' };
 
   if (goalMode === 'maintain') {
     weeklyRate = 0;
     targetWeight = null;
   } else if (weeklyRate === null) {
-    return fail('Please choose a weekly pace.');
+    return { error: 'Please choose a weekly pace.' };
   }
+
+  return { values: { gender, age, height, weight, activityLevel, goalMode, weeklyRate, targetWeight } };
+}
+
+// Compute the plan for the review screen WITHOUT persisting anything, so the
+// wizard can show calories/macros and let the user confirm before /save writes.
+router.post('/preview', requireAuth, (req, res) => {
+  const { error, values } = readOnboardingInput(req.body);
+  if (error) return res.status(422).json({ ok: false, data: null, message: error });
+
+  const plan = buildPersonalPlan(
+    values.age,
+    values.gender,
+    values.weight,
+    values.height,
+    values.activityLevel,
+    values.goalMode,
+    values.weeklyRate
+  );
+
+  res.json({
+    ok: true,
+    data: {
+      calorie_goal: plan.calorie_goal,
+      bmr: Math.round(plan.bmr),
+      tdee: Math.round(plan.tdee),
+      macros: plan.macros,
+      hydration_ml: plan.hydration_ml,
+    },
+    message: null,
+  });
+});
+
+router.post('/save', requireAuth, async (req, res, next) => {
+  const { error, values } = readOnboardingInput(req.body);
+  if (error) return res.status(422).json({ ok: false, data: null, message: error });
+  const { gender, age, height, weight, activityLevel, goalMode, weeklyRate, targetWeight } = values;
 
   const conn = await pool.getConnection();
   try {

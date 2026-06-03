@@ -81,7 +81,7 @@ label { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; fo
 input, select { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg, #0f1115); color: var(--text); font: inherit; }
 .hint { color: var(--muted); font-size: 0.8rem; margin: -4px 0 14px; }
 .actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.btn-primary { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: none; background: var(--accent); color: #04210f; }
+.btn-primary { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: none; background: var(--accent); color: var(--on-accent); }
 .btn-ghost { font: inherit; font-weight: 700; font-size: 0.9rem; text-decoration: none; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
 button:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }

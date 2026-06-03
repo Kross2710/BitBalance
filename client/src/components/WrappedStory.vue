@@ -409,7 +409,7 @@ const bentoCells = computed(() => {
 }
 .featured .lvl { margin-top: 12px; font-size: 22px; font-weight: 900; }
 .featured .xp { width: 120px; flex: none; text-align: right; }
-.xp-bar { height: 12px; background: #0f1115; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.xp-bar { height: 12px; background: var(--inset); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
 .xp-bar > div { height: 100%; background: var(--accent); }
 .featured .xp small { color: var(--muted); font-size: 12px; }
 .bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

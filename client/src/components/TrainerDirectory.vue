@@ -126,7 +126,7 @@ onMounted(load);
 .pt-top { display: flex; align-items: center; gap: 10px; }
 .avatar {
   flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden;
-  display: grid; place-items: center; background: var(--accent); color: #04210f; font-weight: 800;
+  display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-weight: 800;
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .pt-id { display: flex; flex-direction: column; min-width: 0; }

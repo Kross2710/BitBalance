@@ -95,8 +95,8 @@ onUnmounted(() => document.removeEventListener('keydown', onKey));
   font-weight: 700;
   font-size: 14px;
 }
-.cd-cancel { background: #2a2e37; color: var(--text); }
-.cd-confirm { background: var(--accent); color: #04210f; }
+.cd-cancel { background: var(--surface-2); color: var(--text); }
+.cd-confirm { background: var(--accent); color: var(--on-accent); }
 .cd-confirm.danger { background: #ef4444; color: #fff; }
 button:disabled { opacity: 0.6; cursor: default; }
 

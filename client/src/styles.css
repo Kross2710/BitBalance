@@ -1,10 +1,46 @@
 :root {
+  color-scheme: dark;
+  /* Surfaces */
   --bg: #0f1115;
   --card: #1a1d24;
+  --surface-2: #2a2e37;            /* chips, secondary buttons, avatars */
+  --inset: #12151b;                /* sunken: inputs, progress troughs, active pills */
+  --glass: rgba(15, 17, 21, 0.85); /* sticky topbar background */
+  /* Brand */
   --accent: #4ade80;
+  --on-accent: #04210f;            /* text/icon sitting on an --accent fill */
+  /* Text */
   --text: #e8eaed;
   --muted: #9aa0a6;
+  /* Lines + fields */
   --border: #2a2e37;
+  --field-border: #3a414e;
+  --placeholder: #7b828e;
+  --focus-ring: rgba(74, 222, 128, 0.25);
+  /* Status */
+  --danger: #f87171;
+}
+
+/* Light theme. lib/theme.js sets data-theme on <html> ('system' resolves to
+   light/dark via prefers-color-scheme there), so CSS needs only this one
+   override block — the default :root above stays dark. The accent darkens so it
+   keeps contrast on white both as a fill (white ink) and as link/active text. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f6fa;
+  --card: #ffffff;
+  --surface-2: #e9edf3;
+  --inset: #eef1f6;
+  --glass: rgba(244, 246, 250, 0.85);
+  --accent: #16a34a;
+  --on-accent: #ffffff;
+  --text: #1a1d24;
+  --muted: #5b6470;
+  --border: #d9dee7;
+  --field-border: #cbd2dc;
+  --placeholder: #98a1ad;
+  --focus-ring: rgba(22, 163, 74, 0.22);
+  --danger: #dc2626;
 }
 
 * { box-sizing: border-box; }
@@ -31,7 +67,7 @@ button {
   font-size: 14px;
   font-weight: 600;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
 }
 button:disabled { opacity: 0.6; cursor: default; }
 
@@ -40,17 +76,17 @@ input, select, textarea {
   padding: 11px 12px;
   min-height: 44px; /* comfortable touch target */
   border-radius: 8px;
-  /* Lighter than --border for clearer field edges on the dark background. */
-  border: 1px solid #3a414e;
-  background: #12151b;
+  /* Lighter than --border for clearer field edges. */
+  border: 1px solid var(--field-border);
+  background: var(--inset);
   color: var(--text);
   font-size: 16px; /* >=16px stops iOS Safari auto-zoom on focus */
 }
-input::placeholder, textarea::placeholder { color: #7b828e; }
+input::placeholder, textarea::placeholder { color: var(--placeholder); }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.25);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .card {
@@ -61,7 +97,65 @@ input:focus, select:focus, textarea:focus {
 }
 
 .error {
-  color: #f87171;
+  color: var(--danger);
   font-size: 13px;
   margin: 8px 0 0;
+}
+
+/* Choice card — flat selectable option (gender / goal / pace / activity list).
+   Flat per DESIGN.md: 1px border, accent border + faint accent fill when
+   selected. NOT the PHP 3D tactile look (no chunky `0 8px 0` shadow). Rendered
+   on a <button type="button">, so it overrides the global accent button fill.
+   All tokens, so it adapts to light + dark automatically. */
+.choice-grid {
+  display: grid;
+  gap: 10px;
+}
+.choice-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--inset);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+/* Wide variant: icon left, label + detail stacked right (e.g. activity list). */
+.choice.row {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 12px;
+}
+.choice .choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choice .sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.choice i {
+  font-size: 18px;
+  color: var(--muted);
+}
+.choice.is-selected {
+  border-color: var(--accent);
+  background: var(--focus-ring);
+}
+.choice.is-selected i {
+  color: var(--accent);
 }

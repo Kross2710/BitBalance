@@ -49,7 +49,7 @@ const tab = ref('ai'); // 'ai' | 'trainer'
 }
 .tab {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   padding: 7px 6px;
   border-radius: 10px;
   background: var(--card);
@@ -62,7 +62,7 @@ const tab = ref('ai'); // 'ai' | 'trainer'
   justify-content: center;
   gap: 7px;
 }
-.tab.on { color: var(--accent); border-color: var(--accent); background: #12151b; }
+.tab.on { color: var(--accent); border-color: var(--accent); background: var(--inset); }
 
 .hub-panel {
   flex: 1;

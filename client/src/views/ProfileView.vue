@@ -2,13 +2,14 @@
 // Profile page — mirrors the editable fields of the legacy profile.php that the
 // JSON API exposes: account details (name/handle/email), bio, theme, calorie
 // goal, and physical info. Image upload + language are not part of the API yet.
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
 import { compressImage } from '../lib/image.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
 import { t, locale, setLocale, locales } from '../i18n/index.js';
+import { setTheme } from '../lib/theme.js';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -40,6 +41,12 @@ const form = reactive({
   weight: '',
   height: '',
 });
+
+// Live-preview the theme the moment it's picked — session-only (persist:false)
+// so an UNSAVED pick doesn't linger in localStorage and fight the server value
+// on reload. localStorage is synced on Save (below); the DB write rides in the
+// profile-update payload.
+watch(() => form.theme_preference, (v) => setTheme(v, { persist: false }));
 
 function hydrate(data) {
   form.first_name = data.user.first_name ?? '';
@@ -80,6 +87,9 @@ async function onSubmit() {
     hydrate(data);
     // Keep the shared auth store (greeting, theme, etc.) in sync with the save.
     auth.user = data.user;
+    // Choice is now persisted server-side — sync localStorage so the next reload
+    // paints it before /me resolves (no flash).
+    setTheme(data.user.theme_preference ?? 'system');
     success.value = t('profile.updated');
   } catch (e) {
     error.value = e.message;
@@ -323,7 +333,7 @@ textarea {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #12151b;
+  background: var(--inset);
   color: var(--text);
   font-size: 14px;
   font-family: inherit;
@@ -335,7 +345,7 @@ textarea {
   height: 56px;
   border-radius: 50%;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   font-weight: 800;
   font-size: 20px;
   display: grid;
@@ -385,7 +395,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #2a2e37;
+  background: var(--surface-2);
   color: #f87171;
   font-weight: 700;
 }

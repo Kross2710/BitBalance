@@ -335,7 +335,7 @@ onMounted(loadConversations);
   height: 56px;
   border-radius: 50%;
   background: var(--accent);
-  color: #04210f;
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   font-size: 22px;
@@ -354,8 +354,8 @@ onMounted(loadConversations);
   white-space: normal;
   word-break: break-word;
 }
-.msg.user .bubble { background: var(--accent); color: #04210f; border-bottom-right-radius: 4px; }
-.msg.assistant .bubble { background: #12151b; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg.user .bubble { background: var(--accent); color: var(--on-accent); border-bottom-right-radius: 4px; }
+.msg.assistant .bubble { background: var(--inset); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 .bubble :deep(.bullet) { display: list-item; margin-left: 18px; }
 
 /* ---- Suggestion cards ---- */
@@ -377,7 +377,7 @@ onMounted(loadConversations);
 }
 .macros { margin: 4px 0 8px; }
 .addbtn { font-size: 12px; padding: 6px 12px; min-height: 0; }
-.addbtn.done { background: #2a2e37; color: var(--accent); }
+.addbtn.done { background: var(--surface-2); color: var(--accent); }
 
 /* ---- Composer ---- */
 .composer { border-top: 1px solid var(--border); padding: 12px 14px; }
