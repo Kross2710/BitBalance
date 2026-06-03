@@ -293,6 +293,31 @@ export async function setUserStatus(adminId, userId, action) {
   });
 }
 
+// POST /users/:id/password — admin sets a new password for a user (account
+// recovery / no self-serve reset flow yet, see DEPLOY.md gotcha #7). Same policy
+// and bcrypt cost as signup; the new $2b$ hash stays PHP-compatible.
+export async function setUserPassword(adminId, userId, password, confirm) {
+  const exists = await query('SELECT user_id FROM user WHERE user_id = ? LIMIT 1', [userId]);
+  if (!exists.length) throw new AdminActionError('User not found.');
+
+  const pw = String(password ?? '');
+  if (pw !== String(confirm ?? '')) throw new AdminActionError('Passwords do not match.');
+  if (pw.length < 8) throw new AdminActionError('Password must be at least 8 characters long.');
+  if (!PASSWORD_RE.test(pw)) {
+    throw new AdminActionError('Password must contain at least one uppercase letter, one lowercase letter, and one number.');
+  }
+
+  const hashed = await bcrypt.hash(pw, BCRYPT_ROUNDS);
+  await query('UPDATE user SET password = ? WHERE user_id = ?', [hashed, userId]);
+  await logActivity({
+    userId: adminId,
+    action: 'admin_reset_password',
+    targetTable: 'user',
+    targetId: userId,
+    description: 'Reset password',
+  });
+}
+
 // POST /users/:id/unlock — thin account recovery: clear the lockout counters so
 // a locked-out user can sign in again. (No password reset — that flow is unbuilt;
 // see DEPLOY.md gotcha #7.)

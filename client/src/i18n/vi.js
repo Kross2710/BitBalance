@@ -111,6 +111,13 @@ export default {
   'admin.user.none_data': 'Chưa có gì.',
   'admin.user.saved': 'Đã lưu.',
   'admin.user.done': 'Xong.',
+  'admin.user.reset_password': 'Đặt lại mật khẩu',
+  'admin.user.new_password': 'Mật khẩu mới',
+  'admin.user.confirm_password': 'Xác nhận mật khẩu',
+  'admin.user.set_password': 'Đặt mật khẩu',
+  'admin.user.password_set': 'Đã cập nhật mật khẩu.',
+  'admin.user.confirm_reset_title': 'Đặt mật khẩu mới?',
+  'admin.user.confirm_reset_message': 'Thao tác này thay mật khẩu hiện tại của người dùng ngay lập tức.',
 
   // tạo người dùng (AdminUserCreateView.vue)
   'admin.create.title': 'Tạo người dùng',

@@ -114,14 +114,14 @@ const fmtDate = (s) => (s ? String(s).slice(0, 10) : '—');
         </thead>
         <tbody>
           <tr v-for="u in users" :key="u.user_id">
-            <td>
+            <td :data-label="$t('admin.users.col_user')">
               <div class="u-name">{{ u.first_name || u.user_name }} {{ u.last_name }}</div>
               <div class="u-handle">@{{ u.user_name }}</div>
             </td>
-            <td class="u-email">{{ u.email }}</td>
-            <td><span class="badge" :class="'role-' + u.role">{{ $t('admin.role.' + u.role) }}</span></td>
-            <td><span class="badge" :class="'st-' + u.status">{{ $t('admin.status.' + u.status) }}</span></td>
-            <td class="u-date">{{ fmtDate(u.created_at) }}</td>
+            <td class="u-email" :data-label="$t('admin.users.col_email')">{{ u.email }}</td>
+            <td :data-label="$t('admin.users.col_role')"><span class="badge" :class="'role-' + u.role">{{ $t('admin.role.' + u.role) }}</span></td>
+            <td :data-label="$t('admin.users.col_status')"><span class="badge" :class="'st-' + u.status">{{ $t('admin.status.' + u.status) }}</span></td>
+            <td class="u-date" :data-label="$t('admin.users.col_joined')">{{ fmtDate(u.created_at) }}</td>
             <td class="u-actions">
               <RouterLink :to="`/admin/users/${u.user_id}`" class="btn-link">{{ $t('admin.users.view') }}</RouterLink>
               <button v-if="u.status === 'active'" :disabled="busyId === u.user_id" class="btn-danger" @click="askBan(u)">{{ $t('admin.action.ban') }}</button>
@@ -199,4 +199,24 @@ button:disabled { opacity: 0.5; cursor: default; }
 .pager { display: flex; align-items: center; gap: 14px; justify-content: center; margin-top: 18px; }
 .pager button { font: inherit; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; }
 .pageinfo { color: var(--muted); font-size: 0.88rem; }
+
+/* Mobile: stack each row into a card (label : value) instead of a wide table. */
+@media (max-width: 640px) {
+  .table-wrap { overflow-x: visible; border: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tr {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 8px 14px; margin-bottom: 12px;
+  }
+  td { border: none; padding: 7px 0; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+  td::before {
+    content: attr(data-label); flex: none; color: var(--muted);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+  }
+  td.u-email { word-break: break-all; text-align: right; }
+  td.u-actions { justify-content: flex-end; }
+  td.u-actions::before, td.empty::before { display: none; }
+  td.empty { justify-content: center; }
+}
 </style>

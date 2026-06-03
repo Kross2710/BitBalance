@@ -137,11 +137,11 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
         </thead>
         <tbody>
           <tr v-for="l in logs" :key="l.log_id">
-            <td class="when">{{ fmt(l.created_at) }}</td>
-            <td>{{ l.actor_name ? '@' + l.actor_name : '—' }}</td>
-            <td><code>{{ l.action_type }}</code></td>
-            <td class="target">{{ l.target_table || '—' }}<span v-if="l.target_id" class="tid">#{{ l.target_id }}</span></td>
-            <td class="desc">{{ l.description || '—' }}</td>
+            <td class="when" :data-label="$t('admin.logs.col_when')">{{ fmt(l.created_at) }}</td>
+            <td :data-label="$t('admin.logs.col_actor')">{{ l.actor_name ? '@' + l.actor_name : '—' }}</td>
+            <td :data-label="$t('admin.logs.col_action')"><code>{{ l.action_type }}</code></td>
+            <td class="target" :data-label="$t('admin.logs.col_target')">{{ l.target_table || '—' }}<span v-if="l.target_id" class="tid">#{{ l.target_id }}</span></td>
+            <td class="desc" :data-label="$t('admin.logs.col_desc')">{{ l.description || '—' }}</td>
           </tr>
           <tr v-if="!loading && !logs.length">
             <td colspan="5" class="empty">{{ $t('admin.logs.none') }}</td>
@@ -205,4 +205,23 @@ button:disabled { opacity: 0.5; cursor: default; }
 .pageinfo { color: var(--muted); font-size: 0.88rem; }
 .prune-line { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text); }
 .prune-line.muted { color: var(--muted); }
+
+/* Mobile: stack each log row into a card (label : value) instead of a wide table. */
+@media (max-width: 640px) {
+  .table-wrap { overflow-x: visible; border: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tr {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 8px 14px; margin-bottom: 12px;
+  }
+  td { border: none; padding: 7px 0; display: flex; gap: 12px; align-items: baseline; justify-content: space-between; }
+  td::before {
+    content: attr(data-label); flex: none; color: var(--muted);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700;
+  }
+  td.desc { text-align: right; }
+  td.empty { justify-content: center; }
+  td.empty::before { display: none; }
+}
 </style>

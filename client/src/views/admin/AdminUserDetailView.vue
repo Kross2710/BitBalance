@@ -70,6 +70,25 @@ async function confirmBan() {
   if (!error.value) confirmBanOpen.value = false;
 }
 
+// Admin-set password (account recovery). Confirmed via dialog before applying.
+const pw = reactive({ password: '', confirm_password: '' });
+const resetOpen = ref(false);
+async function confirmReset() {
+  saving.value = true; notice.value = ''; error.value = '';
+  try {
+    detail.value = await api.post(`/api/admin/users/${id}/password`, { ...pw });
+    syncForm(detail.value.user);
+    pw.password = '';
+    pw.confirm_password = '';
+    notice.value = t('admin.user.password_set');
+    resetOpen.value = false;
+  } catch (e) {
+    error.value = e.message;
+  } finally {
+    saving.value = false;
+  }
+}
+
 const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
 </script>
 
@@ -142,6 +161,18 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
       </div>
 
       <div class="card">
+        <h2>{{ $t('admin.user.reset_password') }}</h2>
+        <div class="row2">
+          <label>{{ $t('admin.user.new_password') }}<input v-model="pw.password" type="password" autocomplete="new-password" /></label>
+          <label>{{ $t('admin.user.confirm_password') }}<input v-model="pw.confirm_password" type="password" autocomplete="new-password" /></label>
+        </div>
+        <p class="hint">{{ $t('admin.create.password_hint') }}</p>
+        <button class="btn-reset" :disabled="saving || !pw.password || !pw.confirm_password" @click="resetOpen = true">
+          {{ $t('admin.user.set_password') }}
+        </button>
+      </div>
+
+      <div class="card">
         <h2>{{ $t('admin.user.login_attempts') }}</h2>
         <table v-if="detail.login_attempts.length" class="mini">
           <thead><tr><th>{{ $t('admin.user.when') }}</th><th>IP</th><th>{{ $t('admin.user.result') }}</th></tr></thead>
@@ -181,6 +212,16 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
       @confirm="confirmBan"
       @cancel="confirmBanOpen = false"
     />
+    <ConfirmDialog
+      :open="resetOpen"
+      :title="$t('admin.user.confirm_reset_title')"
+      :message="$t('admin.user.confirm_reset_message')"
+      :confirm-label="$t('admin.user.set_password')"
+      :danger="false"
+      :busy="saving"
+      @confirm="confirmReset"
+      @cancel="resetOpen = false"
+    />
   </section>
 </template>
 
@@ -200,6 +241,10 @@ const fmt = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '—');
 label { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 0.82rem; color: var(--muted); font-weight: 600; }
 input, select { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg, #0f1115); color: var(--text); font: inherit; }
 .btn-primary { font: inherit; font-weight: 700; cursor: pointer; padding: 10px 18px; border-radius: 10px; border: none; background: var(--accent); color: #04210f; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hint { color: var(--muted); font-size: 0.8rem; margin: -4px 0 12px; }
+.btn-reset { font: inherit; font-weight: 700; cursor: pointer; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--border); background: #2a2e37; color: var(--text); }
+@media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0 0 16px; }
 .kv dt { color: var(--muted); font-size: 0.85rem; }
 .kv dd { margin: 0; font-weight: 600; font-size: 0.9rem; }

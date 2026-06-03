@@ -19,6 +19,7 @@ import {
   createUser,
   updateUser,
   setUserStatus,
+  setUserPassword,
   unlockUser,
   getActivityLogs,
   previewPrune,
@@ -105,6 +106,17 @@ router.patch(
   handle(async (req, res) => {
     const data = await updateUser(req.user.user_id, intParam(req.params.id), req.body || {});
     ok(res, data, 'User updated.');
+  })
+);
+
+// POST /api/admin/users/:id/password → set a new password (account recovery).
+// Declared BEFORE /:action so "password" isn't swallowed by the action param.
+router.post(
+  '/users/:id/password',
+  handle(async (req, res) => {
+    const id = intParam(req.params.id);
+    await setUserPassword(req.user.user_id, id, req.body?.password, req.body?.confirm_password);
+    ok(res, await getUserDetail(id), 'Password updated.');
   })
 );
 

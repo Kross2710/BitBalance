@@ -112,6 +112,13 @@ export default {
   'admin.user.none_data': 'Nothing yet.',
   'admin.user.saved': 'Saved.',
   'admin.user.done': 'Done.',
+  'admin.user.reset_password': 'Reset password',
+  'admin.user.new_password': 'New password',
+  'admin.user.confirm_password': 'Confirm password',
+  'admin.user.set_password': 'Set password',
+  'admin.user.password_set': 'Password updated.',
+  'admin.user.confirm_reset_title': 'Set a new password?',
+  'admin.user.confirm_reset_message': "This replaces the user's current password immediately.",
 
   // create user (AdminUserCreateView.vue)
   'admin.create.title': 'Create user',
