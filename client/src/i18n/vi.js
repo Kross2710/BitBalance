@@ -333,6 +333,7 @@ export default {
   'intake.logged_named': 'Đã ghi {name}.',
   'intake.deleted_named': 'Đã xoá {name}.',
   'intake.undo': 'Hoàn tác',
+  'intake.row.relog_title': 'Ghi lại',
   'intake.todays_entries': 'Các mục hôm nay',
   'intake.entries_for': 'Các mục · {date}',
   'intake.past.banner': 'Đang ghi cho {date} — không phải hôm nay.',

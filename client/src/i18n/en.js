@@ -334,6 +334,7 @@ export default {
   'intake.logged_named': 'Logged {name}.',
   'intake.deleted_named': 'Deleted {name}.',
   'intake.undo': 'Undo',
+  'intake.row.relog_title': 'Log again',
   'intake.todays_entries': "Today's entries",
   'intake.entries_for': 'Entries · {date}',
   'intake.past.banner': 'Logging for {date} — not today.',

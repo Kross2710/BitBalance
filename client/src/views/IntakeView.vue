@@ -27,6 +27,7 @@ const MEALS = [
   { key: 'dinner', labelKey: 'intake.meal.dinner_emoji', icon: 'fa-utensils' },
   { key: 'snack', labelKey: 'intake.meal.snack_emoji', icon: 'fa-cookie-bite' },
 ];
+const mealMeta = Object.fromEntries(MEALS.map((m) => [m.key, m])); // quick icon lookup per meal
 
 const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
 const showMacros = ref(false);
@@ -441,6 +442,37 @@ function onAiPick(p) {
   showAiChat.value = false;
 }
 
+// Time-of-day an entry was logged (app tz +07:00), e.g. "8:30 AM".
+function entryTime(e) {
+  const iso = e.iso_date || (e.date_intake ? e.date_intake.replace(' ', 'T') + '+07:00' : null);
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString(locale.value === 'vi' ? 'vi-VN' : 'en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Asia/Bangkok',
+  });
+}
+
+// Quick re-log: duplicate this entry onto the active day in one tap.
+async function relog(e) {
+  error.value = '';
+  try {
+    await api.post('/api/intake/create', {
+      food_item: e.food_item,
+      calories: e.calories,
+      protein: e.protein,
+      carbs: e.carbs,
+      fat: e.fat,
+      meal_category: e.meal_category,
+      date: activeDate.value,
+    });
+    flashSuccess(t('intake.logged_named', { name: e.food_item }));
+    await Promise.all([loadEntries(), loadRecent()]);
+  } catch (err) {
+    error.value = err.message;
+  }
+}
+
 onMounted(() => {
   loadRecent();
   loadEntries();
@@ -576,15 +608,29 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div v-else class="entry-row">
-            <span class="entry-main">
-              <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
-              <span class="entry-name">{{ e.food_item }} <small class="muted">· {{ $t('intake.meal.' + e.meal_category + '_emoji') }}</small></span>
-            </span>
-            <span class="entry-end">
-              <strong>{{ e.calories }} {{ $t('common.kcal') }}</strong>
+            <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
+            <div class="entry-body">
+              <div class="entry-line">
+                <span class="entry-name">{{ e.food_item }}</span>
+                <strong class="entry-kcal">{{ e.calories }} {{ $t('common.kcal') }}</strong>
+              </div>
+              <div class="entry-meta">
+                <span class="meal-badge" :class="e.meal_category">
+                  <i class="fa-solid" :class="mealMeta[e.meal_category]?.icon" /> {{ $t('intake.meal.' + e.meal_category + '_emoji') }}
+                </span>
+                <span v-if="entryTime(e)" class="entry-time">{{ entryTime(e) }}</span>
+                <span v-if="e.protein || e.carbs || e.fat" class="mchips">
+                  <span v-if="e.protein" class="mchip p">{{ $t('intake.macro_abbr.protein') }} {{ e.protein }}</span>
+                  <span v-if="e.carbs" class="mchip c">{{ $t('intake.macro_abbr.carbs') }} {{ e.carbs }}</span>
+                  <span v-if="e.fat" class="mchip f">{{ $t('intake.macro_abbr.fat') }} {{ e.fat }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="entry-actions">
+              <button type="button" class="icon-btn" @click="relog(e)" :aria-label="$t('intake.row.relog_title')"><i class="fa-solid fa-rotate-right" /></button>
               <button type="button" class="icon-btn" @click="startEdit(e)" :aria-label="$t('intake.row.edit_title')"><i class="fa-solid fa-pen" /></button>
               <button type="button" class="icon-btn danger" @click="removeEntry(e)" :aria-label="$t('intake.row.delete_title')"><i class="fa-solid fa-trash" /></button>
-            </span>
+            </div>
           </div>
         </li>
       </ul>
@@ -830,15 +876,33 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .entries { margin-top: 18px; }
 .entries h2 { font-size: 16px; margin: 0 0 12px; }
 .entries ul { list-style: none; margin: 0; padding: 0; }
-.entries li { padding: 10px 0; border-top: 1px solid var(--border); }
+.entries li { padding: 12px 0; border-top: 1px solid var(--border); }
 .entries li:first-child { border-top: none; padding-top: 0; }
-.entry-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.entry-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.entry-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
-.entry-end { display: flex; align-items: center; gap: 6px; flex: none; }
+.entry-row { display: flex; align-items: center; gap: 10px; }
+.entry-thumb { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+.entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.entry-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.entry-kcal { flex: none; font-weight: 700; }
+.entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.entry-time { color: var(--muted); font-size: 12px; }
+.meal-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+}
+.meal-badge i { font-size: 10px; }
+.meal-badge.breakfast { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+.meal-badge.lunch { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.meal-badge.dinner { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
+.meal-badge.snack { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.mchips { display: inline-flex; gap: 4px; }
+.mchip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+.mchip.p { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.mchip.c { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.mchip.f { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.entry-actions { flex: none; display: flex; gap: 6px; }
 .icon-btn {
-  width: 44px; height: 44px; min-height: 44px;
+  width: 40px; height: 40px; min-height: 40px;
   display: grid; place-items: center;
   background: var(--surface-2); color: var(--text); border: none; border-radius: 10px;
   font-size: 14px;
