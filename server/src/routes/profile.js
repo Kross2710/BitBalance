@@ -2,15 +2,25 @@
 //   GET  /api/profile          → current user's profile payload
 //   POST /api/profile/update   → validate + persist account / status / goal / physical
 //   POST /api/profile/language → persist the UI language preference (mirrors set_language.php)
-// Profile image upload is NOT part of the JSON API (the legacy update.php didn't
-// handle it either) — tracked in MIGRATION.md.
+//   POST /api/profile/avatar   → upload a profile photo (client compresses first)
 import { Router } from 'express';
+import multer from 'multer';
 import { pool, query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { publicUser } from '../lib/users.js';
+import { saveProfileImage, removeProfileImage } from '../lib/uploads.js';
 import { fetchUser, payload } from '../lib/profile.js';
 
 const router = Router();
+
+// Avatar upload: in-memory, 5MB cap (mirrors the legacy profile.php limit + the
+// intake photo route). The client already downscales to a small JPEG.
+const AVATAR_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, AVATAR_MIMES.has(file.mimetype)),
+});
 
 const HANDLE_RE = /^[A-Za-z0-9_.#\-]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -166,6 +176,34 @@ router.post('/update', requireAuth, async (req, res, next) => {
     next(err);
   } finally {
     conn.release();
+  }
+});
+
+// Upload / replace the profile avatar. The client compresses to a small JPEG
+// first (client/src/lib/image.js); here we just validate, store, and point the
+// user row at the new file (deleting the previous avatar if it was ours).
+router.post('/avatar', requireAuth, avatarUpload.single('image'), async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+    if (!req.file) {
+      return res.status(422).json({ ok: false, data: null, message: 'No image (JPEG/PNG/WebP, max 5MB).' });
+    }
+
+    const [prev] = await pool.query('SELECT profile_image FROM user WHERE user_id = ?', [userId]);
+    const oldPath = prev[0]?.profile_image ?? null;
+
+    const newPath = saveProfileImage(userId, req.file.buffer, req.file.mimetype);
+    await query('UPDATE user SET profile_image = ? WHERE user_id = ?', [newPath, userId]);
+
+    // Drop the old file only if it was a Vue-side avatar (never touch legacy
+    // PHP uploads/ paths or external/Google URLs).
+    if (oldPath && oldPath !== newPath) removeProfileImage(oldPath);
+
+    const fresh = await fetchUser(userId);
+    req.session.user = publicUser(fresh);
+    res.json({ ok: true, data: { profile_image: req.session.user.profile_image }, message: null });
+  } catch (err) {
+    next(err);
   }
 });
 

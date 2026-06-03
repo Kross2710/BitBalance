@@ -175,6 +175,8 @@ export default {
   // ---- profile (reuses PHP profile.* values where they overlap) ----
   'profile.title': 'Profile',
   'profile.avatar.alt': 'Profile image',
+  'profile.avatar.change': 'Change photo',
+  'profile.avatar.upload_failed': 'Could not upload the photo.',
   'profile.role.regular': 'regular',
   'profile.role.pt': 'trainer',
   'profile.account': 'Account',

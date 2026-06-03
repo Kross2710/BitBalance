@@ -174,6 +174,8 @@ export default {
   // ---- profile ----
   'profile.title': 'Hồ sơ',
   'profile.avatar.alt': 'Ảnh đại diện',
+  'profile.avatar.change': 'Đổi ảnh',
+  'profile.avatar.upload_failed': 'Không tải được ảnh lên.',
   'profile.role.regular': 'thường',
   'profile.role.pt': 'huấn luyện viên',
   'profile.account': 'Tài khoản',

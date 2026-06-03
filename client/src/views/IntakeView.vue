@@ -6,6 +6,7 @@
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 import { api } from '../lib/api.js';
 import { t } from '../i18n/index.js';
+import { compressImage } from '../lib/image.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -337,29 +338,6 @@ function openPhoto() {
   photoInput.value?.click();
 }
 
-// Downscale large photos (especially iPhone shots, which routinely exceed the
-// 5MB server cap) and re-encode to JPEG, which also strips the color profiles
-// that oversaturate on iOS. Falls back to the original file if anything fails.
-async function compressImage(file) {
-  try {
-    if (!file.type?.startsWith('image/') || typeof createImageBitmap !== 'function') return file;
-    const bitmap = await createImageBitmap(file);
-    const MAX = 1600;
-    const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
-    bitmap.close?.();
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-    return blob ? new File([blob], 'meal.jpg', { type: 'image/jpeg' }) : file;
-  } catch {
-    return file;
-  }
-}
-
 function clearPhotoPreview() {
   if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
   photoPreview.value = '';
@@ -383,7 +361,7 @@ async function onPhotoPicked(e) {
   clearPhotoPreview();
   photoBusy.value = true;
   try {
-    const compressed = await compressImage(file);
+    const compressed = await compressImage(file, { filename: 'meal.jpg' });
     // Preview exactly what we send to the model.
     photoPreview.value = URL.createObjectURL(compressed);
     const fd = new FormData();
