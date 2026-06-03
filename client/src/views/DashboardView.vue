@@ -21,6 +21,8 @@ function openWrapped() {
 
 const day = ref(null); // full /api/dashboard/day payload
 const selectedDate = ref(new Date().toISOString().slice(0, 10));
+const renderedDate = ref(selectedDate.value); // transition key; flips only after new data loads
+const slideDir = ref('next'); // 'next' = newer day (enter from right), 'prev' = older day
 const today = new Date().toISOString().slice(0, 10);
 const loading = ref(true);
 const error = ref('');
@@ -48,15 +50,17 @@ const dateStrip = computed(() => {
 
 function selectDate(iso) {
   if (iso === selectedDate.value) return;
+  slideDir.value = iso > selectedDate.value ? 'next' : 'prev';
   selectedDate.value = iso;
   loadDay();
 }
 
 async function loadDay() {
-  loading.value = true;
+  if (!day.value) loading.value = true; // full loading line only on the first load
   error.value = '';
   try {
     day.value = await api.get(`/api/dashboard/day?date=${selectedDate.value}`);
+    renderedDate.value = selectedDate.value; // flip the transition key together with the data
     computeNudge(); // day's meal totals changed → re-evaluate the reminder
   } catch (e) {
     error.value = e.message;
@@ -174,7 +178,8 @@ onMounted(() => {
 
     <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
 
-    <template v-else-if="day">
+    <Transition v-else :name="'day-' + slideDir" mode="out-in">
+      <div v-if="day" :key="renderedDate" class="day-content">
       <!-- Calorie + macro summary (shared with the Intake page) -->
       <CalorieSummaryCard :summary="day" style="margin-top: 14px" />
 
@@ -248,7 +253,8 @@ onMounted(() => {
           <i class="fa-solid fa-pen" /> {{ isToday ? $t('dashboard.entries.edit_today') : $t('dashboard.entries.edit_day') }}
         </RouterLink>
       </section>
-    </template>
+      </div>
+    </Transition>
 
     <!-- Food photo viewer -->
     <div v-if="lightbox" class="lightbox" @click="lightbox = ''">
@@ -408,5 +414,24 @@ onMounted(() => {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
   min-height: 44px; padding: 0 4px;
   color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none;
+}
+
+/* Day-switch transition: directional slide + fade when tapping the date strip.
+   'next' = a more recent day (content enters from the right), 'prev' = mirrored.
+   Kept small per DESIGN.md §7 — motion serves smoothness, not decoration. */
+.day-next-enter-active, .day-next-leave-active,
+.day-prev-enter-active, .day-prev-leave-active {
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.day-next-enter-from { opacity: 0; transform: translateX(16px); }
+.day-next-leave-to   { opacity: 0; transform: translateX(-16px); }
+.day-prev-enter-from { opacity: 0; transform: translateX(-16px); }
+.day-prev-leave-to   { opacity: 0; transform: translateX(16px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .day-next-enter-active, .day-next-leave-active,
+  .day-prev-enter-active, .day-prev-leave-active { transition: opacity 0.15s ease; }
+  .day-next-enter-from, .day-next-leave-to,
+  .day-prev-enter-from, .day-prev-leave-to { transform: none; }
 }
 </style>
