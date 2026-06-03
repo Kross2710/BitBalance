@@ -18,3 +18,23 @@ export async function requireAuth(req, res, next) {
     next(err);
   }
 }
+
+// Role guard for the trainer workspace. Runs AFTER requireAuth (needs req.user).
+// Mirrors the `role !== 'pt'` gate in dashboard-pt.php / pt_action.php.
+export function requirePt(req, res, next) {
+  if (!req.user || req.user.role !== 'pt') {
+    return res.status(403).json({ ok: false, data: null, message: 'Trainer access only.' });
+  }
+  next();
+}
+
+// Role guard for the admin panel. Runs AFTER requireAuth (needs req.user).
+// Mirrors the `role === 'admin'` gate on every page in the PHP admin/ dir, but
+// applied once at the /api/admin mount point since the whole surface is
+// admin-only (unlike the per-endpoint PT guard).
+export function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ ok: false, data: null, message: 'Admin access only.' });
+  }
+  next();
+}

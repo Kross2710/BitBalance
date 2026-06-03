@@ -11,6 +11,20 @@ const routes = [
     component: () => import('./views/OnboardingView.vue'),
     meta: { requiresAuth: true },
   },
+  // Admin panel — its own layout + sidebar, gated by role at the router guard
+  // below (requiresAdmin) AND server-side on every /api/admin call. Reached only
+  // from the avatar menu when role === 'admin'.
+  {
+    path: '/admin',
+    component: () => import('./layouts/AdminLayout.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      { path: '', name: 'admin', component: () => import('./views/admin/AdminHomeView.vue') },
+      { path: 'users', name: 'admin-users', component: () => import('./views/admin/AdminUsersView.vue') },
+      { path: 'users/:id', name: 'admin-user', component: () => import('./views/admin/AdminUserDetailView.vue') },
+      { path: 'logs', name: 'admin-logs', component: () => import('./views/admin/AdminLogsView.vue') },
+    ],
+  },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,
   // so switching tabs never remounts the chrome — navigation stays seamless.
   {
@@ -24,6 +38,8 @@ const routes = [
       { path: 'profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
       { path: 'coach', name: 'coach', component: () => import('./views/CoachView.vue') },
       { path: 'friends', name: 'friends', component: () => import('./views/FriendsView.vue') },
+      // PT workspace — reached via the topbar avatar menu, not the bottom nav.
+      { path: 'trainer', name: 'trainer', component: () => import('./views/TrainerView.vue') },
     ],
   },
 ];
@@ -37,10 +53,24 @@ const router = createRouter({
 // routes. This is what makes navigation feel seamless — no full page reloads.
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  if (!auth.ready) await auth.bootstrap();
+  if (!auth.ready) {
+    await auth.bootstrap();
+    // First load only: adopt the logged-in user's stored language. The cookie /
+    // navigator already set a pre-paint default; persist:false because we're
+    // reflecting the server value, not echoing it back. Gated to the initial
+    // bootstrap so it never overrides an in-session manual switch.
+    if (auth.user?.language_preference) {
+      const { setLocale } = await import('./i18n/index.js');
+      setLocale(auth.user.language_preference, { persist: false });
+    }
+  }
 
   if (to.meta.requiresAuth && !auth.user) {
     return { name: 'login', query: { redirect: to.fullPath } };
+  }
+  // Admin area is role-gated at the router level (not just hidden in the UI).
+  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+    return { name: 'dashboard' };
   }
   if ((to.name === 'login' || to.name === 'signup') && auth.user) {
     return { name: 'dashboard' };

@@ -5,6 +5,7 @@
 // meal, optional macros, and a full-width Log Entry button.
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 import { api } from '../lib/api.js';
+import { t } from '../i18n/index.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -18,10 +19,10 @@ function mealFromHour() {
 // Meal segmented selector — four big pills instead of a <select>, each showing
 // how much has already been logged for that meal today. Icons mirror the meal.
 const MEALS = [
-  { key: 'breakfast', label: 'Breakfast', icon: 'fa-mug-saucer' },
-  { key: 'lunch', label: 'Lunch', icon: 'fa-bowl-food' },
-  { key: 'dinner', label: 'Dinner', icon: 'fa-utensils' },
-  { key: 'snack', label: 'Snack', icon: 'fa-cookie-bite' },
+  { key: 'breakfast', labelKey: 'intake.meal.breakfast_emoji', icon: 'fa-mug-saucer' },
+  { key: 'lunch', labelKey: 'intake.meal.lunch_emoji', icon: 'fa-bowl-food' },
+  { key: 'dinner', labelKey: 'intake.meal.dinner_emoji', icon: 'fa-utensils' },
+  { key: 'snack', labelKey: 'intake.meal.snack_emoji', icon: 'fa-cookie-bite' },
 ];
 
 const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
@@ -99,7 +100,7 @@ async function saveEdit() {
   }
 }
 async function removeEntry(e) {
-  if (!confirm(`Delete "${e.food_item}"?`)) return;
+  if (!confirm(t('intake.confirm_delete_named', { name: e.food_item }))) return;
   error.value = '';
   try {
     await api.post('/api/intake/delete', { intake_id: e.id });
@@ -165,7 +166,7 @@ async function onSubmit() {
   saving.value = true;
   try {
     await api.post('/api/intake/create', { ...form });
-    success.value = `Logged ${form.food_item}.`;
+    success.value = t('intake.logged_named', { name: form.food_item });
     form.food_item = '';
     form.calories = '';
     form.protein = '';
@@ -225,7 +226,7 @@ async function startCamera() {
     }
   } catch (e) {
     cameraOn.value = false;
-    scanError.value = 'Camera unavailable — enter the barcode number below.';
+    scanError.value = t('intake.scan.camera_unavailable');
   }
 }
 
@@ -292,7 +293,7 @@ async function detectLoop() {
 async function lookupBarcode(code) {
   const barcode = String(code).trim();
   if (!/^\d{6,20}$/.test(barcode)) {
-    scanError.value = 'Enter a valid barcode (6-20 digits).';
+    scanError.value = t('intake.scan.invalid_barcode');
     return;
   }
   scanError.value = '';
@@ -301,7 +302,7 @@ async function lookupBarcode(code) {
   try {
     const data = await api.post('/api/intake/lookup-barcode', { barcode });
     if (data.found) scanResult.value = data;
-    else scanError.value = `No product found for ${barcode}.`;
+    else scanError.value = t('intake.scan.no_product', { barcode });
   } catch (e) {
     scanError.value = e.message;
   } finally {
@@ -312,7 +313,7 @@ async function lookupBarcode(code) {
 function useProduct() {
   const p = scanResult.value;
   if (!p) return;
-  form.food_item = [p.brand, p.product_name].filter(Boolean).join(' ').slice(0, 80) || 'Scanned item';
+  form.food_item = [p.brand, p.product_name].filter(Boolean).join(' ').slice(0, 80) || t('intake.scan.scanned_item');
   form.calories = p.kcal_per_serving ?? (p.kcal_per_100g != null ? Math.round(p.kcal_per_100g) : '');
   if (p.protein != null || p.carbs != null || p.fat != null) {
     form.protein = p.protein ?? '';
@@ -390,7 +391,7 @@ async function onPhotoPicked(e) {
     // FormData must NOT go through the JSON api helper — post it directly.
     const res = await fetch('/api/intake/estimate-photo', { method: 'POST', credentials: 'include', body: fd });
     const json = await res.json();
-    if (!json.ok) throw new Error(json.message || 'Could not estimate the photo.');
+    if (!json.ok) throw new Error(json.message || t('intake.photo.estimate_failed'));
     const est = json.data;
     form.food_item = est.food_name || '';
     form.calories = est.calories || '';
@@ -420,28 +421,28 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="intake">
-    <h1>Log food</h1>
+    <h1>{{ $t('intake.add_entry') }}</h1>
 
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
       <div class="io-actions">
         <button type="button" class="io-chip" @click="openScanner">
-          <i class="fa-solid fa-barcode" /> Scan barcode
+          <i class="fa-solid fa-barcode" /> {{ $t('intake.scan_barcode_chip') }}
         </button>
         <button type="button" class="io-chip" :disabled="photoBusy" @click="openPhoto">
           <i class="fa-solid" :class="photoBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
-          {{ photoBusy ? 'Analyzing…' : 'AI Photo' }}
+          {{ photoBusy ? $t('intake.photo.analyzing') : $t('intake.ai_photo_chip') }}
         </button>
       </div>
 
       <!-- AI Photo review: shows the picked image so the user can confirm it. -->
       <div v-if="photoPreview || photoBusy" class="photo-review">
-        <img v-if="photoPreview" :src="photoPreview" alt="Selected food photo" />
+        <img v-if="photoPreview" :src="photoPreview" :alt="$t('intake.photo.selected_alt')" />
         <div class="photo-review-body">
-          <span v-if="photoBusy" class="muted"><i class="fa-solid fa-spinner fa-spin" /> Analyzing photo…</span>
+          <span v-if="photoBusy" class="muted"><i class="fa-solid fa-spinner fa-spin" /> {{ $t('intake.photo.analyzing_photo') }}</span>
           <template v-else>
-            <strong>Photo added</strong>
-            <small class="muted">Estimate filled in below — adjust if needed.</small>
+            <strong>{{ $t('intake.photo.added') }}</strong>
+            <small class="muted">{{ $t('intake.photo.estimate_hint') }}</small>
           </template>
         </div>
         <button
@@ -449,20 +450,20 @@ onBeforeUnmount(() => {
           type="button"
           class="photo-x"
           @click="removePhoto"
-          aria-label="Remove photo"
+          :aria-label="$t('intake.photo.remove')"
         >
           <i class="fa-solid fa-xmark" />
         </button>
       </div>
 
       <!-- Food name + autocomplete -->
-      <label for="intake-food">What did you eat?</label>
+      <label for="intake-food">{{ $t('intake.what_did_you_eat') }}</label>
       <div class="food-field">
         <input
           id="intake-food"
           v-model="form.food_item"
           class="food-input"
-          placeholder="e.g. Grilled chicken breast"
+          :placeholder="$t('intake.food_placeholder')"
           autocomplete="off"
           required
           @focus="showSuggest = suggestions.length > 0"
@@ -471,7 +472,7 @@ onBeforeUnmount(() => {
         <ul v-if="showSuggest" class="suggest">
           <li v-for="(s, i) in suggestions" :key="i" @mousedown.prevent="applyItem(s)">
             <span>{{ s.food_item }}</span>
-            <span class="muted">{{ s.calories }} kcal</span>
+            <span class="muted">{{ s.calories }} {{ $t('common.kcal') }}</span>
           </li>
         </ul>
       </div>
@@ -484,8 +485,8 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Meal: segmented selector with today's logged kcal per meal -->
-      <label>Meal</label>
-      <div class="meal-seg" role="group" aria-label="Meal">
+      <label>{{ $t('intake.category_label') }}</label>
+      <div class="meal-seg" role="group" :aria-label="$t('intake.category_label')">
         <button
           v-for="m in MEALS"
           :key="m.key"
@@ -496,31 +497,31 @@ onBeforeUnmount(() => {
           @click="form.meal_category = m.key"
         >
           <i class="fa-solid" :class="m.icon" />
-          <span class="meal-name">{{ m.label }}</span>
-          <small class="meal-stat">{{ mealKcal[m.key] > 0 ? mealKcal[m.key] + ' kcal' : '—' }}</small>
+          <span class="meal-name">{{ $t(m.labelKey) }}</span>
+          <small class="meal-stat">{{ mealKcal[m.key] > 0 ? mealKcal[m.key] + ' ' + $t('common.kcal') : '—' }}</small>
         </button>
       </div>
 
       <!-- Calories -->
-      <label for="intake-kcal">Calories</label>
-      <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" placeholder="kcal" required />
+      <label for="intake-kcal">{{ $t('intake.calories_label') }}</label>
+      <input id="intake-kcal" v-model="form.calories" type="number" min="1" step="any" :placeholder="$t('common.kcal')" required />
 
       <!-- Optional macros -->
       <button type="button" class="ql-toggle" @click="showMacros = !showMacros">
         <i class="fa-solid" :class="showMacros ? 'fa-chevron-up' : 'fa-plus'" />
-        {{ showMacros ? 'Hide macros' : 'Add macros (optional)' }}
+        {{ showMacros ? $t('intake.hide_macros') : $t('intake.add_macros_optional') }}
       </button>
       <div v-if="showMacros" class="three">
         <div>
-          <label for="intake-p">Protein g</label>
+          <label for="intake-p">{{ $t('intake.protein_g') }}</label>
           <input id="intake-p" v-model="form.protein" type="number" min="0" step="any" />
         </div>
         <div>
-          <label for="intake-c">Carbs g</label>
+          <label for="intake-c">{{ $t('intake.carbs_g') }}</label>
           <input id="intake-c" v-model="form.carbs" type="number" min="0" step="any" />
         </div>
         <div>
-          <label for="intake-f">Fat g</label>
+          <label for="intake-f">{{ $t('intake.fat_g') }}</label>
           <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" />
         </div>
       </div>
@@ -528,7 +529,7 @@ onBeforeUnmount(() => {
       <p v-if="photoAdvice" class="advice"><i class="fa-solid fa-lightbulb" /> {{ photoAdvice }}</p>
 
       <button type="submit" class="log-btn" :disabled="!canSubmit || saving">
-        {{ saving ? 'Logging…' : 'Log Entry' }}
+        {{ saving ? $t('intake.logging') : $t('intake.log_entry_btn') }}
       </button>
       <p v-if="success" class="ok">{{ success }}</p>
       <p v-if="error" class="error">{{ error }}</p>
@@ -536,35 +537,35 @@ onBeforeUnmount(() => {
 
     <!-- Today's entries: review + edit/delete what was logged today -->
     <section v-if="entries.length" class="entries card">
-      <h2>Today's entries</h2>
+      <h2>{{ $t('intake.todays_entries') }}</h2>
       <ul>
         <li v-for="e in entries" :key="e.id">
           <div v-if="editingId === e.id" class="edit-grid">
-            <input v-model="editForm.food_item" aria-label="Food" />
-            <input v-model="editForm.calories" type="number" min="1" step="any" aria-label="Calories" />
-            <select v-model="editForm.meal_category" aria-label="Meal">
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
-              <option value="snack">Snack</option>
+            <input v-model="editForm.food_item" :aria-label="$t('intake.row.food')" />
+            <input v-model="editForm.calories" type="number" min="1" step="any" :aria-label="$t('intake.row.calories')" />
+            <select v-model="editForm.meal_category" :aria-label="$t('intake.category_label')">
+              <option value="breakfast">{{ $t('intake.meal.breakfast_emoji') }}</option>
+              <option value="lunch">{{ $t('intake.meal.lunch_emoji') }}</option>
+              <option value="dinner">{{ $t('intake.meal.dinner_emoji') }}</option>
+              <option value="snack">{{ $t('intake.meal.snack_emoji') }}</option>
             </select>
-            <input v-model="editForm.protein" type="number" min="0" step="any" placeholder="P" aria-label="Protein" />
-            <input v-model="editForm.carbs" type="number" min="0" step="any" placeholder="C" aria-label="Carbs" />
-            <input v-model="editForm.fat" type="number" min="0" step="any" placeholder="F" aria-label="Fat" />
+            <input v-model="editForm.protein" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.protein')" :aria-label="$t('dashboard.macros.protein')" />
+            <input v-model="editForm.carbs" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.carbs')" :aria-label="$t('dashboard.macros.carbs')" />
+            <input v-model="editForm.fat" type="number" min="0" step="any" :placeholder="$t('intake.macro_abbr.fat')" :aria-label="$t('dashboard.macros.fat')" />
             <div class="edit-actions">
-              <button type="button" @click="saveEdit">Save</button>
-              <button type="button" class="ghost" @click="cancelEdit">Cancel</button>
+              <button type="button" @click="saveEdit">{{ $t('common.save') }}</button>
+              <button type="button" class="ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
             </div>
           </div>
           <div v-else class="entry-row">
             <span class="entry-main">
-              <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" alt="Food photo" />
-              <span class="entry-name">{{ e.food_item }} <small class="muted">· {{ e.meal_category }}</small></span>
+              <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
+              <span class="entry-name">{{ e.food_item }} <small class="muted">· {{ $t('intake.meal.' + e.meal_category + '_emoji') }}</small></span>
             </span>
             <span class="entry-end">
-              <strong>{{ e.calories }} kcal</strong>
-              <button type="button" class="icon-btn" @click="startEdit(e)" aria-label="Edit entry"><i class="fa-solid fa-pen" /></button>
-              <button type="button" class="icon-btn danger" @click="removeEntry(e)" aria-label="Delete entry"><i class="fa-solid fa-trash" /></button>
+              <strong>{{ e.calories }} {{ $t('common.kcal') }}</strong>
+              <button type="button" class="icon-btn" @click="startEdit(e)" :aria-label="$t('intake.row.edit_title')"><i class="fa-solid fa-pen" /></button>
+              <button type="button" class="icon-btn danger" @click="removeEntry(e)" :aria-label="$t('intake.row.delete_title')"><i class="fa-solid fa-trash" /></button>
             </span>
           </div>
         </li>
@@ -575,32 +576,32 @@ onBeforeUnmount(() => {
     <div v-if="showScanner" class="overlay" @click.self="closeScanner">
       <div class="modal">
         <div class="modal-head">
-          <strong><i class="fa-solid fa-barcode" /> Scan barcode</strong>
-          <button type="button" class="x" @click="closeScanner" aria-label="Close"><i class="fa-solid fa-xmark" /></button>
+          <strong><i class="fa-solid fa-barcode" /> {{ $t('intake.scan_barcode_chip') }}</strong>
+          <button type="button" class="x" @click="closeScanner" :aria-label="$t('common.close')"><i class="fa-solid fa-xmark" /></button>
         </div>
         <div v-if="cameraOn" class="cam"><video ref="videoEl" muted playsinline /></div>
-        <label for="manual-code">Barcode number</label>
+        <label for="manual-code">{{ $t('intake.scan.barcode_number') }}</label>
         <div class="scan-row">
           <input
             id="manual-code"
             v-model="manualCode"
             inputmode="numeric"
-            placeholder="e.g. 737628064502"
+            :placeholder="$t('intake.scan.barcode_placeholder')"
             @keydown.enter.prevent="lookupBarcode(manualCode)"
           />
           <button type="button" :disabled="scanBusy" @click="lookupBarcode(manualCode)">
-            {{ scanBusy ? '…' : 'Look up' }}
+            {{ scanBusy ? '…' : $t('intake.scan.look_up') }}
           </button>
         </div>
         <div v-if="scanResult" class="scan-result">
-          <strong>{{ scanResult.product_name || 'Unnamed product' }}</strong>
+          <strong>{{ scanResult.product_name || $t('intake.scan.unnamed_product') }}</strong>
           <p v-if="scanResult.brand" class="muted">{{ scanResult.brand }}</p>
           <p class="muted">
-            {{ scanResult.kcal_per_serving ?? scanResult.kcal_per_100g ?? '—' }} kcal
-            <span v-if="scanResult.kcal_per_serving">/ serving</span>
-            <span v-else-if="scanResult.kcal_per_100g">/ 100g</span>
+            {{ scanResult.kcal_per_serving ?? scanResult.kcal_per_100g ?? '—' }} {{ $t('common.kcal') }}
+            <span v-if="scanResult.kcal_per_serving">{{ $t('intake.scan.per_serving') }}</span>
+            <span v-else-if="scanResult.kcal_per_100g">{{ $t('intake.scan.per_100g') }}</span>
           </p>
-          <button type="button" class="use-btn" @click="useProduct">Use this</button>
+          <button type="button" class="use-btn" @click="useProduct">{{ $t('intake.scan.use_this') }}</button>
         </div>
         <p v-if="scanError" class="error">{{ scanError }}</p>
       </div>

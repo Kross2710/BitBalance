@@ -11,6 +11,7 @@
 // Rate limit: 20 outgoing pending requests / 24h per user, counted by
 //   created_at >= NOW() - INTERVAL 1 DAY AND status = 'pending'.
 import { pool, query } from '../db.js';
+import { normalizeProfileImage } from './users.js';
 
 export const FRIENDS_REQUEST_DAILY_CAP = 20;
 
@@ -94,6 +95,7 @@ export async function searchUsers(me, q, limit = 20) {
   // Annotate each row with the relationship so the UI can pick the right CTA.
   for (const u of users) {
     u.user_id = Number(u.user_id);
+    u.profile_image = normalizeProfileImage(u.profile_image);
     u.current_level = num(u.current_level);
     u.logging_streak = num(u.logging_streak);
     u.relationship = await relationshipTo(me, u.user_id);
@@ -231,7 +233,7 @@ export async function friendsList(me) {
   return rows.map((r) => ({
     user_id: Number(r.user_id),
     user_name: r.user_name,
-    profile_image: r.profile_image,
+    profile_image: normalizeProfileImage(r.profile_image),
     current_level: num(r.current_level),
     total_xp: num(r.total_xp),
     logging_streak: num(r.logging_streak),
@@ -284,7 +286,7 @@ export async function leaderboard(me, period = 'weekly', limit = 50) {
     return {
       user_id,
       user_name: r.user_name,
-      profile_image: r.profile_image,
+      profile_image: normalizeProfileImage(r.profile_image),
       current_level: num(r.current_level),
       total_xp,
       logging_streak: num(r.logging_streak),
@@ -315,7 +317,7 @@ export async function pendingIncoming(me) {
     created_at: r.created_at,
     user_id: Number(r.user_id),
     user_name: r.user_name,
-    profile_image: r.profile_image,
+    profile_image: normalizeProfileImage(r.profile_image),
     current_level: num(r.current_level),
     logging_streak: num(r.logging_streak),
   }));
@@ -338,7 +340,7 @@ export async function pendingOutgoing(me) {
     created_at: r.created_at,
     user_id: Number(r.user_id),
     user_name: r.user_name,
-    profile_image: r.profile_image,
+    profile_image: normalizeProfileImage(r.profile_image),
     current_level: num(r.current_level),
   }));
 }

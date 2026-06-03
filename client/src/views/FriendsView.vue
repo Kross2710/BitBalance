@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { api } from '../lib/api.js';
+import { t } from '../i18n/index.js';
 
 // Four sections mirror the PHP friends page: Friends, Pending (in+out),
 // Leaderboard (weekly/all-time), Find People (search + add).
@@ -119,80 +120,91 @@ function acceptFromSearch(u) {
   else tab.value = 'pending';
 }
 function removeFriend(u) {
-  if (!confirm(`Remove ${u.user_name} from friends?`)) return;
+  if (!confirm(t('friends.confirm_remove_named', { name: u.user_name }))) return;
   mutate('/api/social/unfriend', { target_id: u.user_id });
 }
 
 const pendingInCount = computed(() => pendingIn.value.length);
 const initials = (name) => (name || '?').slice(0, 1).toUpperCase();
+
+// Empty-state sentences embed a "Find" button mid-sentence. We can't use
+// v-html (no escaping rule), so split the localized string on {link} and render
+// the button between the two text halves. Reactive via computed → re-splits on
+// locale switch.
+const splitOnLink = (key) => {
+  const [before = '', after = ''] = t(key).split('{link}');
+  return { before, after };
+};
+const noFriendsParts = computed(() => splitOnLink('friends.empty.no_friends_inline'));
+const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 </script>
 
 <template>
   <main class="wrap">
-    <h1 class="title">Friends</h1>
+    <h1 class="title">{{ $t('friends.hero.title') }}</h1>
 
     <!-- Tabs -->
     <div class="tabs" role="tablist">
       <button class="tab" :class="{ on: tab === 'friends' }" @click="tab = 'friends'">
-        Friends<span v-if="friends.length" class="count">{{ friends.length }}</span>
+        {{ $t('friends.metric.friends') }}<span v-if="friends.length" class="count">{{ friends.length }}</span>
       </button>
       <button class="tab" :class="{ on: tab === 'pending' }" @click="tab = 'pending'">
-        Pending<span v-if="pendingInCount" class="count alert">{{ pendingInCount }}</span>
+        {{ $t('friends.tab.pending') }}<span v-if="pendingInCount" class="count alert">{{ pendingInCount }}</span>
       </button>
-      <button class="tab" :class="{ on: tab === 'leaderboard' }" @click="tab = 'leaderboard'">Ranks</button>
-      <button class="tab" :class="{ on: tab === 'find' }" @click="tab = 'find'">Find</button>
+      <button class="tab" :class="{ on: tab === 'leaderboard' }" @click="tab = 'leaderboard'">{{ $t('friends.tab.ranks') }}</button>
+      <button class="tab" :class="{ on: tab === 'find' }" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>
     </div>
 
     <p v-if="error" class="error">{{ error }}</p>
 
     <!-- FRIENDS -->
     <section v-if="tab === 'friends'">
-      <p v-if="loading" class="muted">Loading…</p>
+      <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
       <p v-else-if="!friends.length" class="muted empty">
-        No friends yet. Head to <button class="link" @click="tab = 'find'">Find</button> to add some.
+        {{ noFriendsParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ noFriendsParts.after }}
       </p>
       <ul v-else class="list">
         <li v-for="u in friends" :key="u.user_id" class="row card">
           <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
           <span class="meta">
             <strong>{{ u.user_name }}</strong>
-            <small class="muted">Lv {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}d · {{ u.weekly_xp }} XP/wk</small>
+            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }} · {{ $t('friends.card.weekly_xp', { n: u.weekly_xp }) }}</small>
           </span>
-          <button class="btn ghost danger" :disabled="busy" @click="removeFriend(u)">Remove</button>
+          <button class="btn ghost danger" :disabled="busy" @click="removeFriend(u)">{{ $t('friends.card.btn_remove') }}</button>
         </li>
       </ul>
     </section>
 
     <!-- PENDING -->
     <section v-else-if="tab === 'pending'">
-      <p v-if="loading" class="muted">Loading…</p>
+      <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
       <template v-else>
-        <h2 class="sub">Requests for you</h2>
-        <p v-if="!pendingIn.length" class="muted empty">No incoming requests.</p>
+        <h2 class="sub">{{ $t('friends.subhead.requests_in') }}</h2>
+        <p v-if="!pendingIn.length" class="muted empty">{{ $t('friends.empty.no_incoming') }}</p>
         <ul v-else class="list">
           <li v-for="r in pendingIn" :key="r.request_id" class="row card">
             <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
             <span class="meta">
               <strong>{{ r.user_name }}</strong>
-              <small class="muted">Lv {{ r.current_level }} · <i class="fa-solid fa-fire" /> {{ r.logging_streak }}d</small>
+              <small class="muted">{{ $t('friends.card.level_short') }} {{ r.current_level }} · <i class="fa-solid fa-fire" /> {{ r.logging_streak }}{{ $t('friends.card.day_short') }}</small>
             </span>
             <span class="actions">
-              <button class="btn primary" :disabled="busy" @click="acceptReq(r)">Accept</button>
-              <button class="btn ghost" :disabled="busy" @click="rejectReq(r)">Decline</button>
+              <button class="btn primary" :disabled="busy" @click="acceptReq(r)">{{ $t('friends.card.btn_accept') }}</button>
+              <button class="btn ghost" :disabled="busy" @click="rejectReq(r)">{{ $t('friends.card.btn_decline') }}</button>
             </span>
           </li>
         </ul>
 
-        <h2 class="sub">Requests you sent</h2>
-        <p v-if="!pendingOut.length" class="muted empty">Nothing pending.</p>
+        <h2 class="sub">{{ $t('friends.subhead.requests_out') }}</h2>
+        <p v-if="!pendingOut.length" class="muted empty">{{ $t('friends.empty.no_outgoing') }}</p>
         <ul v-else class="list">
           <li v-for="r in pendingOut" :key="r.request_id" class="row card">
             <span class="avatar"><img v-if="r.profile_image" :src="r.profile_image" alt="" /><span v-else>{{ initials(r.user_name) }}</span></span>
             <span class="meta">
               <strong>{{ r.user_name }}</strong>
-              <small class="muted">Waiting…</small>
+              <small class="muted">{{ $t('friends.card.hint_waiting') }}</small>
             </span>
-            <button class="btn ghost" :disabled="busy" @click="cancelReq(r)">Cancel</button>
+            <button class="btn ghost" :disabled="busy" @click="cancelReq(r)">{{ $t('friends.card.btn_cancel') }}</button>
           </li>
         </ul>
       </template>
@@ -201,22 +213,22 @@ const initials = (name) => (name || '?').slice(0, 1).toUpperCase();
     <!-- LEADERBOARD -->
     <section v-else-if="tab === 'leaderboard'">
       <div class="seg">
-        <button class="seg-btn" :class="{ on: period === 'weekly' }" @click="period = 'weekly'">This week</button>
-        <button class="seg-btn" :class="{ on: period === 'all_time' }" @click="period = 'all_time'">All time</button>
+        <button class="seg-btn" :class="{ on: period === 'weekly' }" @click="period = 'weekly'">{{ $t('friends.leaderboard.range.week') }}</button>
+        <button class="seg-btn" :class="{ on: period === 'all_time' }" @click="period = 'all_time'">{{ $t('friends.leaderboard.range.all') }}</button>
       </div>
-      <p v-if="lbLoading" class="muted">Loading…</p>
+      <p v-if="lbLoading" class="muted">{{ $t('common.loading') }}</p>
       <p v-else-if="leaders.length <= 1" class="muted empty">
-        Add friends to see how you stack up. Go to <button class="link" @click="tab = 'find'">Find</button>.
+        {{ soloLbParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ soloLbParts.after }}
       </p>
       <ul v-else class="list">
         <li v-for="u in leaders" :key="u.user_id" class="row card" :class="{ me: u.is_current_user }">
           <span class="rank" :class="'r' + u.rank">{{ u.rank }}</span>
           <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
           <span class="meta">
-            <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> (you)</small></strong>
-            <small class="muted">Lv {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}d</small>
+            <strong>{{ u.user_name }}<small v-if="u.is_current_user" class="you"> {{ $t('friends.lb.you_paren') }}</small></strong>
+            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
           </span>
-          <strong class="score">{{ u.score_xp }}<small class="muted"> XP</small></strong>
+          <strong class="score">{{ u.score_xp }}<small class="muted"> {{ $t('friends.col.xp') }}</small></strong>
         </li>
       </ul>
     </section>
@@ -227,25 +239,25 @@ const initials = (name) => (name || '?').slice(0, 1).toUpperCase();
         v-model="q"
         class="search"
         type="search"
-        placeholder="Search by username (2+ characters)"
+        :placeholder="$t('friends.find.placeholder')"
         @input="onSearchInput"
-        aria-label="Search people by username"
+        :aria-label="$t('friends.find.aria')"
       />
-      <p v-if="searching" class="muted">Searching…</p>
-      <p v-else-if="q.trim().length >= 2 && !results.length" class="muted empty">No users found.</p>
+      <p v-if="searching" class="muted">{{ $t('friends.find.searching') }}</p>
+      <p v-else-if="q.trim().length >= 2 && !results.length" class="muted empty">{{ $t('friends.find.no_results') }}</p>
       <ul v-else-if="results.length" class="list">
         <li v-for="u in results" :key="u.user_id" class="row card">
           <span class="avatar"><img v-if="u.profile_image" :src="u.profile_image" alt="" /><span v-else>{{ initials(u.user_name) }}</span></span>
           <span class="meta">
             <strong>{{ u.user_name }}</strong>
-            <small class="muted">Lv {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}d</small>
+            <small class="muted">{{ $t('friends.card.level_short') }} {{ u.current_level }} · <i class="fa-solid fa-fire" /> {{ u.logging_streak }}{{ $t('friends.card.day_short') }}</small>
           </span>
           <!-- CTA depends on the relationship the API annotates each result with. -->
-          <button v-if="u.relationship === 'none'" class="btn primary" :disabled="busy" @click="addFriend(u)">Add</button>
+          <button v-if="u.relationship === 'none'" class="btn primary" :disabled="busy" @click="addFriend(u)">{{ $t('friends.card.btn_add') }}</button>
           <button v-else-if="u.relationship === 'pending_in'" class="btn primary" :disabled="busy"
-            @click="acceptFromSearch(u)">Accept</button>
-          <span v-else-if="u.relationship === 'pending_out'" class="tag muted">Pending</span>
-          <span v-else-if="u.relationship === 'friends'" class="tag ok">Friends</span>
+            @click="acceptFromSearch(u)">{{ $t('friends.card.btn_accept') }}</button>
+          <span v-else-if="u.relationship === 'pending_out'" class="tag muted">{{ $t('friends.card.hint_pending') }}</span>
+          <span v-else-if="u.relationship === 'friends'" class="tag ok">{{ $t('friends.card.hint_friends') }}</span>
           <span v-else class="tag muted">—</span>
         </li>
       </ul>
