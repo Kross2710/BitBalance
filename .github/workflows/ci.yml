@@ -1,8 +1,11 @@
 name: CI
 
-# Tier A: build / syntax gate. No test suite exists yet, so this catches the
-# class of errors that previously had to be found by hand (Vue/Vite compile,
-# bad imports, lockfile drift, JS/PHP syntax). Needs no secrets and no database.
+# Tier A (build / syntax gate) + Tier B (automated tests).
+#   - client:       vite build + Vitest unit tests (no DB)
+#   - server:       install + node --check + Vitest unit tests (no DB)
+#   - server-integration: Vitest API tests against a throwaway MariaDB service,
+#                   schema loaded from the committed fixture (no secrets)
+#   - php-lint:     php -l on the RMIT PHP app, pinned to prod's PHP 7.4
 on:
   pull_request:
     branches: [main]
@@ -11,7 +14,7 @@ on:
 
 jobs:
   client:
-    name: Client build (Vue/Vite)
+    name: Client build + unit tests (Vue/Vite)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -24,9 +27,11 @@ jobs:
         working-directory: client
       - run: npm run build
         working-directory: client
+      - run: npm run test
+        working-directory: client
 
   server:
-    name: Server install + syntax (Express)
+    name: Server syntax + unit tests (Express)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -37,10 +42,56 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
         working-directory: server
-      # No test suite yet — at minimum fail the build on a syntax error in src.
       - name: Syntax check
         working-directory: server
         run: find src -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Unit tests (no DB)
+        working-directory: server
+        run: npm run test:unit
+
+  server-integration:
+    name: Server integration tests (MariaDB)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: bb_test
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: bb_test
+      DB_USER: root
+      DB_PASSWORD: root
+      SESSION_SECRET: ci-test-secret
+      COOKIE_SECURE: 'false'
+      TRUST_PROXY: '0'
+      # The throwaway service DB is safe to mutate, so exercise the destructive
+      # prune DELETE (skipped against the shared dev DB locally).
+      BB_TEST_DESTRUCTIVE: '1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+        working-directory: server
+      - name: Load schema fixture into the service DB
+        working-directory: server
+        run: node test/load-fixture.mjs
+      - name: Integration tests
+        working-directory: server
+        run: npm run test:integration
 
   php-lint:
     name: PHP lint (RMIT app)
