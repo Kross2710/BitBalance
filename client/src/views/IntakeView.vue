@@ -11,6 +11,7 @@ import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
 import AiFoodChat from '../components/AiFoodChat.vue';
 import MacroInputs from '../components/MacroInputs.vue';
 import BottomSheet from '../components/BottomSheet.vue';
+import MealBadge from '../components/MealBadge.vue';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -29,7 +30,6 @@ const MEALS = [
   { key: 'dinner', labelKey: 'intake.meal.dinner_emoji', icon: 'fa-utensils' },
   { key: 'snack', labelKey: 'intake.meal.snack_emoji', icon: 'fa-cookie-bite' },
 ];
-const mealMeta = Object.fromEntries(MEALS.map((m) => [m.key, m])); // quick icon lookup per meal
 
 const form = reactive({ food_item: '', calories: '', meal_category: mealFromHour(), protein: '', carbs: '', fat: '', image_path: '' });
 const showMacros = ref(false);
@@ -547,7 +547,7 @@ onBeforeUnmount(() => {
           :key="m.key"
           type="button"
           class="meal-pill"
-          :class="{ active: form.meal_category === m.key, logged: mealKcal[m.key] > 0 }"
+          :class="[m.key, { active: form.meal_category === m.key, logged: mealKcal[m.key] > 0 }]"
           :aria-pressed="form.meal_category === m.key"
           @click="form.meal_category = m.key"
         >
@@ -598,9 +598,7 @@ onBeforeUnmount(() => {
                 <strong class="entry-kcal">{{ e.calories }} {{ $t('common.kcal') }}</strong>
               </div>
               <div class="entry-meta">
-                <span class="meal-badge" :class="e.meal_category">
-                  <i class="fa-solid" :class="mealMeta[e.meal_category]?.icon" /> {{ $t('intake.meal.' + e.meal_category + '_emoji') }}
-                </span>
+                <MealBadge :meal="e.meal_category" />
                 <span v-if="entryTime(e)" class="entry-time">{{ entryTime(e) }}</span>
                 <span v-if="e.protein || e.carbs || e.fat" class="mchips">
                   <span v-if="e.protein" class="mchip p">{{ $t('intake.macro_abbr.protein') }} {{ e.protein }}</span>
@@ -680,7 +678,7 @@ onBeforeUnmount(() => {
             :key="m.key"
             type="button"
             class="meal-pill"
-            :class="{ active: editForm.meal_category === m.key }"
+            :class="[m.key, { active: editForm.meal_category === m.key }]"
             :aria-pressed="editForm.meal_category === m.key"
             @click="editForm.meal_category = m.key"
           >
@@ -804,13 +802,19 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .meal-pill i { font-size: 16px; }
 .meal-name { font-size: 12px; }
 .meal-stat { font-size: 10px; opacity: 0.85; }
+/* Per-meal identity: the icon always carries the meal colour (matches the badges). */
+.meal-pill.breakfast i { color: var(--meal-breakfast); }
+.meal-pill.lunch i { color: var(--meal-lunch); }
+.meal-pill.dinner i { color: var(--meal-dinner); }
+.meal-pill.snack i { color: var(--meal-snack); }
 /* Logged-but-not-selected meals read as "done" without stealing focus. */
 .meal-pill.logged { color: var(--text); border-color: var(--surface-2); }
-.meal-pill.active {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgba(74, 222, 128, 0.08);
-}
+/* Selected meal fills with its own colour instead of the generic accent. */
+.meal-pill.active { color: var(--text); }
+.meal-pill.breakfast.active { border-color: var(--meal-breakfast); background: var(--meal-breakfast-bg); }
+.meal-pill.lunch.active { border-color: var(--meal-lunch); background: var(--meal-lunch-bg); }
+.meal-pill.dinner.active { border-color: var(--meal-dinner); background: var(--meal-dinner-bg); }
+.meal-pill.snack.active { border-color: var(--meal-snack); background: var(--meal-snack-bg); }
 #intake-kcal { width: 100%; }
 
 .log-btn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
@@ -891,15 +895,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .entry-kcal { flex: none; font-weight: 700; }
 .entry-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .entry-time { color: var(--muted); font-size: 12px; }
-.meal-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-}
-.meal-badge i { font-size: 10px; }
-.meal-badge.breakfast { background: rgba(248, 113, 113, 0.15); color: #f87171; }
-.meal-badge.lunch { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
-.meal-badge.dinner { background: rgba(192, 132, 252, 0.15); color: #c084fc; }
-.meal-badge.snack { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
 .mchips { display: inline-flex; gap: 4px; }
 .mchip { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
 .mchip.p { background: var(--macro-p-bg); color: var(--macro-p); }

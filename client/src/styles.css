@@ -26,6 +26,15 @@
   --macro-c-bg: rgba(255, 200, 87, 0.14);
   --macro-f: #74a7ff;
   --macro-f-bg: rgba(116, 167, 255, 0.14);
+  /* Meals (badge + picker) — one palette shared by Dashboard + Intake */
+  --meal-breakfast: #f87171;
+  --meal-breakfast-bg: rgba(248, 113, 113, 0.15);
+  --meal-lunch: #60a5fa;
+  --meal-lunch-bg: rgba(96, 165, 250, 0.15);
+  --meal-dinner: #c084fc;
+  --meal-dinner-bg: rgba(192, 132, 252, 0.15);
+  --meal-snack: #fb923c;
+  --meal-snack-bg: rgba(251, 146, 60, 0.15);
 }
 
 /* Light theme. lib/theme.js sets data-theme on <html> ('system' resolves to
@@ -54,6 +63,14 @@
   --macro-c-bg: #fff3d6;
   --macro-f: #4f8cff;
   --macro-f-bg: #e8f0ff;
+  --meal-breakfast: #ef4444;
+  --meal-breakfast-bg: #fee2e2;
+  --meal-lunch: #3b82f6;
+  --meal-lunch-bg: #dbeafe;
+  --meal-dinner: #a855f7;
+  --meal-dinner-bg: #f3e8ff;
+  --meal-snack: #f97316;
+  --meal-snack-bg: #ffedd5;
 }
 
 * { box-sizing: border-box; }

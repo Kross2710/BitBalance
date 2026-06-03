@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { locale } from '../i18n/index.js';
 import WrappedStory from '../components/WrappedStory.vue';
 import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
+import MealBadge from '../components/MealBadge.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -201,8 +202,8 @@ onMounted(() => {
 
       <!-- Meal breakdown -->
       <section class="card" style="margin-top: 14px; display: flex; justify-content: space-around; text-align: center">
-        <div v-for="(cal, meal) in day.meal_categories" :key="meal">
-          <div class="muted">{{ $t('dashboard.meal.' + meal) }}</div>
+        <div v-for="(cal, meal) in day.meal_categories" :key="meal" class="meal-col">
+          <MealBadge :meal="meal" />
           <strong>{{ cal }}</strong>
         </div>
       </section>
@@ -233,7 +234,7 @@ onMounted(() => {
                   :alt="$t('dashboard.entry.photo_alt')"
                   @click="lightbox = e.image_path"
                 />
-                <span style="min-width: 0">{{ e.food_item }} <small class="muted">· {{ $t('dashboard.meal.' + e.meal_category) }}</small></span>
+                <span style="min-width: 0">{{ e.food_item }} <MealBadge :meal="e.meal_category" /></span>
               </span>
               <strong style="flex: none">{{ $t('dashboard.kcal_value', { n: e.calories }) }}</strong>
             </div>
@@ -261,6 +262,7 @@ onMounted(() => {
 
 <style scoped>
 .muted { color: var(--muted); }
+.meal-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 
 .greet { font-weight: 800; font-size: 18px; margin: 2px 0 10px; }
 
