@@ -224,7 +224,7 @@ onMounted(() => {
 
       <!-- Quick actions -->
       <section class="actions">
-        <RouterLink to="/intake" class="action primary">
+        <RouterLink :to="isToday ? '/intake' : { path: '/intake', query: { date: selectedDate } }" class="action primary">
           <i class="fa-solid fa-utensils" /> {{ $t('dashboard.action.log_food') }}
         </RouterLink>
         <RouterLink to="/coach" class="action">
@@ -254,8 +254,12 @@ onMounted(() => {
             </div>
           </li>
         </ul>
-        <RouterLink v-if="isToday && entries.length" to="/intake" class="manage-link">
-          <i class="fa-solid fa-pen" /> {{ $t('dashboard.entries.edit_today') }}
+        <RouterLink
+          v-if="entries.length"
+          :to="isToday ? '/intake' : { path: '/intake', query: { date: selectedDate } }"
+          class="manage-link"
+        >
+          <i class="fa-solid fa-pen" /> {{ isToday ? $t('dashboard.entries.edit_today') : $t('dashboard.entries.edit_day') }}
         </RouterLink>
       </section>
     </template>

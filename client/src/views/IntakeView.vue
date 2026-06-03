@@ -4,8 +4,9 @@
 // Big food field with history-backed autocomplete + recent chips, calories,
 // meal, optional macros, and a full-width Log Entry button.
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../lib/api.js';
-import { t } from '../i18n/index.js';
+import { t, locale } from '../i18n/index.js';
 import { compressImage } from '../lib/image.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
@@ -52,8 +53,27 @@ async function loadRecent() {
 // The dashboard shows entries read-only; editing/deleting lives here. We pull
 // recent history and keep only today's rows (server tz is +07:00, so compute
 // "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
+const route = useRoute();
 const entries = ref([]);
 const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+
+// Backdating: the Dashboard date strip can carry a past day via ?date=, and we
+// log to / show THAT day instead of today. Rules (ported from process_intake.php):
+// never the future (clamped here + re-clamped server-side), and past mode is NOT
+// sticky — a bare /intake always means today.
+const activeDate = computed(() => {
+  const q = route.query.date;
+  if (typeof q === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(q) && q <= todayLocal) return q;
+  return todayLocal;
+});
+const isPastMode = computed(() => activeDate.value !== todayLocal);
+const activeDateLabel = computed(() =>
+  new Date(activeDate.value + 'T00:00:00').toLocaleDateString(locale.value === 'vi' ? 'vi-VN' : 'en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+);
 
 // Today's kcal per meal, for the segmented selector's status line.
 const mealKcal = computed(() => {
@@ -68,12 +88,16 @@ const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_cate
 
 async function loadEntries() {
   try {
-    const data = await api.get('/api/intake/history');
-    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === todayLocal);
+    const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
+    // Server already scopes to the day; the filter is a belt-and-suspenders guard.
+    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === activeDate.value);
   } catch {
     /* non-fatal: section just stays empty */
   }
 }
+// Re-pull when the day changes (e.g. ?date= -> bare /intake), keeping past mode
+// non-sticky.
+watch(activeDate, loadEntries);
 
 function startEdit(e) {
   editingId.value = e.id;
@@ -166,7 +190,7 @@ async function onSubmit() {
   success.value = '';
   saving.value = true;
   try {
-    await api.post('/api/intake/create', { ...form });
+    await api.post('/api/intake/create', { ...form, date: activeDate.value });
     success.value = t('intake.logged_named', { name: form.food_item });
     form.food_item = '';
     form.calories = '';
@@ -401,6 +425,12 @@ onBeforeUnmount(() => {
   <main class="intake">
     <h1>{{ $t('intake.add_entry') }}</h1>
 
+    <!-- Past-day banner: logging is scoped to a back-dated day carried via ?date=. -->
+    <div v-if="isPastMode" class="past-banner">
+      <span><i class="fa-solid fa-clock-rotate-left" /> {{ $t('intake.past.banner', { date: activeDateLabel }) }}</span>
+      <RouterLink to="/intake" class="past-back">{{ $t('intake.past.back_today') }}</RouterLink>
+    </div>
+
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
       <div class="io-actions">
@@ -515,7 +545,7 @@ onBeforeUnmount(() => {
 
     <!-- Today's entries: review + edit/delete what was logged today -->
     <section v-if="entries.length" class="entries card">
-      <h2>{{ $t('intake.todays_entries') }}</h2>
+      <h2>{{ isPastMode ? $t('intake.entries_for', { date: activeDateLabel }) : $t('intake.todays_entries') }}</h2>
       <ul>
         <li v-for="e in entries" :key="e.id">
           <div v-if="editingId === e.id" class="edit-grid">
@@ -601,6 +631,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .intake { max-width: 560px; margin: 0 auto; padding: 8px 16px; }
 .intake h1 { margin: 6px 0 16px; }
+
+/* Past-day (backdating) banner */
+.past-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 14px; padding: 10px 14px;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid #fb923c; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+}
+.past-banner .past-back { color: var(--accent); font-weight: 700; white-space: nowrap; }
 .muted { color: var(--muted); font-size: 13px; }
 .ok { color: var(--accent); font-size: 13px; margin: 10px 0 0; }
 label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }

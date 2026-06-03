@@ -43,7 +43,12 @@ export function validateIntake(data, requireId = false) {
   // row can only ever reference our own uploads path.
   const imagePath = sanitizeImagePath(data.image_path);
 
-  return { id, food_item: foodItem, calories, meal_category: category, protein, carbs, fat, image_path: imagePath };
+  // Optional backdating target (YYYY-MM-DD). The create route clamps it to today
+  // and gates the streak; update ignores it (an entry's date never changes on edit).
+  const rawDate = (data.date ?? '').trim();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+
+  return { id, food_item: foodItem, calories, meal_category: category, protein, carbs, fat, image_path: imagePath, date };
 }
 
 // Mirrors api_intake_entry(). date_intake comes back as a string (dateStrings:true).

@@ -41,13 +41,18 @@ router.get('/history', requireAuth, async (req, res, next) => {
     let limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
     limit = Math.max(1, Math.min(100, Number.isNaN(limit) ? 50 : limit));
 
+    // Optional day scope (YYYY-MM-DD) so the Intake page can manage a past day's
+    // entries, which may be older than the default recent window.
+    const date = String(req.query.date ?? '').trim();
+    const byDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
+
     const rows = await query(
       `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
          FROM intakeLog
-        WHERE user_id = ?
+        WHERE user_id = ?${byDate ? ' AND DATE(date_intake) = ?' : ''}
         ORDER BY date_intake DESC, intakeLog_id DESC
         LIMIT ?`,
-      [userId, limit]
+      byDate ? [userId, date, limit] : [userId, limit]
     );
 
     res.json({
@@ -186,11 +191,25 @@ router.post('/create', requireAuth, async (req, res, next) => {
     const payload = validateIntake(req.body, false);
     const userId = req.user.user_id;
 
-    const result = await query(
-      `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path]
-    );
+    // Optional backdating (ports process_intake.php): clamp future -> today, and
+    // only today's logs bump the streak. CURDATE()/CURTIME() run in the DB's
+    // +07:00 zone, matching how "today" is computed everywhere else.
+    const [{ today }] = await query('SELECT CURDATE() AS today');
+    const logDate = payload.date && payload.date <= today ? payload.date : today;
+    const isToday = logDate === today;
+
+    const result = isToday
+      ? await query(
+          `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path]
+        )
+      : await query(
+          // Keep the real time-of-day so entries within a backdated day still order sensibly.
+          `INSERT INTO intakeLog (user_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CONCAT(?, ' ', CURTIME()))`,
+          [userId, payload.food_item, payload.calories, payload.protein, payload.carbs, payload.fat, payload.meal_category, payload.image_path, logDate]
+        );
 
     const [entry] = await query(
       `SELECT intakeLog_id, food_item, calories, protein, carbs, fat, meal_category, image_path, date_intake
@@ -207,13 +226,17 @@ router.post('/create', requireAuth, async (req, res, next) => {
     } catch (e) {
       console.error('intake xp award error:', e);
     }
-    try {
-      await updateLoggingStreak(userId);
-      const streak = await loggingStreak(userId);
-      const m = await awardStreakMilestone(userId, streak.current, req.session);
-      xpAdded += m.xp_added ?? 0;
-    } catch (e) {
-      console.error('intake streak update error:', e);
+    // Streak + milestone bump only for today's logs — backdating must not inflate
+    // the current streak (recomputing historical streaks is out of scope).
+    if (isToday) {
+      try {
+        await updateLoggingStreak(userId);
+        const streak = await loggingStreak(userId);
+        const m = await awardStreakMilestone(userId, streak.current, req.session);
+        xpAdded += m.xp_added ?? 0;
+      } catch (e) {
+        console.error('intake streak update error:', e);
+      }
     }
 
     let xpSummary = null;
@@ -228,6 +251,8 @@ router.post('/create', requireAuth, async (req, res, next) => {
       data: {
         entry: entry ? shapeEntry(entry) : null,
         daily_summary: await dailySummary(userId),
+        date: logDate,
+        is_today: isToday,
         xp: { added: xpAdded, summary: xpSummary, levelup: consumeLevelupFlash(req.session) },
       },
       message: null,
