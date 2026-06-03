@@ -14,8 +14,8 @@ jobs:
     name: Client build (Vue/Vite)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24 # box runs Node 26; bump or add to a matrix to match prod
           cache: npm
@@ -29,8 +29,8 @@ jobs:
     name: Server install + syntax (Express)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -46,7 +46,7 @@ jobs:
     name: PHP lint (RMIT app)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4' # match RMIT production (PHP 7.4.33)
