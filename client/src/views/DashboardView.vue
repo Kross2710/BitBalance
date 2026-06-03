@@ -5,6 +5,7 @@ import { api } from '../lib/api.js';
 import { useAuthStore } from '../stores/auth.js';
 import { locale } from '../i18n/index.js';
 import WrappedStory from '../components/WrappedStory.vue';
+import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -25,7 +26,6 @@ const error = ref('');
 
 const isToday = computed(() => selectedDate.value === today);
 const entries = computed(() => day.value?.entries ?? []);
-const progress = computed(() => (day.value?.progress_percentage ?? 0) + '%');
 const maxHistory = computed(() => Math.max(1, ...(day.value?.history?.calories ?? [0])));
 
 // Compact date strip: the last 7 days ending today, tappable to switch day.
@@ -174,23 +174,8 @@ onMounted(() => {
     <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
 
     <template v-else-if="day">
-      <!-- Calorie + macro summary -->
-      <section class="card" style="margin-top: 14px">
-        <div style="display: flex; justify-content: space-between">
-          <strong>{{ $t('dashboard.summary.calories') }}</strong>
-          <span class="muted">{{ day.total_calories }} / {{ day.calorie_goal ?? '—' }} {{ $t('common.kcal') }}</span>
-        </div>
-        <div class="bar"><div :style="{ width: progress, background: day.status_class === 'overlimit' ? '#f87171' : 'var(--accent)' }" /></div>
-        <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 13px" class="muted">
-          <span>P {{ day.macros.protein }} / {{ day.macro_goals.protein }}g</span>
-          <span>C {{ day.macros.carbs }} / {{ day.macro_goals.carbs }}g</span>
-          <span>F {{ day.macros.fat }} / {{ day.macro_goals.fat }}g</span>
-        </div>
-        <p v-if="day.focus && (day.focus.calorie_remaining != null || day.focus.calorie_over_by != null)" class="muted" style="margin: 10px 0 0; font-size: 13px">
-          <template v-if="day.focus.calorie_remaining != null">{{ $t('dashboard.focus.title.left', { n: day.focus.calorie_remaining }) }}</template>
-          <template v-else>{{ $t('dashboard.focus.title.over', { n: day.focus.calorie_over_by }) }}</template>
-        </p>
-      </section>
+      <!-- Calorie + macro summary (shared with the Intake page) -->
+      <CalorieSummaryCard :summary="day" style="margin-top: 14px" />
 
       <!-- Stat tiles -->
       <section class="tiles">
@@ -276,8 +261,6 @@ onMounted(() => {
 
 <style scoped>
 .muted { color: var(--muted); }
-.bar { height: 10px; background: var(--inset); border-radius: 6px; margin-top: 10px; overflow: hidden; }
-.bar > div { height: 100%; transition: width 0.3s; }
 
 .greet { font-weight: 800; font-size: 18px; margin: 2px 0 10px; }
 

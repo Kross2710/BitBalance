@@ -7,7 +7,8 @@ import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } 
 import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../lib/api.js';
 import { t, locale } from '../i18n/index.js';
-import { compressImage } from '../lib/image.js';
+import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
+import AiFoodChat from '../components/AiFoodChat.vue';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -55,6 +56,7 @@ async function loadRecent() {
 // "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
 const route = useRoute();
 const entries = ref([]);
+const summary = ref(null); // daily total/goal/macros for the CalorieSummaryCard
 const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
 // Backdating: the Dashboard date strip can carry a past day via ?date=, and we
@@ -91,6 +93,7 @@ async function loadEntries() {
     const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
     // Server already scopes to the day; the filter is a belt-and-suspenders guard.
     entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === activeDate.value);
+    summary.value = data.daily_summary; // running total for the bar, scoped to activeDate
   } catch {
     /* non-fatal: section just stays empty */
   }
@@ -141,7 +144,7 @@ function applyItem(item) {
   form.protein = item.protein ?? '';
   form.carbs = item.carbs ?? '';
   form.fat = item.fat ?? '';
-  removePhoto(); // a chosen-from-history item has no photo of its own
+  clearPhoto(); // a chosen-from-history item has no photo of its own
   if (item.protein || item.carbs || item.fat) showMacros.value = true;
   showSuggest.value = false;
   suggestions.value = [];
@@ -197,7 +200,7 @@ async function onSubmit() {
     form.protein = '';
     form.carbs = '';
     form.fat = '';
-    removePhoto(); // clears form.image_path + the preview thumbnail
+    clearPhoto(); // clears the AI photo attached to the form
     showMacros.value = false;
     suggestions.value = [];
     showSuggest.value = false;
@@ -346,69 +349,32 @@ function useProduct() {
     form.fat = p.fat ?? '';
     showMacros.value = true;
   }
-  removePhoto(); // a scanned product isn't the AI photo
+  clearPhoto(); // a scanned product isn't the AI photo
   closeScanner();
 }
 
-// ---- AI Photo estimate ----
-const photoInput = ref(null);
-const photoBusy = ref(false);
-const photoAdvice = ref('');
-// Object URL of the (compressed) image so the user can review what they picked
-// — mirrors the PHP intake page's inline thumbnail.
-const photoPreview = ref('');
+// ---- AI food chat ----
+const showAiChat = ref(false);
 
-function openPhoto() {
-  photoInput.value?.click();
-}
-
-function clearPhotoPreview() {
-  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
-  photoPreview.value = '';
-}
-
-// Remove the reviewed photo + its advice (leaves the filled fields so the user
-// can still log the estimate, or edit it).
-function removePhoto() {
-  clearPhotoPreview();
-  photoAdvice.value = '';
+// Clear the AI photo attached to the form (when a history/barcode pick replaces
+// it, or after logging).
+function clearPhoto() {
   form.image_path = '';
 }
 
-async function onPhotoPicked(e) {
-  const file = e.target.files?.[0];
-  e.target.value = ''; // allow re-picking the same file
-  if (!file) return;
+// Add-to-log from the chat: prefill the form (the user still taps Log Entry, so
+// they can adjust the meal/amount first — consistent with the rich-entry flow).
+function onAiPick(p) {
   error.value = '';
   success.value = '';
-  photoAdvice.value = '';
-  clearPhotoPreview();
-  photoBusy.value = true;
-  try {
-    const compressed = await compressImage(file, { filename: 'meal.jpg' });
-    // Preview exactly what we send to the model.
-    photoPreview.value = URL.createObjectURL(compressed);
-    const fd = new FormData();
-    fd.append('image', compressed);
-    // FormData must NOT go through the JSON api helper — post it directly.
-    const res = await fetch('/api/intake/estimate-photo', { method: 'POST', credentials: 'include', body: fd });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.message || t('intake.photo.estimate_failed'));
-    const est = json.data;
-    form.food_item = est.food_name || '';
-    form.calories = est.calories || '';
-    form.protein = est.protein ?? '';
-    form.carbs = est.carbs ?? '';
-    form.fat = est.fat ?? '';
-    form.image_path = est.image_path || ''; // travels to /create so the entry keeps the photo
-    if (est.protein || est.carbs || est.fat) showMacros.value = true;
-    photoAdvice.value = est.short_advice || '';
-  } catch (err) {
-    error.value = err.message;
-    clearPhotoPreview(); // drop the preview if the estimate failed
-  } finally {
-    photoBusy.value = false;
-  }
+  form.food_item = p.food_item || '';
+  form.calories = p.calories || '';
+  form.protein = p.protein ?? '';
+  form.carbs = p.carbs ?? '';
+  form.fat = p.fat ?? '';
+  form.image_path = p.image_path || ''; // travels to /create so the entry keeps the photo
+  if (p.protein || p.carbs || p.fat) showMacros.value = true;
+  showAiChat.value = false;
 }
 
 onMounted(() => {
@@ -417,7 +383,6 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   stopCamera();
-  clearPhotoPreview();
 });
 </script>
 
@@ -431,36 +396,17 @@ onBeforeUnmount(() => {
       <RouterLink to="/intake" class="past-back">{{ $t('intake.past.back_today') }}</RouterLink>
     </div>
 
+    <!-- Running calorie total (shared with the Dashboard) -->
+    <CalorieSummaryCard v-if="summary" :summary="summary" class="intake-summary" />
+
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
       <div class="io-actions">
         <button type="button" class="io-chip" @click="openScanner">
           <i class="fa-solid fa-barcode" /> {{ $t('intake.scan_barcode_chip') }}
         </button>
-        <button type="button" class="io-chip" :disabled="photoBusy" @click="openPhoto">
-          <i class="fa-solid" :class="photoBusy ? 'fa-spinner fa-spin' : 'fa-camera'" />
-          {{ photoBusy ? $t('intake.photo.analyzing') : $t('intake.ai_photo_chip') }}
-        </button>
-      </div>
-
-      <!-- AI Photo review: shows the picked image so the user can confirm it. -->
-      <div v-if="photoPreview || photoBusy" class="photo-review">
-        <img v-if="photoPreview" :src="photoPreview" :alt="$t('intake.photo.selected_alt')" />
-        <div class="photo-review-body">
-          <span v-if="photoBusy" class="muted"><i class="fa-solid fa-spinner fa-spin" /> {{ $t('intake.photo.analyzing_photo') }}</span>
-          <template v-else>
-            <strong>{{ $t('intake.photo.added') }}</strong>
-            <small class="muted">{{ $t('intake.photo.estimate_hint') }}</small>
-          </template>
-        </div>
-        <button
-          v-if="!photoBusy"
-          type="button"
-          class="photo-x"
-          @click="removePhoto"
-          :aria-label="$t('intake.photo.remove')"
-        >
-          <i class="fa-solid fa-xmark" />
+        <button type="button" class="io-chip" @click="showAiChat = true">
+          <i class="fa-solid fa-wand-magic-sparkles" /> {{ $t('intake.ai_photo_chip') }}
         </button>
       </div>
 
@@ -533,8 +479,6 @@ onBeforeUnmount(() => {
           <input id="intake-f" v-model="form.fat" type="number" min="0" step="any" />
         </div>
       </div>
-
-      <p v-if="photoAdvice" class="advice"><i class="fa-solid fa-lightbulb" /> {{ photoAdvice }}</p>
 
       <button type="submit" class="log-btn" :disabled="!canSubmit || saving">
         {{ saving ? $t('intake.logging') : $t('intake.log_entry_btn') }}
@@ -615,22 +559,15 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- AI Photo: hidden file input triggered by the AI Photo chip. No `capture`
-         attribute, so iOS offers Photo Library / Take Photo / Choose File rather
-         than forcing the camera (matches the PHP intake page). -->
-    <input
-      ref="photoInput"
-      type="file"
-      accept="image/*"
-      style="display: none"
-      @change="onPhotoPicked"
-    />
+    <!-- AI food chat: attach a photo + correct the dish, then Add to log. -->
+    <AiFoodChat :open="showAiChat" @close="showAiChat = false" @pick="onAiPick" />
   </main>
 </template>
 
 <style scoped>
 .intake { max-width: 560px; margin: 0 auto; padding: 8px 16px; }
 .intake h1 { margin: 6px 0 16px; }
+.intake-summary { margin-bottom: 16px; }
 
 /* Past-day (backdating) banner */
 .past-banner {
@@ -729,8 +666,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .ql-toggle:hover { color: var(--text); }
 
 .log-btn { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; }
-.advice { margin: 14px 0 0; font-size: 13px; color: #c4b5fd; }
-.advice i { margin-right: 6px; }
 
 /* Capture shortcut chips (Scan barcode / AI Photo) */
 .io-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -746,38 +681,6 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-weight: 600;
 }
 .io-chip:hover { border-color: var(--accent); color: var(--accent); }
-
-/* AI Photo review card */
-.photo-review {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  margin-bottom: 16px;
-  background: var(--inset);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-.photo-review img {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-.photo-review-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.photo-review-body small { font-size: 12px; }
-.photo-x {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  background: var(--surface-2);
-  color: var(--text);
-  border: none;
-  border-radius: 10px;
-}
 
 /* Scanner modal */
 .overlay {
