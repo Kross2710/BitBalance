@@ -101,3 +101,61 @@ input:focus, select:focus, textarea:focus {
   font-size: 13px;
   margin: 8px 0 0;
 }
+
+/* Choice card — flat selectable option (gender / goal / pace / activity list).
+   Flat per DESIGN.md: 1px border, accent border + faint accent fill when
+   selected. NOT the PHP 3D tactile look (no chunky `0 8px 0` shadow). Rendered
+   on a <button type="button">, so it overrides the global accent button fill.
+   All tokens, so it adapts to light + dark automatically. */
+.choice-grid {
+  display: grid;
+  gap: 10px;
+}
+.choice-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 72px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--inset);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+/* Wide variant: icon left, label + detail stacked right (e.g. activity list). */
+.choice.row {
+  flex-direction: row;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 12px;
+}
+.choice .choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choice .sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.choice i {
+  font-size: 18px;
+  color: var(--muted);
+}
+.choice.is-selected {
+  border-color: var(--accent);
+  background: var(--focus-ring);
+}
+.choice.is-selected i {
+  color: var(--accent);
+}
