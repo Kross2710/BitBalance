@@ -6,6 +6,7 @@
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { api } from '../lib/api.js';
+import { appToday } from '../lib/date.js';
 import { t, locale } from '../i18n/index.js';
 import CalorieSummaryCard from '../components/CalorieSummaryCard.vue';
 import AiFoodChat from '../components/AiFoodChat.vue';
@@ -94,7 +95,7 @@ async function loadRecent() {
 const route = useRoute();
 const entries = ref([]);
 const summary = ref(null); // daily total/goal/macros for the CalorieSummaryCard
-const todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+const todayLocal = appToday();
 
 // Backdating: the Dashboard date strip can carry a past day via ?date=, and we
 // log to / show THAT day instead of today. Rules (ported from process_intake.php):

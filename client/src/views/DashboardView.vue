@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../lib/api.js';
+import { appToday } from '../lib/date.js';
 import { useAuthStore } from '../stores/auth.js';
 import { locale } from '../i18n/index.js';
 import WrappedStory from '../components/WrappedStory.vue';
@@ -20,10 +21,10 @@ function openWrapped() {
 }
 
 const day = ref(null); // full /api/dashboard/day payload
-const selectedDate = ref(new Date().toISOString().slice(0, 10));
+const selectedDate = ref(appToday());
 const renderedDate = ref(selectedDate.value); // transition key; flips only after new data loads
 const slideDir = ref('next'); // 'next' = newer day (enter from right), 'prev' = older day
-const today = new Date().toISOString().slice(0, 10);
+const today = appToday();
 const loading = ref(true);
 const error = ref('');
 
