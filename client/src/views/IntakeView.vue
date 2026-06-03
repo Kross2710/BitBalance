@@ -12,6 +12,8 @@ import AiFoodChat from '../components/AiFoodChat.vue';
 import MacroInputs from '../components/MacroInputs.vue';
 import BottomSheet from '../components/BottomSheet.vue';
 import MealBadge from '../components/MealBadge.vue';
+import UnlockToast from '../components/UnlockToast.vue';
+import { celebrate } from '../lib/unlockToast.js';
 
 // Default the meal to the current time-of-day, like the PHP app / AI Coach.
 function mealFromHour() {
@@ -55,6 +57,21 @@ function flashSuccess(msg) {
   success.value = msg;
   clearTimeout(successTimer);
   successTimer = setTimeout(() => (success.value = ''), 4000);
+}
+
+// Turn a /create response into celebration toasts: level-up first, then any
+// achievements that climbed a tier with this log (level 1 = freshly unlocked).
+function celebrateFromLog(res) {
+  const items = [];
+  if (res?.xp?.levelup) items.push({ type: 'levelup', level: res.xp.levelup.to });
+  for (const a of res?.newly_unlocked || []) {
+    items.push(
+      a.level <= 1
+        ? { type: 'unlock', name: a.name, icon: a.icon, tone: a.tone }
+        : { type: 'tier', name: a.name, icon: a.icon, tone: a.tone, level: a.level }
+    );
+  }
+  celebrate(items);
 }
 function clearMessages() {
   success.value = '';
@@ -261,8 +278,9 @@ async function onSubmit() {
   dismissUndo();
   saving.value = true;
   try {
-    await api.post('/api/intake/create', { ...form, date: activeDate.value });
+    const res = await api.post('/api/intake/create', { ...form, date: activeDate.value });
     flashSuccess(t('intake.logged_named', { name: form.food_item }));
+    celebrateFromLog(res);
     form.food_item = '';
     form.calories = '';
     form.protein = '';
@@ -460,7 +478,7 @@ function entryTime(e) {
 async function relog(e) {
   error.value = '';
   try {
-    await api.post('/api/intake/create', {
+    const res = await api.post('/api/intake/create', {
       food_item: e.food_item,
       calories: e.calories,
       protein: e.protein,
@@ -470,6 +488,7 @@ async function relog(e) {
       date: activeDate.value,
     });
     flashSuccess(t('intake.logged_named', { name: e.food_item }));
+    celebrateFromLog(res);
     await Promise.all([loadEntries(), loadRecent()]);
   } catch (err) {
     error.value = err.message;
@@ -654,6 +673,9 @@ onBeforeUnmount(() => {
 
     <!-- AI food chat: attach a photo + correct the dish, then Add to log. -->
     <AiFoodChat :open="showAiChat" @close="showAiChat = false" @pick="onAiPick" />
+
+    <!-- Celebratory level-up / achievement-unlock toast after a log. -->
+    <UnlockToast />
 
     <!-- Undo bar after delete (PHP-style): restore the last-deleted entry. -->
     <Transition name="undo">

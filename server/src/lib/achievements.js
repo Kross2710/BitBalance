@@ -214,3 +214,44 @@ export function topBadge(achievements) {
     tone: top?.tone ?? 'primary',
   };
 }
+
+// --- Unlock-toast support ----------------------------------------------------
+// The achievement levels at a point in time, keyed by id, stored on the session
+// so a later log can tell what the user *gained* since they last saw their
+// progress. Tiny ({id: level}), so it's cheap to keep in the session store.
+function levelMap(achievements) {
+  const m = {};
+  for (const a of achievements) m[a.id] = a.level;
+  return m;
+}
+
+// Overwrite the session baseline with the user's current achievement levels.
+// Call this whenever the user has just *seen* their progress (the /progress
+// page) so the next log diffs against what they already know about.
+export function snapshotAchievementLevels(session, achievements) {
+  if (session) session.ach_levels = levelMap(achievements);
+}
+
+// Ensure the session has a baseline WITHOUT a redundant recompute: no-op once
+// seeded. Called before a log so the very first log of a session (which may
+// unlock First Bite) still has a "before" to diff against. Only the first log
+// of a session pays the extra achievementsProgress() cost.
+export async function seedAchievementBaseline(userId, session) {
+  if (!session || session.ach_levels) return;
+  const { achievements } = await achievementsProgress(userId);
+  session.ach_levels = levelMap(achievements);
+}
+
+// Achievements that climbed a tier since the session baseline. Updates the
+// baseline to "now" and returns the freshly-gained tiers (for the unlock toast).
+// Defensive: with no baseline it just seeds and reports nothing, so a returning
+// user is never spammed with everything they already earned.
+export async function newlyUnlockedSince(userId, session) {
+  const { achievements } = await achievementsProgress(userId);
+  const prev = session?.ach_levels;
+  if (session) session.ach_levels = levelMap(achievements);
+  if (!prev) return [];
+  return achievements
+    .filter((a) => a.level > (prev[a.id] ?? 0))
+    .map((a) => ({ id: a.id, name: a.name, icon: a.icon, tone: a.tone, level: a.level, max_level: a.max_level }));
+}

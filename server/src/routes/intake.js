@@ -39,6 +39,7 @@ const CHAT_PROMPT =
 import { awardIntakeLog, awardStreakMilestone, getSummary, consumeLevelupFlash } from '../lib/xp.js';
 import { updateLoggingStreak } from '../lib/streak.js';
 import { loggingStreak } from '../lib/dashboard.js';
+import { seedAchievementBaseline, newlyUnlockedSince } from '../lib/achievements.js';
 
 const router = Router();
 
@@ -241,6 +242,16 @@ router.post('/create', requireAuth, async (req, res, next) => {
     const payload = validateIntake(req.body, false);
     const userId = req.user.user_id;
 
+    // Seed the achievement baseline BEFORE the log so the very first log of a
+    // session (which may unlock First Bite) still has a "before" to diff
+    // against. No-op once seeded, so only the first log of a session pays the
+    // extra cost. Best-effort: never let it fail the log.
+    try {
+      await seedAchievementBaseline(userId, req.session);
+    } catch (e) {
+      console.error('intake achievement seed error:', e);
+    }
+
     // Optional backdating (ports process_intake.php): clamp future -> today, and
     // only today's logs bump the streak. CURDATE()/CURTIME() run in the DB's
     // +07:00 zone, matching how "today" is computed everywhere else.
@@ -296,6 +307,16 @@ router.post('/create', requireAuth, async (req, res, next) => {
       console.error('intake xp summary error:', e);
     }
 
+    // Achievements gained by THIS log, for the celebratory unlock toast. Diffs
+    // against the session baseline seeded above; best-effort so a failure here
+    // never breaks the log itself.
+    let newlyUnlocked = [];
+    try {
+      newlyUnlocked = await newlyUnlockedSince(userId, req.session);
+    } catch (e) {
+      console.error('intake achievement unlock diff error:', e);
+    }
+
     res.status(201).json({
       ok: true,
       data: {
@@ -304,6 +325,7 @@ router.post('/create', requireAuth, async (req, res, next) => {
         date: logDate,
         is_today: isToday,
         xp: { added: xpAdded, summary: xpSummary, levelup: consumeLevelupFlash(req.session) },
+        newly_unlocked: newlyUnlocked,
       },
       message: null,
     });

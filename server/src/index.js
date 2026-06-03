@@ -18,6 +18,7 @@ import friendsRoutes from './routes/friends.js';
 import reminderRoutes from './routes/reminders.js';
 import ptRoutes from './routes/pt.js';
 import wrappedRoutes from './routes/wrapped.js';
+import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { LEGACY_UPLOADS_ROOT, UPLOADS_ROOT } from './lib/uploads.js';
@@ -111,6 +112,7 @@ app.use('/api/social', friendsRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/pt', ptRoutes);
 app.use('/api/wrapped', wrappedRoutes);
+app.use('/api/progress', progressRoutes);
 // Admin panel — whole surface is admin-only, so guard at the mount (not
 // per-endpoint like PT). requireAuth attaches req.user; requireAdmin gates role.
 app.use('/api/admin', requireAuth, requireAdmin, adminRoutes);
