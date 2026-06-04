@@ -187,9 +187,23 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 
     <!-- Hero metrics: always present so the page never reads as empty. -->
     <div class="hero-metrics">
-      <div class="hm"><strong>{{ friends.length }}</strong><small>{{ $t('friends.metric.friends') }}</small></div>
-      <div class="hm"><strong>{{ meWeekly ? '#' + meWeekly.rank : '—' }}</strong><small>{{ $t('friends.metric.rank') }}</small></div>
-      <div class="hm"><strong>{{ meWeekly ? meWeekly.weekly_xp : '—' }}</strong><small>{{ $t('friends.metric.weekly_xp') }}</small></div>
+      <div class="hm">
+        <strong v-if="!loading">{{ friends.length }}</strong>
+        <span v-else class="sk sk-num" aria-hidden="true" />
+        <small>{{ $t('friends.metric.friends') }}</small>
+      </div>
+      <div class="hm">
+        <strong v-if="meWeekly">#{{ meWeekly.rank }}</strong>
+        <span v-else-if="lbLoading" class="sk sk-num" aria-hidden="true" />
+        <strong v-else>—</strong>
+        <small>{{ $t('friends.metric.rank') }}</small>
+      </div>
+      <div class="hm">
+        <strong v-if="meWeekly">{{ meWeekly.weekly_xp }}</strong>
+        <span v-else-if="lbLoading" class="sk sk-num" aria-hidden="true" />
+        <strong v-else>—</strong>
+        <small>{{ $t('friends.metric.weekly_xp') }}</small>
+      </div>
     </div>
 
     <!-- Tabs -->
@@ -374,6 +388,10 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 }
 .hm strong { font-size: 18px; font-weight: 800; }
 .hm small { color: var(--muted); font-size: 11px; }
+/* Placeholder for a hero tile value before the first poll / leaderboard resolves
+   (avoids flashing a misleading "0" / "—"). Same fixed tile height, no shimmer. */
+.sk { background: var(--inset); border: 1px solid var(--border); border-radius: 8px; }
+.hm .sk-num { align-self: center; width: 30px; height: 20px; margin: 1px 0; }
 .muted { color: var(--muted); }
 .empty { padding: 18px 4px; }
 .error { color: #f87171; margin: 8px 0; }

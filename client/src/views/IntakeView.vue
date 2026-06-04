@@ -517,8 +517,11 @@ onBeforeUnmount(() => {
       <RouterLink to="/intake" class="past-back">{{ $t('intake.past.back_today') }}</RouterLink>
     </div>
 
-    <!-- Running calorie total (shared with the Dashboard) -->
+    <!-- Running calorie total (shared with the Dashboard). Reserve its height with a
+         skeleton until the first summary loads so the form below doesn't jump (CLS).
+         summary stays truthy after the first load, so this only shows on cold load. -->
     <CalorieSummaryCard v-if="summary" :summary="summary" class="intake-summary" />
+    <div v-else class="sk intake-summary-skel" aria-hidden="true"></div>
 
     <form class="card" @submit.prevent="onSubmit">
       <!-- Capture shortcuts -->
@@ -730,6 +733,9 @@ onBeforeUnmount(() => {
 .intake { max-width: 560px; margin: 0 auto; padding: 8px 16px; }
 .intake h1 { margin: 6px 0 16px; }
 .intake-summary { margin-bottom: 16px; }
+/* First-load placeholder holding the summary card's height (no shimmer). */
+.sk { background: var(--inset); border: 1px solid var(--border); border-radius: 14px; }
+.intake-summary-skel { min-height: 134px; margin-bottom: 16px; }
 
 /* Past-day (backdating) banner */
 .past-banner {
