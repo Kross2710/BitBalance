@@ -203,7 +203,14 @@ router.post('/avatar', requireAuth, avatarUpload.single('image'), async (req, re
     const [prev] = await pool.query('SELECT profile_image FROM user WHERE user_id = ?', [userId]);
     const oldPath = prev[0]?.profile_image ?? null;
 
-    const newPath = saveProfileImage(userId, req.file.buffer, req.file.mimetype);
+    // sharp re-encodes + validates the bytes here; a non-image (or spoofed MIME)
+    // throws and is rejected as a 422 instead of being stored.
+    let newPath;
+    try {
+      newPath = await saveProfileImage(userId, req.file.buffer);
+    } catch {
+      return res.status(422).json({ ok: false, data: null, message: 'That image could not be processed.' });
+    }
     await query('UPDATE user SET profile_image = ? WHERE user_id = ?', [newPath, userId]);
 
     // Drop the old file only if it was a Vue-side avatar (never touch legacy
