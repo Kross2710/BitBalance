@@ -60,7 +60,9 @@ async function loadDay() {
   if (!day.value) loading.value = true; // full loading line only on the first load
   error.value = '';
   try {
-    day.value = await api.get(`/api/dashboard/day?date=${selectedDate.value}`);
+    // Background: the dashboard has its own skeleton + day-switch slide, so this
+    // load drives those, not the global top bar (avoids a redundant double signal).
+    day.value = await api.get(`/api/dashboard/day?date=${selectedDate.value}`, { background: true });
     renderedDate.value = selectedDate.value; // flip the transition key together with the data
     computeNudge(); // day's meal totals changed → re-evaluate the reminder
   } catch (e) {

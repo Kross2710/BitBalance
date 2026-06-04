@@ -3,9 +3,14 @@
 //   - route navigation (a boolean: redirect-safe, so a multi-hop guard still
 //     maps to a single bar) — set by router.js via navStart/navDone.
 //   - in-flight API requests (a counter) — set by lib/api.js via reqStart/reqDone.
-//     Background polls (friends/chat poll, nav-badge refresh) opt out so the bar
-//     never flashes on the 15s timers.
-// Rendered by components/LoadingBar.vue, which reads loadingState.
+//     Background polls (friends/chat poll, nav-badge refresh, type-ahead search,
+//     the dashboard's skeleton-backed data load) opt out via { background: true }.
+//
+// Philosophy: page content uses SKELETONS; the bar is only for work that's
+// actually slow. So the reveal is DEFERRED by SHOW_DELAY — anything that finishes
+// first (fast navigations, sub-300ms fetches) never flashes the bar. It surfaces
+// only for genuinely long work (slow route change, Wrapped, AI Coach, barcode/AI
+// photo, heavy admin/trainer data).
 import { reactive } from 'vue';
 
 export const loadingState = reactive({ progress: 0, visible: false });
@@ -14,6 +19,9 @@ let reqCount = 0;
 let navActive = false;
 let trickle = null;
 let hideTimer = null;
+let showTimer = null;
+
+const SHOW_DELAY = 280; // ms — below this, work is "fast" and the bar stays hidden.
 
 const active = () => navActive || reqCount > 0;
 
@@ -33,35 +41,48 @@ function stopTrickle() {
   }
 }
 
+function reveal() {
+  loadingState.visible = true;
+  loadingState.progress = 8;
+  startTrickle();
+}
+
 // Recompute the visual state from the two sources after any change.
 function sync() {
   if (active()) {
-    const wasFinishing = !!hideTimer;
     if (hideTimer) {
       clearTimeout(hideTimer);
       hideTimer = null;
     }
-    if (!loadingState.visible) {
-      loadingState.visible = true;
-      loadingState.progress = 8;
-    } else if (wasFinishing || loadingState.progress >= 90) {
-      // New work arrived just as we were snapping to done (e.g. the route's data
-      // fetch starts the instant after navDone) — resume mid-way so the bar keeps
-      // moving instead of freezing at 100%.
-      loadingState.progress = Math.min(loadingState.progress, 75);
+    if (loadingState.visible) {
+      // Already on. If we'd snapped toward done (a finish that got cancelled when
+      // new work arrived), resume mid-way so the bar keeps moving, not frozen at 100%.
+      if (loadingState.progress >= 90) loadingState.progress = 75;
+      startTrickle();
+    } else if (!showTimer) {
+      // Defer the reveal — fast work finishes before this fires and never shows.
+      showTimer = setTimeout(() => {
+        showTimer = null;
+        if (active()) reveal();
+      }, SHOW_DELAY);
     }
-    startTrickle();
-  } else if (loadingState.visible && !hideTimer) {
-    // Snap to 100%, then fade out (unless work resumes within the window).
-    stopTrickle();
-    loadingState.progress = 100;
-    hideTimer = setTimeout(() => {
-      hideTimer = null;
-      if (!active()) {
-        loadingState.visible = false;
-        loadingState.progress = 0;
-      }
-    }, 280);
+  } else {
+    // Idle. If the bar never outlived the delay, cancel the pending reveal (no flash).
+    if (showTimer) {
+      clearTimeout(showTimer);
+      showTimer = null;
+    }
+    if (loadingState.visible && !hideTimer) {
+      stopTrickle();
+      loadingState.progress = 100;
+      hideTimer = setTimeout(() => {
+        hideTimer = null;
+        if (!active()) {
+          loadingState.visible = false;
+          loadingState.progress = 0;
+        }
+      }, 280);
+    }
   }
 }
 
