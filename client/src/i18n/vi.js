@@ -35,6 +35,7 @@ export default {
   'nav.account_menu': 'Menu tài khoản',
   'nav.trainer_workspace': 'Bàn làm việc PT',
   'nav.profile': 'Hồ sơ',
+  'nav.settings': 'Cài đặt',
   'nav.progress': 'Tiến độ',
   'nav.admin': 'Quản trị',
 
@@ -259,6 +260,18 @@ export default {
   'profile.field.username_hint': '3-30 ký tự: chữ, số và . # - _',
   'profile.field.email': 'Email',
   'profile.field.bio': 'Giới thiệu',
+  // trang cài đặt (SettingsView.vue)
+  'settings.title': 'Cài đặt',
+  'settings.saved': 'Đã lưu cài đặt.',
+  'settings.ai.title': 'Giọng điệu AI Coach',
+  'settings.ai.intro': 'Chọn cách AI Coach trò chuyện với bạn.',
+  'settings.ai.tone': 'Giọng điệu',
+  'settings.ai.tone.formal': 'Chuyên nghiệp',
+  'settings.ai.tone.casual': 'Thân mật',
+  'settings.ai.persona': 'Tính cách tuỳ chỉnh (không bắt buộc)',
+  'settings.ai.persona_ph': 'vd: Một HLV vui tính, hay pha trò và trả lời ngắn gọn',
+  'settings.ai.persona_hint': 'Nếu nhập, phần này sẽ ưu tiên hơn giọng điệu ở trên. Chỉ ảnh hưởng phong cách — không thay đổi an toàn hay độ chính xác.',
+
   'profile.appearance.title': 'Tuỳ chọn',
   'profile.theme.label': 'Giao diện',
   'profile.theme.system': 'Theo hệ thống',

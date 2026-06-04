@@ -27,6 +27,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VALID_THEMES = ['light', 'dark', 'system'];
 const VALID_GENDERS = ['male', 'female', 'other'];
 const VALID_VISIBILITIES = ['private', 'friends', 'public'];
+const VALID_AI_TONES = ['formal', 'casual'];
+const AI_PERSONA_MAX = 280;
 // Locales the Vue client ships catalogs for (client/src/i18n/locales.js). The DB
 // column also accepts 'fr' from the PHP app, but the SPA only offers en/vi.
 const VALID_LOCALES = ['en', 'vi'];
@@ -72,6 +74,47 @@ router.post('/language', requireAuth, async (req, res, next) => {
   }
 });
 
+// System settings (the new Settings page): theme, privacy and AI persona/tone.
+// Separate from /update because the Settings page does not edit identity fields
+// (name/email), which /update requires. All fields are optional + partial.
+router.post('/settings', requireAuth, async (req, res, next) => {
+  const fail = (msg, code = 422) => res.status(code).json({ ok: false, data: null, message: msg });
+  const d = req.body ?? {};
+  const userId = req.user.user_id;
+
+  const theme = 'theme_preference' in d ? String(d.theme_preference).trim() : null;
+  const visibility = 'visibility' in d ? String(d.visibility).trim() : null;
+  const showFav = 'show_favorite_food' in d ? (d.show_favorite_food ? 1 : 0) : null;
+  const aiTone = 'ai_tone' in d ? String(d.ai_tone).trim() : null;
+  // Custom persona is free text: '' clears it (NULL). Trim + hard length cap.
+  const personaProvided = 'ai_persona' in d;
+  const aiPersona = personaProvided ? String(d.ai_persona ?? '').trim().slice(0, AI_PERSONA_MAX) || null : null;
+
+  if (theme !== null && !VALID_THEMES.includes(theme)) return fail('Invalid theme selected.');
+  if (visibility !== null && !VALID_VISIBILITIES.includes(visibility)) return fail('Invalid profile visibility.');
+  if (aiTone !== null && !VALID_AI_TONES.includes(aiTone)) return fail('Invalid AI tone.');
+
+  try {
+    await query(
+      `UPDATE userStatus
+          SET theme_preference = COALESCE(?, theme_preference),
+              profile_visibility = COALESCE(?, profile_visibility),
+              show_favorite_food = COALESCE(?, show_favorite_food),
+              ai_tone = COALESCE(?, ai_tone),
+              ai_persona = ${personaProvided ? '?' : 'ai_persona'}
+        WHERE user_id = ?`,
+      personaProvided
+        ? [theme, visibility, showFav, aiTone, aiPersona, userId]
+        : [theme, visibility, showFav, aiTone, userId]
+    );
+    const fresh = await fetchUser(userId);
+    req.session.user = publicUser(fresh);
+    res.json({ ok: true, data: await payload(fresh), message: null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/update', requireAuth, async (req, res, next) => {
   const fail = (msg, code = 422) => res.status(code).json({ ok: false, data: null, message: msg });
   const d = req.body ?? {};
@@ -82,7 +125,9 @@ router.post('/update', requireAuth, async (req, res, next) => {
   const handle = (d.user_name ?? '').trim();
   const email = (d.email ?? '').trim();
   const bio = (d.bio ?? '').trim();
-  const theme = (d.theme_preference ?? 'system').trim();
+  // Theme now lives on the Settings page (POST /settings). Treat it as optional
+  // here so saving the Profile (which no longer sends it) never resets it.
+  const theme = 'theme_preference' in d ? String(d.theme_preference).trim() : null;
   // Optional — only written when present, so a Save that omits it never clobbers
   // a value set by the instant /language toggle (COALESCE leaves it untouched).
   const language = 'language_preference' in d ? String(d.language_preference).trim() : null;
@@ -102,7 +147,7 @@ router.post('/update', requireAuth, async (req, res, next) => {
     return fail('Username must be 3-30 characters: letters, numbers, and . # - _.');
   }
   if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.');
-  if (!VALID_THEMES.includes(theme)) return fail('Invalid theme selected.');
+  if (theme !== null && !VALID_THEMES.includes(theme)) return fail('Invalid theme selected.');
   if (language !== null && !VALID_LOCALES.includes(language)) return fail('Invalid language selected.');
   if (visibility !== null && !VALID_VISIBILITIES.includes(visibility)) return fail('Invalid profile visibility.');
   if (calorieGoal !== null && (calorieGoal < 800 || calorieGoal > 10000)) {
@@ -142,7 +187,7 @@ router.post('/update', requireAuth, async (req, res, next) => {
     await conn.query(
       `UPDATE userStatus
           SET profile_bio = ?,
-              theme_preference = ?,
+              theme_preference = COALESCE(?, theme_preference),
               language_preference = COALESCE(?, language_preference),
               profile_visibility = COALESCE(?, profile_visibility),
               show_favorite_food = COALESCE(?, show_favorite_food)

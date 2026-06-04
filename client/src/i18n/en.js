@@ -36,6 +36,7 @@ export default {
   'nav.account_menu': 'Account menu',
   'nav.trainer_workspace': 'Trainer workspace',
   'nav.profile': 'Profile',
+  'nav.settings': 'Settings',
   'nav.progress': 'Progress',
   'nav.admin': 'Admin',
 
@@ -260,6 +261,18 @@ export default {
   'profile.field.username_hint': '3-30 characters: letters, numbers, and . # - _',
   'profile.field.email': 'Email',
   'profile.field.bio': 'Bio',
+  // settings page (SettingsView.vue)
+  'settings.title': 'Settings',
+  'settings.saved': 'Settings saved.',
+  'settings.ai.title': 'AI Coach voice',
+  'settings.ai.intro': 'Choose how your AI Coach talks to you.',
+  'settings.ai.tone': 'Tone',
+  'settings.ai.tone.formal': 'Professional',
+  'settings.ai.tone.casual': 'Casual',
+  'settings.ai.persona': 'Custom personality (optional)',
+  'settings.ai.persona_ph': 'e.g. A cheerful hype-coach who loves puns and keeps replies short',
+  'settings.ai.persona_hint': 'If set, this overrides the tone above. Style only — it never changes safety or accuracy.',
+
   'profile.appearance.title': 'Preferences',
   'profile.theme.label': 'Theme',
   'profile.theme.system': 'System',

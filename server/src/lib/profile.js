@@ -10,7 +10,7 @@ export async function fetchUser(userId) {
   const rows = await query(
     `SELECT u.user_id, u.user_name, u.first_name, u.last_name, u.email, u.role, u.profile_image,
             us.status, us.theme_preference, us.language_preference, us.profile_bio,
-            us.profile_visibility, us.show_favorite_food
+            us.profile_visibility, us.show_favorite_food, us.ai_tone, us.ai_persona
        FROM user u
        JOIN userStatus us ON u.user_id = us.user_id
       WHERE u.user_id = ?
@@ -71,6 +71,10 @@ export async function payload(userRow) {
     privacy: {
       visibility: userRow.profile_visibility ?? 'friends',
       show_favorite_food: Number(userRow.show_favorite_food ?? 1) === 1,
+    },
+    ai: {
+      tone: userRow.ai_tone ?? 'formal',
+      persona: userRow.ai_persona ?? '',
     },
     goal,
     physical: phys,

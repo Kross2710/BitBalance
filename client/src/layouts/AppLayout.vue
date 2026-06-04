@@ -69,7 +69,7 @@ watch(
         <div class="avatar-wrap">
           <button
             class="avatar-link"
-            :class="{ active: route.name === 'profile' || route.name === 'trainer' || route.name === 'progress' }"
+            :class="{ active: ['profile', 'settings', 'trainer', 'progress'].includes(route.name) }"
             :aria-label="$t('nav.account_menu')"
             aria-haspopup="true"
             :aria-expanded="menuOpen"
@@ -95,6 +95,9 @@ watch(
             </RouterLink>
             <RouterLink to="/profile" class="am-item" role="menuitem">
               <i class="fa-solid fa-user" /> {{ $t('nav.profile') }}
+            </RouterLink>
+            <RouterLink to="/settings" class="am-item" role="menuitem">
+              <i class="fa-solid fa-gear" /> {{ $t('nav.settings') }}
             </RouterLink>
           </div>
         </div>

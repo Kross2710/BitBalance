@@ -2,18 +2,15 @@
 // Profile page — mirrors the editable fields of the legacy profile.php that the
 // JSON API exposes: account details (name/handle/email), bio, theme, calorie
 // goal, and physical info. Image upload + language are not part of the API yet.
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, browserTz } from '../lib/api.js';
 import AvatarCropper from '../components/AvatarCropper.vue';
 import { useAuthStore } from '../stores/auth.js';
-import { useBadgesStore } from '../stores/badges.js';
-import { t, locale, setLocale, locales } from '../i18n/index.js';
-import { setTheme } from '../lib/theme.js';
+import { t } from '../i18n/index.js';
 
 const auth = useAuthStore();
 const router = useRouter();
-const badgesStore = useBadgesStore();
 
 async function onLogout() {
   await auth.logout();
@@ -34,9 +31,6 @@ const form = reactive({
   user_name: '',
   email: '',
   bio: '',
-  theme_preference: 'system',
-  visibility: 'friends',
-  show_favorite_food: true,
   calorie_goal: '',
   age: '',
   gender: '',
@@ -44,21 +38,12 @@ const form = reactive({
   height: '',
 });
 
-// Live-preview the theme the moment it's picked — session-only (persist:false)
-// so an UNSAVED pick doesn't linger in localStorage and fight the server value
-// on reload. localStorage is synced on Save (below); the DB write rides in the
-// profile-update payload.
-watch(() => form.theme_preference, (v) => setTheme(v, { persist: false }));
-
 function hydrate(data) {
   form.first_name = data.user.first_name ?? '';
   form.last_name = data.user.last_name ?? '';
   form.user_name = data.user.user_name ?? '';
   form.email = data.user.email ?? '';
   form.bio = data.bio ?? '';
-  form.theme_preference = data.user.theme_preference ?? 'system';
-  form.visibility = data.privacy?.visibility ?? 'friends';
-  form.show_favorite_food = data.privacy?.show_favorite_food ?? true;
   form.calorie_goal = data.goal?.calorie_goal ?? '';
   form.age = data.physical?.age ?? '';
   form.gender = data.physical?.gender ?? '';
@@ -72,7 +57,6 @@ function hydrate(data) {
 }
 
 onMounted(async () => {
-  loadReminders();
   try {
     hydrate(await api.get('/api/profile'));
   } catch (e) {
@@ -89,11 +73,8 @@ async function onSubmit() {
   try {
     const data = await api.post('/api/profile/update', { ...form });
     hydrate(data);
-    // Keep the shared auth store (greeting, theme, etc.) in sync with the save.
+    // Keep the shared auth store (greeting, avatar, etc.) in sync with the save.
     auth.user = data.user;
-    // Choice is now persisted server-side — sync localStorage so the next reload
-    // paints it before /me resolves (no flash).
-    setTheme(data.user.theme_preference ?? 'system');
     success.value = t('profile.updated');
   } catch (e) {
     error.value = e.message;
@@ -148,52 +129,6 @@ async function onCropConfirm(cropped) {
     cropOpen.value = false;
   } finally {
     avatarBusy.value = false;
-  }
-}
-
-// ---- Meal reminders ----
-const REMINDER_MEALS = [
-  { key: 'breakfast', labelKey: 'reminders.meal.breakfast', icon: 'fa-mug-saucer' },
-  { key: 'lunch', labelKey: 'reminders.meal.lunch', icon: 'fa-bowl-food' },
-  { key: 'dinner', labelKey: 'reminders.meal.dinner', icon: 'fa-utensils' },
-  { key: 'snack', labelKey: 'reminders.meal.snack', icon: 'fa-cookie-bite' },
-];
-const reminders = reactive({
-  enabled: false,
-  meals: {
-    breakfast: { enabled: true, time: '08:30' },
-    lunch: { enabled: true, time: '12:30' },
-    dinner: { enabled: true, time: '19:00' },
-    snack: { enabled: false, time: '16:00' },
-  },
-});
-const savingReminders = ref(false);
-const remindersMsg = ref('');
-
-async function loadReminders() {
-  try {
-    const d = await api.get('/api/reminders');
-    reminders.enabled = d.enabled;
-    reminders.meals = d.meals;
-  } catch {
-    /* non-fatal: keep defaults */
-  }
-}
-
-async function saveReminders() {
-  remindersMsg.value = '';
-  savingReminders.value = true;
-  try {
-    const d = await api.post('/api/reminders', { enabled: reminders.enabled, meals: reminders.meals });
-    reminders.enabled = d.enabled;
-    reminders.meals = d.meals;
-    remindersMsg.value = t('reminders.saved');
-    badgesStore.refresh(); // reflect the change in the nav badge immediately
-
-  } catch (e) {
-    remindersMsg.value = e.message;
-  } finally {
-    savingReminders.value = false;
   }
 }
 
@@ -256,40 +191,6 @@ const initials = () =>
         <textarea v-model="form.bio" rows="3" />
       </section>
 
-      <!-- Preferences -->
-      <section class="card" style="margin-top: 14px">
-        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.appearance.title') }}</h2>
-        <label>{{ $t('profile.theme.label') }}</label>
-        <select v-model="form.theme_preference">
-          <option value="system">{{ $t('profile.theme.system') }}</option>
-          <option value="light">{{ $t('profile.theme.light') }}</option>
-          <option value="dark">{{ $t('profile.theme.dark') }}</option>
-        </select>
-        <!-- Language is NOT part of `form`/onSubmit: setLocale persists it instantly
-             (cookie + DB), so it's decoupled from the Save button. -->
-        <label style="display: block; margin-top: 12px">{{ $t('profile.language.title') }}</label>
-        <select :value="locale" @change="setLocale($event.target.value)">
-          <option v-for="(meta, code) in locales" :key="code" :value="code">{{ meta.native }}</option>
-        </select>
-      </section>
-
-      <!-- Privacy -->
-      <section class="card" style="margin-top: 14px">
-        <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.privacy.title') }}</h2>
-        <label>{{ $t('profile.privacy.visibility') }}</label>
-        <select v-model="form.visibility">
-          <option value="public">{{ $t('profile.privacy.visibility.public') }}</option>
-          <option value="friends">{{ $t('profile.privacy.visibility.friends') }}</option>
-          <option value="private">{{ $t('profile.privacy.visibility.private') }}</option>
-        </select>
-        <label class="check">
-          <input v-model="form.show_favorite_food" type="checkbox" />
-          <span>{{ $t('profile.privacy.show_favorite_food') }}</span>
-        </label>
-        <p class="hint">{{ $t('profile.privacy.show_favorite_food_hint') }}</p>
-        <p class="hint">{{ $t('profile.privacy.note') }}</p>
-      </section>
-
       <!-- Goal + physical -->
       <section class="card" style="margin-top: 14px">
         <h2 style="margin: 0 0 12px; font-size: 16px">{{ $t('profile.goal_body.title') }}</h2>
@@ -328,39 +229,6 @@ const initials = () =>
         <span v-if="error" class="error" style="margin: 0">{{ error }}</span>
       </div>
     </form>
-
-    <!-- Meal reminders -->
-    <section v-if="!loading" class="card reminders">
-      <h2>{{ $t('reminders.title') }}</h2>
-      <label class="rem-master">
-        <input v-model="reminders.enabled" type="checkbox" />
-        <span>{{ $t('reminders.enable') }}</span>
-      </label>
-      <p class="rem-hint">{{ $t('reminders.hint') }}</p>
-
-      <div class="rem-grid" :class="{ off: !reminders.enabled }">
-        <div v-for="m in REMINDER_MEALS" :key="m.key" class="rem-row">
-          <label class="rem-meal">
-            <input v-model="reminders.meals[m.key].enabled" type="checkbox" :disabled="!reminders.enabled" />
-            <i class="fa-solid" :class="m.icon" />
-            <span>{{ $t(m.labelKey) }}</span>
-          </label>
-          <input
-            v-model="reminders.meals[m.key].time"
-            type="time"
-            class="rem-time"
-            :disabled="!reminders.enabled || !reminders.meals[m.key].enabled"
-          />
-        </div>
-      </div>
-
-      <div class="rem-actions">
-        <button type="button" :disabled="savingReminders" @click="saveReminders">
-          {{ savingReminders ? $t('common.saving') : $t('reminders.save') }}
-        </button>
-        <span v-if="remindersMsg" class="ok">{{ remindersMsg }}</span>
-      </div>
-    </section>
 
     <!-- Account session: logout lives here (the topbar's logout is being retired). -->
     <section v-if="!loading" class="card logout-card">

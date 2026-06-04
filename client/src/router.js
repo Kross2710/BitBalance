@@ -42,6 +42,7 @@ const routes = [
       { path: 'dashboard', name: 'dashboard', component: () => import('./views/DashboardView.vue') },
       { path: 'intake', name: 'intake', component: () => import('./views/IntakeView.vue') },
       { path: 'profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
+      { path: 'settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
       // Progress / achievements — reached via the avatar menu, not the bottom
       // nav (gamification isn't a core daily flow yet). Mirrors how /trainer sits.
       { path: 'progress', name: 'progress', component: () => import('./views/ProgressView.vue') },
