@@ -126,6 +126,12 @@ const mealKcal = computed(() => {
 const showEditSheet = ref(false);
 const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_category: 'snack', protein: '', carbs: '', fat: '' });
 
+// Tap a logged entry to open a focused detail sheet; tap its photo to enlarge it
+// (mirrors the Dashboard's photo lightbox). detailEntry doubles as the sheet's
+// open flag; lightbox holds the enlarged photo src.
+const detailEntry = ref(null);
+const lightbox = ref('');
+
 async function loadEntries() {
   try {
     const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
@@ -503,6 +509,31 @@ async function relog(e) {
   }
 }
 
+// ---- Entry detail sheet ----
+function openDetail(e) {
+  detailEntry.value = e;
+}
+function closeDetail() {
+  detailEntry.value = null;
+}
+// Route the detail sheet's actions through the existing handlers, closing the
+// detail sheet first so Edit never stacks a second bottom sheet on top of it.
+function editFromDetail() {
+  const e = detailEntry.value;
+  closeDetail();
+  if (e) startEdit(e);
+}
+async function relogFromDetail() {
+  const e = detailEntry.value;
+  closeDetail();
+  if (e) await relog(e);
+}
+async function removeFromDetail() {
+  const e = detailEntry.value;
+  closeDetail();
+  if (e) await removeEntry(e);
+}
+
 onMounted(() => {
   loadRecent();
   loadEntries();
@@ -621,8 +652,17 @@ onBeforeUnmount(() => {
       <ul>
         <li v-for="e in entries" :key="e.id">
           <div class="entry-row">
-            <img v-if="e.image_path" :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
-            <div class="entry-body">
+            <button
+              v-if="e.image_path"
+              type="button"
+              class="entry-thumb-btn"
+              @click="lightbox = e.image_path"
+              :aria-label="$t('intake.detail.view_photo')"
+            >
+              <img :src="e.image_path" class="entry-thumb" :alt="$t('intake.food_photo_alt')" />
+              <span class="entry-thumb-zoom" aria-hidden="true"><i class="fa-solid fa-magnifying-glass-plus" /></span>
+            </button>
+            <button type="button" class="entry-body" @click="openDetail(e)" :aria-label="$t('intake.detail.open', { name: e.food_item })">
               <div class="entry-line">
                 <span class="entry-name">{{ e.food_item }}</span>
                 <strong class="entry-kcal">{{ e.calories }} {{ $t('common.kcal') }}</strong>
@@ -636,7 +676,7 @@ onBeforeUnmount(() => {
                   <span v-if="e.fat" class="mchip f">{{ $t('intake.macro_abbr.fat') }} {{ e.fat }}</span>
                 </span>
               </div>
-            </div>
+            </button>
             <div class="entry-actions">
               <button type="button" class="icon-btn" @click="relog(e)" :aria-label="$t('intake.row.relog_title')"><i class="fa-solid fa-rotate-right" /></button>
               <button type="button" class="icon-btn" @click="startEdit(e)" :aria-label="$t('intake.row.edit_title')"><i class="fa-solid fa-pen" /></button>
@@ -733,6 +773,55 @@ onBeforeUnmount(() => {
         <p v-if="error" class="error">{{ error }}</p>
       </form>
     </BottomSheet>
+
+    <!-- Entry detail: tap a logged item to view it in a focused sheet (read-only
+         view + the same quick actions). -->
+    <BottomSheet :open="!!detailEntry" :title="$t('intake.detail.title')" @close="closeDetail">
+      <div v-if="detailEntry" class="detail">
+        <button
+          v-if="detailEntry.image_path"
+          type="button"
+          class="detail-photo"
+          @click="lightbox = detailEntry.image_path"
+          :aria-label="$t('intake.detail.view_photo')"
+        >
+          <img :src="detailEntry.image_path" :alt="$t('intake.food_photo_alt')" />
+          <span class="detail-photo-zoom" aria-hidden="true"><i class="fa-solid fa-magnifying-glass-plus" /></span>
+        </button>
+
+        <h3 class="detail-name">{{ detailEntry.food_item }}</h3>
+
+        <div class="detail-kcal">
+          <strong>{{ detailEntry.calories }}</strong><span>{{ $t('common.kcal') }}</span>
+        </div>
+
+        <div class="detail-meta">
+          <MealBadge :meal="detailEntry.meal_category" />
+          <span v-if="entryTime(detailEntry)" class="entry-time"><i class="fa-solid fa-clock" /> {{ entryTime(detailEntry) }}</span>
+        </div>
+
+        <div v-if="detailEntry.protein || detailEntry.carbs || detailEntry.fat" class="detail-macros">
+          <div class="dm p"><span class="dm-v">{{ detailEntry.protein || 0 }}<small>g</small></span><span class="dm-k">{{ $t('intake.macro.protein') }}</span></div>
+          <div class="dm c"><span class="dm-v">{{ detailEntry.carbs || 0 }}<small>g</small></span><span class="dm-k">{{ $t('intake.macro.carbs') }}</span></div>
+          <div class="dm f"><span class="dm-v">{{ detailEntry.fat || 0 }}<small>g</small></span><span class="dm-k">{{ $t('intake.macro.fat') }}</span></div>
+        </div>
+        <p v-else class="detail-nomacros">{{ $t('intake.detail.no_macros') }}</p>
+
+        <div class="detail-actions">
+          <button type="button" class="ghost" @click="relogFromDetail"><i class="fa-solid fa-rotate-right" /> {{ $t('intake.row.relog_title') }}</button>
+          <button type="button" class="ghost" @click="editFromDetail"><i class="fa-solid fa-pen" /> {{ $t('common.edit') }}</button>
+          <button type="button" class="ghost danger" @click="removeFromDetail"><i class="fa-solid fa-trash" /> {{ $t('common.delete') }}</button>
+        </div>
+      </div>
+    </BottomSheet>
+
+    <!-- Enlarged food photo (mirrors the Dashboard lightbox); teleported with a
+         z-index above the bottom sheet so it works when opened from the detail. -->
+    <Teleport to="body">
+      <div v-if="lightbox" class="lightbox" @click="lightbox = ''">
+        <img :src="lightbox" :alt="$t('intake.food_photo_alt')" />
+      </div>
+    </Teleport>
   </main>
 </template>
 
@@ -924,8 +1013,27 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
 .entries li { padding: 12px 0; border-top: 1px solid var(--border); }
 .entries li:first-child { border-top: none; padding-top: 0; }
 .entry-row { display: flex; align-items: center; gap: 10px; }
-.entry-thumb { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
-.entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+/* Thumb is a button now: tap to enlarge the photo (zoom hint on hover/focus). */
+.entry-thumb-btn {
+  flex: none; position: relative; overflow: hidden;
+  width: 44px; height: 44px; min-height: 0; padding: 0; border-radius: 8px;
+  background: none; cursor: pointer;
+}
+.entry-thumb { display: block; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+.entry-thumb-zoom {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 13px;
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.entry-thumb-btn:hover .entry-thumb-zoom,
+.entry-thumb-btn:focus-visible .entry-thumb-zoom { opacity: 1; }
+/* Body is a button now: tap to open the detail sheet. Reset native chrome. */
+.entry-body {
+  flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 6px;
+  padding: 0; background: none; color: inherit; font: inherit; text-align: left;
+  border-radius: 6px; cursor: pointer;
+}
+.entry-body:hover .entry-name { color: var(--accent); }
 .entry-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .entry-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .entry-kcal { flex: none; font-weight: 700; }
@@ -944,6 +1052,53 @@ label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px
   font-size: 14px;
 }
 .icon-btn.danger { color: #f87171; }
+
+/* Entry detail sheet */
+.detail { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 4px; }
+.detail-photo {
+  position: relative; align-self: center; padding: 0; min-height: 0;
+  width: 100%; max-width: 280px; aspect-ratio: 4 / 3; overflow: hidden;
+  background: var(--inset); border: 1px solid var(--border); border-radius: 12px; cursor: pointer;
+}
+.detail-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.detail-photo-zoom {
+  position: absolute; right: 8px; bottom: 8px;
+  display: grid; place-items: center; width: 30px; height: 30px;
+  background: rgba(0, 0, 0, 0.55); color: #fff; border-radius: 8px; font-size: 13px;
+}
+.detail-name { margin: 0; font-size: 18px; font-weight: 700; text-align: center; }
+.detail-kcal { text-align: center; line-height: 1; }
+.detail-kcal strong { font-size: 30px; font-weight: 800; color: var(--accent); }
+.detail-kcal span { margin-left: 6px; font-size: 14px; color: var(--muted); }
+.detail-meta { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.detail-meta .entry-time { display: inline-flex; align-items: center; gap: 4px; }
+.detail-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dm {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 6px; border-radius: 10px; border: 1px solid var(--border);
+}
+.dm-v { font-size: 18px; font-weight: 800; }
+.dm-v small { font-size: 11px; font-weight: 700; opacity: 0.75; margin-left: 1px; }
+.dm-k { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.dm.p { background: var(--macro-p-bg); } .dm.p .dm-v, .dm.p .dm-k { color: var(--macro-p); }
+.dm.c { background: var(--macro-c-bg); } .dm.c .dm-v, .dm.c .dm-k { color: var(--macro-c); }
+.dm.f { background: var(--macro-f-bg); } .dm.f .dm-v, .dm.f .dm-k { color: var(--macro-f); }
+.detail-nomacros { margin: 0; text-align: center; color: var(--muted); font-size: 13px; }
+.detail-actions { display: flex; gap: 8px; margin-top: 4px; }
+.detail-actions button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 8px; font-size: 13px;
+  background: var(--surface-2); color: var(--text);
+}
+.detail-actions .danger { color: #f87171; }
+
+/* Enlarged photo overlay (teleported; above the bottom sheet's z-index 1000). */
+.lightbox {
+  position: fixed; inset: 0; z-index: 1100; background: rgba(0, 0, 0, 0.85);
+  display: grid; place-items: center; padding: 24px;
+}
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; }
+
 /* Edit entry bottom sheet */
 .edit-sheet { display: flex; flex-direction: column; gap: 4px; padding-bottom: 4px; }
 .edit-sheet label { margin-top: 10px; }
