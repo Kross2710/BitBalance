@@ -736,6 +736,8 @@ export default {
   'wrapped.streak.day_suffix': 'd',
   'wrapped.streak.kicker': 'Day streak',
   'wrapped.leaderboard.kicker': 'Friends leaderboard',
+  'wrapped.leaderboard.you': 'You',
+  'wrapped.leaderboard.solo': 'Add friends to see how you stack up next week.',
   'wrapped.summary.week_title': "{name}'s week",
   'wrapped.summary.level': 'Level {n}',
   'wrapped.summary.foods_logged': 'Foods logged',

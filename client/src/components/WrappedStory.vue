@@ -103,6 +103,11 @@ const avatarInitial = computed(() =>
   (auth.user?.first_name || auth.user?.handle || data.value?.user?.username || '?').charAt(0).toUpperCase()
 );
 
+// Leaderboard slide: show the mini friend board only when the user actually has
+// friends (friends_top is [self] otherwise). Solo → a rank + "add friends" nudge.
+const hasFriends = computed(() => (data.value?.friends_top?.length || 0) > 1);
+const rowInitial = (n) => (n || '?').slice(0, 1).toUpperCase();
+
 const bentoCells = computed(() => {
   const s = data.value?.stats || {};
   return [
@@ -173,17 +178,29 @@ const bentoCells = computed(() => {
           <p class="caption">{{ data.slide3_streak }}</p>
         </section>
 
-        <!-- 4. Leaderboard -->
+        <!-- 4. Leaderboard. With friends: compact top-3 (+ the user's own row if
+             outside it), their row highlighted. Solo: the rank + a nudge.
+             PRIVACY: friends' name/avatar are in-app only — anonymize on export (P3). -->
         <section v-show="slides[car.index.value] === 'leaderboard'" class="slide center">
-          <div class="podium">
-            <div class="pedestal p2" />
-            <div class="pedestal p1">
-              <div class="avatar"><img v-if="auth.user?.profile_image" :src="auth.user.profile_image" alt="" /><span v-else>{{ avatarInitial }}</span></div>
-              <div class="rank">{{ data.stats.leaderboard_rank }}</div>
-            </div>
-            <div class="pedestal p3" />
-          </div>
           <span class="kicker">{{ $t('wrapped.leaderboard.kicker') }}</span>
+
+          <ol v-if="hasFriends" class="lb-mini">
+            <li v-for="r in data.friends_top" :key="r.rank" class="lb-row" :class="{ me: r.is_current_user }">
+              <span class="lb-rank" :class="'r' + r.rank">{{ r.rank }}</span>
+              <span class="lb-av">
+                <img v-if="r.profile_image" :src="r.profile_image" alt="" />
+                <span v-else>{{ rowInitial(r.user_name) }}</span>
+              </span>
+              <span class="lb-name">{{ r.is_current_user ? $t('wrapped.leaderboard.you') : r.user_name }}</span>
+              <span class="lb-xp">{{ r.weekly_xp }} XP</span>
+            </li>
+          </ol>
+
+          <template v-else>
+            <div class="solo-rank">{{ data.stats.leaderboard_rank }}</div>
+            <p class="solo-note">{{ $t('wrapped.leaderboard.solo') }}</p>
+          </template>
+
           <p class="caption">{{ data.slide4_leaderboard }}</p>
         </section>
 
@@ -382,6 +399,29 @@ const bentoCells = computed(() => {
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .rank { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 56px; font-weight: 900; color: #1a1206; }
+
+/* Friends mini-leaderboard (slide 4) */
+.lb-mini { list-style: none; margin: 12px 0 0; padding: 0; width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+.lb-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+}
+.lb-row.me { border-color: var(--accent); background: rgba(74, 222, 128, 0.08); }
+.lb-rank { flex: none; width: 22px; text-align: center; font-weight: 900; font-size: 15px; color: var(--muted); }
+.lb-rank.r1 { color: #fbbf24; }
+.lb-rank.r2 { color: #cbd5e1; }
+.lb-rank.r3 { color: #d8924e; }
+.lb-av {
+  flex: none; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+  background: var(--surface-2); color: var(--text); font-weight: 800; font-size: 14px;
+  display: grid; place-items: center;
+}
+.lb-av img { width: 100%; height: 100%; object-fit: cover; }
+.lb-name { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-row.me .lb-name { color: var(--accent); }
+.lb-xp { flex: none; font-weight: 800; font-size: 13px; }
+.solo-rank { font-size: 64px; font-weight: 900; color: var(--accent); line-height: 1; margin: 12px 0; }
+.solo-note { font-size: 14px; color: var(--muted); max-width: 80%; }
 
 /* Bento summary */
 .summary { padding-top: 70px; gap: 16px; }

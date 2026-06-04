@@ -735,6 +735,8 @@ export default {
   'wrapped.streak.day_suffix': ' ngày',
   'wrapped.streak.kicker': 'Chuỗi ngày',
   'wrapped.leaderboard.kicker': 'Bảng xếp hạng bạn bè',
+  'wrapped.leaderboard.you': 'Bạn',
+  'wrapped.leaderboard.solo': 'Thêm bạn bè để tuần sau xem mình xếp ở đâu.',
   'wrapped.summary.week_title': 'Tuần của {name}',
   'wrapped.summary.level': 'Cấp {n}',
   'wrapped.summary.foods_logged': 'Món đã ghi',

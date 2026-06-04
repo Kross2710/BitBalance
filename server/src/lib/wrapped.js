@@ -12,7 +12,7 @@ import { leaderboard } from './friends.js';
 import { todayVN, addDays } from './dates.js';
 
 // Bump when the payload shape or prompt changes so stale caches regenerate.
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 function isoWeekYear(dateStr) {
   const d = new Date(`${dateStr}T00:00:00Z`);
@@ -201,10 +201,27 @@ export async function buildWrapped(userId, username, lang = 'en', shift = 0, tod
   const favoriteFood = favoriteRecord?.value || (lang === 'vi' ? 'Chưa đủ dữ liệu' : 'Not enough data');
   const badge = localizeBadge(topBadge(achievements), lang);
 
-  // leaderboard() always includes the caller; no friends → they're rank 1.
+  // leaderboard() always includes the caller; no friends → they're rank 1. It
+  // returns ONLY the caller + accepted friends, XP/level/streak (never calories).
   const board = await leaderboard(userId, 'weekly', 500);
   const me = board.find((r) => r.is_current_user);
   const leaderboardRank = me ? `#${me.rank}` : '#1';
+
+  // Mini friend leaderboard for the Wrapped slide: top 3, plus the user's own row
+  // if they sit outside it. friends_count drives the solo fallback on the client.
+  // PRIVACY: the Wrapped story is shareable. When image EXPORT ships (P3),
+  // anonymize/exclude other people's name+avatar before rendering into a shared
+  // frame — a shared card must not expose friends' identities without consent.
+  const lbRow = (r) => ({
+    rank: r.rank,
+    user_name: r.user_name,
+    profile_image: r.profile_image,
+    weekly_xp: r.weekly_xp,
+    is_current_user: !!r.is_current_user,
+  });
+  const friendsTop = board.slice(0, 3).map(lbRow);
+  if (me && me.rank > 3) friendsTop.push(lbRow(me));
+  const friendsCount = Math.max(0, board.length - 1);
 
   const stats = {
     total_foods: summary.total_foods,
@@ -241,7 +258,9 @@ export async function buildWrapped(userId, username, lang = 'en', shift = 0, tod
       streak: stats.streak,
       leaderboard_rank: stats.leaderboard_rank,
       favorite_food: stats.favorite_food,
+      friends_count: friendsCount,
     },
+    friends_top: friendsTop,
     badge,
     spotify: null,
     ai: aiOk,
