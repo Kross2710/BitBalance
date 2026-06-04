@@ -24,7 +24,8 @@ export const DEFAULTS = {
 // createImageBitmap({imageOrientation:'from-image'}); falls back to a plain
 // bitmap, then to an <img> element (browsers apply image-orientation:from-image
 // to <img> by default), so it works even where the option is unsupported.
-async function decode(file) {
+// Exported so the avatar cropper reuses the same EXIF-safe decode path.
+export async function decodeImage(file) {
   if (typeof createImageBitmap === 'function') {
     try {
       return await createImageBitmap(file, { imageOrientation: 'from-image' });
@@ -61,7 +62,7 @@ export async function compressImage(file, opts = {}) {
   if (!file?.type?.startsWith('image/')) return file;
 
   try {
-    const src = await decode(file);
+    const src = await decodeImage(file);
     const sw = src.width || src.naturalWidth;
     const sh = src.height || src.naturalHeight;
     if (!sw || !sh) return file;

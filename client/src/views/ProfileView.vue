@@ -5,7 +5,7 @@
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, browserTz } from '../lib/api.js';
-import { compressImage } from '../lib/image.js';
+import AvatarCropper from '../components/AvatarCropper.vue';
 import { useAuthStore } from '../stores/auth.js';
 import { useBadgesStore } from '../stores/badges.js';
 import { t, locale, setLocale, locales } from '../i18n/index.js';
@@ -103,21 +103,33 @@ async function onSubmit() {
 }
 
 // ---- Avatar upload ----
+// Picking a file opens the square cropper (Facebook-style reposition + zoom); the
+// cropper hands back an already-cropped, compressed WebP that we upload. Cropping
+// to the avatar square keeps stored files tiny.
 const avatarInput = ref(null);
 const avatarBusy = ref(false);
+const cropOpen = ref(false);
+const pickedFile = ref(null);
 
-async function onAvatarPicked(e) {
+function onAvatarPicked(e) {
   const file = e.target.files?.[0];
   e.target.value = ''; // allow re-picking the same file
   if (!file) return;
+  if (!file.type?.startsWith('image/')) {
+    error.value = t('profile.avatar.upload_failed');
+    return;
+  }
   error.value = '';
   success.value = '';
+  pickedFile.value = file;
+  cropOpen.value = true;
+}
+
+async function onCropConfirm(cropped) {
   avatarBusy.value = true;
   try {
-    // Avatars display small — downscale hard (512px) before upload.
-    const compressed = await compressImage(file, { maxEdge: 512, quality: 0.82, filename: 'avatar.jpg' });
     const fd = new FormData();
-    fd.append('image', compressed);
+    fd.append('image', cropped);
     const res = await fetch('/api/profile/avatar', {
       method: 'POST',
       credentials: 'include',
@@ -129,8 +141,11 @@ async function onAvatarPicked(e) {
     meta.image = json.data.profile_image;
     if (auth.user) auth.user.profile_image = json.data.profile_image; // topbar avatar updates
     success.value = t('profile.updated');
+    cropOpen.value = false;
+    pickedFile.value = null;
   } catch (err) {
     error.value = err.message;
+    cropOpen.value = false;
   } finally {
     avatarBusy.value = false;
   }
@@ -209,6 +224,13 @@ const initials = () =>
           </button>
           <input ref="avatarInput" type="file" accept="image/*" hidden @change="onAvatarPicked" />
         </div>
+        <AvatarCropper
+          :open="cropOpen"
+          :file="pickedFile"
+          :busy="avatarBusy"
+          @confirm="onCropConfirm"
+          @cancel="cropOpen = false; pickedFile = null"
+        />
         <div>
           <strong style="font-size: 18px">{{ form.user_name || '—' }}</strong>
           <p class="muted" style="margin: 4px 0 0; font-size: 13px">
