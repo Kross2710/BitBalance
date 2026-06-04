@@ -152,6 +152,8 @@ onMounted(() => {
         <i class="fa-solid fa-fire" /> {{ day.streak.current }}
       </span>
     </div>
+    <!-- Reserve the hero-pill height on first load so the page below doesn't jump. -->
+    <div v-else-if="loading" class="sk hero-skel" aria-hidden="true"></div>
 
     <!-- BitBalance Wrapped entry -->
     <button type="button" class="wrapped-cta" @click="openWrapped">
@@ -177,7 +179,24 @@ onMounted(() => {
       </button>
     </div>
 
-    <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
+    <!-- First-load skeleton: reserves the deterministic data blocks' height so the
+         content below doesn't jump ~800px when the API resolves (CLS). The variable
+         entries list below is not reserved (its height is data-dependent). Static,
+         no shimmer, per the agreed lightweight scope. -->
+    <div v-if="loading" class="day-skeleton" role="status" :aria-label="$t('common.loading')">
+      <div class="sk" style="height: 134px; margin-top: 14px"></div>
+      <div class="tiles">
+        <div class="sk" style="height: 103px"></div>
+        <div class="sk" style="height: 103px"></div>
+        <div class="sk" style="height: 103px"></div>
+      </div>
+      <div class="sk" style="height: 172px; margin-top: 14px"></div>
+      <div class="sk" style="height: 85px; margin-top: 14px"></div>
+      <div class="actions">
+        <div class="sk" style="height: 52px"></div>
+        <div class="sk" style="height: 52px"></div>
+      </div>
+    </div>
 
     <Transition v-else :name="'day-' + slideDir" mode="out-in">
       <div v-if="day" :key="renderedDate" class="day-content">
@@ -408,6 +427,11 @@ onMounted(() => {
 .chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 12px; }
 .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; justify-content: flex-end; }
 .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; transition: height 0.3s; }
+
+/* First-load skeleton placeholders — dim cards that hold the data blocks' space
+   so nothing below jumps when the API resolves. Static (no shimmer) by design. */
+.sk { background: var(--inset); border: 1px solid var(--border); border-radius: 14px; }
+.hero-skel { height: 40px; margin-top: 6px; border-radius: 999px; }
 .entry-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; cursor: pointer; }
 .lightbox {
   position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.85);

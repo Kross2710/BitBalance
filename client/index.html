@@ -4,6 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BitBalance</title>
+    <!-- Paint the themed background + resolve the theme BEFORE the JS bundle and
+         styles.css load, so a dark-theme user never sees a white flash on a cold
+         load. Mirrors src/lib/theme.js (localStorage 'theme' -> resolved light/dark);
+         theme.js re-applies the same value at import, so this is just the early paint. -->
+    <style>
+      html { background: #0f1115; color-scheme: dark; }
+      html[data-theme="light"] { background: #f4f6fa; color-scheme: light; }
+    </style>
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem('theme');
+          var dark =
+            p === 'dark' ||
+            ((!p || p === 'system') &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <!-- Font Awesome 6 — same icon set the PHP app uses (fas/fa-solid classes). -->
     <link
       rel="stylesheet"
