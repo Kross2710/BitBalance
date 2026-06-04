@@ -301,11 +301,14 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         <button class="seg-btn" :class="{ on: period === 'weekly' }" @click="period = 'weekly'">{{ $t('friends.leaderboard.range.week') }}</button>
         <button class="seg-btn" :class="{ on: period === 'all_time' }" @click="period = 'all_time'">{{ $t('friends.leaderboard.range.all') }}</button>
       </div>
-      <p v-if="lbLoading" class="muted">{{ $t('common.loading') }}</p>
+      <p v-if="lbLoading && !leaders.length" class="muted">{{ $t('common.loading') }}</p>
       <template v-else>
         <!-- Always render the rows: the API returns the user's own row (rank 1)
-             even with no friends, so the board is never blank. -->
-        <ul v-if="leaders.length" class="list">
+             even with no friends, so the board is never blank. Keyed by period so
+             toggling This week / All time animates the swap; the list is kept during
+             the quick background refetch (no loading flash). -->
+        <Transition name="tab" mode="out-in">
+          <ul v-if="leaders.length" :key="period" class="list">
           <li v-for="u in leaders" :key="u.user_id" class="row card" :class="{ me: u.is_current_user }">
             <span class="rank" :class="'r' + u.rank">{{ u.rank }}</span>
             <button type="button" class="row-tap" @click="openProfile(u.user_id)">
@@ -317,7 +320,8 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
             </button>
             <strong class="score">{{ u.score_xp }}<small class="muted"> {{ $t('friends.col.xp') }}</small></strong>
           </li>
-        </ul>
+          </ul>
+        </Transition>
         <!-- Solo nudge sits BELOW the self-row instead of replacing it. -->
         <p v-if="leaders.length <= 1" class="muted empty">
           {{ soloLbParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ soloLbParts.after }}
