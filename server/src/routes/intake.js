@@ -11,6 +11,7 @@ import { lookupBarcode, BarcodeError } from '../lib/barcode.js';
 import { chatCompletion } from '../lib/aiProvider.js';
 import { saveIntakeImage } from '../lib/uploads.js';
 import { aiQuotaExceeded, bumpAiUsage, AI_DAILY_LIMIT } from '../lib/aiUsage.js';
+import { fieldVoiceLanguage } from '../lib/aiVoice.js';
 
 // Shared 429 for the per-user daily AI budget (covers Coach + these vision calls).
 const aiLimitMsg = `Daily AI limit reached (${AI_DAILY_LIMIT}). Please try again tomorrow.`;
@@ -23,16 +24,16 @@ const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 // One-shot nutritionist prompt — ports the system prompt of dashboard/handlers/
 // ai_chat.php. Forces a raw JSON object describing the food in the photo.
-const ESTIMATE_PROMPT =
+const ESTIMATE_BASE =
   'You are a professional Nutritionist AI. Analyze the food in the image and estimate ' +
   'the nutritional values for the portion shown. If the image is NOT food, set every ' +
   'numeric field to 0 and food_name to "Not food". Reply with ONLY a raw JSON object ' +
   '(no markdown, no code fences) of exactly this shape: ' +
   '{"food_name":"Name","calories":0,"protein":0,"carbs":0,"fat":0,"unit":"1 serving","short_advice":"one short tip"}';
 
-// Chat-oriented nutritionist prompt for /ai-chat — like ESTIMATE_PROMPT but uses
+// Chat-oriented nutritionist prompt for /ai-chat — like ESTIMATE_BASE but uses
 // the whole conversation so the user can correct the dish over multiple turns.
-const CHAT_PROMPT =
+const CHAT_BASE =
   'You are a professional Nutritionist AI helping a user log a meal. Analyze the food in ' +
   'the image and/or the text the user sends, and use the whole conversation for context — ' +
   'the user may clarify or correct the dish (e.g. "it is actually pho bo"). Estimate the ' +
@@ -40,6 +41,15 @@ const CHAT_PROMPT =
   'code fences) of exactly this shape: ' +
   '{"food_name":"Name","calories":0,"protein":0,"carbs":0,"fat":0,"unit":"1 serving","short_advice":"one short tip"}. ' +
   'If you cannot identify a food yet, set food_name to null and put a short clarifying question in short_advice.';
+
+// Per-user voice/language: append the shared tone+persona+language guidance (from
+// Settings) so the Intake AI's short_advice matches the user's chosen AI voice and
+// preferred language, the same way the AI Coach does. Built per request from req.user.
+const estimatePrompt = (req) =>
+  ESTIMATE_BASE + fieldVoiceLanguage(userLang(req), req.user?.ai_tone || 'formal', req.user?.ai_persona || '');
+const chatPrompt = (req) =>
+  CHAT_BASE + fieldVoiceLanguage(userLang(req), req.user?.ai_tone || 'formal', req.user?.ai_persona || '', { vary: true });
+const userLang = (req) => (req.user?.language_preference === 'vi' ? 'Vietnamese' : 'English');
 import { awardIntakeLog, awardStreakMilestone, getSummary, consumeLevelupFlash } from '../lib/xp.js';
 import { updateLoggingStreak } from '../lib/streak.js';
 import { loggingStreak } from '../lib/dashboard.js';
@@ -159,7 +169,7 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
 
     const image = { mime: req.file.mimetype, data: req.file.buffer.toString('base64') };
     const result = await chatCompletion({
-      system: ESTIMATE_PROMPT,
+      system: estimatePrompt(req),
       history: [{ role: 'user', content: 'Estimate the food in this photo.' }],
       image,
     });
@@ -229,7 +239,7 @@ router.post('/ai-chat', requireAuth, upload.single('image'), async (req, res, ne
     // Current user turn — the image attaches to the last user message in aiProvider.
     history.push({ role: 'user', content: message || 'Estimate the food in this photo.' });
 
-    const result = await chatCompletion({ system: CHAT_PROMPT, history, image });
+    const result = await chatCompletion({ system: chatPrompt(req), history, image });
     if (!result.ok) {
       return res.status(502).json({ ok: false, data: null, message: result.error || 'AI error' });
     }
