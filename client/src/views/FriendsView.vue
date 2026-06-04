@@ -19,7 +19,7 @@ const busy = ref(false); // guards a mutation in flight
 // --- Poll (friends + pending) -------------------------------------------------
 async function poll() {
   try {
-    const d = await api.get('/api/social/poll');
+    const d = await api.get('/api/social/poll', { background: true });
     friends.value = d.friends;
     pendingIn.value = d.pending_in;
     pendingOut.value = d.pending_out;

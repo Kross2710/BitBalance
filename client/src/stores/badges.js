@@ -18,10 +18,12 @@ export const useBadgesStore = defineStore('badges', () => {
 
   async function refresh() {
     // Independent sources; a failure on one must not blank the others.
+    // Background: this runs on mount + every tab change, so it must not drive the
+    // global loading bar (would flash on every navigation).
     const [summary, pending, reminders] = await Promise.allSettled([
-      api.get('/api/dashboard/summary'),
-      api.get('/api/social/pending-count'),
-      api.get('/api/reminders'),
+      api.get('/api/dashboard/summary', { background: true }),
+      api.get('/api/social/pending-count', { background: true }),
+      api.get('/api/reminders', { background: true }),
     ]);
 
     if (summary.status === 'fulfilled' && reminders.status === 'fulfilled') {

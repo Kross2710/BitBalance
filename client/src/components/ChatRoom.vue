@@ -49,7 +49,7 @@ async function loadAll() {
 async function poll() {
   if (document.hidden) return;
   try {
-    const data = await api.get(`${props.path}?since=${lastId.value}`);
+    const data = await api.get(`${props.path}?since=${lastId.value}`, { background: true });
     if (data.messages.length) {
       messages.value.push(...data.messages);
       scrollToBottom();

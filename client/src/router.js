@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth.js';
+import { navStart, navDone } from './lib/loadingBar.js';
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
@@ -60,6 +61,10 @@ const router = createRouter({
 // Client-side guard. Waits for the one-time /me bootstrap, then gates protected
 // routes. This is what makes navigation feel seamless — no full page reloads.
 router.beforeEach(async (to) => {
+  // Show the top loading bar for the whole navigation (incl. lazy-chunk download
+  // + the guard's one-time bootstrap). navActive is a boolean, so redirect hops
+  // collapse to a single bar; afterEach/onError clear it once.
+  navStart();
   const auth = useAuthStore();
   if (!auth.ready) {
     await auth.bootstrap();
@@ -96,5 +101,10 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' };
   }
 });
+
+// afterEach fires for normal, aborted, and the final hop of a redirected
+// navigation; onError covers a lazy-chunk load failure. Either clears the bar.
+router.afterEach(() => navDone());
+router.onError(() => navDone());
 
 export default router;
