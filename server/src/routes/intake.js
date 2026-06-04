@@ -10,6 +10,10 @@ import { validateIntake, shapeEntry, dailySummary, fetchEntry, parseEstimate, Va
 import { lookupBarcode, BarcodeError } from '../lib/barcode.js';
 import { chatCompletion } from '../lib/aiProvider.js';
 import { saveIntakeImage } from '../lib/uploads.js';
+import { aiQuotaExceeded, bumpAiUsage, AI_DAILY_LIMIT } from '../lib/aiUsage.js';
+
+// Shared 429 for the per-user daily AI budget (covers Coach + these vision calls).
+const aiLimitMsg = `Daily AI limit reached (${AI_DAILY_LIMIT}). Please try again tomorrow.`;
 
 // In-memory upload for AI photo estimation: we forward the bytes to the model
 // AND persist a copy so the logged entry can show the photo later. 5MB cap
@@ -147,6 +151,11 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
     if (!PHOTO_MIMES.includes(req.file.mimetype)) {
       return res.status(415).json({ ok: false, data: null, message: 'Only JPG, PNG, WEBP or GIF images are allowed.' });
     }
+    // Per-user daily AI budget (shared with the Coach) — check BEFORE the paid
+    // model call so an over-quota user never incurs cost.
+    if (await aiQuotaExceeded(req.user.user_id, req.todayTz)) {
+      return res.status(429).json({ ok: false, data: null, message: aiLimitMsg });
+    }
 
     const image = { mime: req.file.mimetype, data: req.file.buffer.toString('base64') };
     const result = await chatCompletion({
@@ -157,6 +166,8 @@ router.post('/estimate-photo', requireAuth, upload.single('image'), async (req, 
     if (!result.ok) {
       return res.status(502).json({ ok: false, data: null, message: result.error || 'AI error' });
     }
+    // The model call succeeded (cost incurred) — count it against the budget.
+    await bumpAiUsage(req.user.user_id, req.todayTz);
 
     const parsed = parseEstimate(result.text);
     if (!parsed) {
@@ -197,6 +208,10 @@ router.post('/ai-chat', requireAuth, upload.single('image'), async (req, res, ne
     if (!message && !image) {
       return res.status(400).json({ ok: false, data: null, message: 'Send a photo or a message.' });
     }
+    // Per-user daily AI budget (shared with the Coach), checked before the call.
+    if (await aiQuotaExceeded(req.user.user_id, req.todayTz)) {
+      return res.status(429).json({ ok: false, data: null, message: aiLimitMsg });
+    }
 
     // Prior turns from the client (text only); cap + sanitize.
     let history = [];
@@ -218,6 +233,8 @@ router.post('/ai-chat', requireAuth, upload.single('image'), async (req, res, ne
     if (!result.ok) {
       return res.status(502).json({ ok: false, data: null, message: result.error || 'AI error' });
     }
+    // Successful model call (cost incurred) — count it against the daily budget.
+    await bumpAiUsage(req.user.user_id, req.todayTz);
 
     // Prefer the structured card; fall back to the raw reply as a chat message so
     // a non-JSON answer still shows up instead of erroring.
