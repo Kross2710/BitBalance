@@ -3,6 +3,9 @@ import { useAuthStore } from './stores/auth.js';
 import { navStart, navDone } from './lib/loadingBar.js';
 
 const routes = [
+  // Public welcome / app intro for logged-out visitors (ported from PHP index.php).
+  // Owns '/'; logged-in users are bounced to /dashboard by the guard below.
+  { path: '/', name: 'landing', component: () => import('./views/LandingView.vue') },
   { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
   { path: '/signup', name: 'signup', component: () => import('./views/SignupView.vue') },
   // Onboarding is full-screen (no app chrome).
@@ -33,23 +36,25 @@ const routes = [
   },
   // Authenticated app shell: persistent nav (sidebar/tab bar) wraps the pages,
   // so switching tabs never remounts the chrome — navigation stays seamless.
+  // Parent path is '/app' (a never-visited prefix) so the public landing can own
+  // '/'; children use ABSOLUTE paths, so their URLs stay '/dashboard', '/intake', …
   {
-    path: '/',
+    path: '/app',
     component: () => import('./layouts/AppLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       { path: '', redirect: '/dashboard' },
-      { path: 'dashboard', name: 'dashboard', component: () => import('./views/DashboardView.vue') },
-      { path: 'intake', name: 'intake', component: () => import('./views/IntakeView.vue') },
-      { path: 'profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
-      { path: 'settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
+      { path: '/dashboard', name: 'dashboard', component: () => import('./views/DashboardView.vue') },
+      { path: '/intake', name: 'intake', component: () => import('./views/IntakeView.vue') },
+      { path: '/profile', name: 'profile', component: () => import('./views/ProfileView.vue') },
+      { path: '/settings', name: 'settings', component: () => import('./views/SettingsView.vue') },
       // Progress / achievements — reached via the avatar menu, not the bottom
       // nav (gamification isn't a core daily flow yet). Mirrors how /trainer sits.
-      { path: 'progress', name: 'progress', component: () => import('./views/ProgressView.vue') },
-      { path: 'coach', name: 'coach', component: () => import('./views/CoachView.vue') },
-      { path: 'friends', name: 'friends', component: () => import('./views/FriendsView.vue') },
+      { path: '/progress', name: 'progress', component: () => import('./views/ProgressView.vue') },
+      { path: '/coach', name: 'coach', component: () => import('./views/CoachView.vue') },
+      { path: '/friends', name: 'friends', component: () => import('./views/FriendsView.vue') },
       // PT workspace — reached via the topbar avatar menu, not the bottom nav.
-      { path: 'trainer', name: 'trainer', component: () => import('./views/TrainerView.vue') },
+      { path: '/trainer', name: 'trainer', component: () => import('./views/TrainerView.vue') },
     ],
   },
 ];
@@ -91,7 +96,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
     return { name: 'dashboard' };
   }
-  if ((to.name === 'login' || to.name === 'signup') && auth.user) {
+  if ((to.name === 'login' || to.name === 'signup' || to.name === 'landing') && auth.user) {
     return { name: 'dashboard' };
   }
   // New accounts must finish onboarding before reaching the dashboard.
