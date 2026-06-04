@@ -4,6 +4,7 @@ import session from 'express-session';
 import expressMySQLSession from 'express-mysql-session';
 import cors from 'cors';
 import compression from 'compression';
+import helmet from 'helmet';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -22,11 +23,21 @@ import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { tzContext } from './middleware/tz.js';
+import { globalLimiter, authLimiter, aiLimiter } from './middleware/rateLimit.js';
 import { LEGACY_UPLOADS_ROOT, UPLOADS_ROOT } from './lib/uploads.js';
 import { tryRememberLogin } from './lib/remember.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+
+// Fail fast rather than run a public deployment on the insecure dev fallback
+// secret (which would let anyone forge a session cookie). "Production" here =
+// NODE_ENV=production OR COOKIE_SECURE=true (the flag the box sets behind TLS).
+const SESSION_SECRET = process.env.SESSION_SECRET;
+const IS_PROD = process.env.NODE_ENV === 'production' || process.env.COOKIE_SECURE === 'true';
+if (IS_PROD && (!SESSION_SECRET || SESSION_SECRET === 'dev-insecure-secret')) {
+  throw new Error('SESSION_SECRET must be set to a strong random value when COOKIE_SECURE=true / NODE_ENV=production.');
+}
 
 // Behind a TLS-terminating proxy (ngrok, nginx, a PaaS) the connection to this
 // process is plain HTTP, so Express sees req.secure=false and a Secure session
@@ -35,13 +46,29 @@ const PORT = Number(process.env.PORT || 3000);
 // TRUST_PROXY=0 to disable (e.g. when exposed directly without a proxy).
 if (process.env.TRUST_PROXY !== '0') app.set('trust proxy', 1);
 
+// Security headers (clickjacking, MIME-sniffing, referrer leakage, HSTS, and
+// dropping the X-Powered-By version banner). CSP is left off for now: the SPA
+// isn't CSP-audited and a wrong policy would silently break it — tracked as a
+// follow-up. COEP off + CORP cross-origin so external images (OpenFoodFacts
+// product photos, Google avatars) and our own /api/uploads still load.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: { maxAge: 15552000 }, // 180 days; ngrok terminates TLS in front of us
+  })
+);
+
 // Gzip every text response (API JSON + the built SPA's JS/CSS/HTML). The Vue
 // bundles are ~550KB uncompressed; gzip cuts that ~75%, which dominates
 // first-load time over the ngrok tunnel. Negligible CPU at this traffic level,
 // and it skips already-compressed types (images, etc.) automatically.
 app.use(compression());
 
-app.use(express.json());
+// Cap JSON bodies (the dynamic endpoints only carry small payloads; image
+// uploads go through multer, not here, so this never affects them).
+app.use(express.json({ limit: '1mb' }));
 
 // CORS for dev when the Vue client talks to the API cross-origin. When the
 // client uses the Vite proxy (recommended, see client/vite.config.js) requests
@@ -77,7 +104,7 @@ app.use(
   session({
     name: 'bb.sid',
     store: sessionStore,
-    secret: process.env.SESSION_SECRET || 'dev-insecure-secret',
+    secret: SESSION_SECRET || 'dev-insecure-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -106,6 +133,16 @@ app.use(async (req, res, next) => {
 app.use(tzContext);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, data: { status: 'up' }, message: null }));
+
+// Rate limiting (see middleware/rateLimit.js). Broad backstop on the whole API,
+// then tighter caps on the abuse-prone surfaces. Path-specific limiters are
+// registered BEFORE the routers so they run first.
+app.use('/api', globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/ai-coach/send', aiLimiter);
+app.use('/api/intake/estimate-photo', aiLimiter);
+app.use('/api/intake/ai-chat', aiLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/intake', intakeRoutes);

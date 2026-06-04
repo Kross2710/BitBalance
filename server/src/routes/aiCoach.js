@@ -53,13 +53,18 @@ router.get('/messages', requireAuth, async (req, res, next) => {
     if (!conv) {
       return res.status(404).json({ ok: false, data: null, message: 'Conversation not found.' });
     }
-    const rows = await query(
-      `SELECT message_id, role, content, image_path, created_at
-         FROM ai_message
-        WHERE conversation_id = ?
-        ORDER BY created_at ASC, message_id ASC`,
-      [conversationId]
-    );
+    // Bounded read: a conversation can grow without limit, so cap the load at the
+    // most recent 500 messages (DESC + LIMIT), then restore chronological order.
+    const rows = (
+      await query(
+        `SELECT message_id, role, content, image_path, created_at
+           FROM ai_message
+          WHERE conversation_id = ?
+          ORDER BY created_at DESC, message_id DESC
+          LIMIT 500`,
+        [conversationId]
+      )
+    ).reverse();
     res.json({
       ok: true,
       data: { conversation: formatConversation(conv), messages: rows.map(formatMessage) },
