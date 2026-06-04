@@ -134,7 +134,9 @@ router.post('/send', requireAuth, async (req, res, next) => {
     // Build context + call the model.
     const userContext = await buildUserContext(userId, req.tzShift, req.todayTz);
     const clientTimeInfo = buildClientTimeInfo(req.body?.client_now, req.body?.client_tz_offset);
-    const system = systemInstruction(userContext, clientTimeInfo);
+    // Preferred language anchors the reply when the latest message is ambiguous.
+    const language = req.user?.language_preference === 'vi' ? 'Vietnamese' : 'English';
+    const system = systemInstruction(userContext, clientTimeInfo, language);
 
     const result = await chatCompletion({ system, history });
     if (!result.ok) {

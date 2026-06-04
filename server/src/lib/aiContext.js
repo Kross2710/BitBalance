@@ -36,20 +36,57 @@ export async function buildUserContext(userId, shift = 0, today = todayVN()) {
     if (bits.length) lines.push('Profile: ' + bits.join(', '));
   }
 
-  // ---- Current calorie goal (latest userGoal row) ----
+  // ---- Current calorie + macro goal (latest userGoal row) ----
   const goalRows = await query(
-    `SELECT calorie_goal, date_set
+    `SELECT calorie_goal, protein_goal, carbs_goal, fat_goal, source, date_set
        FROM userGoal
       WHERE user_id = ?
       ORDER BY date_set DESC
       LIMIT 1`,
     [userId]
   );
+  let calGoal = 0;
+  let pGoal = 0;
+  let cGoal = 0;
+  let fGoal = 0;
   if (goalRows[0]) {
+    calGoal = Number(goalRows[0].calorie_goal) || 0;
+    pGoal = Number(goalRows[0].protein_goal) || 0;
+    cGoal = Number(goalRows[0].carbs_goal) || 0;
+    fGoal = Number(goalRows[0].fat_goal) || 0;
     const setOn = String(goalRows[0].date_set).slice(0, 10);
-    lines.push(`Calorie goal: ${goalRows[0].calorie_goal} kcal/day (set on ${setOn})`);
+    const macroBits = [];
+    if (pGoal) macroBits.push(`P ${pGoal}g`);
+    if (cGoal) macroBits.push(`C ${cGoal}g`);
+    if (fGoal) macroBits.push(`F ${fGoal}g`);
+    const macroStr = macroBits.length ? ` (target ${macroBits.join(' / ')})` : '';
+    const src = goalRows[0].source && goalRows[0].source !== 'self' ? `, set by ${goalRows[0].source}` : '';
+    lines.push(`Calorie goal: ${calGoal} kcal/day${macroStr} (set on ${setOn}${src})`);
   } else {
     lines.push('Calorie goal: not set yet');
+  }
+
+  // ---- Goal direction (user_plan_preferences) — the single biggest signal for
+  // tailoring advice (lose/maintain/gain). Best-effort: never break the Coach if
+  // the table is absent on an older DB.
+  try {
+    const planRows = await query(
+      `SELECT goal_mode, weekly_rate, activity_level, target_weight
+         FROM user_plan_preferences WHERE user_id = ?`,
+      [userId]
+    );
+    if (planRows[0]) {
+      const pl = planRows[0];
+      const modeLabel =
+        { lose: 'lose weight', maintain: 'maintain weight', gain: 'gain weight' }[pl.goal_mode] || pl.goal_mode;
+      const pbits = [`aiming to ${modeLabel}`];
+      if (pl.target_weight != null) pbits.push(`target ${pl.target_weight} kg`);
+      if (pl.goal_mode !== 'maintain' && pl.weekly_rate != null) pbits.push(`~${num(pl.weekly_rate, 2)} kg/week`);
+      if (pl.activity_level) pbits.push(`activity: ${String(pl.activity_level).replace(/_/g, ' ')}`);
+      lines.push('Goal direction: ' + pbits.join(', '));
+    }
+  } catch {
+    /* user_plan_preferences not present on this DB — skip */
   }
 
   // ---- Streak ----
@@ -90,8 +127,16 @@ export async function buildUserContext(userId, shift = 0, today = todayVN()) {
       f += Number(item.fat) || 0;
     }
     lines.push(`  TOTAL today: ${cal | 0} kcal, P ${num(p)}g, C ${num(c)}g, F ${num(f)}g`);
+    if (calGoal) {
+      const remBits = [`${(calGoal - cal) | 0} kcal`];
+      if (pGoal) remBits.push(`P ${num(pGoal - p, 0)}g`);
+      if (cGoal) remBits.push(`C ${num(cGoal - c, 0)}g`);
+      if (fGoal) remBits.push(`F ${num(fGoal - f, 0)}g`);
+      lines.push(`  REMAINING vs goal today: ${remBits.join(', ')}`);
+    }
   } else {
     lines.push(`\nToday (${today}) intake: nothing logged yet`);
+    if (calGoal) lines.push(`  REMAINING vs goal today: full ${calGoal} kcal budget`);
   }
 
   // ---- Last 7 days totals (excluding today, for trend) ----
@@ -129,6 +174,12 @@ export async function buildUserContext(userId, shift = 0, today = todayVN()) {
     lines.push('\nRecent weight log:');
     for (const w of weights) {
       lines.push(`  - ${String(w.date_logged).slice(0, 10)}: ${w.weight} kg`);
+    }
+    if (weights.length >= 2) {
+      // weights are DESC (newest first); compare newest vs oldest of the window.
+      const delta = Number(weights[0].weight) - Number(weights[weights.length - 1].weight);
+      const dir = delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'roughly flat';
+      lines.push(`  Trend over these ${weights.length} entries: ${dir} ${num(Math.abs(delta), 1)} kg`);
     }
   }
 
