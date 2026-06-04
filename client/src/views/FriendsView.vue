@@ -52,7 +52,9 @@ const meWeekly = ref(null);
 async function loadLeaderboard() {
   lbLoading.value = true;
   try {
-    const d = await api.get(`/api/social/leaderboard?period=${period.value}`);
+    // Background: triggered by switching to the Ranks tab / toggling the period,
+    // and has its own lbLoading indicator — must not flash the global bar.
+    const d = await api.get(`/api/social/leaderboard?period=${period.value}`, { background: true });
     leaders.value = d.leaders;
     if (period.value === 'weekly') meWeekly.value = d.leaders.find((u) => u.is_current_user) || null;
   } catch (e) {
@@ -221,8 +223,12 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 
     <p v-if="error" class="error">{{ error }}</p>
 
+    <!-- Tab panels: a quick fade/slide on switch. Each section is keyed so the
+         same-tag <section> elements actually transition (Vue would otherwise
+         patch them in place with no animation). out-in avoids height overlap. -->
+    <Transition name="tab" mode="out-in">
     <!-- FRIENDS -->
-    <section v-if="tab === 'friends'">
+    <section v-if="tab === 'friends'" key="friends">
       <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
       <p v-else-if="!friends.length" class="muted empty">
         {{ noFriendsParts.before }}<button class="link" @click="tab = 'find'">{{ $t('friends.tab.find_short') }}</button>{{ noFriendsParts.after }}
@@ -251,7 +257,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
     </section>
 
     <!-- PENDING -->
-    <section v-else-if="tab === 'pending'">
+    <section v-else-if="tab === 'pending'" key="pending">
       <p v-if="loading" class="muted">{{ $t('common.loading') }}</p>
       <template v-else>
         <h2 class="sub">{{ $t('friends.subhead.requests_in') }}</h2>
@@ -290,7 +296,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
     </section>
 
     <!-- LEADERBOARD -->
-    <section v-else-if="tab === 'leaderboard'">
+    <section v-else-if="tab === 'leaderboard'" key="leaderboard">
       <div class="seg">
         <button class="seg-btn" :class="{ on: period === 'weekly' }" @click="period = 'weekly'">{{ $t('friends.leaderboard.range.week') }}</button>
         <button class="seg-btn" :class="{ on: period === 'all_time' }" @click="period = 'all_time'">{{ $t('friends.leaderboard.range.all') }}</button>
@@ -320,7 +326,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
     </section>
 
     <!-- FIND -->
-    <section v-else-if="tab === 'find'">
+    <section v-else-if="tab === 'find'" key="find">
       <input
         v-model="q"
         class="search"
@@ -355,6 +361,7 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
         </li>
       </ul>
     </section>
+    </Transition>
 
     <!-- Profile peek (tap any row) + remove confirm (kebab / sheet) -->
     <FriendProfileSheet
@@ -508,4 +515,17 @@ const soloLbParts = computed(() => splitOnLink('friends.lb.solo_inline'));
 .find-empty > i { font-size: 32px; color: var(--muted); }
 .find-empty strong { font-size: 16px; }
 .find-empty p { margin: 0; max-width: 320px; font-size: 13px; line-height: 1.5; }
+
+/* Tab panel switch — quick fade + slight slide (out-in, so variable-height
+   panels never overlap). Replaces the loading-bar flash on tab change. */
+.tab-enter-active,
+.tab-leave-active { transition: opacity 0.16s ease, transform 0.16s ease; }
+.tab-enter-from { opacity: 0; transform: translateY(6px); }
+.tab-leave-to { opacity: 0; transform: translateY(-6px); }
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter-active,
+  .tab-leave-active { transition: opacity 0.12s ease; }
+  .tab-enter-from,
+  .tab-leave-to { transform: none; }
+}
 </style>
