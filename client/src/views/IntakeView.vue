@@ -262,7 +262,9 @@ watch(
     }
     suggestTimer = setTimeout(async () => {
       try {
-        const data = await api.get(`/api/intake/suggest?q=${encodeURIComponent(q)}`);
+        // Background: fires per keystroke (debounced) + has its own dropdown, so it
+        // must not flash the global loading bar.
+        const data = await api.get(`/api/intake/suggest?q=${encodeURIComponent(q)}`, { background: true });
         suggestions.value = data.items;
         showSuggest.value = data.items.length > 0;
       } catch {

@@ -29,7 +29,8 @@ async function runSearch() {
   searching.value = true;
   error.value = '';
   try {
-    const data = await api.get(`/api/pt/invitable?q=${encodeURIComponent(term)}`);
+    // Background: type-ahead search with its own `searching` indicator.
+    const data = await api.get(`/api/pt/invitable?q=${encodeURIComponent(term)}`, { background: true });
     results.value = data.clients;
   } catch (e) {
     error.value = e.message;

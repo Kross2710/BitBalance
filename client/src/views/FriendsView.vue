@@ -86,7 +86,8 @@ async function runSearch() {
   if (term.length < 2) return;
   searching.value = true;
   try {
-    const d = await api.post('/api/social/search', { q: term });
+    // Background: search-as-you-type with its own `searching` indicator.
+    const d = await api.post('/api/social/search', { q: term }, { background: true });
     results.value = d.results;
   } catch (e) {
     error.value = e.message;
