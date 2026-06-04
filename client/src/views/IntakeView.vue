@@ -89,9 +89,9 @@ async function loadRecent() {
 }
 
 // ---- Today's entries (manage what was logged today) ----
-// The dashboard shows entries read-only; editing/deleting lives here. We pull
-// recent history and keep only today's rows (server tz is +07:00, so compute
-// "today" in Asia/Bangkok to avoid a midnight UTC off-by-one).
+// The dashboard shows entries read-only; editing/deleting lives here. The server
+// scopes /history?date= to the user's LOCAL day using the same timezone-shifted
+// grouping the Dashboard uses, so the two pages stay in sync.
 const route = useRoute();
 const entries = ref([]);
 const summary = ref(null); // daily total/goal/macros for the CalorieSummaryCard
@@ -129,8 +129,13 @@ const editForm = reactive({ intake_id: 0, food_item: '', calories: '', meal_cate
 async function loadEntries() {
   try {
     const data = await api.get(`/api/intake/history?date=${activeDate.value}`);
-    // Server already scopes to the day; the filter is a belt-and-suspenders guard.
-    entries.value = data.entries.filter((e) => (e.date_intake ?? '').slice(0, 10) === activeDate.value);
+    // Trust the server's day scope — it filters by DATE(date_intake + INTERVAL
+    // tzShift MINUTE) = activeDate, the SAME timezone-aware grouping the Dashboard
+    // uses. Do NOT re-filter here by the raw date_intake string: that value is the
+    // +07:00 wall-clock time, so for any user not in +07:00 it disagrees with the
+    // shifted day and would silently drop rows the Dashboard still shows (the two
+    // pages then look out of sync near midnight).
+    entries.value = data.entries;
     summary.value = data.daily_summary; // running total for the bar, scoped to activeDate
   } catch {
     /* non-fatal: section just stays empty */
