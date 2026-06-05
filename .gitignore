@@ -3,6 +3,7 @@ include/db_config.local.php
 .claude/
 .DS_Store
 AGENTS.md
+tmp/
 
 # Operator deploy runbooks — kept private (they name the box's SSH user/IPs and
 # the RMIT production DB host + login). Operational templates with placeholders
