@@ -202,7 +202,10 @@ $energySync = $clamp(100 - abs($trackEnergy - $foodEnergy) * 0.8);
 $comfortScore = $foodComfort > 0 ? $foodComfort : $clamp(40 + $calBand * 30);
 $chaos = $clamp(min(100, abs($trackEnergy - $foodEnergy) * 0.9 + 25));
 
-// --- Call AI (OpenRouter first, then Gemini) — works through the RMIT firewall ---
+// --- Call AI (OpenRouter first, then Gemini) — fallback chain for resilience ---
+// NOTE: OpenRouter-first is for retired-model/fallback resilience, NOT a firewall.
+// Gemini direct is NOT blocked on RMIT (outbound 443 verified open 2026-06-01); the
+// old failures were the SSL/CA cert issue, fixed by CURLOPT_SSL_VERIFY* = false.
 // The archetype is assigned from the FIXED catalog below, so the AI "success" flag
 // (which drives the "AI offline" hint) is judged ONLY on getting usable narration
 // (a verdict) — NOT on the AI's own archetype field, which we discard.

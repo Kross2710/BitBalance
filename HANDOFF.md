@@ -1,5 +1,11 @@
 # BitBalance — Handoff (tiếp tục ở local)
 
+> ⚠️ **LỖI THỜI / BẢN SAO (2026-06-05):** Code Vue/Express/mobile đã chuyển sang
+> `~/Projects/BitBalance-App/`. **Bản canonical của file này giờ ở
+> `BitBalance-App/HANDOFF.md`** — ưu tiên đọc/cập nhật bản đó. File này giữ lại để tham
+> khảo lịch sử và có thể không khớp trạng thái mới nhất (vd: session store đã chuyển sang
+> express-mysql-session; auth là session chứ không phải JWT; mobile đang cân nhắc React Native).
+
 File này gom mọi thứ cần để **resume công việc migration ở máy local**. Chi tiết
 sâu hơn nằm ở [`MIGRATION.md`](./MIGRATION.md) (trạng thái port từng endpoint) và
 [`DESIGN.md`](./DESIGN.md) (design system). Cập nhật: 2026-06-03.
@@ -71,8 +77,8 @@ DB test local có thể tụt các cột này — apply trước khi test luồn
 **Tài khoản test (DB `test` XAMPP, password đã set `Test1234!`):** client `24`
 (`kross2710@gmail.com`), client `34` (`vukhanhhung2710@gmail.com`); trainer `39`
 (`pt@gmail.com`), trainer `414` (`coach@bitbalance.test`). 24 là client của 39.
-**Lưu ý:** MemoryStore (dev) **mất session mỗi khi `node --watch` reload** — sửa
-file server xong phải đăng nhập lại.
+**Session store (cập nhật):** ĐÃ chuyển sang **express-mysql-session** (store MariaDB) —
+**không còn MemoryStore**, login sống qua `node --watch` reload + restart.
 
 ## 3. Đã port xong
 
@@ -105,8 +111,8 @@ Chi tiết từng endpoint: bảng trạng thái trong `MIGRATION.md`.
    (deploy chưa chốt); iOS còn phải cài PWA ra home screen.
 2. **Log out of all devices** — helper `revokeAllForUser()` đã có sẵn trong
    `lib/remember.js`, chỉ cần thêm endpoint + nút trong Profile.
-3. **Nợ hạ tầng:** session store production (Redis/MySQL thay MemoryStore — hiện
-   MemoryStore mất session khi reload), CSRF cho mutation, captcha (svg-captcha thay
+3. **Nợ hạ tầng:** ~~session store production~~ **ĐÃ XONG** (express-mysql-session, MariaDB —
+   không còn MemoryStore). Còn lại: CSRF cho mutation, captcha (svg-captcha thay
    PHP GD), AI Coach chat nhận ảnh (vision — provider đã hỗ trợ, route `send`
    chưa nhận upload). **i18n đã xong** (vue-i18n, locale vi/en) — session song song.
    - **Google OAuth đã xong** (`lib/google.js` + routes `GET /api/auth/google`,

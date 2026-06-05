@@ -1,47 +1,16 @@
 name: CI
 
-# Tier A: build / syntax gate. No test suite exists yet, so this catches the
-# class of errors that previously had to be found by hand (Vue/Vite compile,
-# bad imports, lockfile drift, JS/PHP syntax). Needs no secrets and no database.
+# PHP-only lint gate. The Vue/Express/mobile migration code was split out to the
+# BitBalance-App repo on 2026-06-05, so this repo is the vanilla PHP RMIT app only.
+# `php -l` catches syntax errors against the production PHP version (7.4.33).
+# Needs no secrets and no database.
 on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, claude/express-vue-migration-XoMbE]
+    branches: [main]
 
 jobs:
-  client:
-    name: Client build (Vue/Vite)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24 # box runs Node 26; bump or add to a matrix to match prod
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-      - run: npm ci
-        working-directory: client
-      - run: npm run build
-        working-directory: client
-
-  server:
-    name: Server install + syntax (Express)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-      - run: npm ci
-        working-directory: server
-      # No test suite yet — at minimum fail the build on a syntax error in src.
-      - name: Syntax check
-        working-directory: server
-        run: find src -name '*.js' -print0 | xargs -0 -n1 node --check
-
   php-lint:
     name: PHP lint (RMIT app)
     runs-on: ubuntu-latest

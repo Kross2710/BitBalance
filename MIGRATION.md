@@ -1,5 +1,10 @@
 # BitBalance — Migration PHP → Express + Vue (SPA)
 
+> ⚠️ **LỖI THỜI / BẢN SAO (2026-06-05):** Code Vue/Express đã chuyển sang
+> `~/Projects/BitBalance-App/`. **Bản canonical của file này giờ ở `BitBalance-App/MIGRATION.md`**
+> (đã cập nhật trạng thái mới: Wrapped/Achievements/Progress/Admin đã port, session store dùng
+> express-mysql-session, mascot/beats/mailer chưa port). Ưu tiên bản đó; file này giữ để tham khảo.
+
 Tài liệu này theo dõi việc chuyển BitBalance từ PHP server-rendered sang
 **Express.js (API) + Vue 3 SPA**, dùng **chung database MySQL hiện có**
 (không migrate dữ liệu, chỉ thay tầng ứng dụng).
@@ -91,8 +96,8 @@ gần như port 1-1.
 - [ ] **Log out of all devices**: gắn UI gọi revoke-all (hàm thu hồi mọi
       `auth_token` của user đã có sẵn trong `lib/remember.js`) — ví dụ nút trong
       Profile + endpoint `POST /api/auth/logout-all`. Backlog từ nhát auth bundle.
-- [ ] **Session store production**: thay MemoryStore của express-session bằng
-      store bền (Redis hoặc MySQL session store).
+- [x] **Session store production**: ĐÃ thay MemoryStore bằng **express-mysql-session**
+      (store MariaDB). Auth là **session-based** (KHÔNG phải JWT). Xem `BitBalance-App/`.
 - [ ] **CSRF**: app PHP có `include/csrf.php`. SPA dùng cookie → cân nhắc
       double-submit token hoặc SameSite=strict cho các mutation.
 - [ ] **AI Coach chat vision (ảnh)**: `lib/aiProvider.js` ĐÃ hỗ trợ ảnh (Gemini
