@@ -10,7 +10,7 @@
   nghiệm người dùng mượt/đã hơn là port 1-1 máy móc từ PHP.
 
 ## Design language (đồng nhất theo Vue)
-- **Chuẩn DUY NHẤT** = `client/src/styles.css` (`:root` tokens) + `DESIGN.md`.
+- **Chuẩn DUY NHẤT** = `DESIGN.md` + design tokens trong `BitBalance-App/client/src/styles.css`.
   Đọc trước khi dựng bất kỳ view/mockup nào.
 - Tông Vue: **dark, phẳng, gọn** — accent `#4ade80`, viền `1px var(--border)`
   (KHÔNG shadow chunky `0 4px 0`), padding gọn, `max-width: 820px`, icon Font
