@@ -118,7 +118,9 @@ function bb_mirror_lastfm_tags($name, $apiKey)
 
 /**
  * One AI call → decoded JSON array, or null on any failure. Delegates to bb_beats_ai_text()
- * (OpenRouter first, then Gemini) so it works through the RMIT outbound firewall.
+ * (OpenRouter first, then Gemini) as a fallback chain for resilience — NOT a firewall workaround.
+ * Gemini direct is NOT blocked on RMIT (outbound 443 verified open 2026-06-01); past failures
+ * were the SSL/CA cert issue, fixed by CURLOPT_SSL_VERIFY* = false.
  */
 function bb_mirror_gemini($prompt)
 {
