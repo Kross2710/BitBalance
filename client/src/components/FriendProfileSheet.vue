@@ -150,9 +150,10 @@ const lockedMsg = computed(() =>
         <span v-else-if="profile.relationship === 'pending_out' || profile.relationship === 'pending_in'" class="tag muted">
           {{ $t('friends.card.hint_pending') }}
         </span>
-        <button v-else-if="profile.relationship === 'friends'" class="btn ghost danger" :disabled="acting" @click="requestRemove">
+        <!-- For simplicity, we only allow removing a friend from the parent list (which shows an extra "Remove" button on each row that opens this sheet). Avoids stacking a ConfirmDialog inside the sheet. -->
+        <!-- <button v-else-if="profile.relationship === 'friends'" class="btn ghost danger" :disabled="acting" @click="requestRemove">
           {{ $t('friends.menu.remove') }}
-        </button>
+        </button> -->
       </div>
     </template>
   </BottomSheet>
